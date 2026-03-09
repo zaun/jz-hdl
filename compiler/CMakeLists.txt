@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(jz_hdl C)
+project(jz_hdl VERSION 0.1.0 LANGUAGES C)
 
 # Default to Debug if no build type is specified (for single-config generators)
 if(NOT CMAKE_CONFIGURATION_TYPES)
@@ -171,15 +171,28 @@ endforeach()
 # Create custom target for all generated headers
 add_custom_target(generate_json_headers ALL DEPENDS ${GENERATED_JSON_HEADERS})
 
+# Generate version.h at build time (includes git commit hash)
+set(VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/generated/version.h")
+add_custom_target(generate_version ALL
+    COMMAND ${CMAKE_COMMAND}
+        -D VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+        -D VERSION_MINOR=${PROJECT_VERSION_MINOR}
+        -D VERSION_PATCH=${PROJECT_VERSION_PATCH}
+        -D OUTPUT_FILE=${VERSION_HEADER}
+        -D SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/..
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateVersion.cmake
+    COMMENT "Generating version.h"
+)
+
 # Make library depend on headers being generated first
-add_dependencies(jz_hdl_lib generate_json_headers)
+add_dependencies(jz_hdl_lib generate_json_headers generate_version)
 
 # Add generated headers to include path
 target_include_directories(jz_hdl_lib
     PUBLIC
+        ${CMAKE_CURRENT_BINARY_DIR}/generated
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
 add_executable(jz-hdl
@@ -250,3 +263,7 @@ if(PANDOC_EXECUTABLE)
 else()
     message(STATUS "pandoc not found - 'docs' target will not be available")
 endif()
+
+# Install rules
+include(GNUInstallDirs)
+install(TARGETS jz-hdl RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

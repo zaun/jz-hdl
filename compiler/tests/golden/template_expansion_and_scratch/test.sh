@@ -35,13 +35,18 @@ for mode in ast ir verilog; do
 
     normalize < "${tmp_actual}" > "${tmp_norm}"
 
-    if ! diff -u "${expected}" "${tmp_norm}" > /dev/null; then
+    tmp_expected_filtered=$(mktemp)
+    tmp_norm_filtered=$(mktemp)
+    grep -v 'jz-hdl version:' "${expected}" > "${tmp_expected_filtered}" 2>/dev/null || true
+    grep -v 'jz-hdl version:' "${tmp_norm}" > "${tmp_norm_filtered}" 2>/dev/null || true
+
+    if ! diff -u "${tmp_expected_filtered}" "${tmp_norm_filtered}" > /dev/null; then
         echo "FAIL test.jz (--${mode})"
-        diff -u "${expected}" "${tmp_norm}" || true
+        diff -u "${tmp_expected_filtered}" "${tmp_norm_filtered}" || true
         ((FAIL++))
     fi
 
-    rm -f "${tmp_actual}" "${tmp_norm}"
+    rm -f "${tmp_actual}" "${tmp_norm}" "${tmp_expected_filtered}" "${tmp_norm_filtered}"
 done
 
 if (( FAIL > 0 )); then

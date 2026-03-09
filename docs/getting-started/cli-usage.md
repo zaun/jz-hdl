@@ -44,7 +44,7 @@ jz-hdl --version
 | `--chip-info` | Print chip data for the given CHIP_ID (or list all supported chips if no ID given). |
 | `--lint-rules` | List all diagnostic rule IDs and their descriptions. |
 | `--help` | Print usage information. |
-| `--version` | Print the compiler version. |
+| `--version` | Print the compiler version and git commit (e.g., `Version 0.1.0 (abc1234)`). |
 
 ## Common options
 
