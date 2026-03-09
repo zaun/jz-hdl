@@ -1731,7 +1731,6 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
 
             /* Collect instance drivers for pairwise comparison. */
             JZASTNode *instance_drivers[16];
-            int instance_driver_can_z[16];
             size_t instance_driver_count = 0;
 
             JZASTNode **drv = (JZASTNode **)net->driver_stmts.data;
@@ -1746,7 +1745,6 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                         int can_z = (net_name && module_scopes &&
                                      sem_instance_driver_can_produce_z(stmt, net_name, module_scopes));
                         instance_drivers[instance_driver_count] = stmt;
-                        instance_driver_can_z[instance_driver_count] = can_z;
                         instance_driver_count++;
                         if (can_z) {
                             has_z_only_driver = 1;

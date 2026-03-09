@@ -14,9 +14,17 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+# Expose POSIX and default libc APIs (realpath, strdup, strtok_r, lstat, etc.)
+add_compile_definitions(_DEFAULT_SOURCE _POSIX_C_SOURCE=200809L)
+
 # Strict warnings for supported compilers
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic -Wunused-function -Wunused-variable -Wunused-but-set-variable)
+    # GCC's -Wformat-truncation assumes every %s could be 255 bytes and warns
+    # even though snprintf safely truncates.  Clang does not have this warning.
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU")
+        add_compile_options(-Wno-format-truncation)
+    endif()
 elseif(MSVC)
     add_compile_options(/W4)
 endif()

@@ -661,88 +661,6 @@ static int ensure_passthrough_array(SharedNet *net)
 }
 
 /**
- * Recursively check whether an expression tree contains a z literal.
- */
-static bool expr_contains_z_literal(const IR_Expr *expr)
-{
-    if (!expr) return false;
-    switch (expr->kind) {
-    case EXPR_LITERAL:
-        return expr->u.literal.literal.is_z != 0;
-    case EXPR_SIGNAL_REF:
-        return false;
-    case EXPR_UNARY_NOT: case EXPR_UNARY_NEG: case EXPR_LOGICAL_NOT:
-        return expr_contains_z_literal(expr->u.unary.operand);
-    case EXPR_BINARY_ADD: case EXPR_BINARY_SUB: case EXPR_BINARY_MUL:
-    case EXPR_BINARY_DIV: case EXPR_BINARY_MOD:
-    case EXPR_BINARY_AND: case EXPR_BINARY_OR: case EXPR_BINARY_XOR:
-    case EXPR_BINARY_SHL: case EXPR_BINARY_SHR: case EXPR_BINARY_ASHR:
-    case EXPR_BINARY_EQ: case EXPR_BINARY_NEQ:
-    case EXPR_BINARY_LT: case EXPR_BINARY_GT:
-    case EXPR_BINARY_LTE: case EXPR_BINARY_GTE:
-    case EXPR_LOGICAL_AND: case EXPR_LOGICAL_OR:
-        return expr_contains_z_literal(expr->u.binary.left) ||
-               expr_contains_z_literal(expr->u.binary.right);
-    case EXPR_TERNARY:
-        return expr_contains_z_literal(expr->u.ternary.condition) ||
-               expr_contains_z_literal(expr->u.ternary.true_val) ||
-               expr_contains_z_literal(expr->u.ternary.false_val);
-    case EXPR_CONCAT:
-        for (int i = 0; i < expr->u.concat.num_operands; i++)
-            if (expr_contains_z_literal(expr->u.concat.operands[i])) return true;
-        return false;
-    case EXPR_SLICE:
-        return expr_contains_z_literal(expr->u.slice.base_expr);
-    default:
-        /* Intrinsics, mem_read — unlikely to contain z, but check children. */
-        if (expr->u.intrinsic.source && expr_contains_z_literal(expr->u.intrinsic.source))
-            return true;
-        if (expr->u.intrinsic.index && expr_contains_z_literal(expr->u.intrinsic.index))
-            return true;
-        if (expr->u.intrinsic.value && expr_contains_z_literal(expr->u.intrinsic.value))
-            return true;
-        return false;
-    }
-}
-
-/**
- * Check whether a statement tree contains a non-alias assignment to
- * the given signal_id whose RHS expression tree contains a z literal.
- * This detects active z-guarded drivers (e.g., `port <= cond ? data : z`).
- */
-static bool stmt_has_nonalias_z_to(const IR_Stmt *stmt, int signal_id)
-{
-    if (!stmt) return false;
-    switch (stmt->kind) {
-    case STMT_ASSIGNMENT:
-        if (stmt->u.assign.lhs_signal_id == signal_id &&
-            stmt->u.assign.kind != ASSIGN_ALIAS &&
-            stmt->u.assign.kind != ASSIGN_ALIAS_ZEXT &&
-            stmt->u.assign.kind != ASSIGN_ALIAS_SEXT &&
-            expr_contains_z_literal(stmt->u.assign.rhs)) {
-            return true;
-        }
-        return false;
-    case STMT_BLOCK:
-        for (int i = 0; i < stmt->u.block.count; i++)
-            if (stmt_has_nonalias_z_to(&stmt->u.block.stmts[i], signal_id))
-                return true;
-        return false;
-    case STMT_IF:
-        return stmt_has_nonalias_z_to(stmt->u.if_stmt.then_block, signal_id) ||
-               stmt_has_nonalias_z_to(stmt->u.if_stmt.elif_chain, signal_id) ||
-               stmt_has_nonalias_z_to(stmt->u.if_stmt.else_block, signal_id);
-    case STMT_SELECT:
-        for (int i = 0; i < stmt->u.select_stmt.num_cases; i++)
-            if (stmt_has_nonalias_z_to(stmt->u.select_stmt.cases[i].body, signal_id))
-                return true;
-        return false;
-    default:
-        return false;
-    }
-}
-
-/**
  * After finding initial SharedNets (with 2+ drivers each on their own
  * parent signals), merge nets that are connected through a pass-through
  * instance's port alias groups.
@@ -1681,7 +1599,7 @@ static int validate_no_multidriver(const IR_Design *design,
                 JZLocation loc;
                 memset(&loc, 0, sizeof(loc));
                 if (psig) loc.line = psig->source_line;
-                char msg[256];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "post-transform: signal '%s'[%d:%d] has %d always-active "
                          "instance drivers (tri-state elimination created multi-driver conflict)",
@@ -1907,7 +1825,7 @@ static int transform_shared_nets(IR_Design *design,
                     JZLocation loc;
                     memset(&loc, 0, sizeof(loc));
                     if (child_port) loc.line = child_port->source_line;
-                    char msg[256];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "could not extract output-enable condition from port '%s' "
                              "in module '%s'; _oe driven high as fallback "
@@ -2640,7 +2558,7 @@ int jz_ir_tristate_transform(IR_Design *design,
             memset(&loc, 0, sizeof(loc));
             loc.filename = module_source_file(design, mod);
             loc.line = mod->source_line;
-            char msg[256];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "replaced %d tri-state (z) literal(s) with %s in module '%s'",
                      r,

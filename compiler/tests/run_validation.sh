@@ -103,14 +103,20 @@ if [[ -d "${GOLDEN_DIR}" ]]; then
         # file; diagnostics stay on stderr and are not compared.
         (cd "$(dirname "${file}")" && "${JZ_HDL_BIN}" --${mode} -o "${tmp_out}" "$(basename "${file}")") 2>/dev/null || true
 
-        if diff -u "${expected}" "${tmp_out}" > /dev/null; then
+        # Filter out the version line before comparing so that golden
+        # files are not invalidated by version string changes.
+        grep -v 'jz-hdl version:' "${expected}" > "${tmp_out}.expected_filtered" 2>/dev/null || true
+        grep -v 'jz-hdl version:' "${tmp_out}" > "${tmp_out}.actual_filtered" 2>/dev/null || true
+
+        if diff -u "${tmp_out}.expected_filtered" "${tmp_out}.actual_filtered" > /dev/null; then
           echo "PASS ${rel_path} (--${mode})"
           ((golden_pass++))
         else
           echo "FAIL ${rel_path} (--${mode})"
-          diff -u "${expected}" "${tmp_out}" || true
+          diff -u "${tmp_out}.expected_filtered" "${tmp_out}.actual_filtered" || true
           ((golden_fail++))
         fi
+        rm -f "${tmp_out}.expected_filtered" "${tmp_out}.actual_filtered"
       done
     done
 

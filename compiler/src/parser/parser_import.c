@@ -22,6 +22,11 @@
 #include "parser_internal.h"
 #include "path_security.h"
 
+/* Global storage for imported filename lifetime management. */
+char  **g_imported_filenames      = NULL;
+size_t  g_imported_filenames_len  = 0;
+size_t  g_imported_filenames_cap  = 0;
+
 /**
  * @brief Record an imported filename for lifetime management.
  *

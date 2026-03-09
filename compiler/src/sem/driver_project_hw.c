@@ -512,7 +512,7 @@ void sem_check_project_clock_gen(JZASTNode *project,
                                 /* Validate frequency range from chip data input */
                                 double freq_mhz = 1000.0 / period;
                                 if (freq_mhz < chip_input->min_mhz || freq_mhz > chip_input->max_mhz) {
-                                    char msg[256];
+                                    char msg[512];
                                     snprintf(msg, sizeof(msg),
                                              "CLOCK_GEN input frequency %.1f MHz is outside "
                                              "valid range [%.0f, %.0f] MHz",
@@ -534,7 +534,7 @@ void sem_check_project_clock_gen(JZASTNode *project,
                                 double rmin = 0.0, rmax = 0.0;
                                 if (jz_chip_clock_gen_refclk_range(chip, tl, &rmin, &rmax)) {
                                     if (freq_mhz < rmin || freq_mhz > rmax) {
-                                        char msg[256];
+                                        char msg[512];
                                         snprintf(msg, sizeof(msg),
                                                  "CLOCK_GEN input frequency %.1f MHz is outside "
                                                  "valid range [%.0f, %.0f] MHz",
@@ -653,7 +653,7 @@ void sem_check_project_clock_gen(JZASTNode *project,
                         }
                     }
                     if (!found) {
-                        char msg[256];
+                        char msg[512];
                         snprintf(msg, sizeof(msg),
                                  "CLOCK_GEN required input '%s' is not provided",
                                  chip_inp->name);
@@ -797,7 +797,7 @@ void sem_check_project_clock_gen(JZASTNode *project,
                         if (endptr == user_val) continue; /* non-numeric, skip */
 
                         if (val < cparam->min || val > cparam->max) {
-                            char msg[256];
+                            char msg[512];
                             snprintf(msg, sizeof(msg),
                                      "CLOCK_GEN CONFIG '%s' = %ld is outside valid range [%ld, %ld]",
                                      cparam->name, val, cparam->min, cparam->max);
@@ -861,7 +861,7 @@ void sem_check_project_clock_gen(JZASTNode *project,
                     if (!ctx.ok) continue; /* couldn't evaluate, skip */
 
                     if (result < cder->min || result > cder->max) {
-                        char msg[256];
+                        char msg[512];
                         snprintf(msg, sizeof(msg),
                                  "CLOCK_GEN derived '%s' = %.1f is outside valid range [%.0f, %.0f]",
                                  cder->name, result, cder->min, cder->max);

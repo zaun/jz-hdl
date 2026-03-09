@@ -158,7 +158,7 @@ static void json_write_expr(FILE *out, const IR_Expr *expr)
     switch (expr->kind) {
     case EXPR_LITERAL:
         fputs(", \"literal\": { \"value\": ", out);
-        fprintf(out, "%" PRIu64, (unsigned long long)expr->u.literal.literal.words[0]);
+        fprintf(out, "%llu", (unsigned long long)expr->u.literal.literal.words[0]);
         fputs(", \"width\": ", out);
         fprintf(out, "%d", expr->u.literal.literal.width);
         if (expr->u.literal.literal.is_z) {
@@ -459,7 +459,7 @@ static void json_write_signals(FILE *out, const IR_Module *mod)
             fprintf(out, " }\n");
         } else if (sig->kind == SIG_REGISTER) {
             fprintf(out,
-                    ",\n          \"reg\": { \"reset_value\": { \"value\": %" PRIu64 ", \"width\": %d }, \"home_clock_domain_id\": %d }\n",
+                    ",\n          \"reg\": { \"reset_value\": { \"value\": %llu, \"width\": %d }, \"home_clock_domain_id\": %d }\n",
                     (unsigned long long)sig->u.reg.reset_value.words[0],
                     sig->u.reg.reset_value.width,
                     sig->u.reg.home_clock_domain_id);
@@ -615,7 +615,7 @@ static void json_write_memories(FILE *out, const IR_Module *mod)
             json_write_string(out, m->init.file_path);
         } else if (!m->init_is_file && m->init.literal.width > 0) {
             fprintf(out,
-                    ",\n            \"init_literal\": { \"value\": %" PRIu64 ", \"width\": %d }",
+                    ",\n            \"init_literal\": { \"value\": %llu, \"width\": %d }",
                     (unsigned long long)m->init.literal.words[0],
                     m->init.literal.width);
         }

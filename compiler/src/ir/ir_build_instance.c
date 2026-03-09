@@ -293,8 +293,6 @@ int ir_collect_module_specializations(const JZModuleScope *scopes,
                 continue;
             }
 
-            const JZModuleScope *child_scope = &scopes[(size_t)base_scope_index];
-
             IR_ModuleSpecOverride *ov = NULL;
             int ov_count = 0;
             /* Evaluate OVERRIDE expressions in the parent scope, since

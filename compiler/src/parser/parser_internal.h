@@ -58,9 +58,9 @@ typedef struct Parser {
  * these filename strings are kept alive here and freed only when parsing
  * is fully complete.
  */
-static char  **g_imported_filenames      = NULL;
-static size_t  g_imported_filenames_len  = 0;
-static size_t  g_imported_filenames_cap  = 0;
+extern char  **g_imported_filenames;
+extern size_t  g_imported_filenames_len;
+extern size_t  g_imported_filenames_cap;
 
 /**
  * @brief Conditionally consume the next token if it matches a given type.

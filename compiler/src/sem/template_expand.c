@@ -971,7 +971,7 @@ static int expand_apply(ExpandContext *ctx, JZASTNode *apply,
             substitute_in_node(clone, param_names, apply->children,
                                param_count, (int)idx, has_idx, def->name,
                                callsite_id, scratch_names, scratch_count,
-                               suffixes);
+                               (const char (*)[7])suffixes);
 
             if (expanded_count == expanded_cap) {
                 size_t new_cap = expanded_cap ? expanded_cap * 2 : 16;

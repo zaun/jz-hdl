@@ -153,43 +153,6 @@ void sem_comb_collect_sources_from_expr(JZASTNode *expr,
     }
 }
 
-static void sem_comb_describe_cycle(const JZBuffer *nets,
-                                    size_t src_net_ix,
-                                    size_t dst_net_ix,
-                                    char *buf,
-                                    size_t buf_size)
-{
-    if (!nets || !buf || buf_size == 0) return;
-
-    buf[0] = '\0';
-    size_t net_count = nets->len / sizeof(JZNet);
-    if (src_net_ix >= net_count || dst_net_ix >= net_count) {
-        snprintf(buf, buf_size, "flow-sensitive combinational loop detected");
-        return;
-    }
-
-    JZNet *arr = (JZNet *)nets->data;
-    const char *src_name = NULL;
-    const char *dst_name = NULL;
-
-    if (arr[src_net_ix].atoms.len >= sizeof(JZASTNode *)) {
-        JZASTNode **atoms = (JZASTNode **)arr[src_net_ix].atoms.data;
-        if (atoms[0] && atoms[0]->name) src_name = atoms[0]->name;
-    }
-    if (arr[dst_net_ix].atoms.len >= sizeof(JZASTNode *)) {
-        JZASTNode **atoms = (JZASTNode **)arr[dst_net_ix].atoms.data;
-        if (atoms[0] && atoms[0]->name) dst_name = atoms[0]->name;
-    }
-
-    if (!src_name) src_name = "<net>";
-    if (!dst_name) dst_name = "<net>";
-
-    snprintf(buf, buf_size,
-             "flow-sensitive combinational loop detected between '%s' and '%s'",
-             src_name,
-             dst_name);
-}
-
 static void sem_comb_record_edges_for_assign(JZASTNode *stmt,
                                              const JZModuleScope *scope,
                                              JZBuffer *nets,
@@ -198,6 +161,8 @@ static void sem_comb_record_edges_for_assign(JZASTNode *stmt,
                                              int *had_unconditional_cycle,
                                              JZDiagnosticList *diagnostics)
 {
+    (void)had_unconditional_cycle;
+    (void)diagnostics;
     if (!stmt || !scope || !nets || !bindings || !paths) return;
     if (stmt->child_count < 2) return;
 

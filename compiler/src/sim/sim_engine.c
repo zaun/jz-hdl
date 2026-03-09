@@ -60,7 +60,7 @@ static void sim_settle_checked(SimTestState *ts) {
     if (rc != 0 && !ts->runtime_error) {
         ts->runtime_error = 1;
         ts->num_failed++;
-        char msg[256];
+        char msg[512];
         snprintf(msg, sizeof(msg),
                  "    RUNTIME ERROR at %s\n"
                  "      Combinational logic did not converge after %d delta cycles (SE-001)\n"
@@ -803,7 +803,7 @@ static void process_expect(SimTestState *ts, const JZASTNode *node, int is_equal
                     expected_str);
         }
 
-        char msg[256];
+        char msg[512];
         snprintf(msg, sizeof(msg),
                  "    FAIL at %s:%d @expect_%s(%s, %s)\n"
                  "      Expected: %s\n"
@@ -852,7 +852,7 @@ static void process_expect_tristate(SimTestState *ts, const JZASTNode *node) {
                     sig_node->name ? sig_node->name : "?");
         }
 
-        char msg[256];
+        char msg[512];
         snprintf(msg, sizeof(msg),
                  "    FAIL at %s:%d @expect_tristate(%s)\n"
                  "      Expected: all z\n"

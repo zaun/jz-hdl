@@ -236,7 +236,7 @@ static void sem_check_mem_file_init(JZASTNode *mem,
                         "MEM_INIT_FILE_TOO_LARGE",
                         "MEM init file larger than MEM depth * word_width");
     } else if (file_bits < capacity_bits) {
-        char msg[256];
+        char msg[512];
         unsigned long long file_words = word_w > 0 ? file_bits / word_w : 0;
         snprintf(msg, sizeof(msg),
                  "MEM init file has %llu words but MEM depth is %u; "
@@ -1532,7 +1532,7 @@ void sem_check_module_latch_chip_support(const JZModuleScope *scope,
             }
 
             if (!supported) {
-                char msg[256];
+                char msg[512];
                 if (on_pin) {
                     snprintf(msg, sizeof(msg),
                              "%s latch not supported on this chip; "
