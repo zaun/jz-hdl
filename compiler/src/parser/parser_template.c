@@ -169,7 +169,8 @@ JZASTNode *parse_template_def(Parser *p) {
         /* Forbidden: nested @template */
         if (t->type == JZ_TOK_KW_TEMPLATE) {
             parser_report_rule(p, t, "TEMPLATE_NESTED_DEF",
-                               "nested @template definitions are not allowed");
+                               "found @template inside another @template body\n"
+                               "move the inner template to module scope alongside the outer one");
             advance(p);
             /* Skip to @endtemplate to recover */
             while (peek(p)->type != JZ_TOK_EOF && peek(p)->type != JZ_TOK_KW_ENDTEMPLATE) {
@@ -202,7 +203,8 @@ JZASTNode *parse_template_def(Parser *p) {
         /* Forbidden: block headers */
         if (t->type == JZ_TOK_KW_ASYNC || t->type == JZ_TOK_KW_SYNC) {
             parser_report_rule(p, t, "TEMPLATE_FORBIDDEN_BLOCK_HEADER",
-                               "SYNCHRONOUS/ASYNCHRONOUS block headers are not allowed inside template body");
+                               "templates contain only statements, not block headers\n"
+                               "@apply the template from inside a SYNCHRONOUS or ASYNCHRONOUS block");
             advance(p);
             continue;
         }
@@ -216,7 +218,8 @@ JZASTNode *parse_template_def(Parser *p) {
             t->type == JZ_TOK_KW_GLOBAL || t->type == JZ_TOK_KW_ENDGLOB ||
             t->type == JZ_TOK_KW_CHECK || t->type == JZ_TOK_KW_APPLY) {
             parser_report_rule(p, t, "TEMPLATE_FORBIDDEN_DIRECTIVE",
-                               "structural directives are not allowed inside template body");
+                               "structural directives (@new, @module, @feature, etc.) cannot appear\n"
+                               "inside a template body; templates may only contain assignment statements");
             advance(p);
             continue;
         }

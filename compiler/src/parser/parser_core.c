@@ -192,17 +192,13 @@ void parser_report_rule(const Parser *p,
 
     const JZRuleInfo *rule = jz_rule_lookup(rule_id);
     JZSeverity sev = JZ_SEVERITY_ERROR;
-    const char *msg = fallback_message;
 
     if (rule) {
         sev = (rule->mode == JZ_RULE_MODE_WRN) ? JZ_SEVERITY_WARNING : JZ_SEVERITY_ERROR;
-        if (rule->description) {
-            msg = rule->description;
-        }
-    }
-    if (!msg) {
-        msg = rule_id;
     }
 
+    /* Store the caller's explanation as d->message so that --explain can
+     * show it underneath the rule description on the main diagnostic line. */
+    const char *msg = fallback_message ? fallback_message : rule_id;
     jz_diagnostic_report(p->diagnostics, t->loc, sev, rule_id, msg);
 }

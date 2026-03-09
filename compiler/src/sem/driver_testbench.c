@@ -22,15 +22,16 @@ static void tb_report_rule(JZDiagnosticList *diagnostics,
     if (!diagnostics || !rule_id) return;
     const JZRuleInfo *rule = jz_rule_lookup(rule_id);
     JZSeverity sev = JZ_SEVERITY_ERROR;
-    const char *msg = fallback;
     if (rule) {
         switch (rule->mode) {
         case JZ_RULE_MODE_WRN: sev = JZ_SEVERITY_WARNING; break;
         case JZ_RULE_MODE_INF: sev = JZ_SEVERITY_NOTE; break;
         default: break;
         }
-        if (rule->description) msg = rule->description;
     }
+    /* Store the caller's explanation as d->message so that --explain can
+     * show it underneath the rule description on the main diagnostic line. */
+    const char *msg = fallback ? fallback : rule_id;
     jz_diagnostic_report(diagnostics, loc, sev, rule_id, msg);
 }
 
@@ -51,8 +52,14 @@ static void check_tb_module_exists(JZASTNode *tb, JZASTNode *root,
         }
     }
 
-    tb_report_rule(diagnostics, tb->loc, "TB_MODULE_NOT_FOUND",
-                   "@testbench module name must refer to a module in scope");
+    {
+        char msg[512];
+        snprintf(msg, sizeof(msg),
+                 "@testbench references module `%s` but no @module with that name was found;\n"
+                 "check spelling or ensure the module is defined or @imported",
+                 tb->name ? tb->name : "?");
+        tb_report_rule(diagnostics, tb->loc, "TB_MODULE_NOT_FOUND", msg);
+    }
 }
 
 /**
@@ -83,7 +90,8 @@ static void check_test_block(JZASTNode *test, JZDiagnosticList *diagnostics)
             setup_count++;
             if (!saw_new) {
                 tb_report_rule(diagnostics, child->loc, "TB_SETUP_POSITION",
-                               "@setup must appear after @new in TEST block");
+                               "@setup must appear after @new; declare the DUT instance first,\n"
+                               "then configure it in @setup");
             }
             saw_setup = 1;
         } else {
@@ -99,18 +107,30 @@ static void check_test_block(JZASTNode *test, JZDiagnosticList *diagnostics)
 
     if (new_count == 0) {
         tb_report_rule(diagnostics, test->loc, "TB_MULTIPLE_NEW",
-                       "TEST block must contain exactly one @new instantiation");
+                       "TEST block is missing a @new instantiation; each TEST must create\n"
+                       "exactly one DUT instance with @new");
     } else if (new_count > 1) {
-        tb_report_rule(diagnostics, test->loc, "TB_MULTIPLE_NEW",
-                       "TEST block must contain exactly one @new instantiation");
+        {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "TEST block contains %d @new instantiations but exactly one is required;\n"
+                     "remove the extra @new statements", new_count);
+            tb_report_rule(diagnostics, test->loc, "TB_MULTIPLE_NEW", msg);
+        }
     }
 
     if (setup_count == 0) {
         tb_report_rule(diagnostics, test->loc, "TB_SETUP_POSITION",
-                       "TEST block must contain exactly one @setup block");
+                       "TEST block is missing a @setup block; each TEST must contain\n"
+                       "exactly one @setup to configure the DUT after @new");
     } else if (setup_count > 1) {
-        tb_report_rule(diagnostics, test->loc, "TB_SETUP_POSITION",
-                       "TEST block must contain exactly one @setup block");
+        {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "TEST block contains %d @setup blocks but exactly one is allowed;\n"
+                     "merge your setup logic into a single @setup block", setup_count);
+            tb_report_rule(diagnostics, test->loc, "TB_SETUP_POSITION", msg);
+        }
     }
 }
 
@@ -139,7 +159,8 @@ static void validate_testbench(JZASTNode *tb, JZASTNode *root,
 
     if (test_count == 0) {
         tb_report_rule(diagnostics, tb->loc, "TB_NO_TEST_BLOCKS",
-                       "@testbench must contain at least one TEST block");
+                       "@testbench has no TEST blocks; add at least one TEST { ... } block\n"
+                       "containing a @new instantiation and @setup");
     }
 }
 

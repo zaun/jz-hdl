@@ -873,7 +873,8 @@ JZASTNode *jz_parse_file(const char *filename,
         } else if (t->type == JZ_TOK_KW_PROJECT) {
             if (saw_testbench) {
                 parser_report_rule(&p, t, "TB_PROJECT_MIXED",
-                                   "a file may not contain both @project and @testbench");
+                                   "this file already contains a @testbench; @project and @testbench\n"
+                                   "cannot coexist in the same file");
                 jz_ast_free(root);
                 return NULL;
             }
@@ -884,7 +885,8 @@ JZASTNode *jz_parse_file(const char *filename,
                 parser_report_rule(&p,
                                    t,
                                    "PROJECT_MULTIPLE_PER_FILE",
-                                   "multiple @project definitions in a single file are not allowed");
+                                   "a second @project was found but only one is allowed per file;\n"
+                                   "merge the project definitions or split into separate files");
                 jz_ast_free(root);
                 return NULL;
             }
@@ -897,7 +899,8 @@ JZASTNode *jz_parse_file(const char *filename,
         } else if (t->type == JZ_TOK_KW_TESTBENCH) {
             if (saw_project) {
                 parser_report_rule(&p, t, "TB_PROJECT_MIXED",
-                                   "a file may not contain both @project and @testbench");
+                                   "this file already contains a @project; @project and @testbench\n"
+                                   "cannot coexist in the same file");
                 jz_ast_free(root);
                 return NULL;
             }
@@ -924,7 +927,8 @@ JZASTNode *jz_parse_file(const char *filename,
         } else if (t->type == JZ_TOK_KW_SIMULATION) {
             if (saw_project) {
                 parser_report_rule(&p, t, "SIM_PROJECT_MIXED",
-                                   "a file may not contain both @project and @simulation");
+                                   "this file already contains a @project; @project and @simulation\n"
+                                   "cannot coexist in the same file");
                 jz_ast_free(root);
                 return NULL;
             }
@@ -962,7 +966,8 @@ JZASTNode *jz_parse_file(const char *filename,
         } else if (t->type == JZ_TOK_KW_SCRATCH) {
             /* @scratch outside template body. */
             parser_report_rule(&p, t, "TEMPLATE_SCRATCH_OUTSIDE",
-                               "@scratch may only appear inside a @template body");
+                               "@scratch found at file top level; @scratch declares temporary wires\n"
+                               "and may only be used inside a @template body");
             advance(&p);
         } else if (t->type == JZ_TOK_KW_ENDMOD ||
                    t->type == JZ_TOK_KW_ENDPROJ ||
@@ -980,8 +985,10 @@ JZASTNode *jz_parse_file(const char *filename,
                                 ? "IMPORT_OUTSIDE_PROJECT"
                                 : "DIRECTIVE_INVALID_CONTEXT";
             const char *fallback = (t->type == JZ_TOK_KW_IMPORT)
-                                 ? "@import may only be used inside a @project block"
-                                 : "structural directive used in invalid top-level context";
+                                 ? "@import may only be used inside a @project block;\n"
+                                   "wrap your modules and imports in @project ... @endproj"
+                                 : "this directive is only valid inside a @module or @project block;\n"
+                                   "it cannot appear at file top level";
             parser_report_rule(&p, t, rule_id, fallback);
             advance(&p);
         } else {
@@ -1198,7 +1205,8 @@ JZASTNode *parse_project(Parser *p) {
                 parser_report_rule(p,
                                    t,
                                    "IMPORT_NOT_AT_PROJECT_TOP",
-                                   "@import directives must appear before CONFIG/CLOCKS/PIN/MAP/blackbox/top-level @new in a project");
+                                   "@import must appear before any CONFIG, CLOCKS, PIN_MAP, @blackbox,\n"
+                                   "or @top blocks; move this @import to the top of the @project body");
                 jz_ast_free(proj);
                 return NULL;
             }
@@ -1320,7 +1328,8 @@ JZASTNode *parse_project(Parser *p) {
             parser_report_rule(p,
                                t,
                                "DIRECTIVE_INVALID_CONTEXT",
-                               "@global/@endglob may only appear at file top level");
+                               "@global/@endglob may only appear at file top level, not inside\n"
+                               "a @project body; move the @global block outside @project...@endproj");
             advance(p);
         } else if (t->type == JZ_TOK_KW_IF ||
                    t->type == JZ_TOK_KW_ELIF ||
@@ -1334,7 +1343,8 @@ JZASTNode *parse_project(Parser *p) {
             parser_report_rule(p,
                                t,
                                "CONTROL_FLOW_OUTSIDE_BLOCK",
-                               "control-flow statements are only allowed inside ASYNCHRONOUS or SYNCHRONOUS blocks");
+                               "IF/ELIF/ELSE/SELECT/CASE/DEFAULT are only valid inside\n"
+                               "ASYNCHRONOUS or SYNCHRONOUS blocks, not at @project scope");
             advance(p);
         } else if (t->type == JZ_TOK_KW_CHECK) {
             /* @check is only allowed at module or project scope, not nested
@@ -1343,7 +1353,8 @@ JZASTNode *parse_project(Parser *p) {
             parser_report_rule(p,
                                t,
                                "DIRECTIVE_INVALID_CONTEXT",
-                               "@check may only appear at module or project scope");
+                               "@check is not valid at this location inside the @project body;\n"
+                               "place @check at module scope or directly inside @project before @endproj");
             advance(p);
         } else {
             advance(p);
@@ -1354,7 +1365,8 @@ JZASTNode *parse_project(Parser *p) {
         parser_report_rule(p,
                            peek(p),
                            "PROJECT_MISSING_ENDPROJ",
-                           "@project block missing @endproj terminator");
+                           "@project block was not closed; add @endproj after the last\n"
+                           "declaration to terminate the project definition");
         jz_ast_free(proj);
         return NULL;
     }

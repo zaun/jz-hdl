@@ -324,10 +324,14 @@ int parse_mem_block_body(Parser *p, JZASTNode *parent) {
                 if (next->type == JZ_TOK_IDENTIFIER && next->lexeme &&
                     (strcmp(next->lexeme, "ASYNC") == 0 ||
                      strcmp(next->lexeme, "SYNC") == 0)) {
-                    parser_report_rule(p,
-                                       next,
-                                       "MEM_INVALID_PORT_TYPE",
-                                       "invalid MEM IN port qualifier; expected WRITE_MODE attribute block or shorthand write mode");
+                    {
+                        char mip_msg[512];
+                        snprintf(mip_msg, sizeof(mip_msg),
+                                 "`%s` is not valid on an IN (write) port; ASYNC/SYNC qualifiers are\n"
+                                 "only for OUT (read) ports. Did you mean to use WRITE_FIRST, READ_FIRST, or NO_CHANGE?",
+                                 next->lexeme ? next->lexeme : "?");
+                        parser_report_rule(p, next, "MEM_INVALID_PORT_TYPE", mip_msg);
+                    }
                     advance(p); /* consume the unexpected qualifier */
                     /* Refresh lookahead for attribute/semicolon/shorthand handling. */
                     next = peek(p);
@@ -464,8 +468,14 @@ int parse_mem_block_body(Parser *p, JZASTNode *parent) {
                 if (next->type == JZ_TOK_IDENTIFIER && next->lexeme &&
                     (strcmp(next->lexeme, "ASYNC") == 0 ||
                      strcmp(next->lexeme, "SYNC") == 0)) {
-                    parser_report_rule(p, next, "MEM_INOUT_ASYNC",
-                                       "INOUT ports are always synchronous; ASYNC/SYNC not permitted");
+                    {
+                        char mem_msg[512];
+                        snprintf(mem_msg, sizeof(mem_msg),
+                                 "INOUT memory ports are always synchronous; the `%s` qualifier\n"
+                                 "is not permitted on INOUT ports — remove it",
+                                 next->lexeme ? next->lexeme : "?");
+                        parser_report_rule(p, next, "MEM_INOUT_ASYNC", mem_msg);
+                    }
                     advance(p);
                     next = peek(p);
                 }

@@ -135,7 +135,8 @@ JZASTNode *parse_module(Parser *p) {
         } else if (t->type == JZ_TOK_KW_SCRATCH) {
             /* @scratch outside template body. */
             parser_report_rule(p, t, "TEMPLATE_SCRATCH_OUTSIDE",
-                               "@scratch may only appear inside a @template body");
+                               "@scratch found at module scope; @scratch declares temporary wires\n"
+                               "and may only be used inside a @template body");
             /* Skip past the semicolon to recover */
             advance(p);
             while (peek(p)->type != JZ_TOK_EOF &&

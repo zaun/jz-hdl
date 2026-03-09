@@ -74,12 +74,12 @@ static void report_rule(ExpandContext *ctx, JZLocation loc,
     if (!ctx || !ctx->diagnostics || !rule_id) return;
     const JZRuleInfo *rule = jz_rule_lookup(rule_id);
     JZSeverity sev = JZ_SEVERITY_ERROR;
-    const char *msg = fallback;
     if (rule) {
         sev = (rule->mode == JZ_RULE_MODE_WRN) ? JZ_SEVERITY_WARNING : JZ_SEVERITY_ERROR;
-        if (rule->description) msg = rule->description;
     }
-    if (!msg) msg = rule_id;
+    /* Store the caller's explanation as d->message so that --explain can
+     * show it underneath the rule description on the main diagnostic line. */
+    const char *msg = fallback ? fallback : rule_id;
     jz_diagnostic_report(ctx->diagnostics, loc, sev, rule_id, msg);
 }
 
@@ -647,8 +647,14 @@ static void register_template(ExpandContext *ctx, JZASTNode *def, JZASTNode *sco
         if (ctx->templates[i].scope_module == scope_module &&
             ctx->templates[i].name && def->name &&
             strcmp(ctx->templates[i].name, def->name) == 0) {
-            report_rule(ctx, def->loc, "TEMPLATE_DUP_NAME",
-                        "duplicate template name in the same scope");
+            {
+                char dup_msg[512];
+                snprintf(dup_msg, sizeof(dup_msg),
+                         "another @template with the name `%s` already exists in the same scope;\n"
+                         "rename one of the templates to resolve the conflict",
+                         def->name ? def->name : "?");
+                report_rule(ctx, def->loc, "TEMPLATE_DUP_NAME", dup_msg);
+            }
             return;
         }
     }
@@ -660,8 +666,14 @@ static void register_template(ExpandContext *ctx, JZASTNode *def, JZASTNode *sco
             if (def->children[j]->type != JZ_AST_TEMPLATE_PARAM) continue;
             if (def->children[i]->name && def->children[j]->name &&
                 strcmp(def->children[i]->name, def->children[j]->name) == 0) {
-                report_rule(ctx, def->children[j]->loc, "TEMPLATE_DUP_PARAM",
-                            "duplicate parameter name in template definition");
+                {
+                    char dup_param_msg[512];
+                    snprintf(dup_param_msg, sizeof(dup_param_msg),
+                             "parameter `%s` appears more than once in the parameter list;\n"
+                             "each template parameter must have a unique name",
+                             def->children[j]->name ? def->children[j]->name : "?");
+                    report_rule(ctx, def->children[j]->loc, "TEMPLATE_DUP_PARAM", dup_param_msg);
+                }
             }
         }
     }
@@ -779,9 +791,14 @@ static void validate_template_body_refs(ExpandContext *ctx,
         if (!is_allowed_template_ident(ctx, node->name, param_names,
                                         param_count, scratch_names,
                                         scratch_count, has_idx)) {
-            report_rule(ctx, node->loc, "TEMPLATE_EXTERNAL_REF",
-                        "identifier in template body must be a parameter, "
-                        "@scratch wire, or compile-time constant");
+            {
+                char ext_msg[512];
+                snprintf(ext_msg, sizeof(ext_msg),
+                         "identifier `%s` in template body is not a parameter, @scratch wire, or\n"
+                         "compile-time constant; pass external signals as @apply arguments",
+                         node->name);
+                report_rule(ctx, node->loc, "TEMPLATE_EXTERNAL_REF", ext_msg);
+            }
         }
     }
 
@@ -790,9 +807,14 @@ static void validate_template_body_refs(ExpandContext *ctx,
         if (!is_allowed_template_ident(ctx, node->name, param_names,
                                         param_count, scratch_names,
                                         scratch_count, has_idx)) {
-            report_rule(ctx, node->loc, "TEMPLATE_EXTERNAL_REF",
-                        "identifier in template body must be a parameter, "
-                        "@scratch wire, or compile-time constant");
+            {
+                char ext_msg[512];
+                snprintf(ext_msg, sizeof(ext_msg),
+                         "identifier `%s` in template body is not a parameter, @scratch wire, or\n"
+                         "compile-time constant; pass external signals as @apply arguments",
+                         node->name);
+                report_rule(ctx, node->loc, "TEMPLATE_EXTERNAL_REF", ext_msg);
+            }
         }
     }
 
@@ -815,8 +837,14 @@ static int expand_apply(ExpandContext *ctx, JZASTNode *apply,
 
     TemplateEntry *tmpl = find_template(ctx, apply->name, scope_module);
     if (!tmpl) {
-        report_rule(ctx, apply->loc, "TEMPLATE_UNDEFINED",
-                    "@apply references undefined template");
+        {
+            char undef_msg[512];
+            snprintf(undef_msg, sizeof(undef_msg),
+                     "no @template with the name `%s` is visible from the current scope;\n"
+                     "check spelling or ensure the @template is defined before @apply",
+                     apply->name ? apply->name : "?");
+            report_rule(ctx, apply->loc, "TEMPLATE_UNDEFINED", undef_msg);
+        }
         /* Remove the @apply node so downstream analysis doesn't see it */
         goto remove_apply;
     }
@@ -852,8 +880,13 @@ static int expand_apply(ExpandContext *ctx, JZASTNode *apply,
     /* Check arg count */
     size_t arg_count = apply->child_count;
     if (arg_count != param_count) {
-        report_rule(ctx, apply->loc, "TEMPLATE_ARG_COUNT_MISMATCH",
-                    "@apply argument count does not match template parameter count");
+        {
+            char ac_msg[512];
+            snprintf(ac_msg, sizeof(ac_msg),
+                     "@apply `%s` provides %zu argument(s) but the template expects %zu parameter(s)",
+                     apply->name ? apply->name : "?", arg_count, param_count);
+            report_rule(ctx, apply->loc, "TEMPLATE_ARG_COUNT_MISMATCH", ac_msg);
+        }
         goto remove_apply;
     }
 
@@ -863,13 +896,24 @@ static int expand_apply(ExpandContext *ctx, JZASTNode *apply,
     if (apply->text) {
         has_idx = 1;
         if (!eval_count_expr(ctx, apply->text, &count)) {
-            report_rule(ctx, apply->loc, "TEMPLATE_COUNT_NOT_NONNEG_INT",
-                        "@apply count expression does not resolve to a non-negative integer");
+            {
+                char cnt_msg[512];
+                snprintf(cnt_msg, sizeof(cnt_msg),
+                         "@apply count expression `%s` could not be evaluated to a non-negative integer;\n"
+                         "use a literal integer or a CONST/CONFIG value",
+                         apply->text);
+                report_rule(ctx, apply->loc, "TEMPLATE_COUNT_NOT_NONNEG_INT", cnt_msg);
+            }
             goto remove_apply;
         }
         if (count < 0) {
-            report_rule(ctx, apply->loc, "TEMPLATE_COUNT_NOT_NONNEG_INT",
-                        "@apply count expression does not resolve to a non-negative integer");
+            {
+                char cnt_msg[512];
+                snprintf(cnt_msg, sizeof(cnt_msg),
+                         "@apply count expression `%s` evaluated to %ld; count must be >= 0",
+                         apply->text, count);
+                report_rule(ctx, apply->loc, "TEMPLATE_COUNT_NOT_NONNEG_INT", cnt_msg);
+            }
             goto remove_apply;
         }
     }

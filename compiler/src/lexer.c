@@ -92,7 +92,6 @@ static void lexer_report_rule(LexerState *st,
 
     const JZRuleInfo *rule = jz_rule_lookup(rule_id);
     JZSeverity sev = JZ_SEVERITY_ERROR;
-    const char *msg = fallback_message;
 
     if (rule) {
         switch (rule->mode) {
@@ -107,14 +106,11 @@ static void lexer_report_rule(LexerState *st,
             sev = JZ_SEVERITY_ERROR;
             break;
         }
-        if (rule->description) {
-            msg = rule->description;
-        }
-    }
-    if (!msg) {
-        msg = rule_id;
     }
 
+    /* Store the caller's explanation as d->message so that --explain can
+     * show it underneath the rule description on the main diagnostic line. */
+    const char *msg = fallback_message ? fallback_message : rule_id;
     st->had_error = 1;
     jz_diagnostic_report(st->diagnostics, loc, sev, rule_id, msg);
 }

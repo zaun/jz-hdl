@@ -152,7 +152,8 @@ int import_modules_from_path(const Parser *parent,
                 parser_report_rule(parent,
                                    import_token,
                                    "IMPORT_FILE_MULTIPLE_TIMES",
-                                   "same source file imported more than once into a single project");
+                                   "this file has already been imported into the current project;\n"
+                                   "remove the duplicate @import directive");
             } else if (import_token) {
                 fprintf(stderr,
                         "%s:%d:%d: import error: same source file imported more than once into a single project\n",
@@ -237,10 +238,17 @@ int import_modules_from_path(const Parser *parent,
                 JZToken fake;
                 memset(&fake, 0, sizeof(fake));
                 fake.loc = mod->loc;
-                parser_report_rule(parent,
-                                   &fake,
-                                   "IMPORT_DUP_MODULE_OR_BLACKBOX",
-                                   "imported module/blackbox name duplicates existing definition in project");
+                {
+                    char dup_msg[512];
+                    snprintf(dup_msg, sizeof(dup_msg),
+                             "imported module/blackbox `%s` has the same name as an existing\n"
+                             "definition in the project; rename one to avoid the conflict",
+                             mod->name ? mod->name : "?");
+                    parser_report_rule(parent,
+                                       &fake,
+                                       "IMPORT_DUP_MODULE_OR_BLACKBOX",
+                                       dup_msg);
+                }
                 jz_ast_free(mod);
                 continue;
             }
@@ -281,7 +289,8 @@ int import_modules_from_path(const Parser *parent,
                     parser_report_rule(parent,
                                        t,
                                        "IMPORT_FILE_HAS_PROJECT",
-                                       "imported files must not contain their own @project/@endproj block");
+                                       "the imported file contains a @project block, which is forbidden;\n"
+                                       "imported files should only contain @module, @blackbox, or @global definitions");
                 } else {
                     fprintf(stderr,
                             "%s:%d:%d: import error: imported files may not contain @project\n",

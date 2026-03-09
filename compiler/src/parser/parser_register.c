@@ -234,10 +234,17 @@ int parse_latch_block_body(Parser *p, JZASTNode *parent) {
         const char *type_lex = type_tok->lexeme;
         if (strcmp(type_lex, "D") != 0 && strcmp(type_lex, "SR") != 0) {
             if (width_text) free(width_text);
-            parser_report_rule(p,
-                               type_tok,
-                               "LATCH_INVALID_TYPE",
-                               "LATCH type must be D or SR");
+            {
+                char latch_msg[512];
+                snprintf(latch_msg, sizeof(latch_msg),
+                         "LATCH type `%s` is not valid; only D (data latch) and SR (set-reset)\n"
+                         "are supported per Section 4.8",
+                         type_lex ? type_lex : "?");
+                parser_report_rule(p,
+                                   type_tok,
+                                   "LATCH_INVALID_TYPE",
+                                   latch_msg);
+            }
             return -1;
         }
         advance(p);

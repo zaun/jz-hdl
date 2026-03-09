@@ -382,7 +382,8 @@ static int parse_if_chain(Parser *p, JZASTNode *parent, int is_sync) {
         parser_report_rule(p,
                            if_tok,
                            "IF_COND_MISSING_PARENS",
-                           "IF condition must be enclosed in parentheses");
+                           "expected '(' after IF; condition must be enclosed in parentheses\n"
+                           "like: IF (expr) { ... }");
         return -1;
     }
     JZASTNode *cond = parse_expression(p);
@@ -392,7 +393,8 @@ static int parse_if_chain(Parser *p, JZASTNode *parent, int is_sync) {
         parser_report_rule(p,
                            if_tok,
                            "IF_COND_MISSING_PARENS",
-                           "IF condition must be enclosed in parentheses");
+                           "expected ')' after IF condition; the condition must be enclosed\n"
+                           "in parentheses like: IF (expr) { ... }");
         return -1;
     }
     if (!match(p, JZ_TOK_LBRACE)) {
@@ -430,7 +432,8 @@ static int parse_if_chain(Parser *p, JZASTNode *parent, int is_sync) {
                 parser_report_rule(p,
                                    elif_tok,
                                    "IF_COND_MISSING_PARENS",
-                                   "ELIF condition must be enclosed in parentheses");
+                                   "expected '(' after ELIF; condition must be enclosed in parentheses\n"
+                                   "like: ELIF (expr) { ... }");
                 return -1;
             }
             JZASTNode *elif_cond = parse_expression(p);
@@ -440,7 +443,8 @@ static int parse_if_chain(Parser *p, JZASTNode *parent, int is_sync) {
                 parser_report_rule(p,
                                    elif_tok,
                                    "IF_COND_MISSING_PARENS",
-                                   "ELIF condition must be enclosed in parentheses");
+                                   "expected ')' after ELIF condition; the condition must be enclosed\n"
+                                   "in parentheses like: ELIF (expr) { ... }");
                 return -1;
             }
             if (!match(p, JZ_TOK_LBRACE)) {
@@ -681,7 +685,8 @@ static int parse_feature_guard_body(Parser *p,
             parser_report_rule(p,
                                t,
                                "FEATURE_NESTED",
-                               "@feature guards may not be nested inside other @feature guards");
+                               "@feature cannot be nested inside another @feature guard;\n"
+                               "use a single @feature with a combined condition instead");
             advance(p);
             return -1;
         }
@@ -690,7 +695,8 @@ static int parse_feature_guard_body(Parser *p,
             parser_report_rule(p,
                                t,
                                "DIRECTIVE_INVALID_CONTEXT",
-                               "@check may only appear at module or project scope");
+                               "@check is not allowed inside a @feature guard body;\n"
+                               "move it to module or project scope");
             advance(p);
             return -1;
         }
@@ -711,7 +717,8 @@ static int parse_feature_guard_body(Parser *p,
             parser_report_rule(p,
                                t,
                                "CONTROL_FLOW_OUTSIDE_BLOCK",
-                               "CASE/DEFAULT not allowed outside of SELECT block");
+                               "CASE/DEFAULT must appear inside a SELECT (...) { ... } block;\n"
+                               "they cannot be used standalone in a @feature body");
             advance(p);
             return -1;
         }
@@ -964,7 +971,8 @@ int parse_statement_list(Parser *p, JZASTNode *parent, JZTokenType terminator, i
             parser_report_rule(p,
                                t,
                                "CONTROL_FLOW_OUTSIDE_BLOCK",
-                               "CASE/DEFAULT not allowed outside of SELECT block");
+                               "CASE/DEFAULT must appear inside a SELECT (...) { ... } block;\n"
+                               "they cannot be used outside of a SELECT statement");
             advance(p);
             return -1;
         }
@@ -981,7 +989,8 @@ int parse_statement_list(Parser *p, JZASTNode *parent, JZTokenType terminator, i
         if (t->type == JZ_TOK_KW_SCRATCH) {
             /* @scratch outside template body. */
             parser_report_rule(p, t, "TEMPLATE_SCRATCH_OUTSIDE",
-                               "@scratch may only appear inside a @template body");
+                               "@scratch found inside an executable block; @scratch declares temporary\n"
+                               "wires and may only be used inside a @template body");
             /* Skip past the semicolon to recover */
             advance(p);
             while (peek(p)->type != JZ_TOK_EOF &&
@@ -1009,7 +1018,8 @@ int parse_statement_list(Parser *p, JZASTNode *parent, JZTokenType terminator, i
             parser_report_rule(p,
                                t,
                                "DIRECTIVE_INVALID_CONTEXT",
-                               "@check may only appear at module or project scope");
+                               "@check is not allowed inside ASYNCHRONOUS/SYNCHRONOUS blocks;\n"
+                               "move it to module scope (directly inside @module...@endmod)");
             advance(p);
             continue;
         }
