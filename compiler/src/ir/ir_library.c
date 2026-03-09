@@ -1780,8 +1780,6 @@ static int lower_cdc_fifo(const IR_CDC *cdc, const IR_Module *parent,
     const IR_Signal *c_write_en = lib_find_signal_by_name(lib_mod, "write_en");
     const IR_Signal *c_read_en  = lib_find_signal_by_name(lib_mod, "read_en");
     const IR_Signal *c_data_out = lib_find_signal_by_name(lib_mod, "data_out");
-    const IR_Signal *c_full     = lib_find_signal_by_name(lib_mod, "full");
-    const IR_Signal *c_empty    = lib_find_signal_by_name(lib_mod, "empty");
     if (!c_clk_wr || !c_clk_rd || !c_data_in || !c_data_out) return -1;
 
     /* Connect 8 ports (full/empty outputs are left unconnected) */

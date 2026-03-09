@@ -292,9 +292,6 @@ static void propagate_from_child(SimContext *parent, SimChildInstance *ci) {
             } else {
                 /* Full-width */
                 parent_entry->current = child_entry->current;
-                if (parent_entry->current.width != parent_entry->current.width) {
-                    parent_entry->current = sim_val_mask(parent_entry->current);
-                }
             }
         }
     }
@@ -308,18 +305,6 @@ static void propagate_to_all_children(SimContext *ctx) {
         if (!ctx->children[c].ctx) continue;
         propagate_to_child(ctx, &ctx->children[c]);
         propagate_to_all_children(ctx->children[c].ctx);
-    }
-}
-
-/**
- * Propagate outputs from all children back to parent, recursively
- * (bottom-up: grandchildren first).
- */
-static void propagate_from_all_children(SimContext *ctx) {
-    for (int c = 0; c < ctx->num_children; c++) {
-        if (!ctx->children[c].ctx) continue;
-        propagate_from_all_children(ctx->children[c].ctx);
-        propagate_from_child(ctx, &ctx->children[c]);
     }
 }
 
@@ -401,13 +386,13 @@ int sim_settle_combinational(SimContext *ctx, int max_iters) {
  */
 static void exec_children_sync_for_clock(SimContext *parent, int parent_clock_sig_id,
                                           int reset_active) {
+    (void)reset_active;
     for (int c = 0; c < parent->num_children; c++) {
         SimChildInstance *ci = &parent->children[c];
         if (!ci->ctx || !ci->inst) continue;
 
         /* Find which child port is connected to the parent clock signal */
         int child_clock_port_id = -1;
-        int child_reset_port_id = -1;
 
         for (int p = 0; p < ci->inst->num_connections; p++) {
             const IR_InstanceConnection *conn = &ci->inst->connections[p];

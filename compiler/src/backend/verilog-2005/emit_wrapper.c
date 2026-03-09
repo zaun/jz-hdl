@@ -936,27 +936,6 @@ static int pin_needs_serializer(const IR_Pin *pin)
            pin->pclk_name && pin->pclk_name[0] != '\0';
 }
 
-/* Find the top-module port signal that binds to a given pin. */
-static const IR_Signal *find_top_port_for_pin(const IR_Project *proj,
-                                               const IR_Module *top_mod,
-                                               const IR_Pin *pin)
-{
-    if (!proj || !top_mod || !pin) return NULL;
-    for (int i = 0; i < proj->num_top_bindings; ++i) {
-        const IR_TopBinding *tb = &proj->top_bindings[i];
-        if (tb->pin_id == pin->id ||
-            (tb->pin_id >= 0 && tb->pin_id < proj->num_pins &&
-             proj->pins[tb->pin_id].name && pin->name &&
-             strcmp(proj->pins[tb->pin_id].name, pin->name) == 0)) {
-            for (int s = 0; s < top_mod->num_signals; ++s) {
-                if (top_mod->signals[s].id == tb->top_port_signal_id) {
-                    return &top_mod->signals[s];
-                }
-            }
-        }
-    }
-    return NULL;
-}
 
 void emit_project_wrapper(FILE *out, const IR_Design *design)
 {
