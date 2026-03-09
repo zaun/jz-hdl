@@ -23,6 +23,7 @@ export default defineConfig({
           { text: 'JZ-HDL Specification', link: '/pdf/jz-hdl-specification.pdf', target: '_blank' },
           { text: 'Simulation Specification', link: '/pdf/simulation-specification.pdf', target: '_blank' },
           { text: 'Testbench Specification', link: '/pdf/testbench-specification.pdf', target: '_blank' },
+          { text: 'Chip Info Specification', link: '/pdf/chip-info-specification.pdf', target: '_blank' },
         ]
       },
     ],
@@ -79,6 +80,7 @@ export default defineConfig({
           { text: 'JZ-HDL Specification', link: '/pdf/jz-hdl-specification.pdf', target: '_blank' },
           { text: 'Simulation Specification', link: '/pdf/simulation-specification.pdf', target: '_blank' },
           { text: 'Testbench Specification', link: '/pdf/testbench-specification.pdf', target: '_blank' },
+          { text: 'Chip Info Specification', link: '/pdf/chip-info-specification.pdf', target: '_blank' },
         ]
       }, {
         text: 'Examples',

@@ -1,8 +1,18 @@
-# JZ-HDL Chip Info Specification
-
-**Version 1.0**
-
-This document specifies the JSON schema for chip data files used by the JZ-HDL compiler. Each file describes the hardware primitives, resources, and capabilities of a specific FPGA device variant.
+---
+mainfont: "Helvetica Neue"
+monofont: "Menlo"
+title: "JZ-HDL CHIP INFO SPECIFICATION"
+subtitle: "State: Beta — Version: 1.0"
+toc: true
+header-includes:
+  - \usepackage{titling}
+  - \pretitle{\begin{center}\vspace*{\fill}\Huge\bfseries}
+  - \posttitle{\end{center}}
+  - \preauthor{\begin{center}\Large}
+  - \postauthor{\end{center}\vspace*{\fill}\newpage}
+  - \AtBeginDocument{\let\oldtableofcontents\tableofcontents \renewcommand{\tableofcontents}{\oldtableofcontents\newpage}}
+  - \let\oldrule\rule \renewcommand{\rule}[2]{\newpage}
+---
 
 ## 1. File Location and Naming
 

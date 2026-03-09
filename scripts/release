@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Create a release: update version, tag, and build source + PDF tarballs.
+# Usage: scripts/release <version>
+#   e.g. scripts/release 1.0.0
+
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <version>"
+  echo "  e.g. $0 1.0.0"
+  exit 1
+fi
+
+VERSION="$1"
+
+# Validate version format (major.minor.patch)
+if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+  echo "Error: Version must be in the format MAJOR.MINOR.PATCH (e.g. 1.0.0)"
+  exit 1
+fi
+
+IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$VERSION"
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+RELEASE_DIR="$REPO_ROOT/release"
+
+# Ensure we're on a clean working tree
+if ! git -C "$REPO_ROOT" diff --quiet || ! git -C "$REPO_ROOT" diff --cached --quiet; then
+  echo "Error: Working tree has uncommitted changes. Commit or stash them first."
+  exit 1
+fi
+
+echo "==> Releasing v${VERSION}"
+
+# ---------------------------------------------------------------------------
+# 1. Update version numbers
+# ---------------------------------------------------------------------------
+echo "==> Updating version to ${VERSION}..."
+
+# CMakeLists.txt
+sed -i '' "s/project(jz_hdl VERSION [0-9]*\.[0-9]*\.[0-9]*/project(jz_hdl VERSION ${VERSION}/" \
+  "$REPO_ROOT/compiler/CMakeLists.txt"
+
+# Fallback version.h
+sed -i '' \
+  -e "s/#define JZ_HDL_VERSION_MAJOR [0-9]*/#define JZ_HDL_VERSION_MAJOR ${V_MAJOR}/" \
+  -e "s/#define JZ_HDL_VERSION_MINOR [0-9]*/#define JZ_HDL_VERSION_MINOR ${V_MINOR}/" \
+  -e "s/#define JZ_HDL_VERSION_PATCH [0-9]*/#define JZ_HDL_VERSION_PATCH ${V_PATCH}/" \
+  -e "s/#define JZ_HDL_VERSION_STRING \"Version [0-9]*\.[0-9]*\.[0-9]* (unknown)\"/#define JZ_HDL_VERSION_STRING \"Version ${VERSION} (unknown)\"/" \
+  "$REPO_ROOT/compiler/include/version.h"
+
+# Specification markdown files
+for spec in "$REPO_ROOT"/specification/*.md; do
+  sed -i '' "s/Version: [0-9]*\.[0-9]*\.[0-9]*/Version: ${VERSION}/" "$spec"
+done
+
+# Commit version bump
+git -C "$REPO_ROOT" add \
+  compiler/CMakeLists.txt \
+  compiler/include/version.h \
+  specification/
+git -C "$REPO_ROOT" commit -m "Bump version to ${VERSION}"
+
+# ---------------------------------------------------------------------------
+# 2. Build and test
+# ---------------------------------------------------------------------------
+echo "==> Building compiler and running tests..."
+
+BUILD_DIR="$(mktemp -d)"
+cmake -S "$REPO_ROOT/compiler" -B "$BUILD_DIR" -DBUILD_TESTING=ON
+cmake --build "$BUILD_DIR"
+
+echo "==> Running CTest..."
+if ! ctest --test-dir "$BUILD_DIR" --output-on-failure; then
+  echo "Error: CTest tests failed. Aborting release."
+  rm -rf "$BUILD_DIR"
+  # Undo the version bump commit
+  git -C "$REPO_ROOT" reset --hard HEAD~1
+  exit 1
+fi
+
+echo "==> Running validation tests..."
+if ! bash "$REPO_ROOT/compiler/tests/run_validation.sh"; then
+  echo "Error: Validation tests failed. Aborting release."
+  rm -rf "$BUILD_DIR"
+  git -C "$REPO_ROOT" reset --hard HEAD~1
+  exit 1
+fi
+
+rm -rf "$BUILD_DIR"
+
+# ---------------------------------------------------------------------------
+# 3. Tag the release
+# ---------------------------------------------------------------------------
+echo "==> Tagging v${VERSION}..."
+git -C "$REPO_ROOT" tag -a "v${VERSION}" -m "Release v${VERSION}"
+
+# ---------------------------------------------------------------------------
+# 4. Build source tarball
+# ---------------------------------------------------------------------------
+echo "==> Building source tarball..."
+mkdir -p "$RELEASE_DIR"
+
+git -C "$REPO_ROOT" archive \
+  --format=tar.gz \
+  --prefix="jz-hdl-${VERSION}/" \
+  -o "$RELEASE_DIR/jz-hdl-${VERSION}-source.tar.gz" \
+  "v${VERSION}"
+
+# ---------------------------------------------------------------------------
+# 5. Build PDF tarball
+# ---------------------------------------------------------------------------
+echo "==> Building PDFs..."
+
+BUILD_DIR="$(mktemp -d)"
+cmake -S "$REPO_ROOT/compiler" -B "$BUILD_DIR" -DBUILD_TESTING=OFF
+cmake --build "$BUILD_DIR" --target docs
+
+PDF_STAGING="$(mktemp -d)/jz-hdl-${VERSION}-docs"
+mkdir -p "$PDF_STAGING"
+cp "$BUILD_DIR"/*.pdf "$PDF_STAGING/"
+
+echo "==> Building PDF tarball..."
+tar -czf "$RELEASE_DIR/jz-hdl-${VERSION}-docs.tar.gz" \
+  -C "$(dirname "$PDF_STAGING")" \
+  "$(basename "$PDF_STAGING")"
+
+rm -rf "$BUILD_DIR" "$(dirname "$PDF_STAGING")"
+
+# ---------------------------------------------------------------------------
+# Done
+# ---------------------------------------------------------------------------
+echo ""
+echo "Release v${VERSION} prepared:"
+echo "  $RELEASE_DIR/jz-hdl-${VERSION}-source.tar.gz"
+echo "  $RELEASE_DIR/jz-hdl-${VERSION}-docs.tar.gz"
+echo ""
+echo "To publish:"
+echo "  git push origin main --tags"
+echo "  # Then create a GitHub release and attach the tarballs"
