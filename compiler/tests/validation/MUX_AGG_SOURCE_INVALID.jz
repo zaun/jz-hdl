@@ -1,0 +1,29 @@
+// MUX_AGG_SOURCE_INVALID: aggregation source not a valid readable signal in module scope.
+// Verified
+
+@project MUX_AGG_SOURCE_INVALID_PROJECT
+  @top MUX_AGG_SOURCE_INVALID_EXAMPLE {
+    IN  [8] a = _;
+    IN  [8] b = _;
+    OUT [4] data = _;
+  }
+@endproj
+
+@module MUX_AGG_SOURCE_INVALID_EXAMPLE
+  PORT {
+    IN  [8] a;
+    IN  [8] b;
+    OUT [4] data;
+  }
+
+  MUX {
+    // 'unknown_sig' is not declared anywhere in the module.
+    invalid_mux = a, unknown_sig;
+
+    valid_mux = a, b;
+  }
+
+  ASYNCHRONOUS {
+    data = valid_mux[1];
+  }
+@endmod

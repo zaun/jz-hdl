@@ -1,0 +1,53 @@
+@module blinkers
+    PORT {
+        IN  [1] clk1;
+        IN  [1] clk2;
+        IN  [1] clk3;
+        IN  [1] clk4;
+        IN  [1] clk5;
+        IN  [1] por;
+        IN  [1] rst_n;
+        OUT [5] leds;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        counter_a [27] = 27'b1;
+        counter_b [27] = 27'b1;
+        counter_c [27] = 27'b1;
+        counter_d [27] = 27'b1;
+        counter_e [27] = 27'b1;
+    }
+
+    ASYNCHRONOUS {
+        reset <= por & rst_n;
+        leds[0] <= ~counter_a[26];
+        leds[1] <= ~counter_b[26];
+        leds[2] <= ~counter_c[26];
+        leds[3] <= ~counter_d[26];
+        leds[4] <= ~counter_e[26];
+    }
+
+    SYNCHRONOUS(CLK=clk1 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_a <= counter_a + 27'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk2 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_b <= counter_b + 27'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk3 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_c <= counter_c + 27'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk4 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_d <= counter_d + 27'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk5 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_e <= counter_e + 27'b1;
+    }
+@endmod

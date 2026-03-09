@@ -1,0 +1,37 @@
+// INSTANCE_PORT_DIRECTION_MISMATCH: instance port direction does not match child module port direction.
+// Verified
+
+@project INSTANCE_PORT_DIRECTION_MISMATCH_PROJECT
+  @top DirParent {
+    IN  [1] a = _;
+    OUT [1] y = _;
+  }
+@endproj
+
+@module DirChild
+  PORT {
+    IN  [1] a;
+    OUT [1] y;
+  }
+
+  ASYNCHRONOUS {
+    y = a;
+  }
+@endmod
+
+@module DirParent
+  PORT {
+    IN  [1] a;
+    OUT [1] y;
+  }
+
+  // Child port 'a' is IN, but we declare it as OUT in the instance body.
+  @new u DirChild {
+    OUT [1] a = _;
+    OUT [1] y = _;
+  }
+
+  ASYNCHRONOUS {
+    y = a;
+  }
+@endmod

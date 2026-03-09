@@ -1,0 +1,2 @@
+File: MEM_INIT_FILE_TOO_LARGE.jz
+      18:23   error MEM_INIT_FILE_TOO_LARGE S7.5.2/S7.7.1 Initialization file larger than depth*word_width

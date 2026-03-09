@@ -1,0 +1,28 @@
+// TOP_PORT_WIDTH_MISMATCH: instantiated top port width does not match module port width.
+// Verified
+
+@project TOP_PORT_PIN_DIRECTION_MISMATCH_PROJECT
+  OUT_PINS {
+    in_sig[2] = { standard=LVCMOS33, drive=8 }; // should be IN_PINS, not OUT_PINS
+  }
+  MAP {
+    in_sig[0] = 10;
+    in_sig[1] = 11;
+  }
+
+  @top TOP_PORT_PIN_DIRECTION_MISMATCH_EXAMPLE {
+    IN  [1] sig = in_sig;
+    OUT [1] data = _;
+  }
+@endproj
+
+@module TOP_PORT_PIN_DIRECTION_MISMATCH_EXAMPLE
+  PORT {
+    IN  [1] sig;
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data = sig;
+  }
+@endmod

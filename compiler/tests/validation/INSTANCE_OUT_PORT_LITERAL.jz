@@ -1,0 +1,36 @@
+// INSTANCE_OUT_PORT_LITERAL: OUT port binding in @new may not be a literal value.
+// Verified
+
+@project INSTANCE_OUT_PORT_LITERAL_PROJECT
+  @top IOPLParent {
+    IN  [1] a = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module IOPLChild
+  PORT {
+    IN  [1] inp;
+    OUT [1] outp;
+  }
+
+  ASYNCHRONOUS {
+    outp = inp;
+  }
+@endmod
+
+@module IOPLParent
+  PORT {
+    IN  [1] a;
+    OUT [1] out;
+  }
+
+  @new ci IOPLChild {
+    IN  [1] inp  = a;
+    OUT [1] outp = 1'b0;
+  }
+
+  ASYNCHRONOUS {
+    out = a;
+  }
+@endmod

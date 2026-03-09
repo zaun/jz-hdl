@@ -1,0 +1,17 @@
+**/*.v
+
+**/project.ast
+**/project.ast.json
+**/project.ir
+**/project.pcf
+**/project.cst
+**/project.sdc
+**/synthesis.json
+**/bitstream.json
+**/project.fs
+
+**/*.hex
+**/*.bin
+**/*.mem
+out/
+__pycache__

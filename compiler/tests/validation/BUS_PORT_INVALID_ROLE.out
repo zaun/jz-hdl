@@ -1,0 +1,3 @@
+File: BUS_PORT_INVALID_ROLE.jz
+      15:1    warn  MODULE_PORT_IN_ONLY S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)
+      17:23   error BUS_PORT_INVALID_ROLE S4.4.1 BUS port role must be SOURCE or TARGET

@@ -1,0 +1,207 @@
+/*
+ * rtlil_main.c - Main entry point for the RTLIL backend.
+ *
+ * This file contains the main jz_emit_rtlil function and module ordering
+ * logic. The RTLIL output is intended for direct consumption by yosys,
+ * bypassing the Verilog parsing step.
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "rtlil_backend.h"
+#include "rtlil_internal.h"
+#include "version.h"
+#include "ir.h"
+
+/* Reuse alias context from Verilog backend. */
+#include "backend/verilog-2005/verilog_internal.h"
+
+/* -------------------------------------------------------------------------
+ * Design query helpers
+ * -------------------------------------------------------------------------
+ */
+
+int rtlil_design_has_module_named(const IR_Design *design, const char *name)
+{
+    if (!design || !name) return 0;
+    for (int i = 0; i < design->num_modules; ++i) {
+        const IR_Module *mod = &design->modules[i];
+        if (mod->name && strcmp(mod->name, name) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* -------------------------------------------------------------------------
+ * Per-module emission
+ * -------------------------------------------------------------------------
+ */
+
+static void emit_single_module(FILE *out, const IR_Design *design,
+                                const IR_Module *mod, int is_top)
+{
+    int *canon = NULL;
+    int *is_repr = NULL;
+    prepare_alias_context_for_module(mod, &canon, &is_repr);
+    alias_ctx_set(mod, canon, is_repr, mod->num_signals);
+
+    rtlil_emit_module_header(out, mod, is_top);
+    rtlil_emit_wires(out, mod);
+    rtlil_emit_memories(out, mod);
+    rtlil_emit_alias_connects(out, mod);
+
+    if (mod->num_instances > 0) {
+        rtlil_emit_instances(out, design, mod);
+    }
+
+    rtlil_emit_memory_cells(out, mod);
+
+    if (mod->async_block) {
+        rtlil_emit_async_block(out, mod);
+    }
+
+    if (mod->num_clock_domains > 0) {
+        rtlil_emit_clock_domains(out, mod);
+    }
+
+    fprintf(out, "end\n\n");
+
+    alias_ctx_clear();
+    free(canon);
+    free(is_repr);
+}
+
+/* -------------------------------------------------------------------------
+ * Module emission ordering
+ * -------------------------------------------------------------------------
+ */
+
+void rtlil_emit_module_order(FILE *out, const IR_Design *design)
+{
+    if (!design || !out) {
+        return;
+    }
+
+    const int num_modules = design->num_modules;
+    if (num_modules <= 0) {
+        return;
+    }
+
+    int top_index = -1;
+    if (design->project) {
+        top_index = design->project->top_module_id;
+        if (top_index < 0 || top_index >= num_modules) {
+            top_index = -1;
+        }
+    }
+
+    /* Emit each non-top reachable module in deterministic id order. */
+    for (int i = 0; i < num_modules; ++i) {
+        if (i == top_index) {
+            continue;
+        }
+        if (design->modules[i].eliminated) {
+            continue;
+        }
+        emit_single_module(out, design, &design->modules[i], 0);
+    }
+
+    /* Emit the top module last, if one was identified.
+     * Only mark it with \top when there is no project wrapper — the wrapper
+     * is the real top module when a project exists. */
+    if (top_index >= 0) {
+        int mark_top = (design->project == NULL);
+        emit_single_module(out, design, &design->modules[top_index], mark_top);
+    }
+}
+
+/* -------------------------------------------------------------------------
+ * Main RTLIL emission entry point
+ * -------------------------------------------------------------------------
+ */
+
+int jz_emit_rtlil(const IR_Design *design,
+                   const char *filename,
+                   JZDiagnosticList *diagnostics,
+                   const char *input_filename)
+{
+    if (!design) {
+        rtlil_backend_io_error(diagnostics, input_filename,
+                               "invalid arguments to RTLIL backend");
+        return -1;
+    }
+
+    const char *target = (filename && filename[0] != '\0') ? filename : "-";
+
+    FILE *out = NULL;
+    int close_out = 0;
+    char tmp_path[1024];
+    tmp_path[0] = '\0';
+
+    if (strcmp(target, "-") == 0) {
+        out = stdout;
+        close_out = 0;
+    } else {
+        int n = snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", target);
+        if (n <= 0 || (size_t)n >= sizeof(tmp_path)) {
+            rtlil_backend_io_error(diagnostics, input_filename,
+                                   "failed to construct temporary RTLIL output filename");
+            return -1;
+        }
+
+        out = fopen(tmp_path, "w");
+        if (!out) {
+            rtlil_backend_io_error(diagnostics, input_filename,
+                                   "failed to open temporary RTLIL output file for writing");
+            return -1;
+        }
+        close_out = 1;
+    }
+
+    /* Reset auto-ID counter for this design. */
+    rtlil_reset_id();
+
+    /* RTLIL file header. */
+    fprintf(out, "# Generated by jz-hdl RTLIL backend\n");
+    fprintf(out, "# jz-hdl version: %s\n\n", JZ_HDL_VERSION_STRING);
+
+    /* Emit modules in order. */
+    rtlil_emit_module_order(out, design);
+
+    /* Emit project-level wrapper module. */
+    if (design->project) {
+        rtlil_emit_project_wrapper(out, design);
+    }
+
+    if (close_out) {
+        if (fflush(out) != 0 || ferror(out)) {
+            fclose(out);
+            if (tmp_path[0] != '\0') {
+                (void)remove(tmp_path);
+            }
+            rtlil_backend_io_error(diagnostics, input_filename,
+                                   "failed to write complete RTLIL output");
+            return -1;
+        }
+        if (fclose(out) != 0) {
+            if (tmp_path[0] != '\0') {
+                (void)remove(tmp_path);
+            }
+            rtlil_backend_io_error(diagnostics, input_filename,
+                                   "failed to close RTLIL output stream");
+            return -1;
+        }
+        if (tmp_path[0] != '\0') {
+            if (rename(tmp_path, target) != 0) {
+                (void)remove(tmp_path);
+                rtlil_backend_io_error(diagnostics, input_filename,
+                                       "failed to move temporary RTLIL file into place");
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}

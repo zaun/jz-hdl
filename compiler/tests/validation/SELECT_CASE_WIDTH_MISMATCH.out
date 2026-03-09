@@ -1,0 +1,2 @@
+File: SELECT_CASE_WIDTH_MISMATCH.jz
+      19:12   error SELECT_CASE_WIDTH_MISMATCH S5.4 SELECT CASE value width does not match selector expression width

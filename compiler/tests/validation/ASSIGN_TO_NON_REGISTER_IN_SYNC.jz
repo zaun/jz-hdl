@@ -1,0 +1,28 @@
+// ASSIGN_TO_NON_REGISTER_IN_SYNC: non-register LHS in SYNCHRONOUS assignment.
+// Expect ERR> ASSIGN_TO_NON_REGISTER_IN_SYNC on the assignment to output port 'in_sig'.
+// Verified
+
+@project ASSIGN_TO_NON_REGISTER_IN_SYNC_PROJECT
+  @top ASSIGN_TO_NON_REGISTER_IN_SYNC_EXAMPLE {
+      IN  [1] clk = _;
+      OUT [1] in_sig = _;
+  }
+@endproj
+
+@module ASSIGN_TO_NON_REGISTER_IN_SYNC_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [1] in_sig;
+  }
+
+  REGISTER {
+    r [1] = 1'b0;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    r <= 1'b1;
+
+    // illegal: Assigning to non-register in SYNCHRONOUS block
+    in_sig <= r;
+  }
+@endmod

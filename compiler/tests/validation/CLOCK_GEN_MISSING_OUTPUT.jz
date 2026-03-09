@@ -1,0 +1,49 @@
+// CLOCK_GEN_MISSING_OUTPUT: CLOCK_GEN PLL/DLL must have at least one OUT clock declaration.
+// Verified
+
+@project CLOCK_GEN_MISSING_OUTPUT_TEST
+  CLOCKS {
+    sys_clk = { period=10 };
+    fast_clk;
+  }
+
+  IN_PINS {
+    sys_clk = { standard=LVCMOS33 };
+    btn = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    led = { standard=LVCMOS33, drive=8 };
+  }
+
+  CLOCK_GEN {
+    PLL {
+      IN REF_CLK sys_clk;
+      CONFIG {
+        IDIV = 1;
+      };
+    };
+  }
+
+  MAP {
+    sys_clk = 1;
+    btn = 2;
+    led = 3;
+  }
+
+  @top top {
+    IN  [1] a = btn;
+    OUT [1] out = led;
+  }
+@endproj
+
+@module top
+  PORT {
+    IN  [1] a;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = a;
+  }
+@endmod

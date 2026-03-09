@@ -1,0 +1,63 @@
+// Simple address-decode arbiter for single bus master
+// Routes CPU bus to ROM, RAM, or LED based on address
+@module arbiter
+    CONST {
+        SOURCE_COUNT = 1;
+        TARGET_COUNT = 5;
+    }
+
+    PORT {
+        IN  [TARGET_COUNT * 8] map_config;
+        BUS SIMPLE_BUS TARGET [SOURCE_COUNT] src;
+        BUS SIMPLE_BUS SOURCE [TARGET_COUNT] tgt;
+    }
+
+    WIRE {
+        tgt_done        [TARGET_COUNT];
+        any_done        [1];
+        tgt_match       [TARGET_COUNT];
+    }
+
+    @template TARGET_MATCH(match_vec, src_port, config)
+        match_vec[IDX] <= (((src_port.ADDR[31:28] ^ config[IDX*8+7:IDX*8+4]) & config[IDX*8+3:IDX*8]) == 4'b0000) ? 1'b1 : 1'b0;
+    @endtemplate
+
+    @template TARGET_DONE(done, tgt)
+        done[IDX] = tgt[IDX].DONE;
+    @endtemplate
+
+    @template ROUTE_TARGET(src_port, tgt_port, config)
+        @scratch match [1];
+
+        // Address decode: ((addr[31:28] ^ value) & care) == 4'b0000
+        match <= (((src_port.ADDR[31:28] ^ config[IDX*8+7:IDX*8+4]) & config[IDX*8+3:IDX*8]) == 4'b0000);
+
+        // VALID only to the matching target
+        tgt_port[IDX].VALID <= (src_port.VALID == 1'b1 && match == 1'b1) ? 1'b1 : 1'b0;
+
+        // Forward address and command (direct assignment, not alias)
+        tgt_port[IDX].ADDR <= src_port.ADDR;
+        tgt_port[IDX].CMD  <= src_port.CMD;
+
+        // DATA uses alias (=) for tristate pass-through
+        tgt_port[IDX].DATA = src_port.DATA;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        // Gather target done signals
+        @apply [TARGET_COUNT] TARGET_DONE(tgt_done, tgt);
+        any_done <= (tgt_done != lit(TARGET_COUNT, 0));
+
+        // Route source to targets (single source, index 0)
+        @apply [TARGET_COUNT] ROUTE_TARGET(src[0], tgt, map_config);
+
+        // Compute which target matches address
+        @apply [TARGET_COUNT] TARGET_MATCH(tgt_match, src[0], map_config);
+
+        // Reverse DATA path: responding target to source
+        src[0].DATA <= tgt[oh2b(tgt_match)].DATA;
+
+        // Route DONE back to source
+        src[0].DONE <= any_done ? 1'b1 : 1'b0;
+    }
+@endmod

@@ -1,0 +1,33 @@
+// CLOCK_PORT_WIDTH_NOT_1: clock pin width is not [1].
+// Verified
+
+@project CLOCK_PORT_WIDTH_NOT_1_EXAMPLE
+  CLOCKS {
+    clk[0] = { period=10 };
+  }
+
+  IN_PINS {
+    clk[2] = { standard=LVCMOS33 };
+  }
+
+  MAP {
+    clk[0] = 1;
+    clk[1] = 2;
+  }
+
+  @top top {
+    IN [1] clk = clk;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    IN  [1] clk;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = clk;
+  }
+@endmod

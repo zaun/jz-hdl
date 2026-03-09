@@ -1,0 +1,36 @@
+// BUS_PORT_INVALID_ROLE: BUS port role must be SOURCE or TARGET.
+// Verified
+
+@project BUS_PORT_INVALID_ROLE_EXAMPLE
+  BUS FABRIC {
+    IN  [8] din;
+    OUT [8] dout;
+  }
+
+  @top top {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module endpoint
+  PORT {
+    BUS FABRIC MASTER link; // MASTER is not a valid BUS role
+  }
+
+  ASYNCHRONOUS {
+  }
+@endmod
+
+@module top
+  PORT {
+    OUT [1] data;
+  }
+
+  @new e0 endpoint {
+    BUS FABRIC MASTER link = _;
+  }
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

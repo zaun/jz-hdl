@@ -1,0 +1,2 @@
+File: LATCH_CHIP_UNSUPPORTED.jz
+       9:5    error LATCH_CHIP_UNSUPPORTED S4.8 LATCH type not supported by selected CHIP

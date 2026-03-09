@@ -1,0 +1,37 @@
+// DIV_GUARD_REVERSED_OPERAND: guard with zero on the left side of comparison.
+// IF (0 != b) and IF (0 == b) should be recognized as guards.
+// Verified
+
+@project DIV_GUARD_REVERSED_OPERAND_PROJECT
+  @top DIV_GUARD_REVERSED_OPERAND_EXAMPLE {
+    IN  [8] a = _;
+    IN  [8] b = _;
+    OUT [8] out_a = _;
+    OUT [8] out_b = _;
+  }
+@endproj
+
+@module DIV_GUARD_REVERSED_OPERAND_EXAMPLE
+  PORT {
+    IN  [8] a;
+    IN  [8] b;
+    OUT [8] out_a;
+    OUT [8] out_b;
+  }
+
+  ASYNCHRONOUS {
+    // Guard: 0 != b (reversed operand order) — should NOT warn
+    IF (8'd0 != b) {
+      out_a <= a / b;
+    } ELSE {
+      out_a <= 8'd0;
+    }
+
+    // Guard: 0 == b ELSE branch (reversed operand order) — should NOT warn
+    IF (8'd0 == b) {
+      out_b <= 8'd0;
+    } ELSE {
+      out_b <= a % b;
+    }
+  }
+@endmod

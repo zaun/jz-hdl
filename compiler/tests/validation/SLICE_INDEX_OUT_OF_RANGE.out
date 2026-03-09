@@ -1,0 +1,2 @@
+File: SLICE_INDEX_OUT_OF_RANGE.jz
+      18:11   error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width

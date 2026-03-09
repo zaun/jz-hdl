@@ -1,0 +1,128 @@
+// Golden test: SELECT with DEFAULT should not cause comb loop path explosion
+// Tests:
+//   - Multiple SELECT blocks with DEFAULT cases in ASYNCHRONOUS block
+//   - SELECT inside IF/ELSE (nested control flow)
+//   - Verifies combinational loop analysis completes without hanging
+//   - Regression test for exponential path growth bug where SELECT with DEFAULT
+//     was unconditionally appending the base path (like a missing ELSE)
+
+@project comb_select_default_test
+    IN_PINS {
+        fg_in   [4] = { standard=LVCMOS33 };
+        bg_in   [4] = { standard=LVCMOS33 };
+        px_in   [4] = { standard=LVCMOS33 };
+        act_in  [1] = { standard=LVCMOS33 };
+        bmp_in  [8] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        r_out [8] = { standard=LVCMOS33, drive=8 };
+        g_out [8] = { standard=LVCMOS33, drive=8 };
+        b_out [8] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        fg_in[0] = 0; fg_in[1] = 1; fg_in[2] = 2; fg_in[3] = 3;
+        bg_in[0] = 4; bg_in[1] = 5; bg_in[2] = 6; bg_in[3] = 7;
+        px_in[0] = 8; px_in[1] = 9; px_in[2] = 10; px_in[3] = 11;
+        act_in = 12;
+        bmp_in[0] = 13; bmp_in[1] = 14; bmp_in[2] = 15; bmp_in[3] = 16;
+        bmp_in[4] = 17; bmp_in[5] = 18; bmp_in[6] = 19; bmp_in[7] = 20;
+        r_out[0] = 30; r_out[1] = 31; r_out[2] = 32; r_out[3] = 33;
+        r_out[4] = 34; r_out[5] = 35; r_out[6] = 36; r_out[7] = 37;
+        g_out[0] = 38; g_out[1] = 39; g_out[2] = 40; g_out[3] = 41;
+        g_out[4] = 42; g_out[5] = 43; g_out[6] = 44; g_out[7] = 45;
+        b_out[0] = 46; b_out[1] = 47; b_out[2] = 48; b_out[3] = 49;
+        b_out[4] = 50; b_out[5] = 51; b_out[6] = 52; b_out[7] = 53;
+    }
+
+    @top select_palette {
+        IN  [4] fg_idx  = fg_in;
+        IN  [4] bg_idx  = bg_in;
+        IN  [4] pixel_x = px_in;
+        IN  [1] active  = act_in;
+        IN  [8] bitmap  = bmp_in;
+        OUT [8] red     = r_out;
+        OUT [8] green   = g_out;
+        OUT [8] blue    = b_out;
+    }
+@endproj
+
+@module select_palette
+    PORT {
+        IN  [4] fg_idx;
+        IN  [4] bg_idx;
+        IN  [4] pixel_x;
+        IN  [1] active;
+        IN  [8] bitmap;
+        OUT [8] red;
+        OUT [8] green;
+        OUT [8] blue;
+    }
+
+    WIRE {
+        fg_r [8];
+        fg_g [8];
+        fg_b [8];
+        bg_r [8];
+        bg_g [8];
+        bg_b [8];
+        pixel_on [1];
+    }
+
+    ASYNCHRONOUS {
+        // Foreground palette lookup (16 entries with DEFAULT)
+        SELECT (fg_idx) {
+            CASE (4'd0)  { fg_r <= 8'h00; fg_g <= 8'h00; fg_b <= 8'h00; }
+            CASE (4'd1)  { fg_r <= 8'hAA; fg_g <= 8'h00; fg_b <= 8'h00; }
+            CASE (4'd2)  { fg_r <= 8'h00; fg_g <= 8'hAA; fg_b <= 8'h00; }
+            CASE (4'd3)  { fg_r <= 8'hAA; fg_g <= 8'h55; fg_b <= 8'h00; }
+            CASE (4'd4)  { fg_r <= 8'h00; fg_g <= 8'h00; fg_b <= 8'hAA; }
+            CASE (4'd5)  { fg_r <= 8'hAA; fg_g <= 8'h00; fg_b <= 8'hAA; }
+            CASE (4'd6)  { fg_r <= 8'h00; fg_g <= 8'hAA; fg_b <= 8'hAA; }
+            CASE (4'd7)  { fg_r <= 8'hAA; fg_g <= 8'hAA; fg_b <= 8'hAA; }
+            DEFAULT      { fg_r <= 8'h55; fg_g <= 8'h55; fg_b <= 8'h55; }
+        }
+
+        // Background palette lookup (16 entries with DEFAULT)
+        SELECT (bg_idx) {
+            CASE (4'd0)  { bg_r <= 8'h00; bg_g <= 8'h00; bg_b <= 8'h00; }
+            CASE (4'd1)  { bg_r <= 8'hAA; bg_g <= 8'h00; bg_b <= 8'h00; }
+            CASE (4'd2)  { bg_r <= 8'h00; bg_g <= 8'hAA; bg_b <= 8'h00; }
+            CASE (4'd3)  { bg_r <= 8'hAA; bg_g <= 8'h55; bg_b <= 8'h00; }
+            CASE (4'd4)  { bg_r <= 8'h00; bg_g <= 8'h00; bg_b <= 8'hAA; }
+            CASE (4'd5)  { bg_r <= 8'hAA; bg_g <= 8'h00; bg_b <= 8'hAA; }
+            CASE (4'd6)  { bg_r <= 8'h00; bg_g <= 8'hAA; bg_b <= 8'hAA; }
+            CASE (4'd7)  { bg_r <= 8'hAA; bg_g <= 8'hAA; bg_b <= 8'hAA; }
+            DEFAULT      { bg_r <= 8'h00; bg_g <= 8'h00; bg_b <= 8'h00; }
+        }
+
+        // SELECT inside IF/ELSE (nested control flow)
+        IF (active == 1'b0) {
+            pixel_on <= 1'b0;
+        } ELSE {
+            SELECT (pixel_x) {
+                CASE (4'd0) { pixel_on <= bitmap[7]; }
+                CASE (4'd1) { pixel_on <= bitmap[6]; }
+                CASE (4'd2) { pixel_on <= bitmap[5]; }
+                CASE (4'd3) { pixel_on <= bitmap[4]; }
+                CASE (4'd4) { pixel_on <= bitmap[3]; }
+                CASE (4'd5) { pixel_on <= bitmap[2]; }
+                CASE (4'd6) { pixel_on <= bitmap[1]; }
+                CASE (4'd7) { pixel_on <= bitmap[0]; }
+                DEFAULT     { pixel_on <= 1'b0; }
+            }
+        }
+
+        // Color output using palette results
+        IF (pixel_on == 1'b1) {
+            red   <= fg_r;
+            green <= fg_g;
+            blue  <= fg_b;
+        } ELSE {
+            red   <= bg_r;
+            green <= bg_g;
+            blue  <= bg_b;
+        }
+    }
+@endmod

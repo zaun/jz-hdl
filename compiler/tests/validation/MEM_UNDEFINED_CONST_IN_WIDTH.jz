@@ -1,0 +1,27 @@
+// MEM_UNDEFINED_CONST_IN_WIDTH: word_width/depth reference CONST that is not declared.
+// Verified
+
+@project MEM_UNDEFINED_CONST_IN_WIDTH_PROJECT
+  @top MEM_UNDEFINED_CONST_IN_WIDTH_EXAMPLE {
+    IN  [1] clk = _;
+    IN  [4] addr = _;
+    OUT [8] read_data = _;
+  }
+@endproj
+
+@module MEM_UNDEFINED_CONST_IN_WIDTH_EXAMPLE
+  PORT {
+    IN  [4] addr;
+    OUT [8] read_data;
+  }
+
+  MEM {
+    mem0 [w] [16] = 8'h00 {
+      OUT rd ASYNC;   // ASYNC read not allowed when TYPE=BLOCK.
+    };
+  }
+
+  ASYNCHRONOUS {
+    read_data = mem0.rd[addr];
+  }
+@endmod

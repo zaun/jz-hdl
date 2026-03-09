@@ -1,0 +1,126 @@
+// Golden test: instance port concatenation bindings
+//
+// Verifies that @new port bindings correctly handle concatenation
+// expressions on the RHS:
+//   1. All-literal concatenation:  IN [4] p = { 2'b10, 2'b01 }
+//   2. All-signal concatenation:   IN [2] p = { wire_a, wire_b }
+//   3. Mixed (signal + literal):   IN [3] p = { wire_c, 1'b0 }
+
+@project(CHIP=GW2AR-18) port_concat_binding_test
+    CLOCKS {
+        sys_clk = { period=37.037, edge=Rising };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        sys_rst = { standard=LVCMOS33 };
+        enable  = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        result[8] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        sys_clk = 4;
+        sys_rst = 88;
+        enable  = 87;
+        result[0] = 15;
+        result[1] = 16;
+        result[2] = 17;
+        result[3] = 18;
+        result[4] = 19;
+        result[5] = 20;
+        result[6] = 25;
+        result[7] = 26;
+    }
+
+    @top concat_parent {
+        IN  [1] clk   = sys_clk;
+        IN  [1] rst_n = sys_rst;
+        IN  [1] en    = enable;
+        OUT [8] out   = result;
+    }
+@endproj
+
+@module concat_child
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+
+        // Bound with all-literal concat
+        IN  [4] cfg;
+
+        // Bound with all-signal concat
+        IN  [2] sel;
+
+        // Bound with mixed concat (signal + literal)
+        IN  [3] mix;
+
+        OUT [8] result;
+    }
+
+    WIRE {
+        combined [9];
+    }
+
+    REGISTER {
+        out_reg [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        combined = { sel, cfg, mix };
+        result = out_reg;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        out_reg <= combined[7:0];
+    }
+@endmod
+
+@module concat_parent
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [1] en;
+        OUT [8] out;
+    }
+
+    WIRE {
+        sel_a [1];
+        sel_b [1];
+        mode  [2];
+        child_result [8];
+    }
+
+    REGISTER {
+        toggle [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        sel_a = en;
+        sel_b = ~en;
+        mode  = { en, toggle };
+        out   = child_result;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        toggle <= ~toggle;
+    }
+
+    @new u0 concat_child {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = rst_n;
+
+        // Case 1: all-literal concatenation
+        IN  [4] cfg = { 2'b10, 2'b01 };
+
+        // Case 2: all-signal concatenation
+        IN  [2] sel = { sel_a, sel_b };
+
+        // Case 3: mixed concatenation (signal + literal)
+        IN  [3] mix = { mode, 1'b0 };
+
+        OUT [8] result = child_result;
+    }
+@endmod

@@ -1,0 +1,20 @@
+// B2OH_WIDTH_INVALID: b2oh() width must be a positive constant >= 2.
+// Verified
+
+@project B2OH_WIDTH_INVALID_PROJECT
+  @top B2OH_WIDTH_INVALID_EXAMPLE {
+    IN  [3] idx = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module B2OH_WIDTH_INVALID_EXAMPLE
+  PORT {
+    IN  [3] idx;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= b2oh(idx, 1);
+  }
+@endmod

@@ -1,0 +1,2 @@
+File: COMMENT_NESTED_BLOCK.jz
+      17:3    error COMMENT_NESTED_BLOCK S1.4 Nested block comment `/* ... /* ... */ ... */` detected

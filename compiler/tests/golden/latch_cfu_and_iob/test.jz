@@ -1,0 +1,80 @@
+@project(CHIP="GW1NR-9-QN88-C6-I5") latch_test
+  CLOCKS {
+    sys_clk = { period=37.04 };
+  }
+
+  IN_PINS {
+    sys_clk   = { standard=LVCMOS33 };
+    enable    = { standard=LVCMOS33 };
+    data_in[8] = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    iob_out[8]  = { standard=LVCMOS33, drive=8 };
+    comb_out[8] = { standard=LVCMOS33, drive=8 };
+  }
+
+  MAP {
+    sys_clk    = 52;
+    enable     = 3;
+    data_in[0] = 25;
+    data_in[1] = 26;
+    data_in[2] = 27;
+    data_in[3] = 28;
+    data_in[4] = 29;
+    data_in[5] = 30;
+    data_in[6] = 31;
+    data_in[7] = 32;
+    iob_out[0] = 10;
+    iob_out[1] = 11;
+    iob_out[2] = 13;
+    iob_out[3] = 14;
+    iob_out[4] = 15;
+    iob_out[5] = 16;
+    iob_out[6] = 17;
+    iob_out[7] = 18;
+    comb_out[0] = 33;
+    comb_out[1] = 34;
+    comb_out[2] = 35;
+    comb_out[3] = 36;
+    comb_out[4] = 37;
+    comb_out[5] = 38;
+    comb_out[6] = 39;
+    comb_out[7] = 40;
+  }
+
+  @top latch_module {
+    IN  [1] enable  = enable;
+    IN  [8] data_in = data_in;
+    OUT [8] iob_out = iob_out;
+    OUT [8] comb_out = comb_out;
+  }
+@endproj
+
+@module latch_module
+  PORT {
+    IN  [1] enable;
+    IN  [8] data_in;
+    OUT [8] iob_out;
+    OUT [8] comb_out;
+  }
+
+  LATCH {
+    // IOB latch: directly drives an output port → iob=true
+    iob_latch [8] D;
+    // CFU latch: feeds combinational logic, not a direct pin driver
+    cfu_latch [8] D;
+  }
+
+  ASYNCHRONOUS {
+    // Guarded latch writes
+    iob_latch <= enable : data_in;
+    cfu_latch <= enable : data_in;
+
+    // IOB latch drives output port directly (triggers iob marking)
+    iob_out <= iob_latch;
+
+    // CFU latch feeds through combinational logic (no iob)
+    comb_out <= cfu_latch ^ 8'hFF;
+  }
+@endmod

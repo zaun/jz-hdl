@@ -1,0 +1,17 @@
+// PROJECT_MISSING_ENDPROJ: @project block missing @endproj terminator.
+// Verified
+
+@project PROJECT_MISSING_ENDPROJ_PROJECT
+  @top PROJECT_MISSING_ENDPROJ_EXAMPLE {
+    OUT [1] out = _;
+  }
+
+@module PROJECT_MISSING_ENDPROJ_EXAMPLE
+  PORT {
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= 1'b0;
+  }
+@endmod

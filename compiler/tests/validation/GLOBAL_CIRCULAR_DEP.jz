@@ -1,0 +1,23 @@
+// GLOBAL_CIRCULAR_DEP: circular dependency between constants in an @global block.
+// Verified
+
+@global GLOBAL_CONSTS
+  A = B + 1;
+  B = A + 2;
+@endglob
+
+@project GLOBAL_CIRCULAR_DEP_EXAMPLE
+  @top top {
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= 1'b1;
+  }
+@endmod

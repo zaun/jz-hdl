@@ -1,0 +1,38 @@
+[2J[1;1H[1m[37mAlt Screen Buffer Test[0m
+
+[3;1H[1m[33mPhase 1: Main Screen Content[0m
+[4;1HThis text is on the MAIN screen.
+[5;1HLine 2 of main screen.
+[6;1HLine 3 of main screen.
+[7;1H[31mRed text on main screen.[0m
+[8;1H[44m[37mBlue BG on main screen.[0m
+[10;1H[1m[36m--- Switching to Alt Screen in 1 second ---[0m
+
+[?1049h[2J[1;1H[1m[33mPhase 2: Alt Screen[0m
+[3;1HThis is the ALTERNATE screen buffer.
+[4;1HThe main screen content should be preserved.
+[5;1H[32mGreen text on alt screen.[0m
+[6;1H[45m[37mMagenta BG on alt screen.[0m
+[8;1H[1m[33mCursor position test:[0m
+[9;5HIndented text at col 5.
+[10;10HMore indented at col 10.
+[12;1H[1mColor test on alt screen:[0m
+[13;1H[31mR[32mG[34mB[33mY[35mM[36mC[37mW[0m
+[15;1H[38;5;196mRed-256[0m [38;5;46mGreen-256[0m [38;5;21mBlue-256[0m [38;5;226mYellow-256[0m
+[17;1H[1m[36m--- Switching back to Main Screen ---[0m
+
+[?1049l
+[12;1H[1m[32mPhase 3: Back on Main Screen[0m
+[13;1HIf you can see "This text is on the MAIN screen" above,
+[14;1Hthe main screen was preserved correctly.
+[16;1H[1m[36m--- Switching to Alt Screen again ---[0m
+
+[?1049h[1;1H[1m[33mPhase 4: Fresh Alt Screen[0m
+[3;1HThis should be a CLEAN alt screen.
+[4;1HNo leftover text from Phase 2 should appear below.
+[6;1H[1m[36m--- Switching back to Main ---[0m
+
+[?1049l
+[18;1H[1m[32mPhase 5: Main Screen Again[0m
+[19;1HAll phases complete. Main screen content should still be intact.
+[21;1H

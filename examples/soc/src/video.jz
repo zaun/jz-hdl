@@ -1,0 +1,345 @@
+// Video Output Pipeline
+// Dual-mode: 1280x720 @60Hz or 1920x1080 @30Hz DVI/HDMI output.
+// Mode 0 (720p): 80x22 characters, 16x32 pixel glyphs
+// Mode 1 (1080p): 120x33 characters, 16x32 pixel glyphs
+// RGB565 FG+BG per cell. 8-pixel vertical offset from top.
+//
+// Pipeline (all on pixel_clk):
+//   Stage 0 (comb): compute cell_addr → drives vram_addr to terminal
+//   Edge 0→1: terminal registers BSRAM addr; pipeline regs capture timing
+//   Edge 1→2: char/attr valid from terminal; font ROM addr registered
+//   Edge 2→3: font bitmap latched into font_data; p3 captures pixel_col/attr
+//   Stage 3 (comb): font_bit + pixel color computed from font_data + p3
+//   Edge 3→4: pixel color registered → TMDS input
+//   Edge 4→5: TMDS encoder registers internally
+@module video_out
+    PORT {
+        IN  [1]  pixel_clk;
+        IN  [1]  rst_n;
+        IN  [1]  video_mode;
+
+        // Framebuffer read interface (pixel_clk domain)
+        OUT [12] vram_addr;
+        IN  [8]  vram_char;
+        IN  [32] vram_attr;
+
+        // Cursor info from terminal
+        IN  [12] cursor_pos;
+        IN  [3]  cursor_style;
+
+        // TMDS outputs
+        OUT [10] tmds_clk;
+        OUT [10] tmds_d0;
+        OUT [10] tmds_d1;
+        OUT [10] tmds_d2;
+    }
+
+    CONST {
+        V_OFFSET = 8;
+    }
+
+    // Font ROM: 256 glyphs x 32 rows x 16 bits = 8192 entries
+    MEM(TYPE=BLOCK) {
+        font_rom [16] [8192] = @file("../out/font_16x32.hex") {
+            OUT font_rd SYNC;
+        };
+    }
+
+    // Video timing generator
+    @new vt0 video_timing {
+        IN  [1]  clk            = pixel_clk;
+        IN  [1]  rst_n          = rst_n;
+        IN  [1]  mode           = mode_sync2;
+        OUT [1]  hsync          = vt_hsync;
+        OUT [1]  vsync          = vt_vsync;
+        OUT [1]  display_enable = vt_de;
+        OUT [12] x_pos          = vt_x;
+        OUT [11] y_pos          = vt_y;
+    }
+
+    // TMDS encoders
+    @new enc_b tmds_encoder {
+        IN  [1]  clk            = pixel_clk;
+        IN  [1]  rst_n          = rst_n;
+        IN  [8]  data_in        = p4_b;
+        IN  [1]  c0             = p4_hsync;
+        IN  [1]  c1             = p4_vsync;
+        IN  [1]  display_enable = p4_de;
+        OUT [10] tmds_out       = tmds_d0;
+    }
+
+    @new enc_g tmds_encoder {
+        IN  [1]  clk            = pixel_clk;
+        IN  [1]  rst_n          = rst_n;
+        IN  [8]  data_in        = p4_g;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = p4_de;
+        OUT [10] tmds_out       = tmds_d1;
+    }
+
+    @new enc_r tmds_encoder {
+        IN  [1]  clk            = pixel_clk;
+        IN  [1]  rst_n          = rst_n;
+        IN  [8]  data_in        = p4_r;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = p4_de;
+        OUT [10] tmds_out       = tmds_d2;
+    }
+
+    WIRE {
+        // Timing signals from video_timing
+        vt_hsync [1];
+        vt_vsync [1];
+        vt_de    [1];
+        vt_x     [12];
+        vt_y     [11];
+
+        // Cell coordinates (combinational)
+        col       [7];     // x / 16
+        row       [6];     // (y - V_OFFSET) / 32
+        scanline  [5];     // (y - V_OFFSET) % 32
+        y_adj     [11];    // y - V_OFFSET
+
+        // Row multiplication intermediates
+        row_x128  [13];
+        row_x64   [13];
+        row_x16   [11];
+        row_x8    [10];
+        cell_addr [12];
+
+        // Text area flag
+        in_text_area [1];
+
+        // Cursor matching
+        is_cursor_cell [1];
+        cursor_active  [1];  // cursor visible (accounts for blink)
+        in_cursor_zone [1];  // scanline is in cursor region
+
+        // Font pixel selection
+        font_bit  [1];
+
+        // RGB565 fields from latched attr
+        fg_r5 [5]; fg_g6 [6]; fg_b5 [5];
+        bg_r5 [5]; bg_g6 [6]; bg_b5 [5];
+
+        // Pixel color output (comb)
+        pixel_r [8];
+        pixel_g [8];
+        pixel_b [8];
+
+        // Max text area bounds (mode-dependent)
+        y_text_max [11];
+        x_active   [12];
+        col_max    [7];
+
+        // Cursor pixel output override
+        cursor_pixel [1];
+    }
+
+    REGISTER {
+        // CDC synchronizer for video_mode (sys_clk → pixel_clk)
+        mode_sync1   [1]  = 1'b0;
+        mode_sync2   [1]  = 1'b0;
+
+        // Blink timer: 0.5s at 74.25MHz = 37,125,000 cycles ~= 2^25
+        blink_counter [25] = 25'b0;
+        blink_on      [1]  = 1'b1;
+
+        // Pipeline cursor cell match and scanline through stages
+        p1_is_cursor  [1]  = 1'b0;
+        p2_is_cursor  [1]  = 1'b0;
+        p2_scanline   [5]  = 5'b0;
+        p3_is_cursor  [1]  = 1'b0;
+        p3_scanline   [5]  = 5'b0;
+
+        // Pipeline stage 1: timing delayed 1 cycle
+        p1_pixel_col [4]  = 4'b0;
+        p1_hsync     [1]  = 1'b0;
+        p1_vsync     [1]  = 1'b0;
+        p1_de        [1]  = 1'b0;
+        p1_in_text   [1]  = 1'b0;
+        p1_scanline  [5]  = 5'b0;
+
+        // Pipeline stage 2: char/attr latched, font addr sent
+        p2_pixel_col [4]  = 4'b0;
+        p2_hsync     [1]  = 1'b0;
+        p2_vsync     [1]  = 1'b0;
+        p2_de        [1]  = 1'b0;
+        p2_in_text   [1]  = 1'b0;
+        p2_attr      [32] = 32'b0;
+
+        // Font data latch (SYNC MEM must be read in SYNC block)
+        font_data    [16] = 16'b0;
+
+        // Pipeline stage 3: font data valid, aligned with pixel_col/attr
+        p3_pixel_col [4]  = 4'b0;
+        p3_hsync     [1]  = 1'b0;
+        p3_vsync     [1]  = 1'b0;
+        p3_de        [1]  = 1'b0;
+        p3_in_text   [1]  = 1'b0;
+        p3_attr      [32] = 32'b0;
+
+        // Pipeline stage 4: pixel computed, TMDS input
+        p4_r         [8]  = 8'b0;
+        p4_g         [8]  = 8'b0;
+        p4_b         [8]  = 8'b0;
+        p4_hsync     [1]  = 1'b0;
+        p4_vsync     [1]  = 1'b0;
+        p4_de        [1]  = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // TMDS clock channel
+        tmds_clk <= 10'b1111100000;
+
+        // Mode-dependent text area bounds
+        // 720p: 8 + 22*32 = 712, active 1280, 80 cols
+        // 1080p: 8 + 33*32 = 1064, active 1920, 120 cols
+        y_text_max <= (mode_sync2 == 1'b1) ? 11'd1064 : 11'd712;
+        x_active   <= (mode_sync2 == 1'b1) ? 12'd1920 : 12'd1280;
+        col_max    <= (mode_sync2 == 1'b1) ? 7'd120   : 7'd80;
+
+        // --- Stage 0: Combinational cell address ---
+        y_adj <= vt_y - lit(11, V_OFFSET);
+        col <= vt_x[10:4];
+        row <= y_adj[10:5];
+        scanline <= y_adj[4:0];
+
+        in_text_area <= (vt_y >= lit(11, V_OFFSET) && vt_y < y_text_max &&
+                         vt_x < x_active && vt_x[10:4] < col_max)
+                        ? 1'b1 : 1'b0;
+
+        // Cell address: row * cols + col
+        // 720p: row*80 = row*64 + row*16
+        // 1080p: row*120 = row*128 - row*8
+        row_x128 <= {row, 7'b0};
+        row_x64  <= {1'b0, row, 6'b0};
+        row_x16  <= {1'b0, row, 4'b0};
+        row_x8   <= {1'b0, row, 3'b0};
+
+        IF (mode_sync2 == 1'b1) {
+            cell_addr <= row_x128[11:0] - {2'b0, row_x8} + {5'b0, col};
+        } ELSE {
+            cell_addr <= row_x64[11:0] + {1'b0, row_x16} + {5'b0, col};
+        }
+
+        // Drive BSRAM address combinationally
+        vram_addr <= cell_addr;
+
+        // Cursor cell detection (stage 0)
+        is_cursor_cell <= (cell_addr == cursor_pos && cursor_style != 3'b0) ? 1'b1 : 1'b0;
+
+        // Cursor blink: styles 3,4 blink; styles 1,2 always on
+        cursor_active <= (cursor_style == 3'd1 || cursor_style == 3'd2 ||
+                         ((cursor_style == 3'd3 || cursor_style == 3'd4) && blink_on == 1'b1))
+                         ? 1'b1 : 1'b0;
+
+        // Cursor scanline zone: check if current scanline is in cursor region
+        // Glyph is 32 pixels tall. Bottom 2 pixels = scanlines 30-31. Bottom 8 = scanlines 24-31.
+        IF (cursor_style == 3'd1 || cursor_style == 3'd3) {
+            // 2-pixel bottom line: scanlines 30-31
+            in_cursor_zone <= (p3_scanline >= 5'd30) ? 1'b1 : 1'b0;
+        } ELSE {
+            // 8-pixel bottom block: scanlines 24-31
+            in_cursor_zone <= (p3_scanline >= 5'd24) ? 1'b1 : 1'b0;
+        }
+
+        // Final cursor pixel: cell matches AND scanline in zone AND cursor visible
+        cursor_pixel <= (p3_is_cursor == 1'b1 && in_cursor_zone == 1'b1 && cursor_active == 1'b1)
+                        ? 1'b1 : 1'b0;
+
+        // --- Stage 3 combinational: Font pixel selection from latched font data ---
+        // font_data: MSB (bit 15) = leftmost pixel
+        // Use gslice for dynamic bit indexing (spec requires constant indices for [])
+        font_bit <= gslice(font_data, 4'd15 - p3_pixel_col, 1);
+
+        // RGB565 from latched attribute
+        fg_r5 <= p3_attr[15:11];
+        fg_g6 <= p3_attr[10:5];
+        fg_b5 <= p3_attr[4:0];
+        bg_r5 <= p3_attr[31:27];
+        bg_g6 <= p3_attr[26:21];
+        bg_b5 <= p3_attr[20:16];
+
+        // Pixel color: cursor inverts FG/BG; font_bit selects FG/BG; black outside text
+        IF (p3_in_text == 1'b1 && cursor_pixel == 1'b1) {
+            // Cursor: swap FG/BG (draw BG-colored text on FG-colored block)
+            IF (font_bit == 1'b1) {
+                pixel_r <= {bg_r5, bg_r5[4:2]};
+                pixel_g <= {bg_g6, bg_g6[5:4]};
+                pixel_b <= {bg_b5, bg_b5[4:2]};
+            } ELSE {
+                pixel_r <= {fg_r5, fg_r5[4:2]};
+                pixel_g <= {fg_g6, fg_g6[5:4]};
+                pixel_b <= {fg_b5, fg_b5[4:2]};
+            }
+        } ELIF (p3_in_text == 1'b1 && font_bit == 1'b1) {
+            pixel_r <= {fg_r5, fg_r5[4:2]};
+            pixel_g <= {fg_g6, fg_g6[5:4]};
+            pixel_b <= {fg_b5, fg_b5[4:2]};
+        } ELIF (p3_in_text == 1'b1) {
+            pixel_r <= {bg_r5, bg_r5[4:2]};
+            pixel_g <= {bg_g6, bg_g6[5:4]};
+            pixel_b <= {bg_b5, bg_b5[4:2]};
+        } ELSE {
+            pixel_r <= 8'h00;
+            pixel_g <= 8'h00;
+            pixel_b <= 8'h00;
+        }
+    }
+
+    SYNCHRONOUS(CLK = pixel_clk RESET = rst_n RESET_ACTIVE = Low) {
+        // CDC synchronizer: video_mode from sys_clk domain
+        mode_sync1 <= video_mode;
+        mode_sync2 <= mode_sync1;
+
+        // Blink timer: toggle every ~0.5s
+        IF (blink_counter == 25'd0) {
+            blink_counter <= 25'd18562500;  // half of 37.125M (0.5s at 74.25MHz)
+            blink_on <= ~blink_on;
+        } ELSE {
+            blink_counter <= blink_counter - 25'd1;
+        }
+
+        // --- Edge 0 → 1: Terminal BSRAM addr registered (via comb vram_addr) ---
+        p1_pixel_col <= vt_x[3:0];
+        p1_hsync     <= vt_hsync;
+        p1_vsync     <= vt_vsync;
+        p1_de        <= vt_de;
+        p1_in_text   <= in_text_area;
+        p1_scanline  <= scanline;
+        p1_is_cursor <= is_cursor_cell;
+
+        // --- Edge 1 → 2: char/attr arrive from terminal; send font ROM read ---
+        font_rom.font_rd.addr <= {vram_char, p1_scanline};
+        p2_pixel_col <= p1_pixel_col;
+        p2_hsync     <= p1_hsync;
+        p2_vsync     <= p1_vsync;
+        p2_de        <= p1_de;
+        p2_in_text   <= p1_in_text;
+        p2_attr      <= vram_attr;
+        p2_is_cursor <= p1_is_cursor;
+        p2_scanline  <= p1_scanline;
+
+        // --- Edge 2 → 3: Font data latched; p3 captures aligned pixel_col/attr ---
+        font_data    <= font_rom.font_rd.data;
+        p3_pixel_col <= p2_pixel_col;
+        p3_hsync     <= p2_hsync;
+        p3_vsync     <= p2_vsync;
+        p3_de        <= p2_de;
+        p3_in_text   <= p2_in_text;
+        p3_attr      <= p2_attr;
+        p3_is_cursor <= p2_is_cursor;
+        p3_scanline  <= p2_scanline;
+
+        // --- Edge 3 → 4: Pixel color computed (comb from font_data + p3); latch for TMDS ---
+        p4_r         <= pixel_r;
+        p4_g         <= pixel_g;
+        p4_b         <= pixel_b;
+        p4_hsync     <= p3_hsync;
+        p4_vsync     <= p3_vsync;
+        p4_de        <= p3_de;
+    }
+@endmod

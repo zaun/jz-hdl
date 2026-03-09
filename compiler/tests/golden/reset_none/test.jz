@@ -1,0 +1,34 @@
+@project reset_none_test
+  @top reset_none_mod {
+    IN  [1] clk = _;
+    IN  [1] en = _;
+    IN  [8] d_in = _;
+    OUT [8] q = _;
+  }
+@endproj
+
+@module reset_none_mod
+  PORT {
+    IN  [1] clk;
+    IN  [1] en;
+    IN  [8] d_in;
+    OUT [8] q;
+  }
+
+  REGISTER {
+    reg_a [8] = 8'h00;
+  }
+
+  ASYNCHRONOUS {
+    q = reg_a;
+  }
+
+  SYNCHRONOUS(
+    CLK=clk
+    EDGE=Rising
+  ) {
+    IF (en) {
+      reg_a <= d_in;
+    }
+  }
+@endmod

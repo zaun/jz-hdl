@@ -1,0 +1,78 @@
+@project mux_validation_test
+  IN_PINS {
+    select  [2] = { standard=LVCMOS33 };
+    mode    [1] = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    byte_out [8] = { standard=LVCMOS33, drive=4 };
+  }
+
+  MAP {
+    select[0] = 2;
+    select[1] = 3;
+    mode = 4;
+    byte_out[0] = 10;
+    byte_out[1] = 11;
+    byte_out[2] = 12;
+    byte_out[3] = 13;
+    byte_out[4] = 14;
+    byte_out[5] = 15;
+    byte_out[6] = 16;
+    byte_out[7] = 17;
+  }
+
+  @top mux_demo_top {
+    IN  [2] sel      = select;
+    IN  [1] op_mode  = mode;
+    OUT [8] data_out = byte_out;
+  }
+@endproj
+
+@module mux_demo_top
+  PORT {
+    IN  [2] sel;
+    IN  [1] op_mode;
+    OUT [8] data_out;
+  }
+
+  WIRE {
+    // Sources for Aggregation (Form 1)
+    ch_a [8];
+    ch_b [8];
+    ch_c [8];
+    ch_d [8];
+
+    // Source for Auto-Slicing (Form 2)
+    pipeline_reg [32];
+  }
+
+  MUX {
+    // Form 1: Aggregate four compatible 8-bit wires
+    // Indices 0, 1, 2, 3 correspond to ch_a, ch_b, ch_c, ch_d
+    input_selector = ch_a, ch_b, ch_c, ch_d;
+
+    // Form 2: Auto-slice 32-bit wire into 8-bit elements
+    // Index 0: bits [7:0], Index 1: bits [15:8], etc.
+    byte_slicer [8] = pipeline_reg;
+  }
+
+  ASYNCHRONOUS {
+    // Constant tie-offs for channel wires
+    ch_a <= 8'h11;
+    ch_b <= 8'h22;
+    ch_c <= 8'h33;
+    ch_d <= 8'h44;
+
+    // Static value for the wide pipe
+    pipeline_reg <= 32'hAABBCCDD;
+
+    // Use the MUXes in combinational logic
+    // Both return an 8-bit value based on the 2-bit 'sel'
+    IF (op_mode == 1'b1) {
+      data_out <= input_selector[sel];
+    } ELSE {
+      data_out <= byte_slicer[sel];
+    }
+  }
+@endmod

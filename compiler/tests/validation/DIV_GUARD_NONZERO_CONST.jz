@@ -1,0 +1,27 @@
+// DIV_GUARD_NONZERO_CONST: division by a nonzero constant literal is safe.
+// No diagnostic expected.
+// Verified
+
+@project DIV_GUARD_NONZERO_CONST_PROJECT
+  @top DIV_GUARD_NONZERO_CONST_EXAMPLE {
+    IN  [8] a = _;
+    OUT [8] out_div = _;
+    OUT [8] out_mod = _;
+  }
+@endproj
+
+@module DIV_GUARD_NONZERO_CONST_EXAMPLE
+  PORT {
+    IN  [8] a;
+    OUT [8] out_div;
+    OUT [8] out_mod;
+  }
+
+  ASYNCHRONOUS {
+    // Division by nonzero constant — no warning
+    out_div <= a / 8'd5;
+
+    // Modulus by nonzero constant — no warning
+    out_mod <= a % 8'd3;
+  }
+@endmod

@@ -1,0 +1,23 @@
+// GLOBAL_FORWARD_REF: global constant expression references a later constant in the same @global block.
+// Verified
+
+@global GLOBAL_CONSTS
+  A = B + 1;
+  B = 2'b01;
+@endglob
+
+@project GLOBAL_FORWARD_REF_EXAMPLE
+  @top top {
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= 1'b1;
+  }
+@endmod

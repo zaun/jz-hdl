@@ -1,0 +1,331 @@
+// Pixel Generator for text-mode terminal display
+// 142 columns x 45 rows of 9x16 pixel character cells on 1280x720 display
+// 4-cycle pipeline: line buf BSRAM (1) -> bank mux (2) -> font BSRAM (3) -> font bank mux (4)
+// Control signals (de, hsync, vsync) delayed 4 cycles to match pixel data
+//
+// ANSI 16-color palette with attribute support:
+//   Attribute word [15:12]=FG index, [11:8]=BG index, [7]=underline,
+//   [6]=slow_blink, [5]=fast_blink, [4]=strikethrough
+//
+// Blink timing: 27-bit free-running counter; bit 26 = slow blink, bit 25 = fast blink
+//
+// Text area: 142 cols * 9 px = 1278 px, centered with 1px borders (x=1..1278)
+@module pixel_generator
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [11] x_pos;
+        IN  [10] y_pos;
+        IN  [1]  display_enable;
+        IN  [1]  hsync;
+        IN  [1]  vsync;
+
+        // Terminal buffer read interface
+        OUT [6]  rd_row;
+        OUT [8]  rd_col;
+        IN  [16] buf_char;
+        IN  [16] buf_attr;
+        IN  [1]  buf_ready;
+
+        // Look-ahead row for prefetch
+        OUT [6]  rd_row_next;
+
+        OUT [8]  red;
+        OUT [8]  green;
+        OUT [8]  blue;
+        OUT [1]  de_out;
+        OUT [1]  hsync_out;
+        OUT [1]  vsync_out;
+
+        // Font cache SDRAM interface (passed through to arbiter)
+        OUT [21] font_sd_addr;
+        OUT [1]  font_sd_rd;
+        IN  [32] font_sd_rdata;
+        IN  [1]  font_sd_busy;
+        IN  [1]  font_sd_done;
+
+        // Font cache ready (from decompressor completion)
+        IN  [1]  font_ready;
+    }
+
+    WIRE {
+        // Font RAM interface
+        char_row      [4];
+        font_bitmap   [8];
+        font_graphic  [1];
+
+        // Pixel computation
+        pixel_on      [1];
+
+        // ANSI color palette lookup
+        fg_red   [8];
+        fg_green [8];
+        fg_blue  [8];
+        bg_red   [8];
+        bg_green [8];
+        bg_blue  [8];
+
+        // Next text row
+        next_text_row [6];
+    }
+
+    REGISTER {
+        // Character cell counters
+        pixel_x   [4] = 4'd0;
+        text_col  [8] = 8'd0;
+        in_text   [1] = 1'b0;
+
+        // Pipeline stage 1
+        p1_pixel_x  [4] = 4'd0;
+        p1_de       [1] = 1'b0;
+        p1_hsync    [1] = 1'b0;
+        p1_vsync    [1] = 1'b0;
+        p1_in_text  [1] = 1'b0;
+
+        // Pipeline stage 2
+        p2_pixel_x  [4] = 4'd0;
+        p2_de       [1] = 1'b0;
+        p2_hsync    [1] = 1'b0;
+        p2_vsync    [1] = 1'b0;
+        p2_in_text  [1] = 1'b0;
+
+        // Pipeline stage 3 (captures vram output + attr decode)
+        p3_pixel_x     [4] = 4'd0;
+        p3_fg_idx      [4] = 4'd7;
+        p3_bg_idx      [4] = 4'd0;
+        p3_underline   [1] = 1'b0;
+        p3_slow_blink  [1] = 1'b0;
+        p3_fast_blink  [1] = 1'b0;
+        p3_strike      [1] = 1'b0;
+        p3_graphic     [1] = 1'b0;
+        p3_char_row    [4] = 4'd0;
+        p3_de          [1] = 1'b0;
+        p3_hsync       [1] = 1'b0;
+        p3_vsync       [1] = 1'b0;
+        p3_in_text     [1] = 1'b0;
+
+        // Pipeline stage 4 (font output ready)
+        p4_pixel_x     [4] = 4'd0;
+        p4_fg_idx      [4] = 4'd7;
+        p4_bg_idx      [4] = 4'd0;
+        p4_underline   [1] = 1'b0;
+        p4_slow_blink  [1] = 1'b0;
+        p4_fast_blink  [1] = 1'b0;
+        p4_strike      [1] = 1'b0;
+        p4_graphic     [1] = 1'b0;
+        p4_char_row    [4] = 4'd0;
+        p4_de          [1] = 1'b0;
+        p4_hsync       [1] = 1'b0;
+        p4_vsync       [1] = 1'b0;
+        p4_in_text     [1] = 1'b0;
+
+        // Blink counter (free-running; bit 26 = slow blink, bit 25 = fast blink)
+        blink_cnt [27] = 27'd0;
+    }
+
+    @new font0 font_cache {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = rst_n;
+        IN  [16] char_code      = buf_char;
+        IN  [4]  row            = char_row;
+        OUT [8]  bitmap         = font_bitmap;
+        OUT [1]  graphic        = font_graphic;
+        IN  [4]  char_row       = char_row;
+        IN  [8]  text_col       = text_col;
+        IN  [16] pf_char        = buf_char;
+        IN  [1]  font_ready     = font_ready;
+        IN  [1]  display_active = display_enable;
+        OUT [21] sd_addr        = font_sd_addr;
+        OUT [1]  sd_rd          = font_sd_rd;
+        IN  [32] sd_rdata       = font_sd_rdata;
+        IN  [1]  sd_busy        = font_sd_busy;
+        IN  [1]  sd_done        = font_sd_done;
+    }
+
+    ASYNCHRONOUS {
+        // Drive terminal buffer read address
+        // Clamp to valid row range (0-44) during vertical blanking (y >= 720)
+        // to prevent prefetching uninitialized SDRAM rows 45+
+        IF (y_pos[9:4] > 6'd44) {
+            rd_row <= 6'd0;
+        } ELSE {
+            rd_row <= y_pos[9:4];
+        }
+        rd_col   <= text_col;
+        char_row <= y_pos[3:0];
+
+        // Look-ahead: next text row for prefetch
+        IF (y_pos[9:4] >= 6'd44) {
+            next_text_row <= 6'd0;
+        } ELSE {
+            next_text_row <= y_pos[9:4] + 6'd1;
+        }
+        rd_row_next <= next_text_row;
+
+        // Delayed control signals (4 cycles to match pixel data)
+        de_out    <= p4_de;
+        hsync_out <= p4_hsync;
+        vsync_out <= p4_vsync;
+
+        // Pixel selection from font bitmap with attribute overrides
+        IF (p4_de == 1'b0 || p4_in_text == 1'b0) {
+            pixel_on <= 1'b0;
+        } ELIF (p4_fast_blink == 1'b1 && blink_cnt[24] == 1'b0) {
+            pixel_on <= 1'b0;
+        } ELIF (p4_slow_blink == 1'b1 && blink_cnt[26] == 1'b0) {
+            pixel_on <= 1'b0;
+        } ELIF (p4_underline == 1'b1 && p4_char_row == 4'd14) {
+            pixel_on <= 1'b1;
+        } ELIF (p4_strike == 1'b1 && p4_char_row == 4'd7) {
+            pixel_on <= 1'b1;
+        } ELSE {
+            SELECT (p4_pixel_x) {
+                CASE (4'd0) { pixel_on <= font_bitmap[7]; }
+                CASE (4'd1) { pixel_on <= font_bitmap[6]; }
+                CASE (4'd2) { pixel_on <= font_bitmap[5]; }
+                CASE (4'd3) { pixel_on <= font_bitmap[4]; }
+                CASE (4'd4) { pixel_on <= font_bitmap[3]; }
+                CASE (4'd5) { pixel_on <= font_bitmap[2]; }
+                CASE (4'd6) { pixel_on <= font_bitmap[1]; }
+                CASE (4'd7) { pixel_on <= font_bitmap[0]; }
+                CASE (4'd8) {
+                    pixel_on <= (p4_graphic == 1'b1) ? font_bitmap[0] : 1'b0;
+                }
+                DEFAULT { pixel_on <= 1'b0; }
+            }
+        }
+
+        // ANSI 16-color palette lookup for foreground
+        SELECT (p4_fg_idx) {
+            CASE (4'd0)  { fg_red <= 8'h00; fg_green <= 8'h00; fg_blue <= 8'h00; }
+            CASE (4'd1)  { fg_red <= 8'hAA; fg_green <= 8'h00; fg_blue <= 8'h00; }
+            CASE (4'd2)  { fg_red <= 8'h00; fg_green <= 8'hAA; fg_blue <= 8'h00; }
+            CASE (4'd3)  { fg_red <= 8'hAA; fg_green <= 8'h55; fg_blue <= 8'h00; }
+            CASE (4'd4)  { fg_red <= 8'h00; fg_green <= 8'h00; fg_blue <= 8'hAA; }
+            CASE (4'd5)  { fg_red <= 8'hAA; fg_green <= 8'h00; fg_blue <= 8'hAA; }
+            CASE (4'd6)  { fg_red <= 8'h00; fg_green <= 8'hAA; fg_blue <= 8'hAA; }
+            CASE (4'd7)  { fg_red <= 8'hAA; fg_green <= 8'hAA; fg_blue <= 8'hAA; }
+            CASE (4'd8)  { fg_red <= 8'h55; fg_green <= 8'h55; fg_blue <= 8'h55; }
+            CASE (4'd9)  { fg_red <= 8'hFF; fg_green <= 8'h55; fg_blue <= 8'h55; }
+            CASE (4'd10) { fg_red <= 8'h55; fg_green <= 8'hFF; fg_blue <= 8'h55; }
+            CASE (4'd11) { fg_red <= 8'hFF; fg_green <= 8'hFF; fg_blue <= 8'h55; }
+            CASE (4'd12) { fg_red <= 8'h55; fg_green <= 8'h55; fg_blue <= 8'hFF; }
+            CASE (4'd13) { fg_red <= 8'hFF; fg_green <= 8'h55; fg_blue <= 8'hFF; }
+            CASE (4'd14) { fg_red <= 8'h55; fg_green <= 8'hFF; fg_blue <= 8'hFF; }
+            CASE (4'd15) { fg_red <= 8'hFF; fg_green <= 8'hFF; fg_blue <= 8'hFF; }
+            DEFAULT      { fg_red <= 8'hAA; fg_green <= 8'hAA; fg_blue <= 8'hAA; }
+        }
+
+        // ANSI 16-color palette lookup for background
+        SELECT (p4_bg_idx) {
+            CASE (4'd0)  { bg_red <= 8'h00; bg_green <= 8'h00; bg_blue <= 8'h00; }
+            CASE (4'd1)  { bg_red <= 8'hAA; bg_green <= 8'h00; bg_blue <= 8'h00; }
+            CASE (4'd2)  { bg_red <= 8'h00; bg_green <= 8'hAA; bg_blue <= 8'h00; }
+            CASE (4'd3)  { bg_red <= 8'hAA; bg_green <= 8'h55; bg_blue <= 8'h00; }
+            CASE (4'd4)  { bg_red <= 8'h00; bg_green <= 8'h00; bg_blue <= 8'hAA; }
+            CASE (4'd5)  { bg_red <= 8'hAA; bg_green <= 8'h00; bg_blue <= 8'hAA; }
+            CASE (4'd6)  { bg_red <= 8'h00; bg_green <= 8'hAA; bg_blue <= 8'hAA; }
+            CASE (4'd7)  { bg_red <= 8'hAA; bg_green <= 8'hAA; bg_blue <= 8'hAA; }
+            CASE (4'd8)  { bg_red <= 8'h55; bg_green <= 8'h55; bg_blue <= 8'h55; }
+            CASE (4'd9)  { bg_red <= 8'hFF; bg_green <= 8'h55; bg_blue <= 8'h55; }
+            CASE (4'd10) { bg_red <= 8'h55; bg_green <= 8'hFF; bg_blue <= 8'h55; }
+            CASE (4'd11) { bg_red <= 8'hFF; bg_green <= 8'hFF; bg_blue <= 8'h55; }
+            CASE (4'd12) { bg_red <= 8'h55; bg_green <= 8'h55; bg_blue <= 8'hFF; }
+            CASE (4'd13) { bg_red <= 8'hFF; bg_green <= 8'h55; bg_blue <= 8'hFF; }
+            CASE (4'd14) { bg_red <= 8'h55; bg_green <= 8'hFF; bg_blue <= 8'hFF; }
+            CASE (4'd15) { bg_red <= 8'hFF; bg_green <= 8'hFF; bg_blue <= 8'hFF; }
+            DEFAULT      { bg_red <= 8'h00; bg_green <= 8'h00; bg_blue <= 8'h00; }
+        }
+
+        // Color output from palette lookup
+        IF (p4_de == 1'b0 || buf_ready == 1'b0) {
+            red   <= 8'b0;
+            green <= 8'b0;
+            blue  <= 8'b0;
+        } ELIF (p4_in_text == 1'b0) {
+            red   <= 8'b0;
+            green <= 8'b0;
+            blue  <= 8'b0;
+        } ELIF (pixel_on == 1'b1) {
+            red   <= fg_red;
+            green <= fg_green;
+            blue  <= fg_blue;
+        } ELSE {
+            red   <= bg_red;
+            green <= bg_green;
+            blue  <= bg_blue;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Pipeline stage 1: capture counters and control
+        p1_pixel_x <= pixel_x;
+        p1_de      <= display_enable;
+        p1_hsync   <= hsync;
+        p1_vsync   <= vsync;
+        p1_in_text <= in_text;
+
+        // Pipeline stage 2: pass through
+        p2_pixel_x <= p1_pixel_x;
+        p2_de      <= p1_de;
+        p2_hsync   <= p1_hsync;
+        p2_vsync   <= p1_vsync;
+        p2_in_text <= p1_in_text;
+
+        // Pipeline stage 3: pass through + capture vram output + decode attributes
+        p3_pixel_x    <= p2_pixel_x;
+        p3_de         <= p2_de;
+        p3_hsync      <= p2_hsync;
+        p3_vsync      <= p2_vsync;
+        p3_in_text    <= p2_in_text;
+        p3_fg_idx     <= buf_attr[15:12];
+        p3_bg_idx     <= buf_attr[11:8];
+        p3_underline  <= buf_attr[7];
+        p3_slow_blink <= buf_attr[6];
+        p3_fast_blink <= buf_attr[5];
+        p3_strike     <= buf_attr[4];
+        p3_graphic    <= font_graphic;
+        p3_char_row   <= y_pos[3:0];
+
+        // Pipeline stage 4: pass through (font output now ready)
+        p4_pixel_x    <= p3_pixel_x;
+        p4_fg_idx     <= p3_fg_idx;
+        p4_bg_idx     <= p3_bg_idx;
+        p4_underline  <= p3_underline;
+        p4_slow_blink <= p3_slow_blink;
+        p4_fast_blink <= p3_fast_blink;
+        p4_strike     <= p3_strike;
+        p4_graphic    <= p3_graphic;
+        p4_char_row   <= p3_char_row;
+        p4_de         <= p3_de;
+        p4_hsync      <= p3_hsync;
+        p4_vsync      <= p3_vsync;
+        p4_in_text    <= p3_in_text;
+
+        // Character cell counters (mod-9 pixel, mod-142 column)
+        // Text area: 142 cols * 9 pixels = 1278, with 1px border each side (x=1..1278)
+        IF (display_enable == 1'b0) {
+            pixel_x  <= 4'd0;
+            text_col <= 8'd0;
+            in_text  <= 1'b0;
+        } ELIF (x_pos == 11'd1) {
+            pixel_x  <= 4'd0;
+            text_col <= 8'd0;
+            in_text  <= 1'b1;
+        } ELIF (in_text == 1'b1) {
+            IF (pixel_x == 4'd8) {
+                pixel_x <= 4'd0;
+                IF (text_col == 8'd141) {
+                    in_text <= 1'b0;
+                } ELSE {
+                    text_col <= text_col + 8'd1;
+                }
+            } ELSE {
+                pixel_x <= pixel_x + 4'd1;
+            }
+        }
+
+        // Blink counter (free-running)
+        blink_cnt <= blink_cnt + 27'd1;
+    }
+@endmod

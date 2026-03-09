@@ -1,0 +1,30 @@
+// ASYNC_UNDEFINED_PATH_NO_DRIVER: ASYNCHRONOUS path leaves WIRE without a
+// driver (e.g., IF without ELSE) while the net is read.
+// Expect ERR> ASYNC_UNDEFINED_PATH_NO_DRIVER on 'w'.
+// Verified
+
+@project ASYNC_UNDEFINED_PATH_NO_DRIVER_PROJECT
+  @top ASYNC_UNDEFINED_PATH_NO_DRIVER_EXAMPLE {
+    IN  [8] a = _;
+    OUT [8] w = _;
+  }
+@endproj
+
+@module ASYNC_UNDEFINED_PATH_NO_DRIVER_EXAMPLE
+  PORT {
+    IN  [8] a;
+    OUT [8] w;
+  }
+
+  WIRE {
+    b [8];
+  }
+
+  ASYNCHRONOUS {
+    IF (1'b1) {
+      b <= a;
+    }
+
+    w = b;
+  }
+@endmod

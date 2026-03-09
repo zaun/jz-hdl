@@ -1,0 +1,19 @@
+// MODULE_MISSING_PORT: module with no PORT block at all.
+// Verified
+
+@project MODULE_MISSING_PORT_PROJECT
+  @top MOD_NO_PORTS {
+    IN  [1] _ = _;
+  }
+@endproj
+
+@module MOD_NO_PORTS
+  // No PORT block here: should trigger MODULE_MISSING_PORT.
+  WIRE {
+    w [1];
+  }
+
+  ASYNCHRONOUS {
+    w <= 1'b1;
+  }
+@endmod

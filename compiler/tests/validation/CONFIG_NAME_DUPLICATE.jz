@@ -1,0 +1,24 @@
+// CONFIG_NAME_DUPLICATE: duplicate CONFIG entries in a single project.
+// Verified
+
+@project CONFIG_NAME_DUPLICATE_EXAMPLES
+  CONFIG {
+    WIDTH = 1;
+    WIDTH = 10;
+  }
+
+  @top top {
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= 1'b1;
+  }
+@endmod
+

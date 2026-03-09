@@ -1,0 +1,26 @@
+// INSTANCE_UNDEFINED_MODULE: instance refers to a module/blackbox that is not defined.
+// Verified
+
+@project INSTANCE_UNDEFINED_MODULE_EXAMPLES
+  CONFIG {
+    WIDTH = 8;
+  }
+
+  @top Parent {
+    OUT [1] x = _;
+  }
+@endproj
+
+@module Parent
+  PORT {
+    OUT [1] x;
+  }
+
+  @new u MissingModule {
+    IN [1] a = _;
+  }
+
+  ASYNCHRONOUS {
+    x <= 1'b1;
+  }
+@endmod

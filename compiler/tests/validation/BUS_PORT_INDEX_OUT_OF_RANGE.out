@@ -1,0 +1,2 @@
+File: BUS_PORT_INDEX_OUT_OF_RANGE.jz
+      22:12   error BUS_PORT_INDEX_OUT_OF_RANGE S4.4.1 BUS port index is outside the declared range

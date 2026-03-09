@@ -1,0 +1,258 @@
+// Ascon-128 AEAD Engine (NIST SP 800-232)
+// Iterative permutation: 1 round per clock cycle
+// 320-bit state, 128-bit key/nonce/tag
+@module ascon
+    PORT {
+        IN  [1]   clk;
+        IN  [1]   rst_n;
+
+        IN  [1]   cmd_start;
+        IN  [1]   cmd;           // 0=encrypt, 1=decrypt
+        IN  [128] key;
+        IN  [128] nonce;
+
+        IN  [64]  din;
+        IN  [1]   din_valid;
+        IN  [1]   din_last;
+        IN  [1]   din_empty;
+        IN  [3]   din_partial_len; // 0=full block, 1-7=partial byte count
+
+        IN  [128] tag_in;
+
+        OUT [64]  dout;
+        OUT [1]   dout_valid;
+        OUT [128] tag_out;
+        OUT [1]   tag_valid;
+        OUT [1]   done;
+        OUT [1]   ready;
+    }
+
+    CONST {
+        ST_IDLE      = 0;
+        ST_PERM      = 1;
+        ST_INIT_KEY  = 2;
+        ST_WAIT      = 3;
+        ST_FIN       = 4;
+        ST_TAG       = 5;
+    }
+
+    REGISTER {
+        state       [3]   = 3'd0;
+        perm_next   [3]   = 3'd0;
+
+        s0          [64]  = 64'h0000000000000000;
+        s1          [64]  = 64'h0000000000000000;
+        s2          [64]  = 64'h0000000000000000;
+        s3          [64]  = 64'h0000000000000000;
+        s4          [64]  = 64'h0000000000000000;
+
+        k0          [64]  = 64'h0000000000000000;
+        k1          [64]  = 64'h0000000000000000;
+
+        round_cnt   [4]   = 4'd0;
+        cmd_reg     [1]   = 1'b0;
+
+        dout_reg    [64]  = 64'h0000000000000000;
+        dout_v      [1]   = 1'b0;
+        tag_reg     [128] = 128'h00000000000000000000000000000000;
+        tag_v       [1]   = 1'b0;
+        done_reg    [1]   = 1'b0;
+        ready_reg   [1]   = 1'b1;
+    }
+
+    WIRE {
+        rc [8];
+        a0 [64]; a1 [64]; a2 [64]; a3 [64]; a4 [64];
+        b0 [64]; b1 [64]; b2 [64]; b3 [64]; b4 [64];
+        c0 [64]; c1 [64]; c2 [64]; c3 [64]; c4 [64];
+        r0 [64]; r1 [64]; r2 [64]; r3 [64]; r4 [64];
+        rc_ext [64];
+    }
+
+    ASYNCHRONOUS {
+        dout       <= dout_reg;
+        dout_valid <= dout_v;
+        tag_out    <= tag_reg;
+        tag_valid  <= tag_v;
+        done       <= done_reg;
+        ready      <= ready_reg;
+
+        rc = { ~round_cnt, round_cnt };
+        rc_ext <= { 56'h00000000000000, rc };
+
+        a0 = s0 ^ s4;
+        a1 = s1;
+        a2 = (s2 ^ rc_ext) ^ s1;
+        a3 = s3;
+        a4 = s4 ^ s3;
+
+        b0 = a0 ^ ((~a1) & a2);
+        b1 = a1 ^ ((~a2) & a3);
+        b2 = a2 ^ ((~a3) & a4);
+        b3 = a3 ^ ((~a4) & a0);
+        b4 = a4 ^ ((~a0) & a1);
+
+        c0 = b0 ^ b4;
+        c1 = b1 ^ b0;
+        c2 = ~b2;
+        c3 = b3 ^ (~b2);
+        c4 = b4;
+
+        r0 = c0 ^ { c0[18:0], c0[63:19] } ^ { c0[27:0], c0[63:28] };
+        r1 = c1 ^ { c1[60:0], c1[63:61] } ^ { c1[38:0], c1[63:39] };
+        r2 = c2 ^ { c2[0],    c2[63:1]  } ^ { c2[5:0],  c2[63:6]  };
+        r3 = c3 ^ { c3[9:0],  c3[63:10] } ^ { c3[16:0], c3[63:17] };
+        r4 = c4 ^ { c4[6:0],  c4[63:7]  } ^ { c4[40:0], c4[63:41] };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        SELECT (state) {
+            CASE (lit(3, ST_IDLE)) {
+                dout_v   <= 1'b0;
+                done_reg <= 1'b0;
+                IF (cmd_start == 1'b1) {
+                    k0 <= key[127:64];
+                    k1 <= key[63:0];
+                    cmd_reg <= cmd;
+                    s0 <= 64'h80400c0600000000;
+                    s1 <= key[127:64];
+                    s2 <= key[63:0];
+                    s3 <= nonce[127:64];
+                    s4 <= nonce[63:0];
+                    round_cnt <= 4'd0;
+                    perm_next <= lit(3, ST_INIT_KEY);
+                    state <= lit(3, ST_PERM);
+                    ready_reg <= 1'b0;
+                } ELSE {
+                    ready_reg <= 1'b1;
+                }
+            }
+
+            CASE (lit(3, ST_PERM)) {
+                dout_v   <= 1'b0;
+                done_reg <= 1'b0;
+                ready_reg <= 1'b0;
+                s0 <= r0;
+                s1 <= r1;
+                s2 <= r2;
+                s3 <= r3;
+                s4 <= r4;
+                IF (round_cnt == 4'd11) {
+                    state <= perm_next;
+                } ELSE {
+                    round_cnt <= round_cnt + 4'd1;
+                }
+            }
+
+            CASE (lit(3, ST_INIT_KEY)) {
+                dout_v   <= 1'b0;
+                done_reg <= 1'b0;
+                ready_reg <= 1'b1;
+                s3 <= s3 ^ k0;
+                s4 <= s4 ^ k1 ^ 64'h0000000000000001;
+                state <= lit(3, ST_WAIT);
+            }
+
+            CASE (lit(3, ST_WAIT)) {
+                done_reg <= 1'b0;
+                IF (din_valid == 1'b1) {
+                    IF (din_last == 1'b1 && din_empty == 1'b1) {
+                        s0 <= s0 ^ 64'h8000000000000000;
+                        dout_v <= 1'b0;
+                        state <= lit(3, ST_FIN);
+                        ready_reg <= 1'b0;
+                    } ELIF (din_last == 1'b1) {
+                        dout_reg <= s0 ^ din;
+                        IF (cmd_reg == 1'b0) {
+                            // Encrypt: s0 ^= {plaintext, 0x80, zeros}
+                            s0 <= s0 ^ din;
+                        } ELSE {
+                            // Decrypt partial: replace CT bytes, XOR pad, keep tail
+                            SELECT (din_partial_len) {
+                                CASE (3'd1) {
+                                    s0 <= { din[63:56], s0[55:48] ^ 8'h80, s0[47:0] };
+                                }
+                                CASE (3'd2) {
+                                    s0 <= { din[63:48], s0[47:40] ^ 8'h80, s0[39:0] };
+                                }
+                                CASE (3'd3) {
+                                    s0 <= { din[63:40], s0[39:32] ^ 8'h80, s0[31:0] };
+                                }
+                                CASE (3'd4) {
+                                    s0 <= { din[63:32], s0[31:24] ^ 8'h80, s0[23:0] };
+                                }
+                                CASE (3'd5) {
+                                    s0 <= { din[63:24], s0[23:16] ^ 8'h80, s0[15:0] };
+                                }
+                                CASE (3'd6) {
+                                    s0 <= { din[63:16], s0[15:8] ^ 8'h80, s0[7:0] };
+                                }
+                                CASE (3'd7) {
+                                    s0 <= { din[63:8], s0[7:0] ^ 8'h80 };
+                                }
+                                DEFAULT {
+                                    // Full block (shouldn't reach here)
+                                    s0 <= din;
+                                }
+                            }
+                        }
+                        dout_v <= 1'b1;
+                        state <= lit(3, ST_FIN);
+                        ready_reg <= 1'b0;
+                    } ELSE {
+                        IF (cmd_reg == 1'b0) {
+                            dout_reg <= s0 ^ din;
+                            s0 <= s0 ^ din;
+                        } ELSE {
+                            dout_reg <= s0 ^ din;
+                            s0 <= din;
+                        }
+                        dout_v <= 1'b1;
+                        round_cnt <= 4'd6;
+                        perm_next <= lit(3, ST_WAIT);
+                        state <= lit(3, ST_PERM);
+                        ready_reg <= 1'b0;
+                    }
+                } ELSE {
+                    dout_v <= 1'b0;
+                    ready_reg <= 1'b1;
+                }
+            }
+
+            CASE (lit(3, ST_FIN)) {
+                dout_v   <= 1'b0;
+                done_reg <= 1'b0;
+                ready_reg <= 1'b0;
+                s1 <= s1 ^ k0;
+                s2 <= s2 ^ k1;
+                round_cnt <= 4'd0;
+                perm_next <= lit(3, ST_TAG);
+                state <= lit(3, ST_PERM);
+            }
+
+            CASE (lit(3, ST_TAG)) {
+                dout_v <= 1'b0;
+                ready_reg <= 1'b1;
+                tag_reg <= { s3 ^ k0, s4 ^ k1 };
+                IF (cmd_reg == 1'b1) {
+                    IF ({ s3 ^ k0, s4 ^ k1 } == tag_in) {
+                        tag_v <= 1'b1;
+                    } ELSE {
+                        tag_v <= 1'b0;
+                    }
+                } ELSE {
+                    tag_v <= 1'b1;
+                }
+                done_reg <= 1'b1;
+                state <= lit(3, ST_IDLE);
+            }
+
+            DEFAULT {
+                dout_v   <= 1'b0;
+                done_reg <= 1'b0;
+                ready_reg <= 1'b1;
+                state <= lit(3, ST_IDLE);
+            }
+        }
+    }
+@endmod

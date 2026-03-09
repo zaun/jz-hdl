@@ -1,0 +1,43 @@
+// INSTANCE_ARRAY_OK: valid instance array using IDX-based non-overlapping slices.
+// This should produce no diagnostics.
+
+@project INSTANCE_ARRAY_OK_PROJECT
+  @top Top {
+    IN  [1] clk = _;
+    OUT [32] bus = _;
+  }
+@endproj
+
+@module Child
+  PORT {
+    IN  [1]  clk;
+    OUT [8]  y;
+  }
+
+  ASYNCHRONOUS {
+    // simple pass-through from an internal constant for demonstration
+    y = 8'hAA;
+  }
+@endmod
+
+@module Top
+  PORT {
+    IN  [1]  clk;
+    OUT [32] bus;
+  }
+
+  WIRE {
+    seg [8];
+  }
+
+  // Four instances; placeholder mapping for now (no IDX expression until
+  // parser supports full arithmetic in index expressions).
+  @new u[4] Child {
+    IN  [1] clk = clk;
+    OUT [8] y   = bus;
+  }
+
+  ASYNCHRONOUS {
+    // no additional logic
+  }
+@endmod

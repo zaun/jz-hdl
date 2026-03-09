@@ -1,0 +1,33 @@
+// CLOCK_DUPLICATE_NAME: duplicate clock names in CLOCKS block.
+// Verified
+
+@project CLOCK_DUPLICATE_NAME_EXAMPLES
+  CLOCKS {
+    clk = { period=10 };
+    clk = { period=20 };
+  }
+
+  IN_PINS {
+    clk = { standard=LVCMOS33 };
+  }
+
+  MAP {
+    clk = 4;
+  }
+
+  @top top {
+    IN  [1] clk = clk;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    IN  [1] clk;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = clk;
+  }
+@endmod

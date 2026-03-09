@@ -1,0 +1,28 @@
+// PIN_MODE_INVALID: pin mode is not SINGLE or DIFFERENTIAL.
+// Verified
+
+@project PIN_MODE_INVALID_PROJECT
+  OUT_PINS {
+    a = { mode=BALANCED, standard=LVCMOS33, drive=8 };
+  }
+
+  MAP {
+    a = 10;
+  }
+
+  @top PIN_MODE_INVALID_EXAMPLE {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module PIN_MODE_INVALID_EXAMPLE
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = in;
+  }
+@endmod

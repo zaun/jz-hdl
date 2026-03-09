@@ -1,0 +1,24 @@
+// GLOBAL_INVALID_EXPR_TYPE: global constant value is not a nonnegative integer expression.
+// Verified
+
+@global GLOBAL_CONSTS
+  INVALID_NEG   = -5;
+  INVALID_WIDTH = 5;
+  VALID = 1'b1;
+@endglob
+
+@project GLOBAL_INVALID_EXPR_TYPE_EXAMPLE
+  @top top {
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= 1'b1;
+  }
+@endmod

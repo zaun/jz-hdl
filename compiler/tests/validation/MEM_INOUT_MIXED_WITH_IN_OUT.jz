@@ -1,0 +1,26 @@
+// MEM_INOUT_MIXED_WITH_IN_OUT: INOUT ports cannot be mixed with IN/OUT ports.
+// Verified
+
+@project MEM_INOUT_MIXED_PROJECT
+  @top MEM_INOUT_MIXED_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module MEM_INOUT_MIXED_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  MEM {
+    // This MEM illegally mixes INOUT with IN/OUT ports
+    mixed_mem [8] [16] = 8'h00 {
+      INOUT rw;       // INOUT port
+      IN wr;          // IN port - illegal with INOUT
+    };
+  }
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

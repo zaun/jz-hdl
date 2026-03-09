@@ -1,0 +1,27 @@
+// LIT_UNDERSCORE_AT_EDGES: underscores not allowed as first/last value character.
+// Verified
+
+@project LIT_UNDERSCORE_AT_EDGES_EXAMPLE
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top M_UNDERSCORE_EDGES {
+        OUT [1] data = _;
+    }
+@endproj
+
+@module M_UNDERSCORE_EDGES
+    CONST {
+        A = 8'h_FF; // underscore at start of value
+        B = 8'hFF_; // underscore at end of value
+    }
+
+    PORT {
+        OUT [1] data;
+    }
+
+    ASYNCHRONOUS {
+        data <= 1'b1;
+    }
+@endmod

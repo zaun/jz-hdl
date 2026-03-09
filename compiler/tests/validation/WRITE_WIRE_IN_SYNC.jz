@@ -1,0 +1,34 @@
+// WRITE_WIRE_IN_SYNC: wires may not be written in SYNCHRONOUS blocks.
+// Verifies
+
+@project WRITE_WIRE_IN_SYNC_PROJECT
+  @top WRITE_WIRE_IN_SYNC_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [4] data = _;
+  }
+@endproj
+
+@module WRITE_WIRE_IN_SYNC_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [4] data;
+  }
+
+  WIRE {
+    w [4];
+  }
+
+  REGISTER {
+    r [4] = 4'b0000;
+  }
+
+  ASYNCHRONOUS {
+    data = w;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    w <= r;
+
+    r <= r + 4'b1;
+  }
+@endmod

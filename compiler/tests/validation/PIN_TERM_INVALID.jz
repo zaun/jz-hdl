@@ -1,0 +1,28 @@
+// PIN_TERM_INVALID: term attribute with invalid value.
+// Verified
+
+@project PIN_TERM_INVALID_PROJECT
+  IN_PINS {
+    pin = { standard=LVCMOS33, term=YES };
+  }
+
+  MAP {
+    pin = 10;
+  }
+
+  @top PIN_TERM_INVALID_EXAMPLE {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module PIN_TERM_INVALID_EXAMPLE
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = in;
+  }
+@endmod

@@ -1,0 +1,25 @@
+// MEM_INVALID_WORD_WIDTH: MEM word width <= 0 or non-integer (simple decimal form).
+// Verfied
+
+@project MEM_INVALID_WORD_WIDTH_PROJECT
+  @top MEM_INVALID_WORD_WIDTH_EXAMPLE {
+    OUT [8] data = _;
+  }
+@endproj
+
+@module MEM_INVALID_WORD_WIDTH_EXAMPLE
+  PORT {
+    OUT [8] data;
+  }
+
+  MEM {
+    // Word width 0 is invalid (depth is fine here).
+    bad_width_mem [0] [4] = 8'h00 {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    data <= bad_width_mem.rd[1];
+  }
+@endmod

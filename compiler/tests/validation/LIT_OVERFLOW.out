@@ -1,0 +1,4 @@
+File: LIT_OVERFLOW.jz
+      21:10   error LIT_OVERFLOW S2.1/S8.1 Literal numeric value exceeds declared width
+      22:10   error LIT_OVERFLOW S2.1/S8.1 Literal numeric value exceeds declared width
+      23:10   error LIT_OVERFLOW S2.1/S8.1 Literal numeric value exceeds declared width

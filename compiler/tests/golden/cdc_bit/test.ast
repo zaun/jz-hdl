@@ -1,0 +1,56 @@
+{"type": "Project", "name": "CDC_BIT_PROJECT", "loc": {"line": 1, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "ProjectTopInstance", "name": "cdc_bit_test", "loc": {"line": 2, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk_a", "block_kind": "IN", "text": "_", "width": "1", "loc": {"line": 3, "column": 13, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "clk_b", "block_kind": "IN", "text": "_", "width": "1", "loc": {"line": 4, "column": 13, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "q", "block_kind": "OUT", "text": "_", "width": "1", "loc": {"line": 5, "column": 13, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "cdc_bit_test", "loc": {"line": 9, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 10, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk_a", "block_kind": "IN", "width": "1", "loc": {"line": 11, "column": 13, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "clk_b", "block_kind": "IN", "width": "1", "loc": {"line": 12, "column": 13, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "q", "block_kind": "OUT", "width": "1", "loc": {"line": 13, "column": 13, "file": "test.jz"}}
+    ]},
+    {"type": "RegisterBlock", "block_kind": "REGISTER", "loc": {"line": 15, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "RegisterDecl", "name": "flag", "width": "1", "loc": {"line": 16, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 16, "column": 16, "file": "test.jz"}}
+      ]},
+      {"type": "RegisterDecl", "name": "dest_reg", "width": "1", "loc": {"line": 17, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 17, "column": 20, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "CDC", "loc": {"line": 19, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "CdcDecl", "block_kind": "BIT", "loc": {"line": 20, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "flag", "loc": {"line": 20, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "clk_a", "loc": {"line": 20, "column": 15, "file": "test.jz"}},
+        {"type": "Identifier", "name": "flag_sync", "loc": {"line": 20, "column": 25, "file": "test.jz"}},
+        {"type": "Identifier", "name": "clk_b", "loc": {"line": 20, "column": 36, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 22, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 23, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "q", "loc": {"line": 23, "column": 5, "file": "test.jz"}},
+        {"type": "Identifier", "name": "flag_sync", "loc": {"line": 23, "column": 9, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "SYNCHRONOUS", "loc": {"line": 25, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "SyncParam", "name": "CLK", "loc": {"line": 25, "column": 15, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "clk_a", "loc": {"line": 25, "column": 19, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 26, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "flag", "loc": {"line": 26, "column": 5, "file": "test.jz"}},
+        {"type": "Unary", "block_kind": "BIT_NOT", "loc": {"line": 26, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "flag", "loc": {"line": 26, "column": 14, "file": "test.jz"}}
+        ]}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "SYNCHRONOUS", "loc": {"line": 28, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "SyncParam", "name": "CLK", "loc": {"line": 28, "column": 15, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "clk_b", "loc": {"line": 28, "column": 19, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 29, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "dest_reg", "loc": {"line": 29, "column": 5, "file": "test.jz"}},
+        {"type": "Identifier", "name": "flag_sync", "loc": {"line": 29, "column": 17, "file": "test.jz"}}
+      ]}
+    ]}
+  ]}
+]}

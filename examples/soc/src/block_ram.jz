@@ -1,0 +1,58 @@
+@module ram
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        BUS SIMPLE_BUS TARGET pbus;
+    }
+
+    // 5120-word bank, 32-bit wide (10 BSRAMs = 20KB)
+    MEM(TYPE=BLOCK) {
+        ram_mem [32] [5120] = 32'h00000000 {
+            OUT read SYNC;
+            IN  write;
+        };
+    }
+
+    REGISTER {
+        pending_read [1] = 1'b0;
+        data_ready   [1] = 1'b0;
+        read_data    [32] = 32'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Drive data only when data_ready
+        pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+        // DONE signaling
+        IF (pbus.VALID) {
+            IF (pbus.CMD == CMD.WRITE) {
+                pbus.DONE <= 1'b1;
+            } ELIF (data_ready == 1'b1) {
+                pbus.DONE <= 1'b1;
+            } ELSE {
+                pbus.DONE <= 1'b0;
+            }
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        // Write path: 1-cycle
+        IF (pbus.VALID && pbus.CMD == CMD.WRITE) {
+            ram_mem.write[pbus.ADDR[14:2]] <= pbus.DATA;
+        }
+
+        // Read path: 2-stage pipeline
+        IF (data_ready == 1'b1) {
+            data_ready <= 1'b0;
+        } ELIF (pending_read == 1'b1) {
+            read_data <= ram_mem.read.data;
+            data_ready <= 1'b1;
+            pending_read <= 1'b0;
+        } ELIF (pbus.VALID && pbus.CMD == CMD.READ) {
+            ram_mem.read.addr <= pbus.ADDR[14:2];
+            pending_read <= 1'b1;
+        }
+    }
+@endmod

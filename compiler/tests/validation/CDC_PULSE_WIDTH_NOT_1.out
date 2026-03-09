@@ -1,0 +1,2 @@
+File: CDC_PULSE_WIDTH_NOT_1.jz
+      20:5    error CDC_PULSE_WIDTH_NOT_1 S4.12 PULSE CDC source register must have width [1]

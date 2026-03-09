@@ -1,0 +1,127 @@
+@project literal_extension_test
+    OUT_PINS {
+        // 8-bit wide outputs for observing extension
+        result_bin [8] = { standard=LVCMOS33, drive=8 };
+        result_hex [8] = { standard=LVCMOS33, drive=8 };
+        result_dec [8] = { standard=LVCMOS33, drive=8 };
+        result_x   [8] = { standard=LVCMOS33, drive=8 };
+        result_z   [8] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        result_bin[0] = 0;
+        result_bin[1] = 1;
+        result_bin[2] = 2;
+        result_bin[3] = 3;
+        result_bin[4] = 4;
+        result_bin[5] = 5;
+        result_bin[6] = 6;
+        result_bin[7] = 7;
+        result_hex[0] = 8;
+        result_hex[1] = 9;
+        result_hex[2] = 10;
+        result_hex[3] = 11;
+        result_hex[4] = 12;
+        result_hex[5] = 13;
+        result_hex[6] = 14;
+        result_hex[7] = 15;
+        result_dec[0] = 16;
+        result_dec[1] = 17;
+        result_dec[2] = 18;
+        result_dec[3] = 19;
+        result_dec[4] = 20;
+        result_dec[5] = 21;
+        result_dec[6] = 22;
+        result_dec[7] = 23;
+        result_x[0] = 24;
+        result_x[1] = 25;
+        result_x[2] = 26;
+        result_x[3] = 27;
+        result_x[4] = 28;
+        result_x[5] = 29;
+        result_x[6] = 30;
+        result_x[7] = 31;
+        result_z[0] = 32;
+        result_z[1] = 33;
+        result_z[2] = 34;
+        result_z[3] = 35;
+        result_z[4] = 36;
+        result_z[5] = 37;
+        result_z[6] = 38;
+        result_z[7] = 39;
+    }
+
+    @top literal_checker {
+        OUT [8] out_bin = result_bin;
+        OUT [8] out_hex = result_hex;
+        OUT [8] out_dec = result_dec;
+        OUT [8] out_x   = result_x;
+        OUT [8] out_z   = result_z;
+    }
+@endproj
+
+@module literal_checker
+    PORT {
+        OUT [8] out_bin;
+        OUT [8] out_hex;
+        OUT [8] out_dec;
+        OUT [8] out_x;
+        OUT [8] out_z;
+    }
+
+    WIRE {
+        // Internal wires to hold various extension types
+        check_bin [8];
+        check_hex [8];
+        check_dec [8];
+        check_x   [8];
+    }
+
+    @new z0 z_checker {
+        IN [1] en = 1'b0;
+        OUT [8] bus = out_z;
+    }
+
+    @new z1 z_checker {
+        IN [1] en = 1'b1;
+        OUT [8] bus = out_z;
+    }
+
+    ASYNCHRONOUS {
+        // 1. Binary Zero-Extension: 4 bits '1010' padded with 4 leading zeros
+        check_bin <= 8'b1010;
+
+        // 2. Hex Zero-Extension: 8 bits 'FF' padded with 4 leading zeros
+        check_hex <= 8'hF;
+
+        // 3. Decimal Zero-Extension: Value 25  padded to 4 bits
+        check_dec <= 8'd13;
+
+        // 4. X-Extension: MSB is 'x', so all 8 bits must become 'x'
+        check_x <= 8'bx;
+
+        // Assign internal results to ports
+        out_bin = check_bin;
+        out_hex = check_hex;
+        out_dec = check_dec;
+        
+        // NOTE: Section 1.2 rules apply—if x or z reach observable sinks (ports),
+        // they must be structurally valid or masked. In this test, we drive
+        // them directly to project pins to verify the compiler allows the
+        // extension, assuming the target hardware/simulation environment 
+        // is the intended observer.
+        out_x = check_x;
+    }
+@endmod
+
+@module z_checker
+    PORT {
+        IN [1] en;
+        OUT [8] bus;
+    }
+
+    ASYNCHRONOUS {
+        // 5. Z-Extension: MSB is 'z', so all 8 bits must become 'z'
+        bus <= en ?  8'bz : 8'b1;
+    }
+@endmod

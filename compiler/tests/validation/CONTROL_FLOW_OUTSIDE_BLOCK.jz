@@ -1,0 +1,21 @@
+// CONTROL_FLOW_OUTSIDE_BLOCK: IF/SELECT used outside ASYNCHRONOUS/SYNCHRONOUS block.
+// Verified
+
+@project CONTROL_FLOW_OUTSIDE_BLOCK_PROJECT
+  @top CONTROL_FLOW_OUTSIDE_BLOCK_EXAMPLE {
+    IN  [1] a = _;
+    OUT [1] data = _;
+  }
+@endproj
+
+@module CONTROL_FLOW_OUTSIDE_BLOCK_EXAMPLE
+  PORT {
+    IN  [1] a;
+    OUT [1] data;
+  }
+
+  // This IF is at module scope, not inside ASYNCHRONOUS or SYNCHRONOUS.
+  IF (a) {
+    data = 1'b1;
+  }
+@endmod

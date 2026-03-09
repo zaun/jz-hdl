@@ -1,0 +1,24 @@
+// BUS_SIGNAL_UNDEFINED: BUS signal does not exist in BUS definition.
+// Verified
+
+@project BUS_SIGNAL_UNDEFINED_EXAMPLE
+  BUS SIMPLE {
+    IN [1] rx;
+  }
+
+  @top top {
+    OUT [1] out = _;
+    BUS SIMPLE SOURCE link = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+    BUS SIMPLE SOURCE link;
+  }
+
+  ASYNCHRONOUS {
+    out = link.tx; // tx not declared in BUS SIMPLE
+  }
+@endmod

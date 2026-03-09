@@ -1,0 +1,2 @@
+File: SYNC_EDGE_INVALID.jz
+      25:28   error SYNC_EDGE_INVALID S4.11 SYNCHRONOUS block EDGE must be Rising, Falling, or Both

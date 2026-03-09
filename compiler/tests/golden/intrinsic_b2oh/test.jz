@@ -1,0 +1,60 @@
+// ============================================================================
+// TEST: INTRINSIC B2OH (BINARY TO ONE-HOT)
+// VERIFIES: Section 5.5.13 — b2oh() combinational decoder.
+//   - Result width = width parameter (compile-time constant)
+//   - 3-bit index, 8-bit output
+//   - 2-bit index, 4-bit output
+// ============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") B2ohTest
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK     = { standard=LVCMOS33 };
+        DONE     = { standard=LVCMOS33 };
+        idx3[3]  = { standard=LVCMOS33 };
+        idx2[2]  = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        oh8[8] = { standard=LVCMOS33, drive=8 };
+        oh4[4] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+        DONE = IOR32B;
+        idx3[0] = 10; idx3[1] = 11; idx3[2] = 12;
+        idx2[0] = 13; idx2[1] = 14;
+        oh8[0] = 30; oh8[1] = 31; oh8[2] = 32; oh8[3] = 33;
+        oh8[4] = 34; oh8[5] = 35; oh8[6] = 36; oh8[7] = 37;
+        oh4[0] = 38; oh4[1] = 39; oh4[2] = 40; oh4[3] = 41;
+    }
+
+    @top B2ohCore {
+        IN  [1] clk   = SCLK;
+        IN  [1] rst_n = DONE;
+        IN  [3] idx3  = idx3;
+        IN  [2] idx2  = idx2;
+        OUT [8] oh8   = oh8;
+        OUT [4] oh4   = oh4;
+    }
+@endproj
+
+@module B2ohCore
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [3] idx3;
+        IN  [2] idx2;
+        OUT [8] oh8;
+        OUT [4] oh4;
+    }
+
+    ASYNCHRONOUS {
+        oh8 <= b2oh(idx3, 8);
+        oh4 <= b2oh(idx2, 4);
+    }
+@endmod

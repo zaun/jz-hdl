@@ -1,0 +1,33 @@
+@module led_out
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        BUS SIMPLE_BUS TARGET pbus;
+
+        OUT [6] leds;
+    }
+
+    REGISTER {
+        data [32] = 32'b0;
+    }
+
+    ASYNCHRONOUS {
+        leds = data[5:0];
+
+        // Drive data only when selected, valid, and in READ mode
+        pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? data : 32'bz;
+
+        // Drive DONE only when selected and valid
+        IF (pbus.VALID) {
+            pbus.DONE <= 1'b1;
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        IF (pbus.VALID && pbus.CMD == CMD.WRITE) {
+            data <= pbus.DATA;
+        }
+    }
+@endmod

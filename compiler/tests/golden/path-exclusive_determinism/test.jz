@@ -1,0 +1,84 @@
+@project(CHIP=GENERIC) ped_validation_project
+  CONFIG {
+    DATA_WIDTH = 8;
+  }
+
+  CLOCKS {
+  }
+
+  IN_PINS {
+    mode_sel[2] = { standard=LVCMOS33 };
+    data_a[CONFIG.DATA_WIDTH] = { standard=LVCMOS33 };
+    data_b[CONFIG.DATA_WIDTH] = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    result[CONFIG.DATA_WIDTH] = { standard=LVCMOS33, drive=8 };
+    status_led = { standard=LVCMOS33, drive=4 };
+  }
+
+  MAP {
+    mode_sel[0] = 2;
+    mode_sel[1] = 3;
+    status_led = 10;
+    // Map data_a 0-7
+    data_a[0] = 20; data_a[1] = 21; data_a[2] = 22; data_a[3] = 23;
+    data_a[4] = 24; data_a[5] = 25; data_a[6] = 26; data_a[7] = 27;
+    // Map data_b 0-7
+    data_b[0] = 30; data_b[1] = 31; data_b[2] = 32; data_b[3] = 33;
+    data_b[4] = 34; data_b[5] = 35; data_b[6] = 36; data_b[7] = 37;
+    // Map result 0-7
+    result[0] = 40; result[1] = 41; result[2] = 42; result[3] = 43;
+    result[4] = 44; result[5] = 45; result[6] = 46; result[7] = 47;
+  }
+
+  @top ped_logic_module {
+    IN  [2] sel = mode_sel;
+    IN  [8] in_a = data_a;
+    IN  [8] in_b = data_b;
+    OUT [8] logic_out = result;
+    OUT [1] indicator = status_led;
+  }
+@endproj
+
+@module ped_logic_module
+  PORT {
+    IN  [2] sel;
+    IN  [8] in_a;
+    IN  [8] in_b;
+    OUT [8] logic_out;
+    OUT [1] indicator;
+  }
+
+  ASYNCHRONOUS {
+    // 1. Test IF/ELIF/ELSE Exclusivity
+    // logic_out is assigned 3 times, but paths are exclusive.
+    IF (sel == 2'b00) {
+      logic_out <= in_a;
+    } ELIF (sel == 2'b01) {
+      logic_out <= in_b;
+    } ELSE {
+      // Nested logic within an exclusive branch is also valid.
+      IF (in_a > in_b) {
+        logic_out <= in_a;
+      } ELSE {
+        logic_out <= 8'hFF;
+      }
+    }
+
+    // 2. Test SELECT/CASE Exclusivity
+    // indicator is assigned in every case, including default.
+    SELECT (sel) {
+      CASE 2'b00 {
+        indicator <= 1'b0;
+      }
+      CASE 2'b01
+      CASE 2'b10 {
+        indicator <= 1'b1; // Fall-through mapping
+      }
+      DEFAULT {
+        indicator <= in_a[0];
+      }
+    }
+  }
+@endmod

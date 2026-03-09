@@ -1,0 +1,28 @@
+// MAP_DIFF_SAME_PIN: P and N map to same physical pin.
+// Verified
+
+@project MAP_DIFF_SAME_PIN_PROJECT
+  OUT_PINS {
+    tmds = { mode=DIFFERENTIAL, standard=LVDS25, drive=4 };
+  }
+
+  MAP {
+    tmds = { P=10, N=10 };
+  }
+
+  @top MAP_DIFF_SAME_PIN_EXAMPLE {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module MAP_DIFF_SAME_PIN_EXAMPLE
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = in;
+  }
+@endmod

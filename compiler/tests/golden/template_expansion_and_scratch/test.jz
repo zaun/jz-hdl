@@ -1,0 +1,62 @@
+// Golden test: @template expansion with @scratch and both assignment operators
+// Tests:
+//   - @template definition with parameters and @scratch wires
+//   - @apply [N] with CONST-driven iteration count
+//   - <= (RECEIVE) assignments in template body
+//   - = (ALIAS) assignments in template body
+//   - IDX usage in array indexing and expressions
+
+@project template_test_project
+  IN_PINS {
+    in_a [4] = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    out_a [4] = { standard=LVCMOS33, drive=4 };
+  }
+
+  MAP {
+    in_a[0] = 10; in_a[1] = 11; in_a[2] = 12; in_a[3] = 13;
+    out_a[0] = 20; out_a[1] = 21; out_a[2] = 22; out_a[3] = 23;
+  }
+
+  @top template_demo {
+    IN  [4] data_in = in_a;
+    OUT [4] data_out = out_a;
+  }
+@endproj
+
+@module template_demo
+  CONST {
+    COUNT = 2;
+  }
+
+  PORT {
+    IN  [4] data_in;
+    OUT [4] data_out;
+  }
+
+  WIRE {
+    pass [4];
+    tap  [COUNT];
+  }
+
+  @template EXPAND(src, dst, taps)
+    @scratch tmp [1];
+    // RECEIVE assignment using IDX
+    tmp <= src[IDX];
+    // ALIAS assignment using IDX
+    taps[IDX] = tmp;
+  @endtemplate
+
+  ASYNCHRONOUS {
+    pass <= data_in;
+    @apply [COUNT] EXPAND(pass, data_out, tap);
+
+    // Use the tapped values
+    data_out[0] <= tap[0];
+    data_out[1] <= tap[1];
+    data_out[2] <= pass[2];
+    data_out[3] <= pass[3];
+  }
+@endmod

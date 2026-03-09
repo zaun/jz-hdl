@@ -1,0 +1,271 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "CDC_PULSE_PROJECT",
+    "modules": [
+      {
+        "id": 0,
+        "name": "cdc_pulse_test",
+        "base_module_id": -1,
+        "source_line": 9,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk_a",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 11,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "clk_b",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 12,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "q",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 13,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 3,
+          "name": "flag",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 16,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 4,
+          "name": "dest_reg",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 17,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 5,
+          "name": "flag_sync",
+          "kind": "net",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 20,
+          "can_be_z": false,
+          "iob": false
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [3],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 25, "statements": [{ "kind": "assignment", "id": 0, "source_line": 26, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "unary_not", "width": 1, "source_line": 26, "operand": { "kind": "signal_ref", "width": 1, "source_line": 26, "signal_id": 3 } } }] }
+          },
+          {
+            "id": 1,
+            "clock_signal_id": 1,
+            "edge": "RISING",
+            "register_ids": [4],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 1, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 28, "statements": [{ "kind": "assignment", "id": 0, "source_line": 29, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 0, "source_line": 29, "signal_id": 5 } }] }
+          }
+        ],
+        "instances": [
+          {
+            "id": 0,
+            "name": "u_cdc_pulse_flag_sync",
+            "child_module_id": 1,
+            "connections": [{ "parent_signal_id": 0, "child_port_id": 0 }, { "parent_signal_id": 1, "child_port_id": 1 }, { "parent_signal_id": 3, "child_port_id": 2 }, { "parent_signal_id": 5, "child_port_id": 3 }]
+          }
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 22, "statements": [{ "kind": "assignment", "id": 0, "source_line": 23, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 2, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 0, "source_line": 23, "signal_id": 5 } }] }
+      },
+      {
+        "id": 1,
+        "name": "JZHDL_LIB_CDC_PULSE",
+        "base_module_id": -1,
+        "source_line": 0,
+        "source_file": "",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk_src",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "clk_dest",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "pulse_in",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 3,
+          "name": "pulse_out",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 4,
+          "name": "toggle_src",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 5,
+          "name": "toggle_sync1",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 6,
+          "name": "toggle_sync2",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 7,
+          "name": "toggle_last",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 1 }
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [4],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_HIGH",
+            "reset_type": "IMMEDIATE",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }],
+            "statements": { "kind": "block", "statements": [{ "kind": "if", "condition": { "kind": "signal_ref", "width": 1, "signal_id": 2 }, "then": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "unary_not", "width": 1, "operand": { "kind": "signal_ref", "width": 1, "signal_id": 4 } } }] } }] }
+          },
+          {
+            "id": 1,
+            "clock_signal_id": 1,
+            "edge": "RISING",
+            "register_ids": [5, 6, 7],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_HIGH",
+            "reset_type": "IMMEDIATE",
+            "sensitivity_list": [{ "signal_id": 1, "edge": "RISING" }],
+            "statements": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 5, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "signal_id": 4 } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 6, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "signal_id": 5 } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 7, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "signal_id": 6 } }] }
+          }
+        ],
+        "instances": [
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "binary_xor", "width": 1, "left": { "kind": "signal_ref", "width": 1, "signal_id": 6 }, "right": { "kind": "signal_ref", "width": 1, "signal_id": 7 } } }] }
+      }
+    ],
+    "project": {
+      "name": "CDC_PULSE_PROJECT",
+      "clocks": [
+      ],
+      "clock_gens": [
+      ],
+      "pins": [
+      ],
+      "mappings": [
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 1, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 2, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 31 }
+    ]
+  }
+}

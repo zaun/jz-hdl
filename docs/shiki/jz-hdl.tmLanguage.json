@@ -1,0 +1,97 @@
+{
+  "displayName": "JZ-HDL",
+  "fileTypes": ["jz", "jzh"],
+  "name": "jz-hdl",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#directives" },
+    { "include": "#project_blocks" },
+    { "include": "#logic_blocks" },
+    { "include": "#control_flow" },
+    { "include": "#declarations" },
+    { "include": "#literals" },
+    { "include": "#operators" },
+    { "include": "#intrinsics" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "begin": "//", "end": "\\n", "name": "comment.line.double-slash.jz-hdl" },
+        { "begin": "/\\*", "end": "\\*/", "name": "comment.block.jz-hdl" }
+      ]
+    },
+    "directives": {
+      "patterns": [
+        {
+          "match": "@(project|endproj|module|endmod|blackbox|global|endglob|new|top|import|feature|else|endfeat)\\b",
+          "name": "keyword.control.directive.jz-hdl"
+        }
+      ]
+    },
+    "project_blocks": {
+      "patterns": [
+        {
+          "match": "\\b(CLOCKS|IN_PINS|OUT_PINS|INOUT_PINS|MAP)\\b",
+          "name": "entity.name.section.project.jz-hdl"
+        },
+        {
+          "match": "\\b(period|standard|drive)\\b",
+          "name": "support.variable.property.jz-hdl"
+        }
+      ]
+    },
+    "logic_blocks": {
+      "patterns": [
+        {
+          "match": "\\b(ASYNCHRONOUS|SYNCHRONOUS)\\b",
+          "name": "keyword.other.block.logic.jz-hdl"
+        }
+      ]
+    },
+    "control_flow": {
+      "patterns": [
+        {
+          "match": "\\b(IF|ELIF|ELSE|SELECT|CASE|DEFAULT)\\b",
+          "name": "keyword.control.jz-hdl"
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(PORT|WIRE|REGISTER|MUX|MEM|LATCH|CONST|CONFIG|BUS)\\b",
+          "name": "storage.type.jz-hdl"
+        },
+        {
+          "match": "\\b(IN|OUT|INOUT|SOURCE|TARGET|OVERRIDE|IDX)\\b",
+          "name": "variable.language.jz-hdl"
+        }
+      ]
+    },
+    "literals": {
+      "patterns": [
+        {
+          "match": "\\b\\d+'[bdh][0-9a-fA-F_xzXZ]+\\b",
+          "name": "constant.numeric.sized.literal.jz-hdl"
+        }
+      ]
+    },
+    "intrinsics": {
+      "patterns": [
+        {
+          "match": "\\b(uadd|sadd|umul|smul|gbit|sbit|gslice|sslice|clog2|lit)\\b",
+          "name": "support.function.intrinsic.jz-hdl"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "match": "(=[zs]?|<= [zs]?|=>[zs]?|==|!=|<|>|<=|>=|\\+|-|\\*|/|%|&|\\||\\^|~|!|&&|\\|\\||<<|>>|>>>)",
+          "name": "keyword.operator.jz-hdl"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.jz-hdl"
+}

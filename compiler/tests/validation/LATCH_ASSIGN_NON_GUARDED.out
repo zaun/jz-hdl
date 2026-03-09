@@ -1,0 +1,2 @@
+File: LATCH_ASSIGN_NON_GUARDED.jz
+      23:5    error LATCH_ASSIGN_NON_GUARDED S4.8/S4.10 LATCH must be written via guarded assignment '<name> <= enable : data;' inside ASYNCHRONOUS block; other assignments to LATCH are forbidden

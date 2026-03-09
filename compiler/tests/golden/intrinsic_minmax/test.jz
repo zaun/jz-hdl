@@ -1,0 +1,73 @@
+// ============================================================================
+// TEST: INTRINSIC MIN/MAX (umin, umax, smin, smax)
+// VERIFIES: Sections 5.5.20–5.5.23
+//   - Result width = max(w_a, w_b)
+// ============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") MinMaxTest
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+        DONE   = { standard=LVCMOS33 };
+        a[8]   = { standard=LVCMOS33 };
+        b[8]   = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        umn[8] = { standard=LVCMOS33, drive=8 };
+        umx[8] = { standard=LVCMOS33, drive=8 };
+        smn[8] = { standard=LVCMOS33, drive=8 };
+        smx[8] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+        DONE = IOR32B;
+        a[0] = 10; a[1] = 11; a[2] = 12; a[3] = 13;
+        a[4] = 14; a[5] = 15; a[6] = 16; a[7] = 17;
+        b[0] = 20; b[1] = 21; b[2] = 22; b[3] = 23;
+        b[4] = 24; b[5] = 25; b[6] = 26; b[7] = 27;
+        umn[0] = 30; umn[1] = 31; umn[2] = 32; umn[3] = 33;
+        umn[4] = 34; umn[5] = 35; umn[6] = 36; umn[7] = 37;
+        umx[0] = 38; umx[1] = 39; umx[2] = 40; umx[3] = 41;
+        umx[4] = 42; umx[5] = 43; umx[6] = 44; umx[7] = 45;
+        smn[0] = 46; smn[1] = 47; smn[2] = 48; smn[3] = 49;
+        smn[4] = 50; smn[5] = 51; smn[6] = 52; smn[7] = 53;
+        smx[0] = 54; smx[1] = 55; smx[2] = 56; smx[3] = 57;
+        smx[4] = 58; smx[5] = 59; smx[6] = 60; smx[7] = 61;
+    }
+
+    @top MinMaxCore {
+        IN  [1] clk   = SCLK;
+        IN  [1] rst_n = DONE;
+        IN  [8] a     = a;
+        IN  [8] b     = b;
+        OUT [8] umn   = umn;
+        OUT [8] umx   = umx;
+        OUT [8] smn   = smn;
+        OUT [8] smx   = smx;
+    }
+@endproj
+
+@module MinMaxCore
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] umn;
+        OUT [8] umx;
+        OUT [8] smn;
+        OUT [8] smx;
+    }
+
+    ASYNCHRONOUS {
+        umn <= umin(a, b);
+        umx <= umax(a, b);
+        smn <= smin(a, b);
+        smx <= smax(a, b);
+    }
+@endmod

@@ -1,0 +1,24 @@
+// ASSIGN_MULTIPLE_SAME_BITS: more than one assignment to same net bits in a single path.
+// Verified
+
+@project ASSIGN_MULTIPLE_SAME_BITS_PROJECT
+  @top ASSIGN_MULTIPLE_SAME_BITS_EXAMPLE {
+    IN  [1] a = _;
+    IN  [1] b = _;
+    OUT [1] w = _;
+  }
+@endproj
+
+@module ASSIGN_MULTIPLE_SAME_BITS_EXAMPLE
+  PORT {
+    IN  [1] a;
+    IN  [1] b;
+    OUT [1] w;
+  }
+
+  ASYNCHRONOUS {
+    // Two root-level assignments to the same net; both execute in every path.
+    w = a;
+    w = b;
+  }
+@endmod

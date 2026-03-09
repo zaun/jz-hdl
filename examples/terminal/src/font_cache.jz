@@ -1,0 +1,392 @@
+// Font Cache: SDRAM-backed font with double-buffered scanline cache
+//
+// Font data lives in SDRAM (written by lzss_decomp at startup).
+// Two 256x8 BSRAM caches hold font bitmaps for the current and next pixel rows.
+//
+// Pipeline timing: 4 cycles from text_col to bitmap output, matching font_ram.
+//   Cycles 1-2: delay registers (col_d1, col_d2) to match terminal buffer latency
+//   Cycle 3: BSRAM cache read (address = col_d2)
+//   Cycle 4: bank mux into bitmap_out
+//
+// Character capture: During display, characters seen at each column are saved
+// in a register-file buffer. During prefetch, this buffer is read to compute
+// SDRAM addresses for the next pixel row's font bytes.
+//
+// SDRAM font layout: address = FONT_BASE + glyph_idx * 16 + char_row
+//   glyph_idx = {bank[4:0], char_code[6:0]}
+//   One byte per 32-bit SDRAM word (low 8 bits).
+@module font_cache
+    CONST {
+        FONT_BASE   = 65536;  // 0x010000 in SDRAM
+        MAX_COL     = 141;
+
+        // States
+        ST_IDLE     = 0;
+        ST_FETCH    = 1;  // Issue SDRAM read for prefetch
+        ST_WAIT     = 2;  // Waiting for SDRAM done
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+
+        // Font lookup (same interface as font_ram)
+        IN  [16] char_code;
+        IN  [4]  row;
+        OUT [8]  bitmap;
+        OUT [1]  graphic;
+
+        // Prefetch coordination from pixel generator
+        IN  [4]  char_row;         // Current pixel row within character cell (y_pos[3:0])
+        IN  [8]  text_col;         // Current text column being rendered
+        IN  [16] pf_char;          // Character code at current column (from terminal buffer)
+
+        // Ready signal (font data has been decompressed to SDRAM)
+        IN  [1]  font_ready;
+
+        // Display active (HIGH during active pixel scan, LOW during blanking)
+        IN  [1]  display_active;
+
+        // SDRAM read interface (directly to arbiter port)
+        OUT [21] sd_addr;
+        OUT [1]  sd_rd;
+        IN  [32] sd_rdata;
+        IN  [1]  sd_busy;
+        IN  [1]  sd_done;
+    }
+
+    WIRE {
+        // Font lookup (for graphic flag)
+        glyph_idx    [12];
+
+        // Prefetch: character from capture buffer
+        pf_saved_char [16];
+
+        // Prefetch glyph computation (from saved character)
+        pf_glyph_idx [12];
+    }
+
+    REGISTER {
+        // Pipeline delay to match terminal buffer latency (2 cycles)
+        col_d1        [8]  = 8'd0;
+        col_d2        [8]  = 8'd0;
+
+        // Cache control
+        active_buf    [1]  = 1'b0;    // Which cache pixel gen reads (0=A, 1=B)
+        cached_row    [4]  = 4'd15;   // Pixel row in active cache
+        prefetch_row  [4]  = 4'd15;   // Pixel row in prefetch cache
+
+        // Bitmap output (registered mux, like font_ram)
+        bitmap_out    [8]  = 8'h00;
+        graphic_r     [1]  = 1'b0;
+
+        // Prefetch state machine
+        state         [2]  = 2'd0;
+        pf_col_r      [8]  = 8'd0;   // Current prefetch column
+        pf_target_row [4]  = 4'd0;   // Row being prefetched
+
+        // SDRAM request
+        sd_addr_r     [21] = 21'd0;
+        sd_rd_r       [1]  = 1'b0;
+
+        // Line buffer write staging
+        lb_wr_en      [1]  = 1'b0;
+        lb_wr_to_a    [1]  = 1'b0;
+        lb_wr_addr_r  [8]  = 8'd0;
+        lb_wr_data_r  [8]  = 8'h00;
+
+        // Cache read bank selector (registered for pipeline)
+        lb_bank_sel   [1]  = 1'b0;
+    }
+
+    MEM(TYPE=BLOCK) {
+        // Scanline cache A: 8-bit wide x 256 deep (uses 142 entries)
+        cache_a [8] [256] = 8'h00 { OUT rd SYNC; IN wr; };
+
+        // Scanline cache B
+        cache_b [8] [256] = 8'h00 { OUT rd SYNC; IN wr; };
+    }
+
+    MEM(TYPE=DISTRIBUTED) {
+        // Character capture buffer: stores char codes seen during display
+        // Written during display scan, read during prefetch
+        char_buf [16] [256] = 16'h0000 { OUT rd ASYNC; IN wr; };
+    }
+
+    ASYNCHRONOUS {
+        // Unicode -> glyph index mapping (for graphic flag, same as font_ram.jz)
+        IF (char_code[15:8] == 8'h00) {
+            glyph_idx <= { 4'b0000, char_code[7:0] };
+        } ELIF (char_code[15:7] == 9'b000000010) {
+            glyph_idx <= { 5'd2, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b000000011) {
+            glyph_idx <= { 5'd3, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b000000100) {
+            glyph_idx <= { 5'd4, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b000000110) {
+            glyph_idx <= { 5'd5, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b000000111) {
+            glyph_idx <= { 5'd6, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b000001000) {
+            glyph_idx <= { 5'd7, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b000001001) {
+            glyph_idx <= { 5'd8, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b000001010) {
+            glyph_idx <= { 5'd9, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001000000) {
+            glyph_idx <= { 5'd10, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001000001) {
+            glyph_idx <= { 5'd11, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001000010) {
+            glyph_idx <= { 5'd12, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001000011) {
+            glyph_idx <= { 5'd13, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001000100) {
+            glyph_idx <= { 5'd14, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001000101) {
+            glyph_idx <= { 5'd15, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001001010) {
+            glyph_idx <= { 5'd16, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001001011) {
+            glyph_idx <= { 5'd17, char_code[6:0] };
+        // Latin Extended Additional (U+1E00-1EFF)
+        } ELIF (char_code[15:7] == 9'b000111100) {
+            glyph_idx <= { 5'd22, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b000111101) {
+            glyph_idx <= { 5'd23, char_code[6:0] };
+        // Braille (U+2800-28FF)
+        } ELIF (char_code[15:7] == 9'b001010000) {
+            glyph_idx <= { 5'd24, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001010001) {
+            glyph_idx <= { 5'd25, char_code[6:0] };
+        // Wide char right halves (bit 15 set by terminal.jz)
+        } ELIF (char_code[15:7] == 9'b101100000) {
+            glyph_idx <= { 5'd20, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b101100001) {
+            glyph_idx <= { 5'd21, char_code[6:0] };
+        // Kanji right halves (U+4000 | 0x8000 = U+C0xx)
+        } ELIF (char_code[15:7] == 9'b110000000) {
+            glyph_idx <= { 5'd28, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b110000001) {
+            glyph_idx <= { 5'd29, char_code[6:0] };
+        // Wide char left halves
+        } ELIF (char_code[15:7] == 9'b001100000) {
+            glyph_idx <= { 5'd18, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b001100001) {
+            glyph_idx <= { 5'd19, char_code[6:0] };
+        // Kanji left halves (U+4000-40FF)
+        } ELIF (char_code[15:7] == 9'b010000000) {
+            glyph_idx <= { 5'd26, char_code[6:0] };
+        } ELIF (char_code[15:7] == 9'b010000001) {
+            glyph_idx <= { 5'd27, char_code[6:0] };
+        } ELSE {
+            glyph_idx <= 12'd63;
+        }
+
+        // Read character capture buffer at prefetch column
+        pf_saved_char <= char_buf.rd[pf_col_r];
+
+        // Compute glyph index from saved character (for SDRAM address)
+        IF (pf_saved_char[15:8] == 8'h00) {
+            pf_glyph_idx <= { 4'b0000, pf_saved_char[7:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000000010) {
+            pf_glyph_idx <= { 5'd2, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000000011) {
+            pf_glyph_idx <= { 5'd3, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000000100) {
+            pf_glyph_idx <= { 5'd4, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000000110) {
+            pf_glyph_idx <= { 5'd5, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000000111) {
+            pf_glyph_idx <= { 5'd6, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000001000) {
+            pf_glyph_idx <= { 5'd7, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000001001) {
+            pf_glyph_idx <= { 5'd8, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000001010) {
+            pf_glyph_idx <= { 5'd9, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001000000) {
+            pf_glyph_idx <= { 5'd10, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001000001) {
+            pf_glyph_idx <= { 5'd11, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001000010) {
+            pf_glyph_idx <= { 5'd12, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001000011) {
+            pf_glyph_idx <= { 5'd13, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001000100) {
+            pf_glyph_idx <= { 5'd14, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001000101) {
+            pf_glyph_idx <= { 5'd15, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001001010) {
+            pf_glyph_idx <= { 5'd16, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001001011) {
+            pf_glyph_idx <= { 5'd17, pf_saved_char[6:0] };
+        // Latin Extended Additional (U+1E00-1EFF)
+        } ELIF (pf_saved_char[15:7] == 9'b000111100) {
+            pf_glyph_idx <= { 5'd22, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b000111101) {
+            pf_glyph_idx <= { 5'd23, pf_saved_char[6:0] };
+        // Braille (U+2800-28FF)
+        } ELIF (pf_saved_char[15:7] == 9'b001010000) {
+            pf_glyph_idx <= { 5'd24, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001010001) {
+            pf_glyph_idx <= { 5'd25, pf_saved_char[6:0] };
+        // Wide char right halves (bit 15 set by terminal.jz)
+        } ELIF (pf_saved_char[15:7] == 9'b101100000) {
+            pf_glyph_idx <= { 5'd20, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b101100001) {
+            pf_glyph_idx <= { 5'd21, pf_saved_char[6:0] };
+        // Kanji right halves (U+4000 | 0x8000 = U+C0xx)
+        } ELIF (pf_saved_char[15:7] == 9'b110000000) {
+            pf_glyph_idx <= { 5'd28, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b110000001) {
+            pf_glyph_idx <= { 5'd29, pf_saved_char[6:0] };
+        // Wide char left halves
+        } ELIF (pf_saved_char[15:7] == 9'b001100000) {
+            pf_glyph_idx <= { 5'd18, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b001100001) {
+            pf_glyph_idx <= { 5'd19, pf_saved_char[6:0] };
+        // Kanji left halves (U+4000-40FF)
+        } ELIF (pf_saved_char[15:7] == 9'b010000000) {
+            pf_glyph_idx <= { 5'd26, pf_saved_char[6:0] };
+        } ELIF (pf_saved_char[15:7] == 9'b010000001) {
+            pf_glyph_idx <= { 5'd27, pf_saved_char[6:0] };
+        } ELSE {
+            pf_glyph_idx <= 12'd63;
+        }
+
+        // Output bitmap from cache
+        bitmap  <= bitmap_out;
+        graphic <= graphic_r;
+
+        // SDRAM interface
+        sd_addr <= sd_addr_r;
+        sd_rd   <= sd_rd_r & ~sd_done;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // === Pipeline delay to match terminal buffer latency ===
+        // text_col → col_d1 → col_d2 → cache.rd.addr → bitmap_out
+        // This gives 4-cycle latency from text_col, matching:
+        //   terminal_buffer (2 cycles) + font_ram (2 cycles)
+        col_d1 <= text_col;
+        col_d2 <= col_d1;
+
+        // === Cache read path (pixel generator) ===
+        // Address cache with delayed column (aligned with buf_char timing)
+        cache_a.rd.addr <= col_d2;
+        cache_b.rd.addr <= col_d2;
+        lb_bank_sel     <= active_buf;
+
+        // Capture cache output (mux based on registered bank select)
+        IF (lb_bank_sel == 1'b0) {
+            bitmap_out <= cache_a.rd.data;
+        } ELSE {
+            bitmap_out <= cache_b.rd.data;
+        }
+
+        // Graphic flag: characters with glyph_idx >= 256 are graphic (bank >= 2)
+        graphic_r <= (glyph_idx >= 12'd256) ? 1'b1 : 1'b0;
+
+        // === Character capture ===
+        // Save characters seen during display for prefetch.
+        // col_d2 aligns with pf_char (both reflect the same column).
+        char_buf.wr[col_d2] <= pf_char;
+
+        // === Single cache write site (from staged values) ===
+        IF (lb_wr_en == 1'b1 && lb_wr_to_a == 1'b1) {
+            cache_a.wr[lb_wr_addr_r] <= lb_wr_data_r;
+        } ELIF (lb_wr_en == 1'b1 && lb_wr_to_a == 1'b0) {
+            cache_b.wr[lb_wr_addr_r] <= lb_wr_data_r;
+        }
+
+        // === Unified state machine (includes cache swap + prefetch) ===
+        SELECT (state) {
+            CASE (lit(2, ST_IDLE)) {
+                lb_wr_en <= 1'b0;
+                sd_rd_r  <= 1'b0;
+
+                // Cache swap: when prefetch buffer has the row we need
+                // and active cache doesn't. ONLY swap during horizontal
+                // blanking to prevent mid-scanline tearing (prefetch can
+                // take longer than one scanline, causing partial updates).
+                // When swap is pending but display is active, do nothing
+                // (don't start a new prefetch that would overwrite the
+                // inactive cache we're about to swap in).
+                IF (prefetch_row == char_row && cached_row != char_row) {
+                    IF (display_active == 1'b0) {
+                        active_buf   <= ~active_buf;
+                        cached_row   <= prefetch_row;
+                        prefetch_row <= cached_row;
+                    }
+                } ELIF (font_ready == 1'b1) {
+                    // Determine what to prefetch
+                    IF (char_row != cached_row && char_row != prefetch_row) {
+                        // Urgent: current pixel row not in either cache
+                        pf_target_row <= char_row;
+                        pf_col_r      <= 8'd0;
+                        state         <= lit(2, ST_FETCH);
+                    } ELIF (cached_row == char_row) {
+                        // Prefetch next row (if not already done)
+                        IF (char_row == 4'd15) {
+                            IF (prefetch_row != 4'd0) {
+                                pf_target_row <= 4'd0;
+                                pf_col_r      <= 8'd0;
+                                state         <= lit(2, ST_FETCH);
+                            }
+                        } ELSE {
+                            IF (prefetch_row != char_row + 4'd1) {
+                                pf_target_row <= char_row + 4'd1;
+                                pf_col_r      <= 8'd0;
+                                state         <= lit(2, ST_FETCH);
+                            }
+                        }
+                    }
+                }
+            }
+
+            CASE (lit(2, ST_FETCH)) {
+                lb_wr_en <= 1'b0;
+
+                // Issue SDRAM read: FONT_BASE + glyph_idx * 16 + target_row
+                // glyph_idx * 16 + row = {glyph_idx, row} (concatenation)
+                IF (sd_busy == 1'b0) {
+                    sd_addr_r <= lit(21, FONT_BASE) + { 5'b00000, pf_glyph_idx, pf_target_row };
+                    sd_rd_r   <= 1'b1;
+                    state     <= lit(2, ST_WAIT);
+                } ELSE {
+                    sd_rd_r <= 1'b0;
+                }
+            }
+
+            CASE (lit(2, ST_WAIT)) {
+                IF (sd_done == 1'b1) {
+                    sd_rd_r <= 1'b0;
+
+                    // Write SDRAM read data (low byte) to prefetch cache
+                    lb_wr_en     <= 1'b1;
+                    lb_wr_to_a   <= active_buf;   // Write to inactive cache
+                    lb_wr_addr_r <= pf_col_r;
+                    lb_wr_data_r <= sd_rdata[7:0];
+
+                    IF (pf_col_r == lit(8, MAX_COL)) {
+                        // Prefetch complete
+                        prefetch_row <= pf_target_row;
+                        state        <= lit(2, ST_IDLE);
+                    } ELSE {
+                        pf_col_r <= pf_col_r + 8'd1;
+                        state    <= lit(2, ST_FETCH);
+                    }
+                } ELSE {
+                    lb_wr_en <= 1'b0;
+                }
+            }
+
+            DEFAULT {
+                sd_rd_r  <= 1'b0;
+                lb_wr_en <= 1'b0;
+                state    <= lit(2, ST_IDLE);
+            }
+        }
+    }
+@endmod

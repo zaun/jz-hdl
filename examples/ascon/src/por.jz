@@ -1,0 +1,35 @@
+@module por
+    PORT {
+        IN  [1] clk;
+        IN  [1] done;
+        OUT [1] por_n;
+    }
+
+    CONST {
+        POR_CYCLES   = 16;
+        POR_CNT_BITS = clog2(POR_CYCLES);
+        POR_MAX      = POR_CYCLES - 1;
+    }
+
+    REGISTER {
+        por_reg [1] = 1'b0;
+        cnt     [POR_CNT_BITS] = POR_CNT_BITS'b0;
+    }
+
+    ASYNCHRONOUS {
+        por_n <= por_reg;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (done == 1'b0) {
+            por_reg <= 1'b0;
+            cnt <= POR_CNT_BITS'b0;
+        } ELIF (cnt == lit(POR_CNT_BITS, POR_MAX)) {
+            por_reg <= 1'b1;
+            cnt <= cnt;
+        } ELSE {
+            por_reg <= 1'b0;
+            cnt <= cnt + POR_CNT_BITS'b1;
+        }
+    }
+@endmod

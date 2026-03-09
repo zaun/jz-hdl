@@ -1,0 +1,2 @@
+File: BUS_SIGNAL_READ_FROM_WRITABLE.jz
+      22:11   error BUS_SIGNAL_READ_FROM_WRITABLE S4.4.1 Read access to writable BUS signal is not allowed

@@ -1,0 +1,135 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "CDC_RAW_PROJECT",
+    "modules": [
+      {
+        "id": 0,
+        "name": "cdc_raw_test",
+        "base_module_id": -1,
+        "source_line": 9,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk_a",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 11,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "clk_b",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 12,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "q",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 13,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 3,
+          "name": "data_reg",
+          "kind": "register",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 16,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 8 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 4,
+          "name": "dest_reg",
+          "kind": "register",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 17,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 8 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 5,
+          "name": "data_raw",
+          "kind": "net",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 20,
+          "can_be_z": false,
+          "iob": false
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [3],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 25, "statements": [{ "kind": "assignment", "id": 0, "source_line": 26, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "binary_add", "width": 8, "source_line": 26, "left": { "kind": "signal_ref", "width": 8, "source_line": 26, "signal_id": 3 }, "right": { "kind": "literal", "width": 8, "source_line": 26, "literal": { "value": 1, "width": 8 } } } }] }
+          },
+          {
+            "id": 1,
+            "clock_signal_id": 1,
+            "edge": "RISING",
+            "register_ids": [4],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 1, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 28, "statements": [{ "kind": "assignment", "id": 0, "source_line": 29, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 0, "source_line": 29, "signal_id": 5 } }] }
+          }
+        ],
+        "instances": [
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 22, "statements": [{ "kind": "assignment", "id": 0, "source_line": 23, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 2, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 0, "source_line": 23, "signal_id": 5 } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 5, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 8, "signal_id": 3 } }] }
+      }
+    ],
+    "project": {
+      "name": "CDC_RAW_PROJECT",
+      "clocks": [
+      ],
+      "clock_gens": [
+      ],
+      "pins": [
+      ],
+      "mappings": [
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 1, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 2, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 31 }
+    ]
+  }
+}

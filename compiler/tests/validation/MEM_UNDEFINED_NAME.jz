@@ -1,0 +1,21 @@
+// MEM_UNDEFINED_NAME: access to MEM name not declared in module.
+// Verified
+
+@project MEM_UNDEFINED_NAME_PROJECT
+  @top MEM_UNDEFINED_NAME_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module MEM_UNDEFINED_NAME_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [8] out;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    // 'missing' is not declared as a MEM in this module.
+    out = missing.rd[0];
+  }
+@endmod

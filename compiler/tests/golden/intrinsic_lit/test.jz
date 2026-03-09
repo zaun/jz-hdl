@@ -1,0 +1,92 @@
+// ============================================================================
+// TEST: INTRINSIC LIT (COMPILE-TIME LITERAL)
+// VERIFIES: Section 5.5.11 — lit(width, value) compile-time sized literal.
+//   - lit(width, value) produces a sized bit-vector
+//   - Width from inline integer
+//   - Width from CONST and clog2()
+//   - Width from widthof()
+//   - Usage in comparisons, assignments, synchronous RHS
+// ============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") LitTest
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK     = { standard=LVCMOS33 };
+        DONE     = { standard=LVCMOS33 };
+        din[8] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        result[8] = { standard=LVCMOS33, drive=8 };
+        flag[1]   = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+        DONE = IOR32B;
+        din[0] = 10; din[1] = 11; din[2] = 12; din[3] = 13;
+        din[4] = 14; din[5] = 15; din[6] = 16; din[7] = 17;
+        result[0] = 30; result[1] = 31; result[2] = 32; result[3] = 33;
+        result[4] = 34; result[5] = 35; result[6] = 36; result[7] = 37;
+        flag = 40;
+    }
+
+    @top LitCore {
+        IN  [1] clk    = SCLK;
+        IN  [1] rst_n  = DONE;
+        IN  [8] data   = din;
+        OUT [8] dout   = result;
+        OUT [1] match  = flag;
+    }
+@endproj
+
+@module LitCore
+    CONST {
+        DEPTH = 200;
+        ADDR_W = clog2(DEPTH);
+        DATA_W = widthof(data);
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [8] data;
+        OUT [8] dout;
+        OUT [1] match;
+    }
+
+    WIRE {
+        eq_zero  [1];
+        eq_max   [1];
+    }
+
+    REGISTER {
+        // Counter with CONST-derived width
+        counter [ADDR_W] = 8'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Test 1: lit() with inline width in comparison
+        eq_zero <= (data == lit(8, 0)) ? 1'b1 : 1'b0;
+
+        // Test 2: lit() with CONST-derived width in comparison
+        eq_max <= (counter == lit(ADDR_W, DEPTH - 1)) ? 1'b1 : 1'b0;
+
+        // Test 3: lit() with widthof()-derived CONST width in assignment
+        dout <= data ^ lit(DATA_W, 255);
+
+        match <= eq_zero | eq_max;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Test 4: lit() in synchronous comparison and assignment
+        IF (counter == lit(ADDR_W, DEPTH - 1)) {
+            counter <= lit(ADDR_W, 0);
+        } ELSE {
+            counter <= counter + lit(ADDR_W, 1);
+        }
+    }
+@endmod

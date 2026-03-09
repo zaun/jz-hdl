@@ -1,0 +1,2 @@
+File: LIT_WIDTH_INVALID.jz
+      16:13   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression

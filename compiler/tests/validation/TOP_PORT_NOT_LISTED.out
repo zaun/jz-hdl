@@ -1,0 +1,2 @@
+File: TOP_PORT_NOT_LISTED.jz
+      25:13   error TOP_PORT_NOT_LISTED S6.9/S6.10 Top module port omitted from project-level @top block

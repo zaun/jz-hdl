@@ -1,0 +1,543 @@
+// Ascon-128 UART Interface — streaming architecture
+//
+// Protocol (115200 8N1):
+//   REQUEST:
+//     Byte 0:      'E' (0x45) encrypt, 'D' (0x44) decrypt
+//     Bytes 1-16:  128-bit key (MSB first)
+//     Bytes 17-32: 128-bit nonce (MSB first)
+//     Byte 33:     Data length in bytes (0-255)
+//     Bytes 34+:   Data bytes
+//     Decrypt only: 16 more bytes of expected tag
+//
+//   RESPONSE:
+//     Bytes 0+:    Output data (same length as input, streamed)
+//     Next byte:   'K' success, 'F' tag mismatch
+//     Encrypt only: 16 bytes of tag appended
+//
+// Data is processed in 8-byte blocks as it streams through.
+// No large buffer needed; only two 64-bit shift registers.
+@module ascon_top
+    PORT {
+        IN  [1] clk;
+        IN  [1] por;
+        IN  [1] rst_n;
+        IN  [1] uart_rx;
+        OUT [1] uart_tx;
+        OUT [6] leds;
+    }
+
+    WIRE {
+        reset      [1];
+        por_n      [1];
+        rx_data    [8];
+        rx_valid   [1];
+        tx_ready   [1];
+        ac_dout    [64];
+        ac_dout_v  [1];
+        ac_tag_out [128];
+        ac_tag_ok  [1];
+        ac_done    [1];
+        ac_ready   [1];
+    }
+
+    CONST {
+        S_RX_CMD     = 0;
+        S_RX_KEY     = 1;
+        S_RX_NONCE   = 2;
+        S_RX_LEN     = 3;
+        S_INIT       = 4;
+        S_INIT_WAIT  = 5;
+        S_RX_BLK     = 6;
+        S_FEED       = 7;
+        S_ASCON_WAIT = 8;
+        S_TX_BLK     = 9;
+        S_RX_TAG     = 10;
+        S_DONE_WAIT  = 11;
+        S_TX_STATUS  = 12;
+        S_TX_TAG     = 13;
+        S_TX_DONE    = 14;
+        S_EMPTY_FEED = 15;
+    }
+
+    REGISTER {
+        state       [4]   = 4'd0;
+        cmd_reg     [1]   = 1'b0;
+
+        // Key and nonce (shift in MSB first)
+        key_sr      [128] = 128'h00000000000000000000000000000000;
+        nonce_sr    [128] = 128'h00000000000000000000000000000000;
+
+        // Data tracking
+        data_len    [8]   = 8'd0;     // total data bytes
+        bytes_done  [8]   = 8'd0;     // bytes received/processed so far
+        byte_cnt    [8]   = 8'd0;     // general purpose byte counter
+
+        // Block accumulator (shift in 8 bytes MSB first)
+        blk_acc     [64]  = 64'h0000000000000000;
+        blk_pos     [3]   = 3'd0;     // bytes in current block (0-7)
+
+        // TX shift register
+        tx_shift    [64]  = 64'h0000000000000000;
+        tx_cnt      [4]   = 4'd0;     // bytes to send from current block
+
+        // Ascon control registers
+        ac_start_r  [1]   = 1'b0;
+        ac_cmd_r    [1]   = 1'b0;
+        ac_din_r    [64]  = 64'h0000000000000000;
+        ac_din_v_r  [1]   = 1'b0;
+        ac_din_last_r [1] = 1'b0;
+        ac_din_empty_r [1] = 1'b0;
+        ac_din_plen_r  [3] = 3'd0;
+
+        // Tag
+        tag_in_sr   [128] = 128'h00000000000000000000000000000000;
+        tag_result  [128] = 128'h00000000000000000000000000000000;
+        tag_ok_reg  [1]   = 1'b0;
+
+        // TX byte and send
+        tx_byte_r   [8]   = 8'h00;
+        tx_send_r   [1]   = 1'b0;
+        tx_tag_cnt  [5]   = 5'd0;
+
+        // Partial block tracking
+        is_last_blk [1]   = 1'b0;
+        partial_len [3]   = 3'd0;     // bytes in last block if partial
+
+        // Latch ascon done (it may pulse while we're receiving tag)
+        done_latch  [1]   = 1'b0;
+
+        // LED
+        led_reg     [6]   = 6'b111111;
+    }
+
+    ASYNCHRONOUS {
+        reset = por_n & rst_n;
+        leds <= led_reg;
+    }
+
+    @new por0 por {
+        IN  [1] clk   = clk;
+        IN  [1] done  = por;
+        OUT [1] por_n = por_n;
+    }
+
+    @new urx0 uart_rx {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = reset;
+        IN  [1] rx    = uart_rx;
+        OUT [8] data  = rx_data;
+        OUT [1] valid = rx_valid;
+    }
+
+    @new utx0 uart_tx {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = reset;
+        IN  [8] data  = tx_byte_r;
+        IN  [1] valid = tx_send_r;
+        OUT [1] ready = tx_ready;
+        OUT [1] tx    = uart_tx;
+    }
+
+    @new ac0 ascon {
+        IN  [1]   clk       = clk;
+        IN  [1]   rst_n     = reset;
+        IN  [1]   cmd_start = ac_start_r;
+        IN  [1]   cmd       = ac_cmd_r;
+        IN  [128] key       = key_sr;
+        IN  [128] nonce     = nonce_sr;
+        IN  [64]  din       = ac_din_r;
+        IN  [1]   din_valid = ac_din_v_r;
+        IN  [1]   din_last  = ac_din_last_r;
+        IN  [1]   din_empty = ac_din_empty_r;
+        IN  [3]   din_partial_len = ac_din_plen_r;
+        IN  [128] tag_in    = tag_in_sr;
+        OUT [64]  dout      = ac_dout;
+        OUT [1]   dout_valid = ac_dout_v;
+        OUT [128] tag_out   = ac_tag_out;
+        OUT [1]   tag_valid = ac_tag_ok;
+        OUT [1]   done      = ac_done;
+        OUT [1]   ready     = ac_ready;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        SELECT (state) {
+            // ---- Receive command byte ----
+            CASE (lit(4, S_RX_CMD)) {
+                led_reg <= 6'b111110;
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (rx_valid == 1'b1) {
+                    IF (rx_data == 8'h45) {
+                        cmd_reg <= 1'b0;
+                        byte_cnt <= 8'd0;
+                        state <= lit(4, S_RX_KEY);
+                    } ELIF (rx_data == 8'h44) {
+                        cmd_reg <= 1'b1;
+                        byte_cnt <= 8'd0;
+                        state <= lit(4, S_RX_KEY);
+                    }
+                }
+            }
+
+            // ---- Receive 16-byte key ----
+            CASE (lit(4, S_RX_KEY)) {
+                led_reg <= 6'b111100;
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (rx_valid == 1'b1) {
+                    key_sr <= { key_sr[119:0], rx_data };
+                    IF (byte_cnt == 8'd15) {
+                        byte_cnt <= 8'd0;
+                        state <= lit(4, S_RX_NONCE);
+                    } ELSE {
+                        byte_cnt <= byte_cnt + 8'd1;
+                    }
+                }
+            }
+
+            // ---- Receive 16-byte nonce ----
+            CASE (lit(4, S_RX_NONCE)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (rx_valid == 1'b1) {
+                    nonce_sr <= { nonce_sr[119:0], rx_data };
+                    IF (byte_cnt == 8'd15) {
+                        state <= lit(4, S_RX_LEN);
+                    } ELSE {
+                        byte_cnt <= byte_cnt + 8'd1;
+                    }
+                }
+            }
+
+            // ---- Receive data length byte ----
+            CASE (lit(4, S_RX_LEN)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (rx_valid == 1'b1) {
+                    data_len <= rx_data;
+                    bytes_done <= 8'd0;
+                    blk_pos <= 3'd0;
+                    blk_acc <= 64'h0000000000000000;
+                    partial_len <= rx_data[2:0];
+                    state <= lit(4, S_INIT);
+                }
+            }
+
+            // ---- Start Ascon init ----
+            CASE (lit(4, S_INIT)) {
+                led_reg <= 6'b110000;
+                ac_start_r <= 1'b1;
+                ac_cmd_r <= cmd_reg;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                done_latch <= 1'b0;
+                state <= lit(4, S_INIT_WAIT);
+            }
+
+            // ---- Wait for Ascon init to complete ----
+            CASE (lit(4, S_INIT_WAIT)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (ac_ready == 1'b1) {
+                    IF (data_len == 8'd0) {
+                        // Empty message: send padding block
+                        state <= lit(4, S_EMPTY_FEED);
+                    } ELSE {
+                        // Start receiving data
+                        state <= lit(4, S_RX_BLK);
+                    }
+                }
+            }
+
+            // ---- Receive 8 data bytes into block accumulator ----
+            CASE (lit(4, S_RX_BLK)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (rx_valid == 1'b1) {
+                    blk_acc <= { blk_acc[55:0], rx_data };
+                    bytes_done <= bytes_done + 8'd1;
+
+                    IF (bytes_done + 8'd1 == data_len) {
+                        // All data received
+                        is_last_blk <= 1'b1;
+                        blk_pos <= blk_pos + 3'd1;
+                        state <= lit(4, S_FEED);
+                    } ELIF (blk_pos == 3'd7) {
+                        // Full 8-byte block ready
+                        blk_pos <= 3'd0;
+                        is_last_blk <= 1'b0;
+                        state <= lit(4, S_FEED);
+                    } ELSE {
+                        blk_pos <= blk_pos + 3'd1;
+                    }
+                }
+            }
+
+            // ---- Feed block to Ascon ----
+            CASE (lit(4, S_FEED)) {
+                ac_start_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
+                    // Partial last block: pad with 0x80 after last byte
+                    SELECT (blk_pos) {
+                        CASE (3'd1) {
+                            ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
+                        }
+                        CASE (3'd2) {
+                            ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
+                        }
+                        CASE (3'd3) {
+                            ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
+                        }
+                        CASE (3'd4) {
+                            ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
+                        }
+                        CASE (3'd5) {
+                            ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
+                        }
+                        CASE (3'd6) {
+                            ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
+                        }
+                        CASE (3'd7) {
+                            ac_din_r <= { blk_acc[55:0],  8'h80 };
+                        }
+                        DEFAULT {
+                            ac_din_r <= 64'h8000000000000000;
+                        }
+                    }
+                    ac_din_v_r <= 1'b1;
+                    ac_din_last_r <= 1'b1;
+                    ac_din_empty_r <= 1'b0;
+                    // Partial block: only send partial_len bytes in TX
+                    tx_cnt <= { 1'b0, partial_len };
+                    ac_din_plen_r <= partial_len;
+                    state <= lit(4, S_ASCON_WAIT);
+                } ELIF (is_last_blk == 1'b1) {
+                    // Full last block: process normally, then need empty pad
+                    ac_din_r <= blk_acc;
+                    ac_din_v_r <= 1'b1;
+                    ac_din_last_r <= 1'b0;
+                    ac_din_empty_r <= 1'b0;
+                    ac_din_plen_r <= 3'd0;
+                    tx_cnt <= 4'd8;
+                    state <= lit(4, S_ASCON_WAIT);
+                } ELSE {
+                    // Intermediate full block
+                    ac_din_r <= blk_acc;
+                    ac_din_v_r <= 1'b1;
+                    ac_din_last_r <= 1'b0;
+                    ac_din_empty_r <= 1'b0;
+                    ac_din_plen_r <= 3'd0;
+                    tx_cnt <= 4'd8;
+                    state <= lit(4, S_ASCON_WAIT);
+                }
+            }
+
+            // ---- Wait for Ascon, capture output, then TX ----
+            CASE (lit(4, S_ASCON_WAIT)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (ac_dout_v == 1'b1) {
+                    tx_shift <= ac_dout;
+                    state <= lit(4, S_TX_BLK);
+                }
+            }
+
+            // ---- TX: send bytes from shift register ----
+            CASE (lit(4, S_TX_BLK)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+                    tx_byte_r <= tx_shift[63:56];
+                    tx_shift <= { tx_shift[55:0], 8'h00 };
+                    tx_send_r <= 1'b1;
+                    IF (ac_done == 1'b1) {
+                        done_latch <= 1'b1;
+                    }
+                    IF (tx_cnt == 4'd1) {
+                        // Last byte of this block sent
+                        IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
+                            // Partial last block was already din_last
+                            // Wait for ascon done
+                            IF (cmd_reg == 1'b1) {
+                                byte_cnt <= 8'd0;
+                                state <= lit(4, S_RX_TAG);
+                            } ELSE {
+                                state <= lit(4, S_DONE_WAIT);
+                            }
+                        } ELIF (is_last_blk == 1'b1) {
+                            // Full last block: need empty padding block
+                            state <= lit(4, S_EMPTY_FEED);
+                        } ELSE {
+                            // More blocks to receive
+                            blk_pos <= 3'd0;
+                            blk_acc <= 64'h0000000000000000;
+                            state <= lit(4, S_RX_BLK);
+                        }
+                    } ELSE {
+                        tx_cnt <= tx_cnt - 4'd1;
+                    }
+                } ELSE {
+                    tx_send_r <= 1'b0;
+                    IF (ac_done == 1'b1) {
+                        done_latch <= 1'b1;
+                    }
+                }
+            }
+
+            // ---- Feed empty padding block ----
+            CASE (lit(4, S_EMPTY_FEED)) {
+                ac_start_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (ac_ready == 1'b1) {
+                    ac_din_r <= 64'h0000000000000000;
+                    ac_din_v_r <= 1'b1;
+                    ac_din_last_r <= 1'b1;
+                    ac_din_empty_r <= 1'b1;
+                    IF (cmd_reg == 1'b1) {
+                        byte_cnt <= 8'd0;
+                        state <= lit(4, S_RX_TAG);
+                    } ELSE {
+                        state <= lit(4, S_DONE_WAIT);
+                    }
+                } ELSE {
+                    ac_din_v_r <= 1'b0;
+                    ac_din_last_r <= 1'b0;
+                    ac_din_empty_r <= 1'b0;
+                }
+            }
+
+            // ---- Receive 16-byte tag (decrypt only) ----
+            CASE (lit(4, S_RX_TAG)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (ac_done == 1'b1) {
+                    done_latch <= 1'b1;
+                }
+                IF (rx_valid == 1'b1) {
+                    tag_in_sr <= { tag_in_sr[119:0], rx_data };
+                    IF (byte_cnt == 8'd15) {
+                        state <= lit(4, S_DONE_WAIT);
+                    } ELSE {
+                        byte_cnt <= byte_cnt + 8'd1;
+                    }
+                }
+            }
+
+            // ---- Wait for Ascon finalization ----
+            CASE (lit(4, S_DONE_WAIT)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                IF (done_latch == 1'b1) {
+                    // Done already fired while we were in S_RX_TAG or S_TX_BLK
+                    // tag_out and tag_valid persist in ascon (not cleared in IDLE)
+                    tag_result <= ac_tag_out;
+                    tag_ok_reg <= ac_tag_ok;
+                    tx_tag_cnt <= 5'd0;
+                    done_latch <= 1'b0;
+                    state <= lit(4, S_TX_STATUS);
+                } ELIF (ac_done == 1'b1) {
+                    tag_result <= ac_tag_out;
+                    tag_ok_reg <= ac_tag_ok;
+                    tx_tag_cnt <= 5'd0;
+                    state <= lit(4, S_TX_STATUS);
+                }
+            }
+
+            // ---- TX: send status byte ----
+            CASE (lit(4, S_TX_STATUS)) {
+                led_reg <= 6'b100000;
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+                    IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
+                        tx_byte_r <= 8'h46;
+                    } ELSE {
+                        tx_byte_r <= 8'h4B;
+                    }
+                    tx_send_r <= 1'b1;
+                    IF (cmd_reg == 1'b0) {
+                        state <= lit(4, S_TX_TAG);
+                    } ELSE {
+                        state <= lit(4, S_TX_DONE);
+                    }
+                } ELSE {
+                    tx_send_r <= 1'b0;
+                }
+            }
+
+            // ---- TX: send 16-byte tag (encrypt only) ----
+            CASE (lit(4, S_TX_TAG)) {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+                    tx_byte_r <= tag_result[127:120];
+                    tag_result <= { tag_result[119:0], 8'h00 };
+                    tx_send_r <= 1'b1;
+                    IF (tx_tag_cnt == 5'd15) {
+                        state <= lit(4, S_TX_DONE);
+                    } ELSE {
+                        tx_tag_cnt <= tx_tag_cnt + 5'd1;
+                    }
+                } ELSE {
+                    tx_send_r <= 1'b0;
+                }
+            }
+
+            // ---- Done, return to idle ----
+            CASE (lit(4, S_TX_DONE)) {
+                led_reg <= 6'b111111;
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                state <= lit(4, S_RX_CMD);
+            }
+
+            DEFAULT {
+                ac_start_r <= 1'b0;
+                ac_din_v_r <= 1'b0;
+                ac_din_last_r <= 1'b0;
+                ac_din_empty_r <= 1'b0;
+                tx_send_r <= 1'b0;
+                state <= lit(4, S_RX_CMD);
+            }
+        }
+    }
+@endmod

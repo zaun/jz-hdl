@@ -1,0 +1,31 @@
+@project CDC_HANDSHAKE_PROJECT
+  @top cdc_handshake_test {
+    IN  [1] clk_a = _;
+    IN  [1] clk_b = _;
+    OUT [8] q = _;
+  }
+@endproj
+
+@module cdc_handshake_test
+  PORT {
+    IN  [1] clk_a;
+    IN  [1] clk_b;
+    OUT [8] q;
+  }
+  REGISTER {
+    counter [8] = 8'h00;
+    dest_reg [1] = 1'b0;
+  }
+  CDC {
+    HANDSHAKE counter (clk_a) => counter_sync (clk_b);
+  }
+  ASYNCHRONOUS {
+    q = counter_sync;
+  }
+  SYNCHRONOUS(CLK=clk_a) {
+    counter <= counter + 8'b1;
+  }
+  SYNCHRONOUS(CLK=clk_b) {
+    dest_reg <= counter_sync[0];
+  }
+@endmod

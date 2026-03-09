@@ -1,0 +1,2 @@
+File: CDC_TYPE_INVALID.jz
+      24:5    error CDC_TYPE_INVALID S4.12 CDC type must be BIT, BUS, FIFO, HANDSHAKE, PULSE, MCP, or RAW

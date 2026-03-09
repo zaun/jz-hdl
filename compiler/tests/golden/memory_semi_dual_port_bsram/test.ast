@@ -1,0 +1,391 @@
+{"type": "Project", "name": "semi_dual_port_bsram_project", "loc": {"line": 7, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 8, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "1", "loc": {"line": 9, "column": 5, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "rst_n", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "1", "loc": {"line": 10, "column": 5, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "sel", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "3", "loc": {"line": 11, "column": 5, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "addr", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "13", "loc": {"line": 12, "column": 5, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "cmd", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "1", "loc": {"line": 13, "column": 5, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "valid", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "1", "loc": {"line": 14, "column": 5, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "din", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "16", "loc": {"line": 15, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 18, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "dout", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 4", "width": "16", "loc": {"line": 19, "column": 5, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "done_out", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 4", "width": "1", "loc": {"line": 20, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 23, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "clk", "text": "1", "loc": {"line": 24, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "rst_n", "text": "2", "loc": {"line": 25, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sel [ 0 ]", "text": "3", "loc": {"line": 26, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sel [ 1 ]", "text": "4", "loc": {"line": 27, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sel [ 2 ]", "text": "5", "loc": {"line": 28, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 0 ]", "text": "6", "loc": {"line": 29, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 1 ]", "text": "7", "loc": {"line": 30, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 2 ]", "text": "8", "loc": {"line": 31, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 3 ]", "text": "9", "loc": {"line": 32, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 4 ]", "text": "10", "loc": {"line": 33, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 5 ]", "text": "11", "loc": {"line": 34, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 6 ]", "text": "12", "loc": {"line": 35, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 7 ]", "text": "13", "loc": {"line": 36, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 8 ]", "text": "14", "loc": {"line": 37, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 9 ]", "text": "15", "loc": {"line": 38, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 10 ]", "text": "16", "loc": {"line": 39, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 11 ]", "text": "17", "loc": {"line": 40, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "addr [ 12 ]", "text": "18", "loc": {"line": 41, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "cmd", "text": "19", "loc": {"line": 42, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "valid", "text": "20", "loc": {"line": 43, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 0 ]", "text": "21", "loc": {"line": 44, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 1 ]", "text": "22", "loc": {"line": 45, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 2 ]", "text": "23", "loc": {"line": 46, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 3 ]", "text": "24", "loc": {"line": 47, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 4 ]", "text": "25", "loc": {"line": 48, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 5 ]", "text": "26", "loc": {"line": 49, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 6 ]", "text": "27", "loc": {"line": 50, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 7 ]", "text": "28", "loc": {"line": 51, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 8 ]", "text": "29", "loc": {"line": 52, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 9 ]", "text": "30", "loc": {"line": 53, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 10 ]", "text": "31", "loc": {"line": 54, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 11 ]", "text": "32", "loc": {"line": 55, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 12 ]", "text": "33", "loc": {"line": 56, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 13 ]", "text": "34", "loc": {"line": 57, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 14 ]", "text": "35", "loc": {"line": 58, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "din [ 15 ]", "text": "36", "loc": {"line": 59, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 0 ]", "text": "37", "loc": {"line": 60, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 1 ]", "text": "38", "loc": {"line": 61, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 2 ]", "text": "39", "loc": {"line": 62, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 3 ]", "text": "40", "loc": {"line": 63, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 4 ]", "text": "41", "loc": {"line": 64, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 5 ]", "text": "42", "loc": {"line": 65, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 6 ]", "text": "43", "loc": {"line": 66, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 7 ]", "text": "44", "loc": {"line": 67, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 8 ]", "text": "45", "loc": {"line": 68, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 9 ]", "text": "46", "loc": {"line": 69, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 10 ]", "text": "47", "loc": {"line": 70, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 11 ]", "text": "48", "loc": {"line": 71, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 12 ]", "text": "49", "loc": {"line": 72, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 13 ]", "text": "50", "loc": {"line": 73, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 14 ]", "text": "51", "loc": {"line": 74, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "dout [ 15 ]", "text": "52", "loc": {"line": 75, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "done_out", "text": "53", "loc": {"line": 76, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 79, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "clk", "text": "period = 10 . 0 , edge = Rising", "loc": {"line": 80, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "BusBlock", "name": "PARALLEL_BUS", "block_kind": "BUS", "loc": {"line": 83, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "BusDecl", "name": "SEL", "block_kind": "OUT", "width": "3", "loc": {"line": 84, "column": 19, "file": "test.jz"}},
+    {"type": "BusDecl", "name": "ADDR", "block_kind": "OUT", "width": "13", "loc": {"line": 85, "column": 19, "file": "test.jz"}},
+    {"type": "BusDecl", "name": "CMD", "block_kind": "OUT", "width": "1", "loc": {"line": 86, "column": 19, "file": "test.jz"}},
+    {"type": "BusDecl", "name": "VALID", "block_kind": "OUT", "width": "1", "loc": {"line": 87, "column": 19, "file": "test.jz"}},
+    {"type": "BusDecl", "name": "DATA", "block_kind": "INOUT", "width": "16", "loc": {"line": 88, "column": 19, "file": "test.jz"}},
+    {"type": "BusDecl", "name": "DONE", "block_kind": "IN", "width": "1", "loc": {"line": 89, "column": 19, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "ram_wrapper", "loc": {"line": 92, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "clk", "width": "1", "loc": {"line": 93, "column": 14, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "rst_n", "block_kind": "IN", "text": "rst_n", "width": "1", "loc": {"line": 94, "column": 14, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "sel", "block_kind": "IN", "text": "sel", "width": "3", "loc": {"line": 95, "column": 14, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "addr", "block_kind": "IN", "text": "addr", "width": "13", "loc": {"line": 96, "column": 14, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "cmd", "block_kind": "IN", "text": "cmd", "width": "1", "loc": {"line": 97, "column": 14, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "valid", "block_kind": "IN", "text": "valid", "width": "1", "loc": {"line": 98, "column": 14, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "din", "block_kind": "IN", "text": "din", "width": "16", "loc": {"line": 99, "column": 14, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "dout", "block_kind": "OUT", "text": "dout", "width": "16", "loc": {"line": 100, "column": 14, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "done_out", "block_kind": "OUT", "text": "done_out", "width": "1", "loc": {"line": 101, "column": 14, "file": "test.jz"}}
+  ]},
+  {"type": "GlobalBlock", "name": "CMD", "loc": {"line": 2, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "READ", "text": "1'b0", "loc": {"line": 3, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "WRITE", "text": "1'b1", "loc": {"line": 4, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "bus_driver", "loc": {"line": 105, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 106, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "sel", "block_kind": "IN", "width": "3", "loc": {"line": 107, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "addr", "block_kind": "IN", "width": "13", "loc": {"line": 108, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "cmd", "block_kind": "IN", "width": "1", "loc": {"line": 109, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "valid", "block_kind": "IN", "width": "1", "loc": {"line": 110, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "din", "block_kind": "IN", "width": "16", "loc": {"line": 111, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "dout", "block_kind": "OUT", "width": "16", "loc": {"line": 112, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "done_out", "block_kind": "OUT", "width": "1", "loc": {"line": 113, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "pbus", "block_kind": "BUS", "text": "PARALLEL_BUS SOURCE", "loc": {"line": 114, "column": 33, "file": "test.jz"}}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 117, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 118, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "QualifiedIdentifier", "name": "pbus.SEL", "loc": {"line": 118, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "sel", "loc": {"line": 118, "column": 22, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 119, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "QualifiedIdentifier", "name": "pbus.ADDR", "loc": {"line": 119, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "addr", "loc": {"line": 119, "column": 22, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 120, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "QualifiedIdentifier", "name": "pbus.CMD", "loc": {"line": 120, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "cmd", "loc": {"line": 120, "column": 22, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 121, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "QualifiedIdentifier", "name": "pbus.VALID", "loc": {"line": 121, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "valid", "loc": {"line": 121, "column": 22, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 122, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "QualifiedIdentifier", "name": "pbus.DATA", "loc": {"line": 122, "column": 9, "file": "test.jz"}},
+        {"type": "Ternary", "loc": {"line": 122, "column": 38, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 122, "column": 38, "file": "test.jz"}, "children": [
+            {"type": "Binary", "block_kind": "EQ", "loc": {"line": 122, "column": 30, "file": "test.jz"}, "children": [
+              {"type": "Identifier", "name": "valid", "loc": {"line": 122, "column": 24, "file": "test.jz"}},
+              {"type": "Literal", "text": "1'b1", "loc": {"line": 122, "column": 33, "file": "test.jz"}}
+            ]},
+            {"type": "Binary", "block_kind": "EQ", "loc": {"line": 122, "column": 45, "file": "test.jz"}, "children": [
+              {"type": "Identifier", "name": "cmd", "loc": {"line": 122, "column": 41, "file": "test.jz"}},
+              {"type": "QualifiedIdentifier", "name": "CMD.WRITE", "loc": {"line": 122, "column": 48, "file": "test.jz"}}
+            ]}
+          ]},
+          {"type": "Identifier", "name": "din", "loc": {"line": 122, "column": 61, "file": "test.jz"}},
+          {"type": "Literal", "text": "16'bz", "loc": {"line": 122, "column": 67, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 124, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "dout", "loc": {"line": 124, "column": 9, "file": "test.jz"}},
+        {"type": "QualifiedIdentifier", "name": "pbus.DATA", "loc": {"line": 124, "column": 21, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 125, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "done_out", "loc": {"line": 125, "column": 9, "file": "test.jz"}},
+        {"type": "QualifiedIdentifier", "name": "pbus.DONE", "loc": {"line": 125, "column": 21, "file": "test.jz"}}
+      ]}
+    ]}
+  ]},
+  {"type": "Module", "name": "ram_wrapper", "loc": {"line": 129, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 130, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 131, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "rst_n", "block_kind": "IN", "width": "1", "loc": {"line": 132, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "sel", "block_kind": "IN", "width": "3", "loc": {"line": 133, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "addr", "block_kind": "IN", "width": "13", "loc": {"line": 134, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "cmd", "block_kind": "IN", "width": "1", "loc": {"line": 135, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "valid", "block_kind": "IN", "width": "1", "loc": {"line": 136, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "din", "block_kind": "IN", "width": "16", "loc": {"line": 137, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "dout", "block_kind": "OUT", "width": "16", "loc": {"line": 138, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "done_out", "block_kind": "OUT", "width": "1", "loc": {"line": 139, "column": 18, "file": "test.jz"}}
+    ]},
+    {"type": "WireBlock", "block_kind": "WIRE", "loc": {"line": 142, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "WireDecl", "name": "bus", "width": "widthof ( PARALLEL_BUS )", "loc": {"line": 143, "column": 9, "file": "test.jz"}}
+    ]},
+    {"type": "ModuleInstance", "name": "drv0", "text": "bus_driver", "loc": {"line": 146, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "sel", "block_kind": "IN", "width": "3", "loc": {"line": 147, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "sel", "loc": {"line": 147, "column": 26, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "addr", "block_kind": "IN", "width": "13", "loc": {"line": 148, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "addr", "loc": {"line": 148, "column": 26, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "cmd", "block_kind": "IN", "width": "1", "loc": {"line": 149, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "cmd", "loc": {"line": 149, "column": 26, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "valid", "block_kind": "IN", "width": "1", "loc": {"line": 150, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "valid", "loc": {"line": 150, "column": 26, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "din", "block_kind": "IN", "width": "16", "loc": {"line": 151, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "din", "loc": {"line": 151, "column": 26, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "dout", "block_kind": "OUT", "width": "16", "loc": {"line": 152, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "dout", "loc": {"line": 152, "column": 26, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "done_out", "block_kind": "OUT", "width": "1", "loc": {"line": 153, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "done_out", "loc": {"line": 153, "column": 29, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "pbus", "block_kind": "BUS", "text": "PARALLEL_BUS SOURCE", "loc": {"line": 154, "column": 33, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "bus", "loc": {"line": 154, "column": 40, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "ModuleInstance", "name": "ram0", "text": "ram", "loc": {"line": 157, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 158, "column": 17, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "clk", "loc": {"line": 158, "column": 25, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "rst_n", "block_kind": "IN", "width": "1", "loc": {"line": 159, "column": 17, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "rst_n", "loc": {"line": 159, "column": 25, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "sel", "block_kind": "IN", "width": "3", "loc": {"line": 160, "column": 17, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "sel", "loc": {"line": 160, "column": 25, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "pbus", "block_kind": "BUS", "text": "PARALLEL_BUS TARGET", "loc": {"line": 161, "column": 33, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "bus", "loc": {"line": 161, "column": 40, "file": "test.jz"}}
+      ]}
+    ]}
+  ]},
+  {"type": "Module", "name": "ram", "loc": {"line": 165, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 166, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 167, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "rst_n", "block_kind": "IN", "width": "1", "loc": {"line": 168, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "sel", "block_kind": "IN", "width": "3", "loc": {"line": 169, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "pbus", "block_kind": "BUS", "text": "PARALLEL_BUS TARGET", "loc": {"line": 170, "column": 33, "file": "test.jz"}}
+    ]},
+    {"type": "MemBlock", "block_kind": "MEM", "text": "TYPE = BLOCK", "loc": {"line": 174, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "MemDecl", "name": "ram", "text": "256", "width": "16", "loc": {"line": 175, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "16'h0000", "loc": {"line": 175, "column": 26, "file": "test.jz"}},
+        {"type": "MemPort", "name": "write", "block_kind": "IN", "loc": {"line": 176, "column": 17, "file": "test.jz"}},
+        {"type": "MemPort", "name": "read", "block_kind": "OUT", "text": "SYNC", "loc": {"line": 177, "column": 17, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "RegisterBlock", "block_kind": "REGISTER", "loc": {"line": 181, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "RegisterDecl", "name": "pending_read", "width": "1", "loc": {"line": 182, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 182, "column": 28, "file": "test.jz"}}
+      ]},
+      {"type": "RegisterDecl", "name": "data_ready", "width": "1", "loc": {"line": 183, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 183, "column": 28, "file": "test.jz"}}
+      ]},
+      {"type": "RegisterDecl", "name": "read_data", "width": "16", "loc": {"line": 184, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "16'b0", "loc": {"line": 184, "column": 29, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 187, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 189, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "QualifiedIdentifier", "name": "pbus.DATA", "loc": {"line": 189, "column": 9, "file": "test.jz"}},
+        {"type": "Ternary", "loc": {"line": 189, "column": 77, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 189, "column": 77, "file": "test.jz"}, "children": [
+            {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 189, "column": 53, "file": "test.jz"}, "children": [
+              {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 189, "column": 39, "file": "test.jz"}, "children": [
+                {"type": "Binary", "block_kind": "EQ", "loc": {"line": 189, "column": 32, "file": "test.jz"}, "children": [
+                  {"type": "QualifiedIdentifier", "name": "pbus.SEL", "loc": {"line": 189, "column": 23, "file": "test.jz"}},
+                  {"type": "Identifier", "name": "sel", "loc": {"line": 189, "column": 35, "file": "test.jz"}}
+                ]},
+                {"type": "QualifiedIdentifier", "name": "pbus.VALID", "loc": {"line": 189, "column": 42, "file": "test.jz"}}
+              ]},
+              {"type": "Binary", "block_kind": "EQ", "loc": {"line": 189, "column": 65, "file": "test.jz"}, "children": [
+                {"type": "QualifiedIdentifier", "name": "pbus.CMD", "loc": {"line": 189, "column": 56, "file": "test.jz"}},
+                {"type": "QualifiedIdentifier", "name": "CMD.READ", "loc": {"line": 189, "column": 68, "file": "test.jz"}}
+              ]}
+            ]},
+            {"type": "Binary", "block_kind": "EQ", "loc": {"line": 189, "column": 91, "file": "test.jz"}, "children": [
+              {"type": "Identifier", "name": "data_ready", "loc": {"line": 189, "column": 80, "file": "test.jz"}},
+              {"type": "Literal", "text": "1'b1", "loc": {"line": 189, "column": 94, "file": "test.jz"}}
+            ]}
+          ]},
+          {"type": "Identifier", "name": "read_data", "loc": {"line": 189, "column": 102, "file": "test.jz"}},
+          {"type": "Literal", "text": "16'bz", "loc": {"line": 189, "column": 114, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "If", "loc": {"line": 192, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 192, "column": 29, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "EQ", "loc": {"line": 192, "column": 22, "file": "test.jz"}, "children": [
+            {"type": "QualifiedIdentifier", "name": "pbus.SEL", "loc": {"line": 192, "column": 13, "file": "test.jz"}},
+            {"type": "Identifier", "name": "sel", "loc": {"line": 192, "column": 25, "file": "test.jz"}}
+          ]},
+          {"type": "QualifiedIdentifier", "name": "pbus.VALID", "loc": {"line": 192, "column": 32, "file": "test.jz"}}
+        ]},
+        {"type": "If", "loc": {"line": 193, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "LOG_OR", "loc": {"line": 193, "column": 39, "file": "test.jz"}, "children": [
+            {"type": "Binary", "block_kind": "EQ", "loc": {"line": 193, "column": 26, "file": "test.jz"}, "children": [
+              {"type": "QualifiedIdentifier", "name": "pbus.CMD", "loc": {"line": 193, "column": 17, "file": "test.jz"}},
+              {"type": "QualifiedIdentifier", "name": "CMD.WRITE", "loc": {"line": 193, "column": 29, "file": "test.jz"}}
+            ]},
+            {"type": "Binary", "block_kind": "EQ", "loc": {"line": 193, "column": 53, "file": "test.jz"}, "children": [
+              {"type": "Identifier", "name": "data_ready", "loc": {"line": 193, "column": 42, "file": "test.jz"}},
+              {"type": "Literal", "text": "1'b1", "loc": {"line": 193, "column": 56, "file": "test.jz"}}
+            ]}
+          ]},
+          {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 194, "column": 17, "file": "test.jz"}, "children": [
+            {"type": "QualifiedIdentifier", "name": "pbus.DONE", "loc": {"line": 194, "column": 17, "file": "test.jz"}},
+            {"type": "Literal", "text": "1'b1", "loc": {"line": 194, "column": 30, "file": "test.jz"}}
+          ]}
+        ]},
+        {"type": "Else", "loc": {"line": 195, "column": 15, "file": "test.jz"}, "children": [
+          {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 196, "column": 17, "file": "test.jz"}, "children": [
+            {"type": "QualifiedIdentifier", "name": "pbus.DONE", "loc": {"line": 196, "column": 17, "file": "test.jz"}},
+            {"type": "Literal", "text": "1'b0", "loc": {"line": 196, "column": 30, "file": "test.jz"}}
+          ]}
+        ]}
+      ]},
+      {"type": "Else", "loc": {"line": 198, "column": 11, "file": "test.jz"}, "children": [
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 199, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "QualifiedIdentifier", "name": "pbus.DONE", "loc": {"line": 199, "column": 13, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'bz", "loc": {"line": 199, "column": 26, "file": "test.jz"}}
+        ]}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "SYNCHRONOUS", "loc": {"line": 203, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "SyncParam", "name": "CLK", "loc": {"line": 203, "column": 17, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "clk", "loc": {"line": 203, "column": 21, "file": "test.jz"}}
+      ]},
+      {"type": "SyncParam", "name": "RESET", "loc": {"line": 203, "column": 25, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "rst_n", "loc": {"line": 203, "column": 31, "file": "test.jz"}}
+      ]},
+      {"type": "SyncParam", "name": "RESET_ACTIVE", "loc": {"line": 203, "column": 37, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "Low", "loc": {"line": 203, "column": 50, "file": "test.jz"}}
+      ]},
+      {"type": "If", "loc": {"line": 208, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Binary", "block_kind": "EQ", "loc": {"line": 208, "column": 24, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "data_ready", "loc": {"line": 208, "column": 13, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b1", "loc": {"line": 208, "column": 27, "file": "test.jz"}}
+        ]},
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 210, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "data_ready", "loc": {"line": 210, "column": 13, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b0", "loc": {"line": 210, "column": 27, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Elif", "loc": {"line": 211, "column": 11, "file": "test.jz"}, "children": [
+        {"type": "Binary", "block_kind": "EQ", "loc": {"line": 211, "column": 30, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "pending_read", "loc": {"line": 211, "column": 17, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b1", "loc": {"line": 211, "column": 33, "file": "test.jz"}}
+        ]},
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 213, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "read_data", "loc": {"line": 213, "column": 13, "file": "test.jz"}},
+          {"type": "QualifiedIdentifier", "name": "ram.read.data", "loc": {"line": 213, "column": 26, "file": "test.jz"}}
+        ]},
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 214, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "data_ready", "loc": {"line": 214, "column": 13, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b1", "loc": {"line": 214, "column": 27, "file": "test.jz"}}
+        ]},
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 215, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "pending_read", "loc": {"line": 215, "column": 13, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b0", "loc": {"line": 215, "column": 29, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Elif", "loc": {"line": 216, "column": 11, "file": "test.jz"}, "children": [
+        {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 216, "column": 47, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 216, "column": 33, "file": "test.jz"}, "children": [
+            {"type": "Binary", "block_kind": "EQ", "loc": {"line": 216, "column": 26, "file": "test.jz"}, "children": [
+              {"type": "QualifiedIdentifier", "name": "pbus.SEL", "loc": {"line": 216, "column": 17, "file": "test.jz"}},
+              {"type": "Identifier", "name": "sel", "loc": {"line": 216, "column": 29, "file": "test.jz"}}
+            ]},
+            {"type": "QualifiedIdentifier", "name": "pbus.VALID", "loc": {"line": 216, "column": 36, "file": "test.jz"}}
+          ]},
+          {"type": "Binary", "block_kind": "EQ", "loc": {"line": 216, "column": 59, "file": "test.jz"}, "children": [
+            {"type": "QualifiedIdentifier", "name": "pbus.CMD", "loc": {"line": 216, "column": 50, "file": "test.jz"}},
+            {"type": "QualifiedIdentifier", "name": "CMD.READ", "loc": {"line": 216, "column": 62, "file": "test.jz"}}
+          ]}
+        ]},
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 218, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "QualifiedIdentifier", "name": "ram.read.addr", "loc": {"line": 218, "column": 13, "file": "test.jz"}},
+          {"type": "Slice", "loc": {"line": 218, "column": 30, "file": "test.jz"}, "children": [
+            {"type": "QualifiedIdentifier", "name": "pbus.ADDR", "loc": {"line": 218, "column": 30, "file": "test.jz"}},
+            {"type": "Literal", "text": "7", "loc": {"line": 218, "column": 40, "file": "test.jz"}},
+            {"type": "Literal", "text": "0", "loc": {"line": 218, "column": 42, "file": "test.jz"}}
+          ]}
+        ]},
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 219, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "pending_read", "loc": {"line": 219, "column": 13, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b1", "loc": {"line": 219, "column": 29, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "If", "loc": {"line": 223, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 223, "column": 43, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "LOG_AND", "loc": {"line": 223, "column": 29, "file": "test.jz"}, "children": [
+            {"type": "Binary", "block_kind": "EQ", "loc": {"line": 223, "column": 22, "file": "test.jz"}, "children": [
+              {"type": "QualifiedIdentifier", "name": "pbus.SEL", "loc": {"line": 223, "column": 13, "file": "test.jz"}},
+              {"type": "Identifier", "name": "sel", "loc": {"line": 223, "column": 25, "file": "test.jz"}}
+            ]},
+            {"type": "QualifiedIdentifier", "name": "pbus.VALID", "loc": {"line": 223, "column": 32, "file": "test.jz"}}
+          ]},
+          {"type": "Binary", "block_kind": "EQ", "loc": {"line": 223, "column": 55, "file": "test.jz"}, "children": [
+            {"type": "QualifiedIdentifier", "name": "pbus.CMD", "loc": {"line": 223, "column": 46, "file": "test.jz"}},
+            {"type": "QualifiedIdentifier", "name": "CMD.WRITE", "loc": {"line": 223, "column": 58, "file": "test.jz"}}
+          ]}
+        ]},
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 224, "column": 13, "file": "test.jz"}, "children": [
+          {"type": "Slice", "loc": {"line": 224, "column": 13, "file": "test.jz"}, "children": [
+            {"type": "QualifiedIdentifier", "name": "ram.write", "loc": {"line": 224, "column": 13, "file": "test.jz"}},
+            {"type": "Slice", "loc": {"line": 224, "column": 23, "file": "test.jz"}, "children": [
+              {"type": "QualifiedIdentifier", "name": "pbus.ADDR", "loc": {"line": 224, "column": 23, "file": "test.jz"}},
+              {"type": "Literal", "text": "7", "loc": {"line": 224, "column": 33, "file": "test.jz"}},
+              {"type": "Literal", "text": "0", "loc": {"line": 224, "column": 35, "file": "test.jz"}}
+            ]},
+            {"type": "Slice", "loc": {"line": 224, "column": 23, "file": "test.jz"}}
+          ]},
+          {"type": "QualifiedIdentifier", "name": "pbus.DATA", "loc": {"line": 224, "column": 42, "file": "test.jz"}}
+        ]}
+      ]}
+    ]}
+  ]}
+]}

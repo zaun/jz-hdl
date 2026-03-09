@@ -1,0 +1,31 @@
+@project CDC_RAW_PROJECT
+  @top cdc_raw_test {
+    IN  [1] clk_a = _;
+    IN  [1] clk_b = _;
+    OUT [8] q = _;
+  }
+@endproj
+
+@module cdc_raw_test
+  PORT {
+    IN  [1] clk_a;
+    IN  [1] clk_b;
+    OUT [8] q;
+  }
+  REGISTER {
+    data_reg [8] = 8'h00;
+    dest_reg [8] = 8'h00;
+  }
+  CDC {
+    RAW data_reg (clk_a) => data_raw (clk_b);
+  }
+  ASYNCHRONOUS {
+    q = data_raw;
+  }
+  SYNCHRONOUS(CLK=clk_a) {
+    data_reg <= data_reg + 8'h01;
+  }
+  SYNCHRONOUS(CLK=clk_b) {
+    dest_reg <= data_raw;
+  }
+@endmod

@@ -1,0 +1,402 @@
+Input file: src/tang_nano_20k.jz
+Module: blinkers
+
+User-visible identifiers:  15
+Internal elaboration nodes:63
+Total identifiers:        78
+Total alias statements:   0
+Resolved physical nets:   14
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@3
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk1) at line 34
+
+PHYSICAL NET: NET_0001    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@4
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk2) at line 38
+
+PHYSICAL NET: NET_0002    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@5
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk3) at line 42
+
+PHYSICAL NET: NET_0003    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@6
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk4) at line 46
+
+PHYSICAL NET: NET_0004    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@7
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk5) at line 50
+
+PHYSICAL NET: NET_0005    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@8
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
+
+Top-level binding:
+    PORT binding: IN por -> DONE (IN_PINS)
+
+PHYSICAL NET: NET_0006    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@9
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
+
+Top-level binding:
+    PORT binding: IN rst_n -> ~ KEY [ 0 ]
+
+PHYSICAL NET: NET_0007    Width: 5    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@10
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@27: leds[0] <= ~counter_a[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@28: leds[1] <= ~counter_b[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@29: leds[2] <= ~counter_c[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@30: leds[3] <= ~counter_d[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@31: leds[4] <= ~counter_e[26];
+
+Top-level binding:
+    PORT binding: OUT leds -> LED [ 4 : 0 ]
+
+PHYSICAL NET: NET_0008    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@14
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@34: SYNCHRONOUS(CLK=clk1 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@38: SYNCHRONOUS(CLK=clk2 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@42: SYNCHRONOUS(CLK=clk3 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@46: SYNCHRONOUS(CLK=clk4 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@50: SYNCHRONOUS(CLK=clk5 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+
+PHYSICAL NET: NET_0009    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@18
+
+SYNCHRONOUS(CLK=clk1) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@35: counter_a <= counter_a + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@27: leds[0] <= ~counter_a[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@35: counter_a <= counter_a + 27'b1;
+
+PHYSICAL NET: NET_0010    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@19
+
+SYNCHRONOUS(CLK=clk2) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@39: counter_b <= counter_b + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@28: leds[1] <= ~counter_b[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@39: counter_b <= counter_b + 27'b1;
+
+PHYSICAL NET: NET_0011    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@20
+
+SYNCHRONOUS(CLK=clk3) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@43: counter_c <= counter_c + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@29: leds[2] <= ~counter_c[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@43: counter_c <= counter_c + 27'b1;
+
+PHYSICAL NET: NET_0012    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@21
+
+SYNCHRONOUS(CLK=clk4) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@47: counter_d <= counter_d + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@30: leds[3] <= ~counter_d[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@47: counter_d <= counter_d + 27'b1;
+
+PHYSICAL NET: NET_0013    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@22
+
+SYNCHRONOUS(CLK=clk5) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@51: counter_e <= counter_e + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@31: leds[4] <= ~counter_e[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@51: counter_e <= counter_e + 27'b1;
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk1  -> NET_0000
+clk2  -> NET_0001
+clk3  -> NET_0002
+clk4  -> NET_0003
+clk5  -> NET_0004
+por  -> NET_0005
+rst_n  -> NET_0006
+leds  -> NET_0007
+reset  -> NET_0008
+counter_a  -> NET_0009
+counter_b  -> NET_0010
+counter_c  -> NET_0011
+counter_d  -> NET_0012
+counter_e  -> NET_0013
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 5 clock domains
+- 5 registers
+- Alias net merges: none
+- Tri-state logic: none
+------------------------------------------------------------
+
+============================================================
+CROSS-MODULE SUMMARY
+============================================================
+Total modules analyzed: 1
+
+Module                 Nets Clocks   Regs Tri-St  Alias
+-------------------- ------ ------ ------ ------ ------
+blinkers                 14      5      5      0      0
+-------------------- ------ ------ ------ ------ ------
+TOTAL                    14      5      5      0      0
+============================================================
+Input file: src/tang_nano_20k.jz
+Module: blinkers
+
+User-visible identifiers:  15
+Internal elaboration nodes:63
+Total identifiers:        78
+Total alias statements:   0
+Resolved physical nets:   14
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@3
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk1) at line 34
+
+PHYSICAL NET: NET_0001    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@4
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk2) at line 38
+
+PHYSICAL NET: NET_0002    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@5
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk3) at line 42
+
+PHYSICAL NET: NET_0003    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@6
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk4) at line 46
+
+PHYSICAL NET: NET_0004    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@7
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk5) at line 50
+
+PHYSICAL NET: NET_0005    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@8
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
+
+Top-level binding:
+    PORT binding: IN por -> DONE (IN_PINS)
+
+PHYSICAL NET: NET_0006    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@9
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
+
+Top-level binding:
+    PORT binding: IN rst_n -> ~ KEY [ 0 ]
+
+PHYSICAL NET: NET_0007    Width: 5    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@10
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@27: leds[0] <= ~counter_a[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@28: leds[1] <= ~counter_b[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@29: leds[2] <= ~counter_c[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@30: leds[3] <= ~counter_d[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@31: leds[4] <= ~counter_e[26];
+
+Top-level binding:
+    PORT binding: OUT leds -> LED [ 4 : 0 ]
+
+PHYSICAL NET: NET_0008    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@14
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@34: SYNCHRONOUS(CLK=clk1 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@38: SYNCHRONOUS(CLK=clk2 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@42: SYNCHRONOUS(CLK=clk3 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@46: SYNCHRONOUS(CLK=clk4 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@50: SYNCHRONOUS(CLK=clk5 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+
+PHYSICAL NET: NET_0009    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@18
+
+SYNCHRONOUS(CLK=clk1) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@35: counter_a <= counter_a + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@27: leds[0] <= ~counter_a[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@35: counter_a <= counter_a + 27'b1;
+
+PHYSICAL NET: NET_0010    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@19
+
+SYNCHRONOUS(CLK=clk2) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@39: counter_b <= counter_b + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@28: leds[1] <= ~counter_b[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@39: counter_b <= counter_b + 27'b1;
+
+PHYSICAL NET: NET_0011    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@20
+
+SYNCHRONOUS(CLK=clk3) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@43: counter_c <= counter_c + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@29: leds[2] <= ~counter_c[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@43: counter_c <= counter_c + 27'b1;
+
+PHYSICAL NET: NET_0012    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@21
+
+SYNCHRONOUS(CLK=clk4) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@47: counter_d <= counter_d + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@30: leds[3] <= ~counter_d[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@47: counter_d <= counter_d + 27'b1;
+
+PHYSICAL NET: NET_0013    Width: 27    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@22
+
+SYNCHRONOUS(CLK=clk5) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@51: counter_e <= counter_e + 27'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@31: leds[4] <= ~counter_e[26];
+    /Users/justinzaun/Development/JZ-HDL/examples/pll/src/blinkers.jz@51: counter_e <= counter_e + 27'b1;
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk1  -> NET_0000
+clk2  -> NET_0001
+clk3  -> NET_0002
+clk4  -> NET_0003
+clk5  -> NET_0004
+por  -> NET_0005
+rst_n  -> NET_0006
+leds  -> NET_0007
+reset  -> NET_0008
+counter_a  -> NET_0009
+counter_b  -> NET_0010
+counter_c  -> NET_0011
+counter_d  -> NET_0012
+counter_e  -> NET_0013
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 5 clock domains
+- 5 registers
+- Alias net merges: none
+- Tri-state logic: none
+------------------------------------------------------------
+
+============================================================
+CROSS-MODULE SUMMARY
+============================================================
+Total modules analyzed: 1
+
+Module                 Nets Clocks   Regs Tri-St  Alias
+-------------------- ------ ------ ------ ------ ------
+blinkers                 14      5      5      0      0
+-------------------- ------ ------ ------ ------ ------
+TOTAL                    14      5      5      0      0
+============================================================

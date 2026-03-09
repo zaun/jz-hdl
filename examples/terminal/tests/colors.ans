@@ -1,0 +1,44 @@
+[2J[0;0H[0m
+
+ANSI Color Map
+==============
+
+Standard FG (30-37):
+[30m Black   [31m Red     [32m Green   [33m Yellow  [34m Blue    [35m Magenta [36m Cyan    [37m White   [0m
+
+Bright FG (90-97):
+[90m Gray    [91m Red     [92m Green   [93m Yellow  [94m Blue    [95m Magenta [96m Cyan    [97m White   [0m
+
+Standard BG (40-47):
+[40m Black   [41m Red     [42m Green   [43m Yellow  [44m Blue    [45m Magenta [46m Cyan    [47m White   [0m
+
+Bright BG (100-107):
+[100m Gray    [101m Red     [102m Green   [103m Yellow  [104m Blue    [105m Magenta [106m Cyan    [107m White   [0m
+
+FG on BG grid:
+           40    41    42    43    44    45    46    47  
+   30  [30;40m gYp [0m [30;41m gYp [0m [30;42m gYp [0m [30;43m gYp [0m [30;44m gYp [0m [30;45m gYp [0m [30;46m gYp [0m [30;47m gYp [0m 
+   31  [31;40m gYp [0m [31;41m gYp [0m [31;42m gYp [0m [31;43m gYp [0m [31;44m gYp [0m [31;45m gYp [0m [31;46m gYp [0m [31;47m gYp [0m 
+   32  [32;40m gYp [0m [32;41m gYp [0m [32;42m gYp [0m [32;43m gYp [0m [32;44m gYp [0m [32;45m gYp [0m [32;46m gYp [0m [32;47m gYp [0m 
+   33  [33;40m gYp [0m [33;41m gYp [0m [33;42m gYp [0m [33;43m gYp [0m [33;44m gYp [0m [33;45m gYp [0m [33;46m gYp [0m [33;47m gYp [0m 
+   34  [34;40m gYp [0m [34;41m gYp [0m [34;42m gYp [0m [34;43m gYp [0m [34;44m gYp [0m [34;45m gYp [0m [34;46m gYp [0m [34;47m gYp [0m 
+   35  [35;40m gYp [0m [35;41m gYp [0m [35;42m gYp [0m [35;43m gYp [0m [35;44m gYp [0m [35;45m gYp [0m [35;46m gYp [0m [35;47m gYp [0m 
+   36  [36;40m gYp [0m [36;41m gYp [0m [36;42m gYp [0m [36;43m gYp [0m [36;44m gYp [0m [36;45m gYp [0m [36;46m gYp [0m [36;47m gYp [0m 
+   37  [37;40m gYp [0m [37;41m gYp [0m [37;42m gYp [0m [37;43m gYp [0m [37;44m gYp [0m [37;45m gYp [0m [37;46m gYp [0m [37;47m gYp [0m 
+
+   90  [90;40m gYp [0m [90;41m gYp [0m [90;42m gYp [0m [90;43m gYp [0m [90;44m gYp [0m [90;45m gYp [0m [90;46m gYp [0m [90;47m gYp [0m 
+   91  [91;40m gYp [0m [91;41m gYp [0m [91;42m gYp [0m [91;43m gYp [0m [91;44m gYp [0m [91;45m gYp [0m [91;46m gYp [0m [91;47m gYp [0m 
+   92  [92;40m gYp [0m [92;41m gYp [0m [92;42m gYp [0m [92;43m gYp [0m [92;44m gYp [0m [92;45m gYp [0m [92;46m gYp [0m [92;47m gYp [0m 
+   93  [93;40m gYp [0m [93;41m gYp [0m [93;42m gYp [0m [93;43m gYp [0m [93;44m gYp [0m [93;45m gYp [0m [93;46m gYp [0m [93;47m gYp [0m 
+   94  [94;40m gYp [0m [94;41m gYp [0m [94;42m gYp [0m [94;43m gYp [0m [94;44m gYp [0m [94;45m gYp [0m [94;46m gYp [0m [94;47m gYp [0m 
+   95  [95;40m gYp [0m [95;41m gYp [0m [95;42m gYp [0m [95;43m gYp [0m [95;44m gYp [0m [95;45m gYp [0m [95;46m gYp [0m [95;47m gYp [0m 
+   96  [96;40m gYp [0m [96;41m gYp [0m [96;42m gYp [0m [96;43m gYp [0m [96;44m gYp [0m [96;45m gYp [0m [96;46m gYp [0m [96;47m gYp [0m 
+   97  [97;40m gYp [0m [97;41m gYp [0m [97;42m gYp [0m [97;43m gYp [0m [97;44m gYp [0m [97;45m gYp [0m [97;46m gYp [0m [97;47m gYp [0m 
+
+[0m
+
+PEDID\
+PTEST1\
+?25h
+
+

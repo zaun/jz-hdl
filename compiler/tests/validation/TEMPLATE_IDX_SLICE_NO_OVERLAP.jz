@@ -1,0 +1,33 @@
+// TEMPLATE_IDX_SLICE_NO_OVERLAP: @apply with IDX-based slice expressions.
+// After template expansion, IDX*W+H:IDX*W should be recognized as non-overlapping
+// constant slice ranges. No diagnostics expected.
+
+@project TEMPLATE_IDX_SLICE_NO_OVERLAP_PROJECT
+  @top TEMPLATE_IDX_SLICE_NO_OVERLAP_MOD {
+    IN  [1] clk = _;
+    OUT [22] out = _;
+  }
+@endproj
+
+@template ASSIGN_SLICE(dst, src)
+  dst[IDX*11+10:IDX*11] <= src;
+@endtemplate
+
+@module TEMPLATE_IDX_SLICE_NO_OVERLAP_MOD
+  PORT {
+    IN  [1] clk;
+    OUT [22] out;
+  }
+
+  REGISTER {
+    dx [22] = 22'd0;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    @apply [2] ASSIGN_SLICE(dx, 11'd0);
+  }
+
+  ASYNCHRONOUS {
+    out = dx;
+  }
+@endmod

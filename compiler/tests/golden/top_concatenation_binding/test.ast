@@ -1,0 +1,69 @@
+{"type": "Project", "name": "top_concat_test", "text": "GENERIC", "loc": {"line": 9, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 11, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10 . 0", "loc": {"line": 12, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 15, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "SCLK", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 16, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "BTN", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "2", "loc": {"line": 17, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 20, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "LED", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "5", "loc": {"line": 21, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "InoutPinsBlock", "block_kind": "INOUT_PINS", "loc": {"line": 24, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "BIDIR", "block_kind": "INOUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "loc": {"line": 25, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 28, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "1", "loc": {"line": 29, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "BTN [ 0 ]", "text": "2", "loc": {"line": 30, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "BTN [ 1 ]", "text": "3", "loc": {"line": 31, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "LED [ 0 ]", "text": "10", "loc": {"line": 32, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "LED [ 1 ]", "text": "11", "loc": {"line": 33, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "LED [ 2 ]", "text": "12", "loc": {"line": 34, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "LED [ 3 ]", "text": "13", "loc": {"line": 35, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "LED [ 4 ]", "text": "14", "loc": {"line": 36, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "BIDIR", "text": "20", "loc": {"line": 37, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "concat_mod", "loc": {"line": 40, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "SCLK", "width": "1", "loc": {"line": 41, "column": 18, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "btn", "block_kind": "IN", "text": "BTN", "width": "2", "loc": {"line": 42, "column": 18, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "bidir_in", "block_kind": "IN", "text": "BIDIR", "width": "1", "loc": {"line": 43, "column": 18, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "leds", "block_kind": "OUT", "text": "{ BIDIR , LED }", "width": "6", "loc": {"line": 44, "column": 18, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "concat_mod", "loc": {"line": 49, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 50, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 51, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "btn", "block_kind": "IN", "width": "2", "loc": {"line": 52, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "bidir_in", "block_kind": "IN", "width": "1", "loc": {"line": 53, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "leds", "block_kind": "OUT", "width": "6", "loc": {"line": 54, "column": 18, "file": "test.jz"}}
+    ]},
+    {"type": "RegisterBlock", "block_kind": "REGISTER", "loc": {"line": 57, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "RegisterDecl", "name": "count", "width": "5", "loc": {"line": 58, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "5'b00000", "loc": {"line": 58, "column": 21, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 61, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 62, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "leds", "loc": {"line": 62, "column": 9, "file": "test.jz"}},
+        {"type": "Concat", "loc": {"line": 62, "column": 17, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "bidir_in", "loc": {"line": 62, "column": 19, "file": "test.jz"}},
+          {"type": "Identifier", "name": "count", "loc": {"line": 62, "column": 29, "file": "test.jz"}}
+        ]}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "SYNCHRONOUS", "loc": {"line": 65, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "SyncParam", "name": "CLK", "loc": {"line": 65, "column": 17, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "clk", "loc": {"line": 65, "column": 21, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 66, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "count", "loc": {"line": 66, "column": 9, "file": "test.jz"}},
+        {"type": "Binary", "block_kind": "ADD", "loc": {"line": 66, "column": 24, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "count", "loc": {"line": 66, "column": 18, "file": "test.jz"}},
+          {"type": "Concat", "loc": {"line": 66, "column": 26, "file": "test.jz"}, "children": [
+            {"type": "Literal", "text": "3'b000", "loc": {"line": 66, "column": 28, "file": "test.jz"}},
+            {"type": "Identifier", "name": "btn", "loc": {"line": 66, "column": 36, "file": "test.jz"}}
+          ]}
+        ]}
+      ]}
+    ]}
+  ]}
+]}

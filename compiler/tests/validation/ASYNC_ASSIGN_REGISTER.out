@@ -1,0 +1,2 @@
+File: ASYNC_ASSIGN_REGISTER.jz
+      23:5    error ASYNC_ASSIGN_REGISTER S4.7/S5.1/S8.1 Attempt to write REGISTER in ASYNCHRONOUS block

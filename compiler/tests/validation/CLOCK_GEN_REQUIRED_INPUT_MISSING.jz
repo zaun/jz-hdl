@@ -1,0 +1,43 @@
+// CLOCK_GEN_REQUIRED_INPUT_MISSING: BUF without required REF_CLK input should error.
+// REF_CLK is marked required=true in chip JSON for BUF units.
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") CLOCK_GEN_REQUIRED_INPUT_MISSING_TEST
+    CLOCKS {
+        buffered_clk;
+    }
+
+    IN_PINS {
+        btn = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        led = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        btn = 5;
+        led = 15;
+    }
+
+    CLOCK_GEN {
+        BUF {
+            OUT BASE buffered_clk;
+        };
+    }
+
+    @top top {
+        IN  [1] a = btn;
+        OUT [1] out = led;
+    }
+@endproj
+
+@module top
+    PORT {
+        IN  [1] a;
+        OUT [1] out;
+    }
+
+    ASYNCHRONOUS {
+        out = a;
+    }
+@endmod

@@ -1,0 +1,29 @@
+// MEM_DUP_NAME: two MEM blocks declared with the same name in a module.
+// Verified
+
+@project MEM_DUP_NAME_PROJECT
+  @top MEM_DUP_NAME_EXAMPLE {
+    OUT [8] data = _;
+  }
+@endproj
+
+@module MEM_DUP_NAME_EXAMPLE
+  PORT {
+    OUT [8] data;
+  }
+
+  MEM {
+    m [8] [4] = 8'h00 {
+      OUT rd ASYNC;
+    };
+
+    // Duplicate MEM name 'm'.
+    m [8] [4] = 8'hFF {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    data = m.rd[2];
+  }
+@endmod

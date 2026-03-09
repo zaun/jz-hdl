@@ -1,0 +1,69 @@
+// =============================================================================
+// TEST: Compile-Time Assertions (@check)
+// Purpose: Verify that @check directives with passing conditions compile
+//          successfully and produce no hardware. Tests @check in both
+//          project and module scope, using CONFIG, CONST, clog2(), and
+//          comparison operators.
+// =============================================================================
+
+@project(CHIP=GENERIC) check_assertions_test
+
+    CONFIG {
+        DATA_WIDTH = 32;
+        MEM_DEPTH  = 256;
+    }
+
+    // Project-level @check using CONFIG references
+    @check (CONFIG.DATA_WIDTH >= 8, "Data width must be at least 8 bits.");
+    @check (CONFIG.DATA_WIDTH % 8 == 0, "Data width must be a multiple of 8.");
+    @check (CONFIG.MEM_DEPTH > 0, "Memory depth must be positive.");
+
+    CLOCKS {
+    }
+
+    IN_PINS {
+        d_in[8] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        d_out[8] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        d_in[0] = 2; d_in[1] = 3; d_in[2] = 4; d_in[3] = 5;
+        d_in[4] = 6; d_in[5] = 7; d_in[6] = 8; d_in[7] = 9;
+        d_out[0] = 20; d_out[1] = 21; d_out[2] = 22; d_out[3] = 23;
+        d_out[4] = 24; d_out[5] = 25; d_out[6] = 26; d_out[7] = 27;
+    }
+
+    @top check_module {
+        IN  [8] data_in  = d_in;
+        OUT [8] data_out = d_out;
+    }
+
+@endproj
+
+@module check_module
+    CONST {
+        WIDTH     = 8;
+        DEPTH     = 16;
+        ADDR_W    = clog2(16);
+    }
+
+    PORT {
+        IN  [8] data_in;
+        OUT [8] data_out;
+    }
+
+    // Module-level @check using CONST references
+    @check (WIDTH == 8, "WIDTH must be 8.");
+    @check (ADDR_W == clog2(DEPTH), "Address width mismatch.");
+    @check (WIDTH > 0 && DEPTH > 0, "Width and depth must be positive.");
+
+    // Module-level @check using CONFIG references
+    @check (CONFIG.DATA_WIDTH >= WIDTH, "CONFIG width must be >= module width.");
+
+    ASYNCHRONOUS {
+        data_out = data_in;
+    }
+@endmod

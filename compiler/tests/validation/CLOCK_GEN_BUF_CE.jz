@@ -1,0 +1,50 @@
+// CLOCK_GEN_BUF_CE: Validate BUF generator with explicit CE input is accepted.
+// The CE input is optional per chip JSON (default 1'b1). This tests providing it explicitly.
+// Note: CE must currently be declared in CLOCKS block like other CLOCK_GEN inputs.
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") CLOCK_GEN_BUF_CE_TEST
+    CLOCKS {
+        sys_clk = { period=37.04 };
+        my_enable = { period=100.0 };
+        buffered_clk;
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        my_enable = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        led = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        sys_clk = 4;
+        my_enable = 5;
+        led = 15;
+    }
+
+    CLOCK_GEN {
+        BUF {
+            IN REF_CLK sys_clk;
+            IN CE my_enable;
+            OUT BASE buffered_clk;
+        };
+    }
+
+    @top top {
+        IN  [1] a = my_enable;
+        OUT [1] out = led;
+    }
+@endproj
+
+@module top
+    PORT {
+        IN  [1] a;
+        OUT [1] out;
+    }
+
+    ASYNCHRONOUS {
+        out = a;
+    }
+@endmod

@@ -1,0 +1,79 @@
+// =============================================================================
+// TEST: Compile-Time Conditional Compilation (@feature)
+// Purpose: Verify that @feature directives conditionally include/exclude
+//          logic in ASYNCHRONOUS and SYNCHRONOUS blocks. The enabled branch
+//          produces hardware; the disabled branch is elided. Both branches
+//          must pass semantic validation independently.
+// =============================================================================
+
+@project(CHIP=GENERIC) feature_conditional_test
+
+    CONFIG {
+        USE_COUNTER = 1;
+    }
+
+    CLOCKS {
+    }
+
+    IN_PINS {
+        d_in[8] = { standard=LVCMOS33 };
+        clk_in  = { standard=LVCMOS33 };
+        rst_in  = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        d_out[8] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        clk_in = 4;
+        rst_in = 88;
+        d_in[0] = 30; d_in[1] = 31; d_in[2] = 32; d_in[3] = 33;
+        d_in[4] = 34; d_in[5] = 35; d_in[6] = 36; d_in[7] = 37;
+        d_out[0] = 20; d_out[1] = 21; d_out[2] = 22; d_out[3] = 23;
+        d_out[4] = 24; d_out[5] = 25; d_out[6] = 26; d_out[7] = 27;
+    }
+
+    @top feature_module {
+        IN  [1] clk      = clk_in;
+        IN  [1] rst      = rst_in;
+        IN  [8] data_in  = d_in;
+        OUT [8] data_out = d_out;
+    }
+
+@endproj
+
+@module feature_module
+    CONST {
+        ENABLE_INCR = 1;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst;
+        IN  [8] data_in;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        counter [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // @feature with @else: conditionally choose output source
+        @feature ENABLE_INCR == 1
+            data_out = counter;
+        @else
+            data_out = data_in;
+        @endfeat
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst RESET_ACTIVE=Low) {
+        // @feature without @else: conditionally include increment logic
+        @feature ENABLE_INCR == 1
+            counter <= counter + 8'h01;
+        @else
+            counter <= data_in;
+        @endfeat
+    }
+@endmod

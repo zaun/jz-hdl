@@ -1,0 +1,367 @@
+@module sdram_ctrl
+    CONST {
+        INIT_COUNT = 14850;       // 200us * 74.25MHz
+        REFRESH_INTERVAL = 579;   // ~7.8us * 74.25MHz
+        MODE_REG = 544;           // CL=2, burst=1, sequential
+
+        // GW2AR-18 SDRAM geometry: 2M x 32 = 64Mbit
+        ROW_BITS  = 11;
+        COL_BITS  = 8;
+        BANK_BITS = 2;
+        DATA_BITS = 32;
+        ADDR_BITS = 21;           // ROW_BITS + COL_BITS + BANK_BITS
+
+        // State machine states
+        ST_INIT   = 0;
+        ST_IPRE   = 1;
+        ST_IREF   = 2;
+        ST_IMODE  = 3;
+        ST_IDLE   = 4;
+        ST_ACT_W  = 5;
+        ST_ACT    = 6;
+        ST_RD     = 7;
+        ST_RD_CL  = 8;
+        ST_WR     = 9;
+        ST_REF    = 10;
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+
+        // User interface
+        IN  [21] addr;
+        IN  [32] wdata;
+        OUT [32] rdata;
+        IN  [1]  rd;
+        IN  [1]  wr;
+        OUT [1]  busy;
+        OUT [1]  done;
+
+        // SDRAM physical interface
+        OUT [1]  sdram_cke;
+        OUT [1]  sdram_cs_n;
+        OUT [1]  sdram_ras_n;
+        OUT [1]  sdram_cas_n;
+        OUT [1]  sdram_wen_n;
+        OUT [4]  sdram_dqm;
+        OUT [11] sdram_addr;
+        OUT [2]  sdram_ba;
+        INOUT [32] sdram_dq;
+    }
+
+    REGISTER {
+        state       [4]  = 4'd0;
+        init_cnt    [14] = 14'b0;
+        wait_cnt    [3]  = 3'b0;
+        ref_cnt     [10] = 10'b0;
+        ref_done    [1]  = 1'b0;
+
+        // Command registers
+        r_cke       [1]  = 1'b0;
+        r_cs_n      [1]  = 1'b1;
+        r_ras_n     [1]  = 1'b1;
+        r_cas_n     [1]  = 1'b1;
+        r_wen_n     [1]  = 1'b1;
+        r_addr      [11] = 11'b0;
+        r_ba        [2]  = 2'b0;
+        r_dqm       [4]  = 4'b1111;
+
+        // DQ control
+        r_dq_oe     [1]  = 1'b0;
+        r_dq_out    [32] = 32'b0;
+
+        // Latched request
+        r_req_addr  [21] = 21'b0;
+        r_req_wdata [32] = 32'b0;
+        r_req_write [1]  = 1'b0;
+
+        // Output
+        r_rdata     [32] = 32'b0;
+        r_done      [1]  = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Drive SDRAM pins from registers
+        sdram_cke   <= r_cke;
+        sdram_cs_n  <= r_cs_n;
+        sdram_ras_n <= r_ras_n;
+        sdram_cas_n <= r_cas_n;
+        sdram_wen_n <= r_wen_n;
+        sdram_dqm   <= r_dqm;
+        sdram_addr  <= r_addr;
+        sdram_ba    <= r_ba;
+
+        // Tristate DQ bus
+        sdram_dq <= (r_dq_oe == 1'b1) ? r_dq_out : 32'bz;
+
+        // User interface outputs
+        rdata <= r_rdata;
+        done  <= r_done;
+        busy  <= (state != lit(4, ST_IDLE));
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        SELECT(state) {
+            // ---- INIT: Power-up wait (200us) ----
+            CASE (lit(4, ST_INIT)) {
+                r_cke   <= 1'b1;
+                r_dq_oe <= 1'b0;
+                r_done  <= 1'b0;
+
+                IF (init_cnt == lit(14, INIT_COUNT)) {
+                    // PRECHARGE ALL: cs=0, ras=0, cas=1, we=0, A10=1
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b0;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b0;
+                    r_addr  <= 11'b10000000000;
+                    wait_cnt <= 3'd1;
+                    state <= lit(4, ST_IPRE);
+                } ELSE {
+                    // INHIBIT
+                    r_cs_n  <= 1'b1;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                    init_cnt <= init_cnt + 14'b1;
+                }
+            }
+
+            // ---- IPRE: Wait after PRECHARGE ALL ----
+            CASE (lit(4, ST_IPRE)) {
+                r_done <= 1'b0;
+                IF (wait_cnt == 3'b0) {
+                    // AUTO REFRESH: cs=0, ras=0, cas=0, we=1
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b0;
+                    r_cas_n <= 1'b0;
+                    r_wen_n <= 1'b1;
+                    wait_cnt <= 3'd2;
+                    state <= lit(4, ST_IREF);
+                } ELSE {
+                    // NOP
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                    wait_cnt <= wait_cnt - 3'b1;
+                }
+            }
+
+            // ---- IREF: Init AUTO REFRESH (done twice) ----
+            CASE (lit(4, ST_IREF)) {
+                r_done <= 1'b0;
+                IF (wait_cnt == 3'b0) {
+                    IF (ref_done == 1'b0) {
+                        // Second AUTO REFRESH
+                        r_cs_n  <= 1'b0;
+                        r_ras_n <= 1'b0;
+                        r_cas_n <= 1'b0;
+                        r_wen_n <= 1'b1;
+                        wait_cnt <= 3'd2;
+                        ref_done <= 1'b1;
+                    } ELSE {
+                        // MODE SET: cs=0, ras=0, cas=0, we=0, addr=mode
+                        r_cs_n  <= 1'b0;
+                        r_ras_n <= 1'b0;
+                        r_cas_n <= 1'b0;
+                        r_wen_n <= 1'b0;
+                        r_addr  <= lit(11, MODE_REG);
+                        r_ba    <= 2'b0;
+                        wait_cnt <= 3'd2;
+                        state <= lit(4, ST_IMODE);
+                    }
+                } ELSE {
+                    // NOP
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                    wait_cnt <= wait_cnt - 3'b1;
+                }
+            }
+
+            // ---- IMODE: Wait after MODE REGISTER SET ----
+            CASE (lit(4, ST_IMODE)) {
+                r_done <= 1'b0;
+                IF (wait_cnt == 3'b0) {
+                    // NOP, go to IDLE
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                    r_dqm   <= 4'b0000;
+                    state <= lit(4, ST_IDLE);
+                } ELSE {
+                    // NOP
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                    wait_cnt <= wait_cnt - 3'b1;
+                }
+            }
+
+            // ---- IDLE: Ready for commands ----
+            // rd/wr checked before refresh to prevent lost pulses.
+            // Delaying refresh by one access (~8 cycles) is within SDRAM timing margin.
+            CASE (lit(4, ST_IDLE)) {
+                r_dq_oe <= 1'b0;
+                r_done  <= 1'b0;
+
+                IF ((rd == 1'b1 || wr == 1'b1) && r_done == 1'b0) {
+                    // Latch request
+                    r_req_addr  <= addr;
+                    r_req_wdata <= wdata;
+                    r_req_write <= wr;
+
+                    // ACTIVATE: cs=0, ras=0, cas=1, we=1
+                    // Bank = addr[20:19], Row = addr[18:8]
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b0;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                    r_addr  <= addr[18:8];
+                    r_ba    <= addr[20:19];
+                    ref_cnt <= ref_cnt + 10'b1;
+                    state <= lit(4, ST_ACT_W);
+                } ELIF (ref_cnt == lit(10, REFRESH_INTERVAL)) {
+                    // AUTO REFRESH: cs=0, ras=0, cas=0, we=1
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b0;
+                    r_cas_n <= 1'b0;
+                    r_wen_n <= 1'b1;
+                    ref_cnt  <= 10'b0;
+                    wait_cnt <= 3'd2;
+                    state <= lit(4, ST_REF);
+                } ELSE {
+                    ref_cnt <= ref_cnt + 10'b1;
+
+                    // NOP
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                }
+            }
+
+            // ---- ACT_W: NOP wait for tRCD (20ns needs 2 cycles at 74.25MHz) ----
+            CASE (lit(4, ST_ACT_W)) {
+                r_done <= 1'b0;
+                // NOP while waiting for tRCD
+                r_cs_n  <= 1'b0;
+                r_ras_n <= 1'b1;
+                r_cas_n <= 1'b1;
+                r_wen_n <= 1'b1;
+                state <= lit(4, ST_ACT);
+            }
+
+            // ---- ACT: Issue READ or WRITE command ----
+            CASE (lit(4, ST_ACT)) {
+                r_done <= 1'b0;
+
+                IF (r_req_write == 1'b1) {
+                    // WRITE: cs=0, ras=1, cas=0, we=0, A10=1 (auto-precharge)
+                    // Col = addr[7:0]
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b0;
+                    r_wen_n <= 1'b0;
+                    r_addr  <= {1'b1, 2'b0, r_req_addr[7:0]};
+                    r_dq_oe <= 1'b1;
+                    r_dq_out <= r_req_wdata;
+                    r_dqm   <= 4'b0000;
+                    state <= lit(4, ST_WR);
+                } ELSE {
+                    // READ: cs=0, ras=1, cas=0, we=1, A10=1 (auto-precharge)
+                    // Col = addr[7:0]
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b0;
+                    r_wen_n <= 1'b1;
+                    r_addr  <= {1'b1, 2'b0, r_req_addr[7:0]};
+                    r_dq_oe <= 1'b0;
+                    r_dqm   <= 4'b0000;
+                    wait_cnt <= 3'd2;
+                    state <= lit(4, ST_RD);
+                }
+            }
+
+            // ---- RD: READ command issued, start CAS latency wait ----
+            CASE (lit(4, ST_RD)) {
+                r_done <= 1'b0;
+                // NOP while waiting
+                r_cs_n  <= 1'b0;
+                r_ras_n <= 1'b1;
+                r_cas_n <= 1'b1;
+                r_wen_n <= 1'b1;
+                r_dq_oe <= 1'b0;
+                wait_cnt <= wait_cnt - 3'b1;
+                state <= lit(4, ST_RD_CL);
+            }
+
+            // ---- RD_CL: Waiting for CAS latency ----
+            CASE (lit(4, ST_RD_CL)) {
+                // NOP
+                r_cs_n  <= 1'b0;
+                r_ras_n <= 1'b1;
+                r_cas_n <= 1'b1;
+                r_wen_n <= 1'b1;
+                r_dq_oe <= 1'b0;
+
+                IF (wait_cnt == 3'b0) {
+                    // Data valid, capture it
+                    r_rdata <= sdram_dq;
+                    r_done  <= 1'b1;
+                    state <= lit(4, ST_IDLE);
+                } ELSE {
+                    r_done <= 1'b0;
+                    wait_cnt <= wait_cnt - 3'b1;
+                }
+            }
+
+            // ---- WR: WRITE command issued ----
+            CASE (lit(4, ST_WR)) {
+                // NOP, clear DQ drive
+                r_cs_n  <= 1'b0;
+                r_ras_n <= 1'b1;
+                r_cas_n <= 1'b1;
+                r_wen_n <= 1'b1;
+                r_dq_oe <= 1'b0;
+                r_done  <= 1'b1;
+                state <= lit(4, ST_IDLE);
+            }
+
+            // ---- REF: Periodic auto refresh ----
+            CASE (lit(4, ST_REF)) {
+                r_done <= 1'b0;
+                IF (wait_cnt == 3'b0) {
+                    // NOP, return to IDLE
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                    state <= lit(4, ST_IDLE);
+                } ELSE {
+                    // NOP while waiting
+                    r_cs_n  <= 1'b0;
+                    r_ras_n <= 1'b1;
+                    r_cas_n <= 1'b1;
+                    r_wen_n <= 1'b1;
+                    wait_cnt <= wait_cnt - 3'b1;
+                }
+            }
+
+            DEFAULT {
+                r_done <= 1'b0;
+                // NOP
+                r_cs_n  <= 1'b0;
+                r_ras_n <= 1'b1;
+                r_cas_n <= 1'b1;
+                r_wen_n <= 1'b1;
+                state <= lit(4, ST_IDLE);
+            }
+        }
+    }
+@endmod

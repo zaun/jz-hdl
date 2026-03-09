@@ -1,0 +1,2 @@
+File: IMPORT_OUTSIDE_PROJECT.jz
+       4:1    error IMPORT_OUTSIDE_PROJECT S6.2.1 @import used outside @project block

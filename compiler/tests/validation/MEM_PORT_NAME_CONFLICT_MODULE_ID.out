@@ -1,0 +1,2 @@
+File: MEM_PORT_NAME_CONFLICT_MODULE_ID.jz
+      20:11   error MEM_PORT_NAME_CONFLICT_MODULE_ID S7.1/S7.7.1 MEM port name conflicts with module-level identifier

@@ -1,0 +1,148 @@
+// 3-Port SDRAM Arbiter
+// Multiplexes three clients onto one SDRAM controller with fixed priority:
+//   Port 0: Terminal buffer (read/write) — medium priority
+//   Port 1: Font cache (read only) — lowest priority
+//   Port 2: LZSS decompressor (write only, startup) — highest priority
+//
+// One transaction at a time: grant held until sd_done.
+// Instantiates sdram_ctrl internally.
+@module sdram_arb
+    CONST {
+        // Grant encoding
+        GRANT_NONE = 0;
+        GRANT_P0   = 1;
+        GRANT_P1   = 2;
+        GRANT_P2   = 3;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+
+        // Port 0: Terminal buffer (read/write)
+        IN  [21] p0_addr;
+        IN  [32] p0_wdata;
+        IN  [1]  p0_rd;
+        IN  [1]  p0_wr;
+        OUT [32] p0_rdata;
+        OUT [1]  p0_busy;
+        OUT [1]  p0_done;
+
+        // Port 1: Font cache (read only)
+        IN  [21] p1_addr;
+        IN  [1]  p1_rd;
+        OUT [32] p1_rdata;
+        OUT [1]  p1_busy;
+        OUT [1]  p1_done;
+
+        // Port 2: Decompressor (write only)
+        IN  [21] p2_addr;
+        IN  [32] p2_wdata;
+        IN  [1]  p2_wr;
+        OUT [1]  p2_busy;
+        OUT [1]  p2_done;
+
+        // SDRAM physical interface
+        OUT   [1]  sdram_cke;
+        OUT   [1]  sdram_cs_n;
+        OUT   [1]  sdram_ras_n;
+        OUT   [1]  sdram_cas_n;
+        OUT   [1]  sdram_wen_n;
+        OUT   [4]  sdram_dqm;
+        OUT   [11] sdram_addr;
+        OUT   [2]  sdram_ba;
+        INOUT [32] sdram_dq;
+    }
+
+    WIRE {
+        // SDRAM controller interface
+        sd_addr  [21];
+        sd_wdata [32];
+        sd_rdata [32];
+        sd_rd    [1];
+        sd_wr    [1];
+        sd_busy  [1];
+        sd_done  [1];
+    }
+
+    REGISTER {
+        grant [2] = 2'd0;  // Current grant holder (GRANT_NONE when idle)
+    }
+
+    @new sd0 sdram_ctrl {
+        IN  [1]  clk       = clk;
+        IN  [1]  rst_n     = rst_n;
+        IN  [21] addr      = sd_addr;
+        IN  [32] wdata     = sd_wdata;
+        OUT [32] rdata     = sd_rdata;
+        IN  [1]  rd        = sd_rd;
+        IN  [1]  wr        = sd_wr;
+        OUT [1]  busy      = sd_busy;
+        OUT [1]  done      = sd_done;
+        OUT [1]  sdram_cke   = sdram_cke;
+        OUT [1]  sdram_cs_n  = sdram_cs_n;
+        OUT [1]  sdram_ras_n = sdram_ras_n;
+        OUT [1]  sdram_cas_n = sdram_cas_n;
+        OUT [1]  sdram_wen_n = sdram_wen_n;
+        OUT [4]  sdram_dqm   = sdram_dqm;
+        OUT [11] sdram_addr  = sdram_addr;
+        OUT [2]  sdram_ba    = sdram_ba;
+        INOUT [32] sdram_dq  = sdram_dq;
+    }
+
+    ASYNCHRONOUS {
+        // Mux SDRAM inputs based on current grant
+        IF (grant == lit(2, GRANT_P2)) {
+            sd_addr  <= p2_addr;
+            sd_wdata <= p2_wdata;
+            sd_rd    <= 1'b0;
+            sd_wr    <= p2_wr & ~sd_done;
+        } ELIF (grant == lit(2, GRANT_P0)) {
+            sd_addr  <= p0_addr;
+            sd_wdata <= p0_wdata;
+            sd_rd    <= p0_rd & ~sd_done;
+            sd_wr    <= p0_wr & ~sd_done;
+        } ELIF (grant == lit(2, GRANT_P1)) {
+            sd_addr  <= p1_addr;
+            sd_wdata <= 32'd0;
+            sd_rd    <= p1_rd & ~sd_done;
+            sd_wr    <= 1'b0;
+        } ELSE {
+            sd_addr  <= 21'd0;
+            sd_wdata <= 32'd0;
+            sd_rd    <= 1'b0;
+            sd_wr    <= 1'b0;
+        }
+
+        // Port 0 outputs
+        p0_rdata <= sd_rdata;
+        p0_done  <= (grant == lit(2, GRANT_P0)) ? sd_done : 1'b0;
+        p0_busy  <= sd_busy | (grant != lit(2, GRANT_P0) && grant != lit(2, GRANT_NONE));
+
+        // Port 1 outputs
+        p1_rdata <= sd_rdata;
+        p1_done  <= (grant == lit(2, GRANT_P1)) ? sd_done : 1'b0;
+        p1_busy  <= sd_busy | (grant != lit(2, GRANT_P1) && grant != lit(2, GRANT_NONE));
+
+        // Port 2 outputs
+        p2_done  <= (grant == lit(2, GRANT_P2)) ? sd_done : 1'b0;
+        p2_busy  <= sd_busy | (grant != lit(2, GRANT_P2) && grant != lit(2, GRANT_NONE));
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        IF (grant == lit(2, GRANT_NONE) || sd_done == 1'b1) {
+            // Arbiter is idle or current transaction just completed.
+            // Grant to highest-priority requestor.
+            // Priority: P2 (decompressor) > P0 (terminal) > P1 (font)
+            IF (p2_wr == 1'b1) {
+                grant <= lit(2, GRANT_P2);
+            } ELIF (p0_rd == 1'b1 || p0_wr == 1'b1) {
+                grant <= lit(2, GRANT_P0);
+            } ELIF (p1_rd == 1'b1) {
+                grant <= lit(2, GRANT_P1);
+            } ELSE {
+                grant <= lit(2, GRANT_NONE);
+            }
+        }
+    }
+@endmod

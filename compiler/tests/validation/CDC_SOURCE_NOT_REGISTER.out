@@ -1,0 +1,2 @@
+File: CDC_SOURCE_NOT_REGISTER.jz
+      25:5    error CDC_SOURCE_NOT_REGISTER S4.12 CDC source must be a REGISTER declared in the module

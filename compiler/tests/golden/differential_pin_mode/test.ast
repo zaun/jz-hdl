@@ -1,0 +1,68 @@
+{"type": "Project", "name": "differential_pin_test", "text": "GENERIC", "loc": {"line": 9, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 11, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10 . 0", "loc": {"line": 12, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 15, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "SCLK", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 16, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "diff_in", "block_kind": "IN_PINS", "text": "mode = DIFFERENTIAL , standard = LVDS25", "loc": {"line": 18, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "lvds_rx", "block_kind": "IN_PINS", "text": "mode = DIFFERENTIAL , standard = LVDS25", "width": "2", "loc": {"line": 20, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 23, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "led", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "loc": {"line": 25, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 28, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "4", "loc": {"line": 29, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "diff_in", "text": "{ P = 10 , N = 11 }", "loc": {"line": 32, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "lvds_rx [ 0 ]", "text": "{ P = 25 , N = 26 }", "loc": {"line": 35, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "lvds_rx [ 1 ]", "text": "{ P = 27 , N = 28 }", "loc": {"line": 36, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "led", "text": "15", "loc": {"line": 38, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "diff_module", "loc": {"line": 41, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "SCLK", "width": "1", "loc": {"line": 42, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "din", "block_kind": "IN", "text": "diff_in", "width": "1", "loc": {"line": 43, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "rx_data", "block_kind": "IN", "text": "lvds_rx", "width": "2", "loc": {"line": 44, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "status", "block_kind": "OUT", "text": "led", "width": "1", "loc": {"line": 45, "column": 17, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "diff_module", "loc": {"line": 50, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 51, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 52, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "din", "block_kind": "IN", "width": "1", "loc": {"line": 53, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "rx_data", "block_kind": "IN", "width": "2", "loc": {"line": 54, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "status", "block_kind": "OUT", "width": "1", "loc": {"line": 55, "column": 17, "file": "test.jz"}}
+    ]},
+    {"type": "RegisterBlock", "block_kind": "REGISTER", "loc": {"line": 58, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "RegisterDecl", "name": "sampled", "width": "1", "loc": {"line": 59, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 59, "column": 23, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 62, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 64, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "status", "loc": {"line": 64, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "sampled", "loc": {"line": 64, "column": 18, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "SYNCHRONOUS", "loc": {"line": 67, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "SyncParam", "name": "CLK", "loc": {"line": 67, "column": 17, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "clk", "loc": {"line": 67, "column": 21, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 68, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "sampled", "loc": {"line": 68, "column": 9, "file": "test.jz"}},
+        {"type": "Binary", "block_kind": "BIT_AND", "loc": {"line": 68, "column": 37, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "BIT_AND", "loc": {"line": 68, "column": 24, "file": "test.jz"}, "children": [
+            {"type": "Identifier", "name": "din", "loc": {"line": 68, "column": 20, "file": "test.jz"}},
+            {"type": "Slice", "loc": {"line": 68, "column": 26, "file": "test.jz"}, "children": [
+              {"type": "Identifier", "name": "rx_data", "loc": {"line": 68, "column": 26, "file": "test.jz"}},
+              {"type": "Literal", "text": "0", "loc": {"line": 68, "column": 34, "file": "test.jz"}},
+              {"type": "Literal", "text": "0", "loc": {"line": 68, "column": 34, "file": "test.jz"}}
+            ]}
+          ]},
+          {"type": "Slice", "loc": {"line": 68, "column": 39, "file": "test.jz"}, "children": [
+            {"type": "Identifier", "name": "rx_data", "loc": {"line": 68, "column": 39, "file": "test.jz"}},
+            {"type": "Literal", "text": "1", "loc": {"line": 68, "column": 47, "file": "test.jz"}},
+            {"type": "Literal", "text": "1", "loc": {"line": 68, "column": 47, "file": "test.jz"}}
+          ]}
+        ]}
+      ]}
+    ]}
+  ]}
+]}

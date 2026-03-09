@@ -1,0 +1,20 @@
+// SLICE_INDEX_OUT_OF_RANGE: slice indices are >= signal width.
+// Verified
+
+@project SLICE_INDEX_OUT_OF_RANGE_PROJECT
+  @top SLICE_INDEX_OUT_OF_RANGE_EXAMPLE {
+    IN  [8] bus = _;
+    OUT [4] out = _;
+  }
+@endproj
+
+@module SLICE_INDEX_OUT_OF_RANGE_EXAMPLE
+  PORT {
+    IN  [8] bus;   // valid indices 0..7
+    OUT [4] out;
+  }
+
+  ASYNCHRONOUS {
+    out = bus[8:5];  // MSB 8 is out of range for width 8
+  }
+@endmod

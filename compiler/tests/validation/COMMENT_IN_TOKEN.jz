@@ -1,0 +1,37 @@
+// COMMENT_IN_TOKEN: comments that appear immediately adjacent to tokens.
+// Each of these lines should trigger ERR> COMMENT_IN_TOKEN when lexed.
+// Verified
+
+@project COMMENT_IN_TOKEN_EXAMPLES
+  CONFIG {
+    WIDTH = 8;
+  }
+
+  @top M {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module M
+  CONST {
+    // Comment between parts of an identifier
+    FOO/*nested comment*/BAR = 1;
+
+    // Comment inside a numeric literal
+    VALUE = 123/*digits*/456;
+
+    // Comment between operators
+    A = 1; B = 2;
+    C = A+/*op comment*/B;
+  }
+
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    in <= out;
+  }
+@endmod

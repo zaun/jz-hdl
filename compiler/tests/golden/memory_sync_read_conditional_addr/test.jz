@@ -1,0 +1,102 @@
+@global ST
+  IDLE  = 2'b00;
+  READ  = 2'b01;
+  DONE  = 2'b10;
+@endglob
+
+@project mem_addr_cond_project
+  IN_PINS {
+    clk    [1] = { standard=LVCMOS33 };
+    rst_n  [1] = { standard=LVCMOS33 };
+    addr_a [4] = { standard=LVCMOS33 };
+    addr_b [4] = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    result [8] = { standard=LVCMOS33, drive=4 };
+  }
+
+  MAP {
+    clk = 1;
+    rst_n = 2;
+    addr_a[0] = 3;
+    addr_a[1] = 4;
+    addr_a[2] = 5;
+    addr_a[3] = 6;
+    addr_b[0] = 7;
+    addr_b[1] = 8;
+    addr_b[2] = 9;
+    addr_b[3] = 10;
+    result[0] = 11;
+    result[1] = 12;
+    result[2] = 13;
+    result[3] = 14;
+    result[4] = 15;
+    result[5] = 16;
+    result[6] = 17;
+    result[7] = 18;
+  }
+
+  CLOCKS {
+    clk = { period=10.0, edge=Rising };
+  }
+
+  @top mem_addr_cond_test {
+    IN  [1] clk    = clk;
+    IN  [1] rst_n  = rst_n;
+    IN  [4] addr_a = addr_a;
+    IN  [4] addr_b = addr_b;
+    OUT [8] result = result;
+  }
+@endproj
+
+@module mem_addr_cond_test
+  PORT {
+    IN  [1] clk;
+    IN  [1] rst_n;
+    IN  [4] addr_a;
+    IN  [4] addr_b;
+    OUT [8] result;
+  }
+
+  REGISTER {
+    state    [2] = 2'b00;
+    data_out [8] = 8'h00;
+  }
+
+  MEM(TYPE=BLOCK) {
+    rom [8] [16] = 8'h00 {
+      OUT read SYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    result = data_out;
+  }
+
+  SYNCHRONOUS(
+    CLK=clk
+    EDGE=Rising
+    RESET=rst_n
+    RESET_ACTIVE=Low
+    RESET_TYPE=Clocked
+  ) {
+    SELECT(state) {
+      CASE ST.IDLE {
+        rom.read.addr <= addr_a;
+        state <= ST.READ;
+      }
+      CASE ST.READ {
+        data_out <= rom.read.data;
+        rom.read.addr <= addr_b;
+        state <= ST.DONE;
+      }
+      CASE ST.DONE {
+        state <= ST.IDLE;
+      }
+      DEFAULT {
+        state <= ST.IDLE;
+      }
+    }
+  }
+@endmod

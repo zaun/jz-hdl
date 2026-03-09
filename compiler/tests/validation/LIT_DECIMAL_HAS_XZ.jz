@@ -1,0 +1,26 @@
+// LIT_DECIMAL_HAS_XZ: decimal literal may not contain x/z digits.
+// Verified
+
+@project LIT_DECIMAL_HAS_XZ_EXAMPLE
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top M_DECIMAL_XZ {
+        OUT [1] out = _;
+    }
+@endproj
+
+@module M_DECIMAL_XZ
+    CONST {
+        X = 8'd10x;
+    }
+
+    PORT {
+        OUT [1] out;
+    }
+
+    ASYNCHRONOUS {
+        out <= 1'b1;
+    }
+@endmod

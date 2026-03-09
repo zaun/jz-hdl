@@ -1,0 +1,57 @@
+// Button Debounce Module
+// 2FF synchronizer + timing-based debounce + edge detect.
+// Outputs a single-cycle pulse on each physical button press.
+// Default debounce window ~20ms at 37.125 MHz (~742,500 cycles).
+@module debounce
+    CONST {
+        DEBOUNCE_COUNT = 742500;
+        COUNTER_BITS   = clog2(DEBOUNCE_COUNT);
+        COUNTER_MAX    = DEBOUNCE_COUNT - 1;
+    }
+
+    PORT {
+        IN   [1] clk;
+        IN   [1] rst_n;
+        IN   [1] btn_in;     // Raw button input (active-low)
+        OUT  [1] btn_press;   // Single-cycle pulse on press
+    }
+
+    REGISTER {
+        // 2FF synchronizer
+        sync1  [1] = 1'b1;
+        sync2  [1] = 1'b1;
+
+        // Debounce state
+        stable    [1]            = 1'b1;
+        counter   [COUNTER_BITS] = COUNTER_BITS'b0;
+
+        // Edge detect
+        stable_prev [1] = 1'b1;
+    }
+
+    ASYNCHRONOUS {
+        // Falling edge of debounced signal = button press (active-low)
+        btn_press <= stable_prev & ~stable;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // 2FF synchronizer for metastability
+        sync1 <= btn_in;
+        sync2 <= sync1;
+
+        // Edge detect register
+        stable_prev <= stable;
+
+        // Debounce logic
+        IF (sync2 != stable) {
+            IF (counter == lit(COUNTER_BITS, COUNTER_MAX)) {
+                stable  <= sync2;
+                counter <= COUNTER_BITS'b0;
+            } ELSE {
+                counter <= counter + COUNTER_BITS'b1;
+            }
+        } ELSE {
+            counter <= COUNTER_BITS'b0;
+        }
+    }
+@endmod

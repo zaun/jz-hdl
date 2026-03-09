@@ -1,0 +1,30 @@
+// REG_INIT_CONTAINS_X: register initialization literal must not contain x bits.
+// Verified
+
+@project REG_INIT_CONTAINS_X_PROJECT
+  @top REG_INIT_CONTAINS_X_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [8] y = _;
+  }
+@endproj
+
+@module REG_INIT_CONTAINS_X_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [8] y;
+  }
+
+  REGISTER {
+    bad_reg [8] = 8'b1010_00x1;
+    reg     [8] = 8'hFF;
+  }
+
+  ASYNCHRONOUS {
+    y = reg;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    reg <= bad_reg;
+    bad_reg <= 8'b0;
+  }
+@endmod

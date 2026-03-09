@@ -1,0 +1,55 @@
+// ============================================================================
+// TEST: INTRINSIC PRIENC AND LZC
+// VERIFIES: Sections 5.5.14–5.5.15
+//   - prienc: result width = clog2(source_width), MSB-first priority
+//   - lzc: result width = clog2(source_width + 1), counts leading zeros
+// ============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") PriencLzcTest
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK      = { standard=LVCMOS33 };
+        DONE      = { standard=LVCMOS33 };
+        src8[8]   = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        pri8[3]  = { standard=LVCMOS33, drive=8 };
+        lzc8[4]  = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+        DONE = IOR32B;
+        src8[0] = 10; src8[1] = 11; src8[2] = 12; src8[3] = 13;
+        src8[4] = 14; src8[5] = 15; src8[6] = 16; src8[7] = 17;
+        pri8[0] = 30; pri8[1] = 31; pri8[2] = 32;
+        lzc8[0] = 33; lzc8[1] = 34; lzc8[2] = 35; lzc8[3] = 36;
+    }
+
+    @top PriencLzcCore {
+        IN  [1] clk   = SCLK;
+        IN  [1] rst_n = DONE;
+        IN  [8] src8  = src8;
+        OUT [3] pri8  = pri8;
+        OUT [4] lzc8  = lzc8;
+    }
+@endproj
+
+@module PriencLzcCore
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [8] src8;
+        OUT [3] pri8;
+        OUT [4] lzc8;
+    }
+
+    ASYNCHRONOUS {
+        pri8 <= prienc(src8);
+        lzc8 <= lzc(src8);
+    }
+@endmod

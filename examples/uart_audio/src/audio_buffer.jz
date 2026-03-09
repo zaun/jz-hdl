@@ -1,0 +1,106 @@
+// Audio Ring Buffer with 48kHz Playback
+// BRAM-based ring buffer (8192 x 16-bit samples = ~170ms at 48kHz).
+// Write port fed by UART audio receiver.
+// Read port produces 48kHz sample stream for DVI audio output.
+// Reports buffer fill level for flow control.
+@module audio_buffer
+    CONST {
+        // Bresenham audio sample rate: 48000 / 37125000 = 16 / 12375
+        BRES_STEP     = 16;
+        BRES_THRESH   = 12375;
+        BRES_FIRE_MIN = 12359;
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+
+        // Write port (from UART audio receiver)
+        IN  [16] wr_data;
+        IN  [1]  wr_valid;
+
+        // Audio output (48kHz)
+        OUT [16] sample;
+        OUT [1]  samp_valid;
+
+        // Buffer status
+        OUT [7]  fill_level;    // 0-127 (top 7 bits of 13-bit count)
+    }
+
+    MEM(TYPE=BLOCK) {
+        buf [16] [8192] = 16'h0000 {
+            IN  write;
+            OUT read SYNC;
+        };
+    }
+
+    WIRE {
+        // Bresenham pre-computation
+        bres_fire    [1];
+        bres_next    [14];
+
+        // Buffer state
+        fill_count   [13];
+        buf_empty    [1];
+    }
+
+    REGISTER {
+        // Ring buffer pointers (13-bit for 8192 entries)
+        wr_ptr      [13] = 13'd0;
+        rd_ptr      [13] = 13'd0;
+
+        // Bresenham accumulator
+        bres_acc    [14] = 14'd0;
+
+        // Output registers
+        sample_out  [16] = 16'h0000;
+        valid_out   [1]  = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Buffer fill: modular subtraction (wraps correctly for power-of-2 size)
+        fill_count <= wr_ptr - rd_ptr;
+        buf_empty  <= (wr_ptr == rd_ptr) ? 1'b1 : 1'b0;
+
+        // Fill level: top 7 bits of 13-bit count (0-127)
+        fill_level <= fill_count[12:6];
+
+        // Bresenham pre-computation
+        bres_fire <= (bres_acc >= lit(14, BRES_FIRE_MIN)) ? 1'b1 : 1'b0;
+        IF (bres_acc >= lit(14, BRES_FIRE_MIN)) {
+            bres_next <= bres_acc - lit(14, BRES_FIRE_MIN);
+        } ELSE {
+            bres_next <= bres_acc + lit(14, BRES_STEP);
+        }
+
+        // Drive output ports
+        sample     <= sample_out;
+        samp_valid <= valid_out;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Bresenham accumulator
+        bres_acc <= bres_next;
+
+        // BRAM read: always present rd_ptr as read address.
+        buf.read.addr <= rd_ptr;
+
+        // 48kHz tick: grab current BRAM output and advance pointer
+        IF (bres_fire == 1'b1 && buf_empty == 1'b0) {
+            sample_out <= buf.read.data;
+            valid_out  <= 1'b1;
+            rd_ptr     <= rd_ptr + 13'd1;
+        } ELIF (bres_fire == 1'b1) {
+            sample_out <= 16'h0000;
+            valid_out  <= 1'b1;
+        } ELSE {
+            valid_out <= 1'b0;
+        }
+
+        // Write port: store sample from UART receiver
+        IF (wr_valid == 1'b1) {
+            buf.write[wr_ptr] <= wr_data;
+            wr_ptr <= wr_ptr + 13'd1;
+        }
+    }
+@endmod

@@ -1,0 +1,27 @@
+// COMB_LOOP_UNCONDITIONAL: flow-sensitive combinational loop detected across
+// ASYNCHRONOUS assignments.
+// Verified
+
+@project COMB_LOOP_UNCONDITIONAL_PROJECT
+  @top COMB_LOOP_UNCONDITIONAL_EXAMPLE {
+    OUT [1] y = _;
+  }
+@endproj
+
+@module COMB_LOOP_UNCONDITIONAL_EXAMPLE
+  PORT {
+    OUT [1] y;
+  }
+
+  WIRE {
+    a [1];
+    b [1];
+  }
+
+  ASYNCHRONOUS {    
+    a <= b;
+    b <= a;
+
+    y = a;
+  }
+@endmod

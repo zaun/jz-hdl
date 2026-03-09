@@ -1,0 +1,29 @@
+// ASSIGN_SHADOWING: root-level assignment followed by nested assignment
+// to the same bits in a conditional path.
+// Verified
+
+@project ASSIGN_SHADOWING_PROJECT
+  @top ASSIGN_SHADOWING_EXAMPLE {
+    IN  [1] a = _;
+    IN  [1] b = _;
+    OUT [1] w = _;
+  }
+@endproj
+
+@module ASSIGN_SHADOWING_EXAMPLE
+  PORT {
+    IN  [1] a;
+    IN  [1] b;
+    OUT [1] w;
+  }
+
+  ASYNCHRONOUS {
+    // Root-level unconditional assignment.
+    w = a;
+
+    // Nested conditional assignment that shadows the root assignment.
+    IF (1'b1) {
+      w <= b;
+    }
+  }
+@endmod

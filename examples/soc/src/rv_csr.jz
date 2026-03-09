@@ -1,0 +1,137 @@
+// RV32I Zicsr Extension - CSR Register File
+// M-mode CSRs: mstatus, mie, mtvec, mepc, mcause, mtval, mcycle
+// Combinational read port, synchronous write port
+// Trap entry/exit logic for M-mode interrupts
+
+@module rv_csr
+    CONST {
+        CLK_FREQ_MHZ = 54;
+        SDRAM_SIZE_BYTES = 0;
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [12] rd_addr;
+        OUT [32] rd_data;
+        IN  [12] wr_addr;
+        IN  [32] wr_data;
+        IN  [1]  wr_en;
+        IN  [1]  trap_enter;
+        IN  [32] trap_epc;
+        IN  [32] trap_cause;
+        IN  [1]  trap_mret;
+        OUT [32] mtvec_out;
+        OUT [32] mepc_out;
+        OUT [1]  mstatus_mie;
+        OUT [1]  mie_meie;
+        IN  [32] irq_lines;
+        OUT [32] irqvec_out;
+        OUT [32] sdcardvec_out;
+        OUT [1]  video_mode;
+        OUT [16] baud_div;
+    }
+
+    REGISTER {
+        mstatus_r [32] = 32'h00001800;
+        mie_r     [32] = 32'h00000000;
+        mtvec_r   [32] = 32'h00000000;
+        mepc_r    [32] = 32'h00000000;
+        mcause_r  [32] = 32'h00000000;
+        mtval_r   [32] = 32'h00000000;
+        mcycle_r      [32] = 32'h00000000;
+        irqvec_r      [32] = 32'h00000000;
+        sdcardvec_r   [32] = 32'h00000000;
+        video_mode_r  [1]  = 1'b0;
+        baud_div_r    [16] = 16'd644;
+    }
+
+    ASYNCHRONOUS {
+        // CSR read mux (combinational)
+        IF (rd_addr == 12'h300) {
+            rd_data <= mstatus_r;
+        } ELIF (rd_addr == 12'h304) {
+            rd_data <= mie_r;
+        } ELIF (rd_addr == 12'h305) {
+            rd_data <= mtvec_r;
+        } ELIF (rd_addr == 12'h341) {
+            rd_data <= mepc_r;
+        } ELIF (rd_addr == 12'h342) {
+            rd_data <= mcause_r;
+        } ELIF (rd_addr == 12'h343) {
+            rd_data <= mtval_r;
+        } ELIF (rd_addr == 12'hB00) {
+            rd_data <= mcycle_r;
+        } ELIF (rd_addr == 12'hBC0) {
+            rd_data <= lit(32, CLK_FREQ_MHZ);
+        } ELIF (rd_addr == 12'hBC1) {
+            rd_data <= {31'd0, video_mode_r};
+        } ELIF (rd_addr == 12'hBC2) {
+            rd_data <= {16'd0, baud_div_r};
+        } ELIF (rd_addr == 12'hBC3) {
+            rd_data <= lit(32, SDRAM_SIZE_BYTES);
+        } ELIF (rd_addr == 12'hBC4) {
+            rd_data <= irqvec_r;
+        } ELIF (rd_addr == 12'hBC5) {
+            rd_data <= sdcardvec_r;
+        } ELIF (rd_addr == 12'hFC0) {
+            rd_data <= irq_lines;
+        } ELSE {
+            rd_data <= 32'h00000000;
+        }
+
+        // Direct outputs
+        mtvec_out     <= mtvec_r;
+        mepc_out      <= mepc_r;
+        irqvec_out    <= irqvec_r;
+        sdcardvec_out <= sdcardvec_r;
+        mstatus_mie <= mstatus_r[3];
+        mie_meie    <= mie_r[11];
+        video_mode  <= video_mode_r;
+        baud_div    <= baud_div_r;
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        // Free-running cycle counter
+        mcycle_r <= mcycle_r + 32'h00000001;
+
+        // Trap entry: save mepc/mcause, MPIE<=MIE, MIE<=0
+        IF (trap_enter == 1'b1) {
+            mepc_r   <= trap_epc;
+            mcause_r <= trap_cause;
+            mstatus_r <= {mstatus_r[31:8], mstatus_r[3], mstatus_r[6:4], 1'b0, mstatus_r[2:0]};
+
+        // MRET: MIE<=MPIE, MPIE<=1
+        } ELIF (trap_mret == 1'b1) {
+            mstatus_r <= {mstatus_r[31:8], 1'b1, mstatus_r[6:4], mstatus_r[7], mstatus_r[2:0]};
+
+        // CSR write
+        } ELIF (wr_en == 1'b1) {
+            IF (wr_addr == 12'h300) {
+                // mstatus: preserve MPP=11 (M-mode only)
+                mstatus_r <= {19'h00000, 2'b11, wr_data[10:8], wr_data[7], wr_data[6:4], wr_data[3], wr_data[2:0]};
+            } ELIF (wr_addr == 12'h304) {
+                mie_r <= wr_data;
+            } ELIF (wr_addr == 12'h305) {
+                // mtvec: force DIRECT mode (bits[1:0]=00)
+                mtvec_r <= {wr_data[31:2], 2'b00};
+            } ELIF (wr_addr == 12'h341) {
+                // mepc: align to instruction boundary
+                mepc_r <= {wr_data[31:2], 2'b00};
+            } ELIF (wr_addr == 12'h342) {
+                mcause_r <= wr_data;
+            } ELIF (wr_addr == 12'h343) {
+                mtval_r <= wr_data;
+            } ELIF (wr_addr == 12'hBC4) {
+                irqvec_r <= {wr_data[31:2], 2'b00};
+            } ELIF (wr_addr == 12'hBC5) {
+                sdcardvec_r <= {wr_data[31:2], 2'b00};
+            } ELIF (wr_addr == 12'hBC1) {
+                video_mode_r <= wr_data[0];
+            } ELIF (wr_addr == 12'hBC2) {
+                baud_div_r <= wr_data[15:0];
+            }
+            // mcycle (0xB00) and clk_freq (0xBC0) are read-only
+        }
+    }
+@endmod

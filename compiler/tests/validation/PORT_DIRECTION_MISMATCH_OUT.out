@@ -1,0 +1,2 @@
+File: PORT_DIRECTION_MISMATCH_OUT.jz
+      21:17   error PORT_DIRECTION_MISMATCH_OUT S4.4/S5.1/S5.2/S8.1 Reading from OUT port inside module (outputs are write-only)

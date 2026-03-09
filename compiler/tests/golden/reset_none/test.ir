@@ -1,0 +1,114 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "reset_none_test",
+    "modules": [
+      {
+        "id": 0,
+        "name": "reset_none_mod",
+        "base_module_id": -1,
+        "source_line": 10,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 12,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "en",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 13,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "d_in",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 14,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 3,
+          "name": "q",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 15,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 4,
+          "name": "reg_a",
+          "kind": "register",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 19,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 8 }, "home_clock_domain_id": 0 }
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [4],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 26, "statements": [{ "kind": "if", "source_line": 30, "condition": { "kind": "signal_ref", "width": 1, "source_line": 30, "signal_id": 1 }, "then": { "kind": "block", "source_line": 30, "statements": [{ "kind": "assignment", "id": 0, "source_line": 31, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 8, "source_line": 31, "signal_id": 2 } }] } }] }
+          }
+        ],
+        "instances": [
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 22, "statements": [{ "kind": "assignment", "id": 0, "source_line": 23, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 8, "source_line": 23, "signal_id": 4 } }] }
+      }
+    ],
+    "project": {
+      "name": "reset_none_test",
+      "clocks": [
+      ],
+      "clock_gens": [
+      ],
+      "pins": [
+      ],
+      "mappings": [
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 1, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 2, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 3, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 34 }
+    ]
+  }
+}

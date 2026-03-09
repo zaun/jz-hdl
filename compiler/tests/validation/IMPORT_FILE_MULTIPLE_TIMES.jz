@@ -1,0 +1,14 @@
+// IMPORT_FILE_MULTIPLE_TIMES: same file imported twice in one project.
+// Verified
+
+@project IMPORT_FILE_MULTIPLE_TIMES_MAIN
+  @import "IMPORT_FILE_MULTIPLE_TIMES_lib.jz";
+  @import "IMPORT_FILE_MULTIPLE_TIMES_lib.jz";
+
+  CONFIG { X = 1; }
+
+  @top IMPORT_FILE_MULTIPLE_TIMES_MOD {
+    IN  [1] a = _;
+    OUT [1] out = _;
+  }
+@endproj

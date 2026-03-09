@@ -1,0 +1,2 @@
+File: TOP_OUT_LITERAL_BINDING.jz
+       6:13   error TOP_OUT_LITERAL_BINDING S6.9 OUT ports may not be bound to literal values in project-level @top

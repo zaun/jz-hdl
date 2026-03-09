@@ -1,0 +1,2 @@
+File: MEM_MULTIPLE_ASSIGN_SYNC_READ_OUT.jz
+      36:5    error MEM_MULTIPLE_ASSIGN_SYNC_READ_OUT S7.2.1/S7.3.2/S7.7.2 Synchronous read address sampled from multiple addresses in one execution path

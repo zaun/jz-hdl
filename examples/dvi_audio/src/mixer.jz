@@ -1,0 +1,81 @@
+// 4-Channel Audio Mixer + DVI Subpacket Formatter
+// Sums 4 signed 16-bit PCM channels and formats as DVI audio subpacket words.
+// Includes BCH(64,56) ECC computation (polynomial 0x83, LSB-first).
+// Purely combinational (ASYNC only).
+@module mixer
+    PORT {
+        IN  [16] s0;            // channel 0 PCM sample
+        IN  [16] s1;            // channel 1 PCM sample
+        IN  [16] s2;            // channel 2 PCM sample
+        IN  [16] s3;            // channel 3 PCM sample
+        IN  [1]  samp_valid;    // sample valid pulse
+        OUT [32] samp_lo;       // DVI subpacket low word
+        OUT [32] samp_hi;       // DVI subpacket high word
+        OUT [1]  out_valid;     // pass-through valid
+    }
+
+    WIRE {
+        sum01    [17];          // sadd(s0, s1) — 17-bit signed
+        sum23    [17];          // sadd(s2, s3) — 17-bit signed
+        sum_all  [18];          // sadd(sum01, sum23) — 18-bit signed
+        mix      [16];          // final 16-bit signed PCM
+        samp_24  [24];          // left-justified to 24 bits
+
+        // Parity computation (XOR of all 24 bits, folded in stages)
+        p8       [8];           // byte0 ^ byte1 ^ byte2
+        p4       [4];           // fold 8 to 4
+        p2       [2];           // fold 4 to 2
+        parity   [1];           // final even parity bit
+        sb6      [8];           // status byte 6
+
+        // Subpacket data (internal wires, before port assignment)
+        lo       [32];          // samp_lo value
+        hi_data  [24];          // upper 24 bits: {sb6, R[23:16], R[15:8]}
+
+        // BCH ECC
+        ecc      [8];           // BCH(64,56) ECC result
+    }
+
+    ASYNCHRONOUS {
+        // Sum 4 channels using sadd for proper sign-extended widening
+        sum01   <= sadd(s0, s1);
+        sum23   <= sadd(s2, s3);
+        sum_all <= sadd(sum01, sum23);
+        mix     <= sum_all[15:0];
+
+        // Left-justify 16-bit sample to 24 bits
+        samp_24 <= { mix, 8'h00 };
+
+        // Even parity: XOR all 24 bits by folding bytes then nibbles
+        p8     <= samp_24[7:0] ^ samp_24[15:8] ^ samp_24[23:16];
+        p4     <= p8[3:0] ^ p8[7:4];
+        p2     <= p4[1:0] ^ p4[3:2];
+        parity <= p2[0] ^ p2[1];
+
+        // Status byte 6: {P_L, 000, P_R, 000} -- parity for both L and R
+        sb6 <= { parity, 3'b000, parity, 3'b000 };
+
+        // DVI subpacket format (L=R mono):
+        //   lo = { R[7:0], L[23:16], L[15:8], L[7:0] }
+        lo <= { samp_24[7:0], samp_24[23:16], samp_24[15:8], samp_24[7:0] };
+
+        // Upper 24 data bits for ECC: {sb6, R[23:16], R[15:8]}
+        hi_data <= { sb6, samp_24[23:16], samp_24[15:8] };
+
+        // BCH(64,56) ECC: polynomial 0x83, LSB-first, right-shift LFSR
+        // data[31:0] = lo, data[55:32] = hi_data
+        ecc[0] <= lo[0] ^ lo[1] ^ lo[3] ^ lo[4] ^ lo[5] ^ lo[6] ^ lo[11] ^ lo[12] ^ lo[14] ^ lo[17] ^ lo[21] ^ lo[22] ^ lo[23] ^ lo[24] ^ lo[25] ^ lo[27] ^ lo[29] ^ lo[30] ^ lo[31] ^ hi_data[2] ^ hi_data[5] ^ hi_data[7] ^ hi_data[8] ^ hi_data[9] ^ hi_data[10] ^ hi_data[11] ^ hi_data[12] ^ hi_data[15] ^ hi_data[16] ^ hi_data[17] ^ hi_data[18] ^ hi_data[20] ^ hi_data[21] ^ hi_data[23];
+        ecc[1] <= lo[0] ^ lo[2] ^ lo[3] ^ lo[7] ^ lo[11] ^ lo[13] ^ lo[14] ^ lo[15] ^ lo[17] ^ lo[18] ^ lo[21] ^ lo[26] ^ lo[27] ^ lo[28] ^ lo[29] ^ hi_data[0] ^ hi_data[2] ^ hi_data[3] ^ hi_data[5] ^ hi_data[6] ^ hi_data[7] ^ hi_data[13] ^ hi_data[15] ^ hi_data[19] ^ hi_data[20] ^ hi_data[22] ^ hi_data[23];
+        ecc[2] <= lo[0] ^ lo[5] ^ lo[6] ^ lo[8] ^ lo[11] ^ lo[15] ^ lo[16] ^ lo[17] ^ lo[18] ^ lo[19] ^ lo[21] ^ lo[23] ^ lo[24] ^ lo[25] ^ lo[28] ^ lo[31] ^ hi_data[1] ^ hi_data[2] ^ hi_data[3] ^ hi_data[4] ^ hi_data[5] ^ hi_data[6] ^ hi_data[9] ^ hi_data[10] ^ hi_data[11] ^ hi_data[12] ^ hi_data[14] ^ hi_data[15] ^ hi_data[17] ^ hi_data[18];
+        ecc[3] <= lo[0] ^ lo[1] ^ lo[6] ^ lo[7] ^ lo[9] ^ lo[12] ^ lo[16] ^ lo[17] ^ lo[18] ^ lo[19] ^ lo[20] ^ lo[22] ^ lo[24] ^ lo[25] ^ lo[26] ^ lo[29] ^ hi_data[0] ^ hi_data[2] ^ hi_data[3] ^ hi_data[4] ^ hi_data[5] ^ hi_data[6] ^ hi_data[7] ^ hi_data[10] ^ hi_data[11] ^ hi_data[12] ^ hi_data[13] ^ hi_data[15] ^ hi_data[16] ^ hi_data[18] ^ hi_data[19];
+        ecc[4] <= lo[0] ^ lo[1] ^ lo[2] ^ lo[7] ^ lo[8] ^ lo[10] ^ lo[13] ^ lo[17] ^ lo[18] ^ lo[19] ^ lo[20] ^ lo[21] ^ lo[23] ^ lo[25] ^ lo[26] ^ lo[27] ^ lo[30] ^ hi_data[1] ^ hi_data[3] ^ hi_data[4] ^ hi_data[5] ^ hi_data[6] ^ hi_data[7] ^ hi_data[8] ^ hi_data[11] ^ hi_data[12] ^ hi_data[13] ^ hi_data[14] ^ hi_data[16] ^ hi_data[17] ^ hi_data[19] ^ hi_data[20];
+        ecc[5] <= lo[0] ^ lo[1] ^ lo[2] ^ lo[3] ^ lo[8] ^ lo[9] ^ lo[11] ^ lo[14] ^ lo[18] ^ lo[19] ^ lo[20] ^ lo[21] ^ lo[22] ^ lo[24] ^ lo[26] ^ lo[27] ^ lo[28] ^ lo[31] ^ hi_data[2] ^ hi_data[4] ^ hi_data[5] ^ hi_data[6] ^ hi_data[7] ^ hi_data[8] ^ hi_data[9] ^ hi_data[12] ^ hi_data[13] ^ hi_data[14] ^ hi_data[15] ^ hi_data[17] ^ hi_data[18] ^ hi_data[20] ^ hi_data[21];
+        ecc[6] <= lo[1] ^ lo[2] ^ lo[3] ^ lo[4] ^ lo[9] ^ lo[10] ^ lo[12] ^ lo[15] ^ lo[19] ^ lo[20] ^ lo[21] ^ lo[22] ^ lo[23] ^ lo[25] ^ lo[27] ^ lo[28] ^ lo[29] ^ hi_data[0] ^ hi_data[3] ^ hi_data[5] ^ hi_data[6] ^ hi_data[7] ^ hi_data[8] ^ hi_data[9] ^ hi_data[10] ^ hi_data[13] ^ hi_data[14] ^ hi_data[15] ^ hi_data[16] ^ hi_data[18] ^ hi_data[19] ^ hi_data[21] ^ hi_data[22];
+        ecc[7] <= lo[0] ^ lo[2] ^ lo[3] ^ lo[4] ^ lo[5] ^ lo[10] ^ lo[11] ^ lo[13] ^ lo[16] ^ lo[20] ^ lo[21] ^ lo[22] ^ lo[23] ^ lo[24] ^ lo[26] ^ lo[28] ^ lo[29] ^ lo[30] ^ hi_data[1] ^ hi_data[4] ^ hi_data[6] ^ hi_data[7] ^ hi_data[8] ^ hi_data[9] ^ hi_data[10] ^ hi_data[11] ^ hi_data[14] ^ hi_data[15] ^ hi_data[16] ^ hi_data[17] ^ hi_data[19] ^ hi_data[20] ^ hi_data[22] ^ hi_data[23];
+
+        // Drive output ports
+        samp_lo  <= lo;
+        samp_hi  <= { ecc, hi_data };
+        out_valid <= samp_valid;
+    }
+@endmod

@@ -1,0 +1,179 @@
+// RV32M Multiply/Divide Unit
+// Multiply: single-cycle via umul/smul intrinsics
+// Divide: 32-cycle restoring division + 1 result cycle
+// Supports MUL, MULH, MULHSU, MULHU, DIV, DIVU, REM, REMU
+
+@module rv_muldiv
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [32] a;
+        IN  [32] b;
+        IN  [3]  funct3;
+        IN  [1]  start;
+        OUT [32] result;
+        OUT [1]  done;
+    }
+
+    WIRE {
+        // Combinational multiply results via intrinsics
+        mul_uu    [64];  // unsigned * unsigned
+        mul_ss    [64];  // signed * signed
+        mul_su    [64];  // |signed| * unsigned (for MULHSU)
+        mul_su_neg [64]; // negated mul_su
+
+        // Absolute values for divide via abs() intrinsic
+        a_abs [33];
+        b_abs [33];
+    }
+
+    REGISTER {
+        running    [1]  = 1'b0;
+        finishing  [1]  = 1'b0;
+        count      [6]  = 6'd0;
+        op         [3]  = 3'b000;
+        negate_res [1]  = 1'b0;
+
+        // Divide state
+        quotient  [32] = 32'h00000000;
+        remainder [33] = 33'h000000000;
+        divisor   [33] = 33'h000000000;
+        dividend  [32] = 32'h00000000;
+
+        // Output registers
+        res_reg  [32] = 32'h00000000;
+        done_reg [1]  = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Single-cycle multiply via intrinsics
+        mul_uu <= umul(a, b);
+        mul_ss <= smul(a, b);
+        mul_su <= umul(abs(a)[31:0], b);
+        mul_su_neg <= ~umul(abs(a)[31:0], b) + 64'h0000000000000001;
+
+        // Absolute values for divide
+        a_abs <= abs(a);
+        b_abs <= abs(b);
+
+        result <= res_reg;
+        done   <= done_reg;
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        // ---- Finishing cycle: select divide result ----
+        IF (finishing == 1'b1) {
+            finishing <= 1'b0;
+            done_reg <= 1'b1;
+
+            IF (op == 3'b100 || op == 3'b101) {
+                // DIV/DIVU: return quotient
+                IF (negate_res == 1'b1) {
+                    res_reg <= ~quotient + 32'h00000001;
+                } ELSE {
+                    res_reg <= quotient;
+                }
+            } ELSE {
+                // REM/REMU: return remainder
+                IF (negate_res == 1'b1) {
+                    res_reg <= ~remainder[31:0] + 32'h00000001;
+                } ELSE {
+                    res_reg <= remainder[31:0];
+                }
+            }
+
+        // ---- Divide algorithm running ----
+        } ELIF (running == 1'b1) {
+            done_reg <= 1'b0;
+
+            // Restoring division step
+            IF ({remainder[31:0], dividend[31]} >= divisor) {
+                remainder <= {remainder[31:0], dividend[31]} - divisor;
+                quotient  <= {quotient[30:0], 1'b1};
+            } ELSE {
+                remainder <= {remainder[31:0], dividend[31]};
+                quotient  <= {quotient[30:0], 1'b0};
+            }
+            dividend <= {dividend[30:0], 1'b0};
+
+            IF (count == 6'd31) {
+                running  <= 1'b0;
+                finishing <= 1'b1;
+            } ELSE {
+                count <= count + 6'd1;
+            }
+
+        // ---- Idle: check for start ----
+        } ELIF (start == 1'b1) {
+            op <= funct3;
+
+            IF (funct3[2] == 1'b0) {
+                // ---- Multiply: single-cycle result from combinational intrinsics ----
+                done_reg <= 1'b1;
+
+                IF (funct3 == 3'b000) {
+                    // MUL: low 32 bits (same for signed/unsigned)
+                    res_reg <= mul_uu[31:0];
+                } ELIF (funct3 == 3'b001) {
+                    // MULH: signed * signed, high word
+                    res_reg <= mul_ss[63:32];
+                } ELIF (funct3 == 3'b010) {
+                    // MULHSU: signed * unsigned, high word
+                    IF (a[31] == 1'b1) {
+                        res_reg <= mul_su_neg[63:32];
+                    } ELSE {
+                        res_reg <= mul_su[63:32];
+                    }
+                } ELSE {
+                    // MULHU: unsigned * unsigned, high word
+                    res_reg <= mul_uu[63:32];
+                }
+
+            } ELSE {
+                // ---- Divide start ----
+                // Check divide by zero (1-cycle special case)
+                IF (b == 32'h00000000) {
+                    IF (funct3 == 3'b110 || funct3 == 3'b111) {
+                        res_reg <= a;
+                    } ELSE {
+                        res_reg <= 32'hFFFFFFFF;
+                    }
+                    done_reg <= 1'b1;
+
+                // Check signed overflow: -2^31 / -1
+                } ELIF (funct3 == 3'b100 && a == 32'h80000000 && b == 32'hFFFFFFFF) {
+                    res_reg  <= 32'h80000000;
+                    done_reg <= 1'b1;
+                } ELIF (funct3 == 3'b110 && a == 32'h80000000 && b == 32'hFFFFFFFF) {
+                    res_reg  <= 32'h00000000;
+                    done_reg <= 1'b1;
+
+                } ELSE {
+                    // Normal divide: use abs() for signed operands
+                    done_reg <= 1'b0;
+                    IF (funct3[0] == 1'b1) {
+                        // DIVU/REMU: unsigned
+                        dividend   <= a;
+                        divisor    <= {1'b0, b};
+                        negate_res <= 1'b0;
+                    } ELSE {
+                        // DIV/REM: signed, operate on absolute values
+                        dividend <= a_abs[31:0];
+                        divisor  <= {1'b0, b_abs[31:0]};
+                        IF (funct3 == 3'b100) {
+                            negate_res <= a[31] ^ b[31];
+                        } ELSE {
+                            negate_res <= a[31];
+                        }
+                    }
+                    remainder <= 33'h000000000;
+                    quotient  <= 32'h00000000;
+                    count     <= 6'd0;
+                    running   <= 1'b1;
+                }
+            }
+        } ELSE {
+            done_reg <= 1'b0;
+        }
+    }
+@endmod

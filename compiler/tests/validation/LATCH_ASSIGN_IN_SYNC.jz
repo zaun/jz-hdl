@@ -1,0 +1,34 @@
+// LATCH_ASSIGN_IN_SYNC: latch written from SYNCHRONOUS block.
+// Verified
+
+@project LATCH_ASSIGN_IN_SYNC_PROJECT
+  @top LATCH_ASSIGN_IN_SYNC_EXAMPLE {
+    IN  [1] clk = _;
+    IN  [1] en  = _;
+    IN  [1] d   = _;
+    OUT [1] q   = _;
+  }
+@endproj
+
+@module LATCH_ASSIGN_IN_SYNC_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    IN  [1] en;
+    IN  [1] d;
+    OUT [1] q;
+  }
+
+  LATCH {
+    q_latch [1] D;
+  }
+
+  ASYNCHRONOUS {
+    // Legal combinational use of latch output.
+    q <= q_latch;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    // Illegal: latch write inside SYNCHRONOUS block.
+    q_latch <= en : d;
+  }
+@endmod

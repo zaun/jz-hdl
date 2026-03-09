@@ -1,0 +1,28 @@
+// LIT_INVALID_DIGIT_FOR_BASE: digit not allowed for the chosen base.
+// Verified
+
+@project LIT_INVALID_DIGIT_FOR_BASE_EXAMPLE
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top M_INVALID_DIGIT {
+        OUT [1] out = _;
+    }
+@endproj
+
+@module M_INVALID_DIGIT
+    CONST {
+        X = 4'b202; // '2' is invalid in binary literal
+        Y = 4'dA0A; // 'A' is invalid in decimal literal
+        Z = 4'dG0G; // 'G' is invalid in hex literal
+    } 
+
+    PORT {
+        OUT [1] out;
+    }
+
+    ASYNCHRONOUS {
+        out <= 1'b1;
+    }
+@endmod

@@ -1,0 +1,30 @@
+// SYNC_CONCAT_DUP_REG: concatenation LHS includes same register more than once.
+// Verified
+
+@project SYNC_CONCAT_DUP_REG_PROJECT
+  @top SYNC_CONCAT_DUP_REG_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [8] data = _;
+  }
+@endproj
+
+@module SYNC_CONCAT_DUP_REG_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [8] data;
+  }
+
+  REGISTER {
+    r   [8]  = 8'h00;
+    tmp [16] = 16'h0000;
+  }
+
+  ASYNCHRONOUS {
+    data <= r;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    tmp <= tmp + 16'hAB;
+    {r, r} <= tmp;
+  }
+@endmod

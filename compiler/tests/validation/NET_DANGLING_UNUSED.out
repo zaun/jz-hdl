@@ -1,0 +1,2 @@
+File: NET_DANGLING_UNUSED.jz
+      19:5    warn  NET_DANGLING_UNUSED S5.1/S8.3 Net has no drivers and no sinks (unused/dangling)

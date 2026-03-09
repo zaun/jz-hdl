@@ -1,0 +1,84 @@
+{"type": "Project", "name": "termination_pull_test", "text": "GENERIC", "loc": {"line": 15, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 17, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10 . 0", "loc": {"line": 18, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 21, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "SCLK", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 22, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "diff_in", "block_kind": "IN_PINS", "text": "mode = DIFFERENTIAL , standard = LVDS25 , term = ON", "loc": {"line": 24, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "mem_dq", "block_kind": "IN_PINS", "text": "standard = SSTL15 , term = ON", "loc": {"line": 26, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "btn", "block_kind": "IN_PINS", "text": "standard = LVCMOS33 , term = OFF", "loc": {"line": 28, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "i2c_sda", "block_kind": "IN_PINS", "text": "standard = LVCMOS33 , pull = UP", "loc": {"line": 30, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "irq", "block_kind": "IN_PINS", "text": "standard = LVCMOS33 , pull = DOWN", "loc": {"line": 32, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "data_in", "block_kind": "IN_PINS", "text": "standard = LVCMOS33 , pull = NONE", "loc": {"line": 34, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 37, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "led", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "loc": {"line": 38, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 41, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "4", "loc": {"line": 42, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "diff_in", "text": "{ P = 10 , N = 11 }", "loc": {"line": 43, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "mem_dq", "text": "20", "loc": {"line": 44, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "btn", "text": "21", "loc": {"line": 45, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "i2c_sda", "text": "22", "loc": {"line": 46, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "irq", "text": "23", "loc": {"line": 47, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "data_in", "text": "24", "loc": {"line": 48, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "led", "text": "15", "loc": {"line": 49, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "term_pull_module", "loc": {"line": 52, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "SCLK", "width": "1", "loc": {"line": 53, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "din", "block_kind": "IN", "text": "diff_in", "width": "1", "loc": {"line": 54, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "dq", "block_kind": "IN", "text": "mem_dq", "width": "1", "loc": {"line": 55, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "button", "block_kind": "IN", "text": "btn", "width": "1", "loc": {"line": 56, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "sda", "block_kind": "IN", "text": "i2c_sda", "width": "1", "loc": {"line": 57, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "irq_in", "block_kind": "IN", "text": "irq", "width": "1", "loc": {"line": 58, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "data", "block_kind": "IN", "text": "data_in", "width": "1", "loc": {"line": 59, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "status", "block_kind": "OUT", "text": "led", "width": "1", "loc": {"line": 60, "column": 17, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "term_pull_module", "loc": {"line": 65, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 66, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 67, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "din", "block_kind": "IN", "width": "1", "loc": {"line": 68, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "dq", "block_kind": "IN", "width": "1", "loc": {"line": 69, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "button", "block_kind": "IN", "width": "1", "loc": {"line": 70, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "sda", "block_kind": "IN", "width": "1", "loc": {"line": 71, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "irq_in", "block_kind": "IN", "width": "1", "loc": {"line": 72, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "data", "block_kind": "IN", "width": "1", "loc": {"line": 73, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "status", "block_kind": "OUT", "width": "1", "loc": {"line": 74, "column": 17, "file": "test.jz"}}
+    ]},
+    {"type": "RegisterBlock", "block_kind": "REGISTER", "loc": {"line": 77, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "RegisterDecl", "name": "sampled", "width": "1", "loc": {"line": 78, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 78, "column": 23, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 81, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 82, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "status", "loc": {"line": 82, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "sampled", "loc": {"line": 82, "column": 18, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "SYNCHRONOUS", "loc": {"line": 85, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "SyncParam", "name": "CLK", "loc": {"line": 85, "column": 17, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "clk", "loc": {"line": 85, "column": 21, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 86, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "sampled", "loc": {"line": 86, "column": 9, "file": "test.jz"}},
+        {"type": "Binary", "block_kind": "BIT_AND", "loc": {"line": 86, "column": 53, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "BIT_AND", "loc": {"line": 86, "column": 44, "file": "test.jz"}, "children": [
+            {"type": "Binary", "block_kind": "BIT_AND", "loc": {"line": 86, "column": 38, "file": "test.jz"}, "children": [
+              {"type": "Binary", "block_kind": "BIT_AND", "loc": {"line": 86, "column": 29, "file": "test.jz"}, "children": [
+                {"type": "Binary", "block_kind": "BIT_AND", "loc": {"line": 86, "column": 24, "file": "test.jz"}, "children": [
+                  {"type": "Identifier", "name": "din", "loc": {"line": 86, "column": 20, "file": "test.jz"}},
+                  {"type": "Identifier", "name": "dq", "loc": {"line": 86, "column": 26, "file": "test.jz"}}
+                ]},
+                {"type": "Identifier", "name": "button", "loc": {"line": 86, "column": 31, "file": "test.jz"}}
+              ]},
+              {"type": "Identifier", "name": "sda", "loc": {"line": 86, "column": 40, "file": "test.jz"}}
+            ]},
+            {"type": "Identifier", "name": "irq_in", "loc": {"line": 86, "column": 46, "file": "test.jz"}}
+          ]},
+          {"type": "Identifier", "name": "data", "loc": {"line": 86, "column": 55, "file": "test.jz"}}
+        ]}
+      ]}
+    ]}
+  ]}
+]}

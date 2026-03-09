@@ -1,0 +1,31 @@
+// SYNC_UNKNOWN_PARAM: SYNCHRONOUS block uses unrecognized header parameter.
+// RESET_VALUE is not a valid parameter; the correct name is RESET_ACTIVE.
+// Expect ERR> SYNC_UNKNOWN_PARAM on the SYNCHRONOUS header.
+
+@project SYNC_UNKNOWN_PARAM_PROJECT
+  @top SYNC_UNKNOWN_PARAM_MOD {
+    IN  [1] clk = _;
+    IN  [1] rst = _;
+    OUT [1] q   = _;
+  }
+@endproj
+
+@module SYNC_UNKNOWN_PARAM_MOD
+  PORT {
+    IN  [1] clk;
+    IN  [1] rst;
+    OUT [1] q;
+  }
+
+  REGISTER {
+    r [1] = 1'b0;
+  }
+
+  ASYNCHRONOUS {
+    q = r;
+  }
+
+  SYNCHRONOUS(CLK=clk RESET=rst RESET_VALUE=Low) {
+    r <= 1'b1;
+  }
+@endmod

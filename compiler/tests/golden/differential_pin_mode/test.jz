@@ -1,0 +1,70 @@
+// =============================================================================
+// TEST: Differential Pin Mode
+// Purpose: Verify that mode=DIFFERENTIAL pins with { P, N } MAP syntax
+//          correctly produce differential I/O buffer instantiation in the
+//          generated Verilog. Tests scalar and array differential inputs
+//          and outputs with LVDS25 standard.
+// =============================================================================
+
+@project(CHIP=GENERIC) differential_pin_test
+
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK = { standard=LVCMOS33 };
+        // Scalar differential input
+        diff_in  = { mode=DIFFERENTIAL, standard=LVDS25 };
+        // Array of differential inputs
+        lvds_rx[2] = { mode=DIFFERENTIAL, standard=LVDS25 };
+    }
+
+    OUT_PINS {
+        // Single-ended output for comparison
+        led = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+
+        // Scalar differential: one { P, N } pair
+        diff_in = { P=10, N=11 };
+
+        // Array differential: each element is a { P, N } pair
+        lvds_rx[0] = { P=25, N=26 };
+        lvds_rx[1] = { P=27, N=28 };
+
+        led = 15;
+    }
+
+    @top diff_module {
+        IN  [1] clk     = SCLK;
+        IN  [1] din     = diff_in;
+        IN  [2] rx_data = lvds_rx;
+        OUT [1] status  = led;
+    }
+
+@endproj
+
+@module diff_module
+    PORT {
+        IN  [1] clk;
+        IN  [1] din;
+        IN  [2] rx_data;
+        OUT [1] status;
+    }
+
+    REGISTER {
+        sampled [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Combine differential inputs into status output
+        status = sampled;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        sampled <= din & rx_data[0] & rx_data[1];
+    }
+@endmod

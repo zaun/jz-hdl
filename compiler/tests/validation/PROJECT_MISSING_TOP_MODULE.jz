@@ -1,0 +1,8 @@
+// TOP_MODULE_NOT_FOUND: top-level @new module not defined in project or imports.
+// Verified
+
+@project TOP_MODULE_NOT_FOUND_EXAMPLE
+  @new top_missing (
+    IN [1] clk
+  )
+@endproj

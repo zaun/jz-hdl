@@ -1,0 +1,30 @@
+// SELECT_DUP_CASE_VALUE: multiple CASE labels with the same value in one SELECT.
+// Expect ERR> SELECT_DUP_CASE_VALUE on the second CASE 0 label.
+
+@project SELECT_DUP_CASE_VALUE_PROJECT
+  @top SELECT_DUP_CASE_VALUE_EXAMPLE {
+    IN  [2] state = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module SELECT_DUP_CASE_VALUE_EXAMPLE
+  PORT {
+    IN  [2] state;
+    OUT [8] out;
+  }
+
+  ASYNCHRONOUS {
+    SELECT (state) {
+      CASE 0 {
+        out <= 8'h00;
+      }
+      CASE 0 {
+        out <= 8'h01;
+      }
+      DEFAULT {
+        out <= 8'hFF;
+      }
+    }
+  }
+@endmod

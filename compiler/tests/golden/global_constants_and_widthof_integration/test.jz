@@ -1,0 +1,141 @@
+// ============================================================
+// GLOBAL CONSTANTS DEFINITION
+// ============================================================
+@global PROTOCOL
+    // Named, sized literals for use in runtime expressions
+    SYNC_WORD = 16'hA5A5;
+    VERSION   = 8'h01;
+    OP_WRITE  = 4'b1010;
+    RX_MAGIC  = 3'b101;
+@endglob
+
+// ============================================================
+// PROJECT CONFIGURATION
+// ============================================================
+@project(CHIP=GENERIC) global_integration_test
+    CONFIG {
+        DATA_WIDTH = 3;
+    }
+
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK = { standard=LVCMOS33 };
+        DONE = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+        A[3] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock
+        // 27MHz
+        SCLK = 4;
+
+        // 2 BUttons
+        // High = Closed
+        // Low = Open
+        KEY[0] = 88;
+        KEY[1] = 87;
+
+        A[0] = 73;
+        A[1] = 74;
+        A[2] = 75;
+
+        // 6 LEDs
+        // High = OFF
+        // Low = ON
+        LED[0] = 15;
+        LED[1] = 16;
+        LED[2] = 17;
+        LED[3] = 18;
+        LED[4] = 19;
+        LED[5] = 20;
+
+        // DONE can be used as a POR signal
+        // Low = programming ongoing
+        // High = programming successfully
+        DONE    = IOR32B; 
+    }
+
+    @top protocol_manager {
+        IN  [1] clk     = SCLK;
+        IN  [1] rst_n   = ~KEY[0];
+        IN  [1] por     = DONE;
+        IN  [3] rx_data = A;
+        OUT [1] valid   = ~LED[0];
+    }
+@endproj
+
+// ============================================================
+// MODULE DEFINITION
+// ============================================================
+@module protocol_manager
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [1] por;
+        IN  [3]  rx_data;
+        OUT [1]  valid;
+    }
+
+    WIRE {
+        reset [1];
+
+        // A wire used to derive other widths
+        // specifically for the test
+        buffer_source [CONFIG.DATA_WIDTH];
+
+        is_sync [1];
+    }
+
+    CONST {
+        // widthof() evaluates at compile time to the integer 3
+        // (buffer_source has width CONFIG.DATA_WIDTH = 3)
+        // clog2(3) evaluates to 2
+        BUF_SIZE   = widthof(buffer_source);
+        ADDR_WIDTH = clog2(BUF_SIZE);
+    }
+
+    REGISTER {
+        // RESET value uses a GLOBAL constant
+        status_reg [16] = PROTOCOL.SYNC_WORD;
+        match_flag [1]  = 1'b0;
+    }
+
+    MEM(type=BLOCK) {
+        // Memory sized dynamically based on the width of another signal
+        packet_storage [widthof(buffer_source)] [BUF_SIZE] = 3'b000 {
+            OUT port_a SYNC;
+            IN  port_b { WRITE_MODE = READ_FIRST; };
+        };
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+
+        // Comparing a runtime signal to a Global Sized Literal
+        // rx_data is 3 bits and RX_MAGIC is 3 bits (matching widths per S2.2)
+        is_sync = (rx_data == PROTOCOL.RX_MAGIC);
+
+        // Using widthof in a logic expression is FORBIDDEN per spec,
+        // so we use the CONST derived from it.
+        valid = match_flag;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        IF (is_sync) {
+            match_flag <= 1'b1;
+            // Writing the global version to the register
+            // Note: extension rules apply if widths differ
+            status_reg <=z PROTOCOL.VERSION;
+        } ELSE {
+            match_flag <= 1'b0;
+        }
+    }
+@endmod

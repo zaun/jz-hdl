@@ -1,0 +1,31 @@
+// WARN_UNCONNECTED_OUTPUT: OUT port declared but never read anywhere in the design.
+// Expect WRN> WARN_UNCONNECTED_OUTPUT on port 'unused_out'.
+
+@project WARN_UNCONNECTED_OUTPUT_PROJECT
+  @top WARN_UNCONNECTED_OUTPUT_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [8] used_out = _;
+    OUT [8] unused_out = _;
+  }
+@endproj
+
+@module WARN_UNCONNECTED_OUTPUT_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [8] used_out;
+    OUT [8] unused_out; // driven but never read
+  }
+
+  REGISTER {
+    counter [8] = 8'h00;
+  }
+
+  ASYNCHRONOUS {
+    used_out = counter;      // consumed through top-level pins
+    unused_out <= 8'hFF;     // value never read inside design
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    counter <= counter + 8'b1;
+  }
+@endmod

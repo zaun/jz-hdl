@@ -1,0 +1,2 @@
+File: SYNC_CONCAT_DUP_REG.jz
+      28:6    error SYNC_CONCAT_DUP_REG S5.2 Concatenation LHS includes same register more than once

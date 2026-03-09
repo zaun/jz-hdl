@@ -1,0 +1,63 @@
+{"type": "Project", "name": "PriencLzcTest", "text": "GW2AR-18-QN88-C8-I7", "loc": {"line": 8, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 9, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10 . 0", "loc": {"line": 10, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 13, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "SCLK", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 14, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "DONE", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 15, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "src8", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "8", "loc": {"line": 16, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 19, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "pri8", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "3", "loc": {"line": 20, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "lzc8", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "4", "loc": {"line": 21, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 24, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "4", "loc": {"line": 25, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "DONE", "text": "IOR32B", "loc": {"line": 26, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "src8 [ 0 ]", "text": "10", "loc": {"line": 27, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "src8 [ 1 ]", "text": "11", "loc": {"line": 27, "column": 23, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "src8 [ 2 ]", "text": "12", "loc": {"line": 27, "column": 37, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "src8 [ 3 ]", "text": "13", "loc": {"line": 27, "column": 51, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "src8 [ 4 ]", "text": "14", "loc": {"line": 28, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "src8 [ 5 ]", "text": "15", "loc": {"line": 28, "column": 23, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "src8 [ 6 ]", "text": "16", "loc": {"line": 28, "column": 37, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "src8 [ 7 ]", "text": "17", "loc": {"line": 28, "column": 51, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "pri8 [ 0 ]", "text": "30", "loc": {"line": 29, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "pri8 [ 1 ]", "text": "31", "loc": {"line": 29, "column": 23, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "pri8 [ 2 ]", "text": "32", "loc": {"line": 29, "column": 37, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "lzc8 [ 0 ]", "text": "33", "loc": {"line": 30, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "lzc8 [ 1 ]", "text": "34", "loc": {"line": 30, "column": 23, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "lzc8 [ 2 ]", "text": "35", "loc": {"line": 30, "column": 37, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "lzc8 [ 3 ]", "text": "36", "loc": {"line": 30, "column": 51, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "PriencLzcCore", "loc": {"line": 33, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "SCLK", "width": "1", "loc": {"line": 34, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "rst_n", "block_kind": "IN", "text": "DONE", "width": "1", "loc": {"line": 35, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "src8", "block_kind": "IN", "text": "src8", "width": "8", "loc": {"line": 36, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "pri8", "block_kind": "OUT", "text": "pri8", "width": "3", "loc": {"line": 37, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "lzc8", "block_kind": "OUT", "text": "lzc8", "width": "4", "loc": {"line": 38, "column": 17, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "PriencLzcCore", "loc": {"line": 42, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 43, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 44, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "rst_n", "block_kind": "IN", "width": "1", "loc": {"line": 45, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "src8", "block_kind": "IN", "width": "8", "loc": {"line": 46, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "pri8", "block_kind": "OUT", "width": "3", "loc": {"line": 47, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "lzc8", "block_kind": "OUT", "width": "4", "loc": {"line": 48, "column": 17, "file": "test.jz"}}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 51, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 52, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "pri8", "loc": {"line": 52, "column": 9, "file": "test.jz"}},
+        {"type": "BuiltinCall", "name": "prienc", "loc": {"line": 52, "column": 17, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "src8", "loc": {"line": 52, "column": 24, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 53, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "lzc8", "loc": {"line": 53, "column": 9, "file": "test.jz"}},
+        {"type": "BuiltinCall", "name": "lzc", "loc": {"line": 53, "column": 17, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "src8", "loc": {"line": 53, "column": 21, "file": "test.jz"}}
+        ]}
+      ]}
+    ]}
+  ]}
+]}

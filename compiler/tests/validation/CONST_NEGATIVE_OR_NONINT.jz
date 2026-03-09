@@ -1,0 +1,28 @@
+// CONST_NEGATIVE_OR_NONINT: CONST must be a nonnegative integer expression.
+// Verified
+
+@project CONST_NEGATIVE_OR_NONINT_PROJECT
+  @top CONST_NEGATIVE_OR_NONINT_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module CONST_NEGATIVE_OR_NONINT_EXAMPLE
+  CONST {
+    A = -5; // NEG number, invalid
+    B = -5 + 5;
+    C = 0;
+    D = 5;
+    E = clog2(D);
+    F = clog2(D - 1);
+    G = clog2(8);
+  }
+
+  PORT {
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

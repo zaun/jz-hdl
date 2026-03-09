@@ -1,0 +1,32 @@
+// MEM_SYNC_DATA_IN_ASYNC_BLOCK: SYNC MEM read data may not be read in ASYNCHRONOUS blocks.
+// Verified
+
+@project MEM_SYNC_DATA_IN_ASYNC_BLOCK_PROJECT
+  @top MEM_SYNC_DATA_IN_ASYNC_BLOCK_EXAMPLE {
+    IN  [1] clk = _;
+    IN  [4] addr = _;
+    OUT [8] dout = _;
+  }
+@endproj
+
+@module MEM_SYNC_DATA_IN_ASYNC_BLOCK_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    IN  [4] addr;
+    OUT [8] dout;
+  }
+
+  MEM {
+    mem0 [8] [16] = 8'h00 {
+      OUT rd SYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    dout <= mem0.rd.data; // Illegal: SYNC memory data read in ASYNCHRONOUS block.
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    mem0.rd.addr <= addr;
+  }
+@endmod

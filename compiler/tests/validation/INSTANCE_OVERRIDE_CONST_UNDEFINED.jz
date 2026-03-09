@@ -1,0 +1,52 @@
+// INSTANCE_OVERRIDE_CONST_UNDEFINED: OVERRIDE sets a CONST that is not declared in the child.
+// Verified
+
+@project INSTANCE_OVERRIDE_CONST_UNDEFINED_PROJECT
+  CONFIG {
+    WIDTH = 8;
+  }
+
+  @top ParentWithOverride {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module ChildWithWidth
+  CONFIG {
+    WIDTH = 8;
+  }
+
+  PORT {
+    IN [WIDTH] in;
+    OUT [WIDTH] data;
+  }
+
+  ASYNCHRONOUS {
+    data = in;
+  }
+@endmod
+
+@module ParentWithOverride
+  CONFIG {
+    WIDTH = 8;
+  }
+
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  // Child declares only WIDTH; attempting to override DEPTH must be rejected.
+  @new u ChildWithWidth {
+    OVERRIDE {
+      DEPTH = 4;
+    }
+    IN  [WIDTH] in = _;
+    OUT [WIDTH] data = _;
+  }
+
+  ASYNCHRONOUS {
+    out = in;
+  }
+@endmod

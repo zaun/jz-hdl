@@ -1,0 +1,38 @@
+// MEM_READ_FROM_WRITE_PORT: expression reads from MEM OUT (write) port; only IN ports are readable.
+// Verified
+
+@project MEM_READ_FROM_WRITE_PORT_PROJECT
+  @top MEM_READ_FROM_WRITE_PORT_EXAMPLE {
+    IN  [1] clk = _;
+    IN  [2] addr = _;
+    IN  [8] data_in = _;
+    OUT [8] data_out = _;
+  }
+@endproj
+
+@module MEM_READ_FROM_WRITE_PORT_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    IN  [2] addr;
+    IN  [8] data_in;
+    OUT [8] data_out;
+  }
+
+  MEM {
+    // depth = 4 -> addr_width = ceil(log2(4)) = 2 bits.
+    mem0 [8] [4] = 8'h00 {
+      IN rd ASYNC;
+      OUT wr;
+    };
+  }
+
+  ASYNCHRONOUS {
+    // Illegal: reading from OUT (write) port in combinational logic.
+    data_out = mem0.wr[addr];
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    // Legal write to OUT port.
+    mem0.wr[addr] <= data_in;
+  }
+@endmod

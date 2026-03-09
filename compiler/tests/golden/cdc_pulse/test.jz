@@ -1,0 +1,31 @@
+@project CDC_PULSE_PROJECT
+  @top cdc_pulse_test {
+    IN  [1] clk_a = _;
+    IN  [1] clk_b = _;
+    OUT [1] q = _;
+  }
+@endproj
+
+@module cdc_pulse_test
+  PORT {
+    IN  [1] clk_a;
+    IN  [1] clk_b;
+    OUT [1] q;
+  }
+  REGISTER {
+    flag [1] = 1'b0;
+    dest_reg [1] = 1'b0;
+  }
+  CDC {
+    PULSE flag (clk_a) => flag_sync (clk_b);
+  }
+  ASYNCHRONOUS {
+    q = flag_sync;
+  }
+  SYNCHRONOUS(CLK=clk_a) {
+    flag <= ~flag;
+  }
+  SYNCHRONOUS(CLK=clk_b) {
+    dest_reg <= flag_sync;
+  }
+@endmod

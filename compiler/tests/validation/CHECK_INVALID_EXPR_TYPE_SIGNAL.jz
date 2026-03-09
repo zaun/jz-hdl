@@ -1,0 +1,21 @@
+// CHECK_INVALID_EXPR_TYPE: @check may not reference runtime signals.
+// Verified
+
+@project CHECK_INVALID_EXPR_TYPE_SIGNAL_PROJECT
+  @top CHECK_INVALID_EXPR_TYPE_SIGNAL_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module CHECK_INVALID_EXPR_TYPE_SIGNAL_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  // Illegal: data is an OUT port, not a CONST/CONFIG.
+  @check (data, "@check condition must not reference signals");
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

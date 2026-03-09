@@ -1,0 +1,29 @@
+// FEATURE_VALIDATION_BOTH_PATHS: The ELSE branch of a @feature guard
+// must pass semantic validation even when the feature is enabled.
+// Here the ELSE branch references an undefined identifier.
+// Verified
+
+@project FEATURE_BOTH_PATHS_ELSE_PROJECT
+  CONFIG {
+    ENABLE = 1;
+  }
+  @top FEATURE_BOTH_PATHS_ELSE_EXAMPLE {
+    IN  [8] a = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module FEATURE_BOTH_PATHS_ELSE_EXAMPLE
+  PORT {
+    IN  [8] a;
+    OUT [8] out;
+  }
+
+  ASYNCHRONOUS {
+    @feature (CONFIG.ENABLE)
+      out <= a;
+    @else
+      out <= undefined_signal;
+    @endfeat
+  }
+@endmod

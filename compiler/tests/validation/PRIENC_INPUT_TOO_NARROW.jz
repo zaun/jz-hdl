@@ -1,0 +1,20 @@
+// PRIENC_INPUT_TOO_NARROW: prienc() source must be at least 2 bits wide.
+// Verified
+
+@project PRIENC_INPUT_TOO_NARROW_PROJECT
+  @top PRIENC_INPUT_TOO_NARROW_EXAMPLE {
+    IN  [1] a = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module PRIENC_INPUT_TOO_NARROW_EXAMPLE
+  PORT {
+    IN  [1] a;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= prienc(a);
+  }
+@endmod

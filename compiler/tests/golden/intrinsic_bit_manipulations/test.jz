@@ -1,0 +1,72 @@
+// ============================================================================
+// TEST: INTRINSIC BIT MANIPULATIONS (popcount, reverse, bswap)
+// VERIFIES: Sections 5.5.23–5.5.25
+//   - popcount: result width = clog2(source_width + 1)
+//   - reverse: result width = source width
+//   - bswap: result width = source width (must be multiple of 8)
+// ============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") BitManipTest
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK       = { standard=LVCMOS33 };
+        DONE       = { standard=LVCMOS33 };
+        data8[8]   = { standard=LVCMOS33 };
+        data16[16] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        pop8[4]     = { standard=LVCMOS33, drive=8 };
+        rev8[8]     = { standard=LVCMOS33, drive=8 };
+        swap16[16]  = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+        DONE = IOR32B;
+        data8[0] = 10; data8[1] = 11; data8[2] = 12; data8[3] = 13;
+        data8[4] = 14; data8[5] = 15; data8[6] = 16; data8[7] = 17;
+        data16[0] = 38; data16[1] = 39; data16[2] = 40; data16[3] = 41;
+        data16[4] = 42; data16[5] = 43; data16[6] = 44; data16[7] = 45;
+        data16[8] = 46; data16[9] = 47; data16[10] = 48; data16[11] = 49;
+        data16[12] = 50; data16[13] = 51; data16[14] = 52; data16[15] = 53;
+        pop8[0] = 30; pop8[1] = 31; pop8[2] = 32; pop8[3] = 33;
+        rev8[0] = 54; rev8[1] = 55; rev8[2] = 56; rev8[3] = 57;
+        rev8[4] = 58; rev8[5] = 59; rev8[6] = 60; rev8[7] = 61;
+        swap16[0] = 62; swap16[1] = 63; swap16[2] = 64; swap16[3] = 65;
+        swap16[4] = 66; swap16[5] = 67; swap16[6] = 68; swap16[7] = 69;
+        swap16[8] = 70; swap16[9] = 71; swap16[10] = 72; swap16[11] = 73;
+        swap16[12] = 74; swap16[13] = 75; swap16[14] = 76; swap16[15] = 77;
+    }
+
+    @top BitManipCore {
+        IN  [1]  clk    = SCLK;
+        IN  [1]  rst_n  = DONE;
+        IN  [8]  data8  = data8;
+        IN  [16] data16 = data16;
+        OUT [4]  pop8   = pop8;
+        OUT [8]  rev8   = rev8;
+        OUT [16] swap16 = swap16;
+    }
+@endproj
+
+@module BitManipCore
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [8]  data8;
+        IN  [16] data16;
+        OUT [4]  pop8;
+        OUT [8]  rev8;
+        OUT [16] swap16;
+    }
+
+    ASYNCHRONOUS {
+        pop8   <= popcount(data8);
+        rev8   <= reverse(data8);
+        swap16 <= bswap(data16);
+    }
+@endmod

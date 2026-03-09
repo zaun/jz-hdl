@@ -1,0 +1,28 @@
+// TEMPLATE_MODULE_SCOPED: Module-scoped template that shadows file-scoped.
+// No template errors expected.
+
+@project TEMPLATE_MODULE_SCOPED_PROJECT
+  @top TEMPLATE_MODULE_SCOPED_MOD {
+    IN  [8] in_a = _;
+    OUT [8] out_a = _;
+  }
+@endproj
+
+@template PASS(src, dst)
+  dst <= 8'h00;
+@endtemplate
+
+@module TEMPLATE_MODULE_SCOPED_MOD
+  PORT {
+    IN  [8] in_a;
+    OUT [8] out_a;
+  }
+
+  @template PASS(src, dst)
+    dst <= src;
+  @endtemplate
+
+  ASYNCHRONOUS {
+    @apply PASS(in_a, out_a);
+  }
+@endmod

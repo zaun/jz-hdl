@@ -1,0 +1,10 @@
+// PROJECT_MULTIPLE_PER_FILE: multiple @project directives in a single file.
+// Verified
+
+@project PROJECT_MULTIPLE_PER_FILE_A
+  CONFIG { X = 1; }
+@endproj
+
+@project PROJECT_MULTIPLE_PER_FILE_B
+  CONFIG { Y = 2; }
+@endproj

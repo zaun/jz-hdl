@@ -1,0 +1,28 @@
+// SYNC_MISSING_CLK: SYNCHRONOUS block must declare a CLK parameter.
+// Verified
+
+@project SYNC_MISSING_CLK_PROJECT
+  @top SYNC_MISSING_CLK_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module SYNC_MISSING_CLK_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [8] out;
+  }
+
+  REGISTER {
+    r [8] = 8'h00;
+  }
+
+  ASYNCHRONOUS {
+    out <= r;
+  }
+
+  SYNCHRONOUS(EDGE=Rising) {
+    r <= 8'h01;
+  }
+@endmod

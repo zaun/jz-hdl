@@ -1,0 +1,39 @@
+// CLOCK_GEN_OSC: Validate OSC generator type is accepted in CLOCK_GEN.
+// Verified
+
+@project CLOCK_GEN_OSC_TEST
+  CLOCKS {
+    osc_clk;
+  }
+
+  OUT_PINS {
+    led = { standard=LVCMOS33, drive=8 };
+  }
+
+  MAP {
+    led = 15;
+  }
+
+  CLOCK_GEN {
+    OSC {
+      OUT BASE osc_clk;
+      CONFIG {
+        FREQ_DIV = 10;
+      };
+    };
+  }
+
+  @top top {
+    OUT [1] led = led;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] led;
+  }
+
+  ASYNCHRONOUS {
+    led <= 1'b0;
+  }
+@endmod

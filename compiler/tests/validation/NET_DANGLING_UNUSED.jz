@@ -1,0 +1,27 @@
+// NET_DANGLING_UNUSED: net declared but never driven or read anywhere.
+// Verified
+
+@project NET_DANGLING_UNUSED_PROJECT
+  @top NET_DANGLING_UNUSED_EXAMPLE {
+    IN  [1] in_sig = _;
+    OUT [1] out_sig = _;
+  }
+@endproj
+
+@module NET_DANGLING_UNUSED_EXAMPLE
+  PORT {
+    IN  [1] in_sig;
+    OUT [1] out_sig;
+  }
+
+  WIRE {
+    used   [1];
+    unused [1];
+  }
+
+  ASYNCHRONOUS {
+    // Drive only 'used'; 'unused' is never read or written.
+    out_sig = used;
+    used    = in_sig;
+  }
+@endmod

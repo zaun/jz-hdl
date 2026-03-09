@@ -1,0 +1,65 @@
+// Melody BRAM wrapper
+// Stores 64-bit note entries as pairs of 32-bit words in BRAM.
+// Entry format: {half_period[63:48], duration[47:24], gap[23:8], volume[7:0]}
+//   Even address (note*2):   {half_period[15:0], duration[23:8]}
+//   Odd  address (note*2+1): {duration[7:0], gap[15:0], volume[7:0]}
+// Sentinel: half_period = 0xFFFF marks end of song
+// 500 notes per track, one binary file per track.
+//
+// Latency: 3 cycles (phase toggle reads 2 BRAM words). Negligible for audio.
+@module melodies
+    CONST {
+        DATA_FILE = "../out/track0.bin";
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [11] addr;
+        OUT [16] half_period;
+        OUT [24] duration;
+        OUT [16] gap;
+        OUT [8]  volume;
+    }
+
+    MEM(TYPE=BLOCK) {
+        mel [32] [3072] = @file(DATA_FILE) {
+            OUT read SYNC;
+        };
+    }
+
+    WIRE {
+        read_addr [12];
+    }
+
+    REGISTER {
+        phase    [1]  = 1'b0;
+        word_hi  [32] = 32'd0;
+        word_lo  [32] = 32'd0;
+    }
+
+    ASYNCHRONOUS {
+        // Note address doubled, phase selects hi/lo word
+        read_addr <= { addr, phase };
+
+        // Extract fields from captured word pair
+        // Hi word: {half_period[15:0], duration[23:8]}
+        // Lo word: {duration[7:0], gap[15:0], volume[7:0]}
+        half_period <= word_hi[31:16];
+        duration    <= { word_hi[15:0], word_lo[31:24] };
+        gap         <= word_lo[23:8];
+        volume      <= word_lo[7:0];
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        mel.read.addr <= read_addr;
+        phase <= ~phase;
+
+        // Capture BRAM data: hi word arrives when phase=1, lo word when phase=0
+        IF (phase == 1'b1) {
+            word_hi <= mel.read.data;
+        } ELSE {
+            word_lo <= mel.read.data;
+        }
+    }
+@endmod

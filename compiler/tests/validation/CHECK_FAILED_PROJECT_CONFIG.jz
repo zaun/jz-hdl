@@ -1,0 +1,25 @@
+// CHECK_FAILED (project): @check in project scope using CONFIG.<name>.
+// Verified
+
+@project CHECK_FAILED_PROJECT_CONFIG
+  CONFIG {
+    WIDTH = 8;
+  }
+
+  // This condition evaluates to 0 and should trigger CHECK_FAILED.
+  @check (CONFIG.WIDTH - 8, "CONFIG.WIDTH must be 8");
+
+  @top CHECK_FAILED_PROJECT_CONFIG_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module CHECK_FAILED_PROJECT_CONFIG_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

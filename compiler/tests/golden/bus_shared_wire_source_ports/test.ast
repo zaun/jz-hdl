@@ -1,0 +1,187 @@
+{"type": "Project", "name": "shared_bus_test", "loc": {"line": 8, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 9, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk_pin", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "1", "loc": {"line": 10, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 12, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "out_pin", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "1", "loc": {"line": 13, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 15, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "clk_pin", "text": "4", "loc": {"line": 16, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_pin", "text": "5", "loc": {"line": 17, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "BusBlock", "name": "SIMPLE_BUS", "block_kind": "BUS", "loc": {"line": 20, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "BusDecl", "name": "VALID", "block_kind": "OUT", "width": "1", "loc": {"line": 21, "column": 16, "file": "test.jz"}},
+    {"type": "BusDecl", "name": "ADDR", "block_kind": "OUT", "width": "8", "loc": {"line": 22, "column": 16, "file": "test.jz"}},
+    {"type": "BusDecl", "name": "DATA", "block_kind": "INOUT", "width": "8", "loc": {"line": 23, "column": 16, "file": "test.jz"}},
+    {"type": "BusDecl", "name": "DONE", "block_kind": "IN", "width": "1", "loc": {"line": 24, "column": 16, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "top_mod", "loc": {"line": 27, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "clk_pin", "width": "1", "loc": {"line": 28, "column": 13, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "result", "block_kind": "OUT", "text": "out_pin", "width": "1", "loc": {"line": 29, "column": 13, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "mini_arb", "loc": {"line": 34, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 35, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "sel", "block_kind": "IN", "width": "1", "loc": {"line": 36, "column": 13, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "tgt", "block_kind": "BUS", "text": "SIMPLE_BUS SOURCE", "width": "3", "loc": {"line": 37, "column": 31, "file": "test.jz"}}
+    ]},
+    {"type": "WireBlock", "block_kind": "WIRE", "loc": {"line": 40, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "WireDecl", "name": "src_addr", "width": "8", "loc": {"line": 41, "column": 5, "file": "test.jz"}},
+      {"type": "WireDecl", "name": "src_data", "width": "8", "loc": {"line": 42, "column": 5, "file": "test.jz"}}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 45, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 46, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "src_addr", "loc": {"line": 46, "column": 5, "file": "test.jz"}},
+        {"type": "Literal", "text": "8'hAA", "loc": {"line": 46, "column": 17, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 47, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "src_data", "loc": {"line": 47, "column": 5, "file": "test.jz"}},
+        {"type": "Literal", "text": "8'h00", "loc": {"line": 47, "column": 17, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 50, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "VALID", "loc": {"line": 50, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "0", "loc": {"line": 50, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Ternary", "loc": {"line": 50, "column": 26, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "EQ", "loc": {"line": 50, "column": 26, "file": "test.jz"}, "children": [
+            {"type": "Identifier", "name": "sel", "loc": {"line": 50, "column": 22, "file": "test.jz"}},
+            {"type": "Literal", "text": "1'b0", "loc": {"line": 50, "column": 29, "file": "test.jz"}}
+          ]},
+          {"type": "Literal", "text": "1'b1", "loc": {"line": 50, "column": 37, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b0", "loc": {"line": 50, "column": 44, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 51, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "ADDR", "loc": {"line": 51, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "0", "loc": {"line": 51, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Identifier", "name": "src_addr", "loc": {"line": 51, "column": 20, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 52, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "DATA", "loc": {"line": 52, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "0", "loc": {"line": 52, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Identifier", "name": "src_data", "loc": {"line": 52, "column": 20, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 55, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "VALID", "loc": {"line": 55, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "1", "loc": {"line": 55, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Ternary", "loc": {"line": 55, "column": 26, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "EQ", "loc": {"line": 55, "column": 26, "file": "test.jz"}, "children": [
+            {"type": "Identifier", "name": "sel", "loc": {"line": 55, "column": 22, "file": "test.jz"}},
+            {"type": "Literal", "text": "1'b1", "loc": {"line": 55, "column": 29, "file": "test.jz"}}
+          ]},
+          {"type": "Literal", "text": "1'b1", "loc": {"line": 55, "column": 37, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b0", "loc": {"line": 55, "column": 44, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 56, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "ADDR", "loc": {"line": 56, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "1", "loc": {"line": 56, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Identifier", "name": "src_addr", "loc": {"line": 56, "column": 20, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 57, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "DATA", "loc": {"line": 57, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "1", "loc": {"line": 57, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Identifier", "name": "src_data", "loc": {"line": 57, "column": 20, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 60, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "VALID", "loc": {"line": 60, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "2", "loc": {"line": 60, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 60, "column": 21, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 61, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "ADDR", "loc": {"line": 61, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "2", "loc": {"line": 61, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Identifier", "name": "src_addr", "loc": {"line": 61, "column": 20, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 62, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "BusAccess", "name": "tgt", "text": "DATA", "loc": {"line": 62, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Literal", "text": "2", "loc": {"line": 62, "column": 9, "file": "test.jz"}}
+        ]},
+        {"type": "Identifier", "name": "src_data", "loc": {"line": 62, "column": 20, "file": "test.jz"}}
+      ]}
+    ]}
+  ]},
+  {"type": "Module", "name": "periph", "loc": {"line": 67, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 68, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "pbus", "block_kind": "BUS", "text": "SIMPLE_BUS TARGET", "loc": {"line": 69, "column": 27, "file": "test.jz"}}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 72, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 73, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "QualifiedIdentifier", "name": "pbus.DATA", "loc": {"line": 73, "column": 5, "file": "test.jz"}},
+        {"type": "Ternary", "loc": {"line": 73, "column": 30, "file": "test.jz"}, "children": [
+          {"type": "Binary", "block_kind": "EQ", "loc": {"line": 73, "column": 30, "file": "test.jz"}, "children": [
+            {"type": "QualifiedIdentifier", "name": "pbus.VALID", "loc": {"line": 73, "column": 19, "file": "test.jz"}},
+            {"type": "Literal", "text": "1'b1", "loc": {"line": 73, "column": 33, "file": "test.jz"}}
+          ]},
+          {"type": "Literal", "text": "8'hFF", "loc": {"line": 73, "column": 41, "file": "test.jz"}},
+          {"type": "Literal", "text": "8'bz", "loc": {"line": 73, "column": 49, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "If", "loc": {"line": 74, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Binary", "block_kind": "EQ", "loc": {"line": 74, "column": 20, "file": "test.jz"}, "children": [
+          {"type": "QualifiedIdentifier", "name": "pbus.VALID", "loc": {"line": 74, "column": 9, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b1", "loc": {"line": 74, "column": 23, "file": "test.jz"}}
+        ]},
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 75, "column": 7, "file": "test.jz"}, "children": [
+          {"type": "QualifiedIdentifier", "name": "pbus.DONE", "loc": {"line": 75, "column": 7, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'b1", "loc": {"line": 75, "column": 20, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Else", "loc": {"line": 76, "column": 7, "file": "test.jz"}, "children": [
+        {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 77, "column": 7, "file": "test.jz"}, "children": [
+          {"type": "QualifiedIdentifier", "name": "pbus.DONE", "loc": {"line": 77, "column": 7, "file": "test.jz"}},
+          {"type": "Literal", "text": "1'bz", "loc": {"line": 77, "column": 20, "file": "test.jz"}}
+        ]}
+      ]}
+    ]}
+  ]},
+  {"type": "Module", "name": "top_mod", "loc": {"line": 82, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 83, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 84, "column": 13, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "result", "block_kind": "OUT", "width": "1", "loc": {"line": 85, "column": 13, "file": "test.jz"}}
+    ]},
+    {"type": "WireBlock", "block_kind": "WIRE", "loc": {"line": 88, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "WireDecl", "name": "bus_a", "width": "widthof ( SIMPLE_BUS )", "loc": {"line": 89, "column": 5, "file": "test.jz"}},
+      {"type": "WireDecl", "name": "bus_b", "width": "widthof ( SIMPLE_BUS )", "loc": {"line": 90, "column": 5, "file": "test.jz"}},
+      {"type": "WireDecl", "name": "sel", "width": "1", "loc": {"line": 91, "column": 5, "file": "test.jz"}}
+    ]},
+    {"type": "ModuleInstance", "name": "arb0", "text": "mini_arb", "loc": {"line": 96, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "sel", "block_kind": "IN", "width": "1", "loc": {"line": 97, "column": 13, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "sel", "loc": {"line": 97, "column": 19, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "tgt", "block_kind": "BUS", "text": "SIMPLE_BUS SOURCE", "width": "3", "loc": {"line": 98, "column": 31, "file": "test.jz"}, "children": [
+        {"type": "Concat", "loc": {"line": 98, "column": 37, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "bus_b", "loc": {"line": 98, "column": 38, "file": "test.jz"}},
+          {"type": "Identifier", "name": "bus_a", "loc": {"line": 98, "column": 45, "file": "test.jz"}},
+          {"type": "Identifier", "name": "bus_a", "loc": {"line": 98, "column": 52, "file": "test.jz"}}
+        ]}
+      ]}
+    ]},
+    {"type": "ModuleInstance", "name": "p0", "text": "periph", "loc": {"line": 101, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "pbus", "block_kind": "BUS", "text": "SIMPLE_BUS TARGET", "loc": {"line": 102, "column": 27, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "bus_a", "loc": {"line": 102, "column": 34, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "ModuleInstance", "name": "p1", "text": "periph", "loc": {"line": 105, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "pbus", "block_kind": "BUS", "text": "SIMPLE_BUS TARGET", "loc": {"line": 106, "column": 27, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "bus_b", "loc": {"line": 106, "column": 34, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 109, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 110, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "sel", "loc": {"line": 110, "column": 5, "file": "test.jz"}},
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 110, "column": 12, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 111, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "result", "loc": {"line": 111, "column": 5, "file": "test.jz"}},
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 111, "column": 15, "file": "test.jz"}}
+      ]}
+    ]}
+  ]}
+]}

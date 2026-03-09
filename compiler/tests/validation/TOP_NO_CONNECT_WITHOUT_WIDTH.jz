@@ -1,0 +1,20 @@
+// TOP_NO_CONNECT_WITHOUT_WIDTH: port bound to '_' but missing explicit width.
+// verified
+
+@project TOP_NO_CONNECT_WITHOUT_WIDTH_PROJECT
+  @top TOP_NO_CONNECT_WITHOUT_WIDTH_EXAMPLE {
+    IN [] in = _; // width expression is empty
+    OUT [1] data = _;
+  }
+@endproj
+
+@module TOP_NO_CONNECT_WITHOUT_WIDTH_EXAMPLE
+  PORT {
+    IN  [1] in;
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= in;
+  }
+@endmod

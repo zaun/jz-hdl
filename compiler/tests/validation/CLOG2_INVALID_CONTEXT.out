@@ -1,0 +1,2 @@
+File: CLOG2_INVALID_CONTEXT.jz
+      38:10   error CLOG2_INVALID_CONTEXT S5.5.5 clog2() used outside compile-time constant integer expression context

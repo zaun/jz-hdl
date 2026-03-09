@@ -1,0 +1,2 @@
+File: LATCH_ALIAS_FORBIDDEN.jz
+      27:5    error LATCH_ALIAS_FORBIDDEN S4.8 LATCH may not be aliased using '='; latches must not be merged into other nets

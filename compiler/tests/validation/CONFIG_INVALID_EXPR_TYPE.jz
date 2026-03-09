@@ -1,0 +1,29 @@
+// CONFIG_INVALID_EXPR_TYPE: CONFIG value is not a nonnegative integer expression.
+// Expect ERR> CONFIG_INVALID_EXPR_TYPE on NEG.
+
+@project CONFIG_INVALID_EXPR_TYPE_EXAMPLE
+  CONFIG {
+    A = -5; // NEG number, invalid
+    B = -5 + 5;
+    C = 0;
+    D = 5;
+    E = clog2(D);
+    F = clog2(D - 1);
+    G = clog2(8);
+  }
+
+  @top top {
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= 1'b1;
+  }
+@endmod
+

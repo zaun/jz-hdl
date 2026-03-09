@@ -1,0 +1,33 @@
+@module latch_test
+    PORT {
+        IN  [1] clk;
+        IN  [1] por;
+        IN  [1] rst_n;
+        IN  [1] btn;
+        OUT [6] leds;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        counter [27] = 27'b1;
+    }
+    
+    LATCH {
+        // Explicit storage for the 6-bit LED pattern
+        display_buffer [6] D; 
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+
+        display_buffer <= btn : ~counter[26:21];
+        leds <= { btn, display_buffer[4:0] };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        counter <= counter + 27'b1;
+    }
+@endmod

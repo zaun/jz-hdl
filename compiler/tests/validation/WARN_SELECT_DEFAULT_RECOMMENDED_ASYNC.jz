@@ -1,0 +1,28 @@
+// WARN_INCOMPLETE_SELECT_ASYNC: ASYNCHRONOUS SELECT without DEFAULT.
+// Verified
+
+@project WARN_INCOMPLETE_SELECT_ASYNC_PROJECT
+  @top WARN_INCOMPLETE_SELECT_ASYNC_EXAMPLE {
+    IN  [2] state = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module WARN_INCOMPLETE_SELECT_ASYNC_EXAMPLE
+  PORT {
+    IN  [2] state;
+    OUT [8] out;
+  }
+
+  ASYNCHRONOUS {
+    SELECT (state) {
+      CASE 0 {
+        out <= 8'h00;
+      }
+      CASE 1 {
+        out <= 8'hFF;
+      }
+      // No DEFAULT: when state is 2 or 3, 'out' receives no assignment.
+    }
+  }
+@endmod

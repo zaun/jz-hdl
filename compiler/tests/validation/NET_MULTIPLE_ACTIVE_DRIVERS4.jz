@@ -1,0 +1,49 @@
+// NET_MULTIPLE_ACTIVE_DRIVERS2: selects are excluside, no error
+// Verifies
+
+@project NET_MULTIPLE_ACTIVE_DRIVERS_PROJECT
+  @top NET_MULTIPLE_ACTIVE_DRIVERS_EXAMPLE {
+    IN  [1] sel = _;
+    OUT [4] data = _;
+  }
+@endproj
+
+@module NET_MULTIPLE_ACTIVE_DRIVERS_EXAMPLE
+  PORT {
+    IN  [1] sel;
+    OUT [4] data;
+  }
+  
+  @new n0 NET_MULTIPLE_ACTIVE_DRIVERS_NODE_A {
+    IN  [1] sel = sel;
+    OUT [4] data = data;
+  }
+
+  @new n1 NET_MULTIPLE_ACTIVE_DRIVERS_NODE_B {
+    IN  [1] sel = sel;
+    OUT [4] data = data;
+  }
+
+@endmod
+
+@module NET_MULTIPLE_ACTIVE_DRIVERS_NODE_A
+  PORT {
+    IN  [1] sel;
+    OUT [4] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= sel == 1'b0 ? 4'b1 : 4'bz;
+  }
+@endmod
+
+@module NET_MULTIPLE_ACTIVE_DRIVERS_NODE_B
+  PORT {
+    IN  [1] sel;
+    OUT [4] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= sel == 1'b0 ? 4'b1 : 4'bz;
+  }
+@endmod

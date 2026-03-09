@@ -1,0 +1,25 @@
+// IF_COND_WIDTH_NOT_1: IF/ELIF condition expression must be width-1.
+// Verified
+
+@project IF_COND_WIDTH_NOT_1_PROJECT
+  @top IF_COND_WIDTH_NOT_1_EXAMPLE {
+    IN  [2] state = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module IF_COND_WIDTH_NOT_1_EXAMPLE
+  PORT {
+    IN  [2] state;
+    OUT [8] out;
+  }
+
+  ASYNCHRONOUS {
+    // 'state' has width 2, so this IF condition violates the width-1 rule.
+    IF (state) {
+      out <= 8'hAA;
+    } ELSE {
+      out <= 8'h55;
+    }
+  }
+@endmod

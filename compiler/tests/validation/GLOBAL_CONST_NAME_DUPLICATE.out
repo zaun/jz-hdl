@@ -1,0 +1,2 @@
+File: GLOBAL_CONST_NAME_DUPLICATE.jz
+       6:3    error GLOBAL_CONST_NAME_DUPLICATE S8.4 Duplicate constant identifier within a single @global block

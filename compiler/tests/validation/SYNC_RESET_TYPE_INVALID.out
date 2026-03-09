@@ -1,0 +1,2 @@
+File: SYNC_RESET_TYPE_INVALID.jz
+      27:44   error SYNC_RESET_TYPE_INVALID S4.11 SYNCHRONOUS block RESET_TYPE must be Clocked or Immediate

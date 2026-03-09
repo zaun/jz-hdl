@@ -1,0 +1,107 @@
+// Golden test: BSRAM write inside nested SELECT must preserve all guard conditions
+// Tests:
+//   - BLOCK memory write inside SELECT(state) { CASE { SELECT(cmd) { CASE { write } } }
+//   - Verifies the outer SELECT guard (state == EXEC) is emitted in the BSRAM write block
+//   - Regression test for bug where only the innermost SELECT guard was emitted,
+//     causing spurious memory writes in other states
+
+@global OPS
+    NOP   = 8'h00;
+    LOAD  = 8'h01;
+    STORE = 8'h02;
+@endglob
+
+@global ST
+    FETCH = 2'b00;
+    EXEC  = 2'b01;
+    HALT  = 2'b10;
+@endglob
+
+@project bsram_nested_select_test
+    IN_PINS {
+        clk     [1] = { standard=LVCMOS33 };
+        rst_n   [1] = { standard=LVCMOS33 };
+        data_in [8] = { standard=LVCMOS33 };
+    }
+    OUT_PINS {
+        data_out [8] = { standard=LVCMOS33, drive=4 };
+    }
+    MAP {
+        clk = 1;
+        rst_n = 2;
+        data_in[0] = 3; data_in[1] = 4; data_in[2] = 5; data_in[3] = 6;
+        data_in[4] = 7; data_in[5] = 8; data_in[6] = 9; data_in[7] = 10;
+        data_out[0] = 11; data_out[1] = 12; data_out[2] = 13; data_out[3] = 14;
+        data_out[4] = 15; data_out[5] = 16; data_out[6] = 17; data_out[7] = 18;
+    }
+    CLOCKS {
+        clk = { period=37.04, edge=Rising };
+    }
+    @top mini_cpu {
+        IN  [1] clk      = clk;
+        IN  [1] rst_n    = rst_n;
+        IN  [8] data_in  = data_in;
+        OUT [8] data_out = data_out;
+    }
+@endproj
+
+@module mini_cpu
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [8] data_in;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        state  [2] = 2'b0;
+        instr  [8] = 8'b0;
+        acc    [8] = 8'b0;
+        addr   [4] = 4'b0;
+    }
+
+    MEM(TYPE=BLOCK) {
+        ram [8] [16] = 8'h00 {
+            IN  write;
+            OUT read SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data_out <= acc;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        SELECT(state) {
+            CASE ST.FETCH {
+                instr <= data_in;
+                state <= ST.EXEC;
+            }
+            CASE ST.EXEC {
+                SELECT(instr) {
+                    CASE OPS.NOP {
+                        state <= ST.FETCH;
+                    }
+                    CASE OPS.LOAD {
+                        ram.read.addr <= addr;
+                        acc <= ram.read.data;
+                        state <= ST.FETCH;
+                    }
+                    CASE OPS.STORE {
+                        ram.write[addr] <= acc;
+                        state <= ST.FETCH;
+                    }
+                    DEFAULT {
+                        state <= ST.HALT;
+                    }
+                }
+            }
+            CASE ST.HALT {
+                // tight loop
+            }
+            DEFAULT {
+                state <= ST.FETCH;
+            }
+        }
+    }
+@endmod

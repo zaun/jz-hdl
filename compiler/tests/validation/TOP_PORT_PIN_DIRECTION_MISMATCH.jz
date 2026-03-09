@@ -1,0 +1,27 @@
+// TOP_PORT_PIN_DIRECTION_MISMATCH: module port direction incompatible with pin category.
+// Verified
+
+@project TOP_PORT_PIN_DIRECTION_MISMATCH_PROJECT
+  OUT_PINS {
+    in_sig = { standard=LVCMOS33, drive=8 }; // should be IN_PINS, not OUT_PINS
+  }
+  MAP {
+    in_sig = 10;
+  }
+
+  @top TOP_PORT_PIN_DIRECTION_MISMATCH_EXAMPLE {
+    IN  [1] sig = in_sig;
+    OUT [1] data = _;
+  }
+@endproj
+
+@module TOP_PORT_PIN_DIRECTION_MISMATCH_EXAMPLE
+  PORT {
+    IN  [1] sig;
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data = sig;
+  }
+@endmod

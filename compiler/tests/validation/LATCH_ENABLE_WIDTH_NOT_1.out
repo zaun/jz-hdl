@@ -1,0 +1,2 @@
+File: LATCH_ENABLE_WIDTH_NOT_1.jz
+      25:16   error LATCH_ENABLE_WIDTH_NOT_1 S4.8 D-latch enable expression must have width [1]

@@ -1,0 +1,381 @@
+
+{
+  "chipid": "ICE40UP-5K-UWG30",
+  "description": "Primitives available on the Lattice iCE40 UltraPlus UP5K in UWG30 (30-ball WLCSP) package.",
+
+  "boards": [],
+
+  "resources": {
+    "LUT4": 5280,
+    "DFF": 5280,
+    "IOB": 21,
+    "DIFF_PAIRS": 8,
+    "GSR": 1
+  },
+
+  "latches": {
+    "source": "DS-ICE40-UltraPlus, Section: Logic Cells (PLBs)",
+    "PLB": {
+      "description": "Programmable Logic Block (General Logic)",
+      "D": false,
+      "SR": false,
+      "note": "PLB storage elements are strictly edge-triggered registers."
+    },
+    "IOB": {
+      "description": "I/O Blocks (Input/Output Pins)",
+      "D": true,
+      "SR": false,
+      "modes": ["Transparent"],
+      "note": "iCEGate latch via LATCH_INPUT_VALUE in SB_IO."
+    }
+  },
+
+  "dsp": {
+    "source": "DS-ICE40-UltraPlus, Table: Device Resources (SB_MAC16)",
+    "description": "Hardware multiply-accumulate blocks",
+    "MAC16": {
+      "quantity": 8,
+      "description": "SB_MAC16: 16x16 multiply or 2x 8x8 multiply, max 50 MHz"
+    }
+  },
+
+  "memory": [
+    {
+      "type": "BLOCK",
+      "source": "DS-ICE40-UltraPlus, Section: Embedded Block RAM (EBR), Table: EBR Configurations",
+      "description": "Embedded Block RAM (EBR). Each block is 4096 bits (4 Kbit). Total of 30 blocks providing 120 Kbit of EBR.",
+      "quantity": 30,
+      "bits_per_block": 4096,
+      "total_bits": 122880,
+      "max_freq_mhz": 150,
+      "note": "30 blocks x 4,096 bits = 122,880 bits (120 Kbit).",
+      "modes": [{
+        "name": "Single Port",
+        "description": "Single port read/write",
+        "ports": [
+            { "id": "A", "read": true, "write": true }
+        ],
+        "configurations": [
+          { "width": 16, "depth": 256 },
+          { "width": 8,  "depth": 512 },
+          { "width": 4,  "depth": 1024 },
+          { "width": 2,  "depth": 2048 }
+        ]
+      },
+      {
+        "name": "Pseudo-Dual Port",
+        "description": "Write on Port A, read on Port B simultaneously",
+        "ports": [
+            { "id": "A", "read": false, "write": true },
+            { "id": "B", "read": true,  "write": false }
+        ],
+        "configurations": [
+          { "width": 16, "depth": 256 },
+          { "width": 8,  "depth": 512 },
+          { "width": 4,  "depth": 1024 },
+          { "width": 2,  "depth": 2048 }
+        ]
+      },
+      {
+        "name": "Read Only Memory",
+        "description": "Read-only with initialization during power-on",
+        "ports": [
+            { "id": "A", "read": true, "write": false }
+        ],
+        "configurations": [
+          { "width": 16, "depth": 256 },
+          { "width": 8,  "depth": 512 },
+          { "width": 4,  "depth": 1024 },
+          { "width": 2,  "depth": 2048 }
+        ]
+      }]
+    },
+    {
+      "type": "SPRAM",
+      "source": "DS-ICE40-UltraPlus, Section: Single-Port RAM (SPRAM), Table: Device Resources",
+      "description": "Single-Port RAM (SPRAM). Each block is 262,144 bits (256 Kbit). Total of 4 blocks providing 1 Mbit.",
+      "quantity": 4,
+      "bits_per_block": 262144,
+      "total_bits": 1048576,
+      "max_freq_mhz": 70,
+      "note": "4 blocks x 262,144 bits = 1,048,576 bits (1 Mbit). Fixed 16384x16 configuration, single port only.",
+      "modes": [{
+        "name": "Single Port",
+        "description": "Single port read/write, fixed 16384x16",
+        "ports": [
+            { "id": "A", "read": true, "write": true }
+        ],
+        "configurations": [
+          { "width": 16, "depth": 16384 }
+        ]
+      }]
+    }
+  ],
+
+  "clock_gen": [
+    {
+      "type": "osc",
+      "source": "DS-ICE40-UltraPlus, Section: Internal Oscillator (SB_HFOSC)",
+      "description": "High-Frequency Internal Oscillator (HFOSC). Base frequency 48 MHz with programmable divider.",
+      "count": 1,
+      "map": {
+        "verilog-2005": [
+          "SB_HFOSC #(\n",
+          "    .CLKHF_DIV(\"%%CLKHF_DIV%%\")\n",
+          ") u_hfosc (\n",
+          "    .CLKHFEN(1'b1),\n",
+          "    .CLKHFPU(1'b1),\n",
+          "    .CLKHF(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\SB_HFOSC $auto$hfosc\n",
+          "  parameter \\CLKHF_DIV \"%%CLKHF_DIV%%\"\n",
+          "  connect \\CLKHFEN 1'1\n",
+          "  connect \\CLKHFPU 1'1\n",
+          "  connect \\CLKHF \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "required": false,
+          "description": "OSC has no external clock input"
+        }
+      },
+
+      "parameters": {
+        "CLKHF_DIV": {
+          "description": "Clock divider: 0b00=48MHz, 0b01=24MHz, 0b10=12MHz, 0b11=6MHz",
+          "type": "string",
+          "default": "0b00",
+          "valid": ["0b00", "0b01", "0b10", "0b11"]
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "High-frequency oscillator output",
+          "port": "CLKHF",
+          "frequency_mhz": { "expr": "48.0 / (1 << CLKHF_DIV)" }
+        }
+      }
+    },
+    {
+      "type": "osc",
+      "source": "DS-ICE40-UltraPlus, Section: Internal Oscillator (SB_LFOSC)",
+      "description": "Low-Frequency Internal Oscillator (LFOSC). Fixed 10 kHz output.",
+      "count": 1,
+      "map": {
+        "verilog-2005": [
+          "SB_LFOSC u_lfosc (\n",
+          "    .CLKLFEN(1'b1),\n",
+          "    .CLKLFPU(1'b1),\n",
+          "    .CLKLF(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\SB_LFOSC $auto$lfosc\n",
+          "  connect \\CLKLFEN 1'1\n",
+          "  connect \\CLKLFPU 1'1\n",
+          "  connect \\CLKLF \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "required": false,
+          "description": "OSC has no external clock input"
+        }
+      },
+
+      "parameters": {},
+      "outputs": {
+        "BASE": {
+          "description": "Low-frequency oscillator output (10 kHz)",
+          "port": "CLKLF",
+          "frequency_mhz": { "expr": "0.01" }
+        }
+      }
+    },
+    {
+      "type": "pll",
+      "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_CORE); Lattice TN1251 iCE40 sysCLOCK PLL Design and Usage Guide",
+      "description": "Phase-Locked Loop (SB_PLL40_CORE). SIMPLE mode with internal feedback.",
+
+      "count": 1,
+      "chaining": false,
+
+      "map": {
+        "verilog-2005": [
+          "SB_PLL40_CORE #(\n",
+          "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
+          "    .DIVR(%%DIVR%%),\n",
+          "    .DIVF(%%DIVF%%),\n",
+          "    .DIVQ(%%DIVQ%%),\n",
+          "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
+          "    .PLLOUT_SELECT(\"%%PLLOUT_SELECT_A%%\")\n",
+          ") u_pll_%%instance_idx%% (\n",
+          "    .REFERENCECLK(%%REF_CLK%%),\n",
+          "    .PLLOUTGLOBAL(%%BASE%%),\n",
+          "    .LOCK(%%LOCK%%),\n",
+          "    .BYPASS(1'b0),\n",
+          "    .RESETB(1'b1)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\SB_PLL40_CORE $auto$%%instance_idx%%\n",
+          "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
+          "  parameter \\DIVR %%DIVR%%\n",
+          "  parameter \\DIVF %%DIVF%%\n",
+          "  parameter \\DIVQ %%DIVQ%%\n",
+          "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
+          "  parameter \\PLLOUT_SELECT \"%%PLLOUT_SELECT_A%%\"\n",
+          "  connect \\REFERENCECLK \\%%REF_CLK%%\n",
+          "  connect \\PLLOUTGLOBAL \\%%BASE%%\n",
+          "  connect \\LOCK \\%%LOCK%%\n",
+          "  connect \\BYPASS 1'0\n",
+          "  connect \\RESETB 1'1\n",
+          "end\n"
+        ]
+      },
+
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the PLL",
+          "required": true,
+          "width": 1,
+          "requires_period": true,
+          "min_mhz": 10,
+          "max_mhz": 133
+        }
+      },
+
+      "parameters": {
+        "DIVR": {
+          "description": "Reference clock divider (actual divider = DIVR + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 15
+        },
+
+        "DIVF": {
+          "description": "Feedback divider (actual multiplier = DIVF + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 127
+        },
+
+        "DIVQ": {
+          "description": "Output divider (divides VCO by 2^DIVQ)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 7
+        },
+
+        "FILTER_RANGE": {
+          "description": "PLL filter range for loop stability",
+          "type": "int",
+          "default": 1,
+          "min": 0,
+          "max": 7
+        },
+
+        "PLLOUT_SELECT_A": {
+          "description": "Output A mux: GENCLK, GENCLK_HALF, SHIFTREG_0deg, or SHIFTREG_90deg",
+          "type": "string",
+          "default": "GENCLK",
+          "valid": ["GENCLK", "GENCLK_HALF", "SHIFTREG_0deg", "SHIFTREG_90deg"]
+        }
+      },
+
+      "derived": {
+        "FVCO": {
+          "description": "Internal VCO frequency",
+          "expr": "(1000.0 / REF_CLK_period_ns) * (DIVF + 1) / (DIVR + 1)",
+          "min": 533,
+          "max": 1066
+        }
+      },
+
+      "outputs": {
+        "BASE": {
+          "description": "Primary PLL output (PLLOUTGLOBAL)",
+          "port": "PLLOUTGLOBAL",
+          "frequency_mhz": {
+            "description": "Output frequency: F_VCO / 2^DIVQ",
+            "expr": "FVCO / (1 << DIVQ)"
+          }
+        },
+
+        "LOCK": {
+          "description": "PLL lock indicator, high when PLL is locked",
+          "port": "LOCK"
+        }
+      },
+
+      "constraints": [
+        {
+          "description": "VCO frequency must be within 533-1066 MHz range.",
+          "rule": "FVCO range check"
+        }
+      ]
+    },
+    {
+      "type": "buf",
+      "source": "TN1260 iCE40 Technology Library; DS-ICE40-UltraPlus, Section 4.6 (Global Buffers)",
+      "mode": "global",
+      "description": "Global clock buffer (SB_GB). Promotes an internal signal onto the global clock network.",
+      "count": 8,
+
+      "map": {
+        "verilog-2005": [
+          "SB_GB u_gb_%%instance_idx%% (\n",
+          "    .USER_SIGNAL_TO_GLOBAL_BUFFER(%%REF_CLK%%),\n",
+          "    .GLOBAL_BUFFER_OUTPUT(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\SB_GB $auto$%%instance_idx%%\n",
+          "  connect \\USER_SIGNAL_TO_GLOBAL_BUFFER \\%%REF_CLK%%\n",
+          "  connect \\GLOBAL_BUFFER_OUTPUT \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the buffer",
+          "required": true,
+          "width": 1,
+          "requires_period": true
+        }
+      },
+
+      "outputs": {
+        "BASE": {
+          "description": "Buffered clock output on global network",
+          "port": "GLOBAL_BUFFER_OUTPUT",
+          "frequency_mhz": {
+            "description": "Same frequency as input (buffer, no division).",
+            "expr": "(1000.0 / REF_CLK_period_ns)"
+          }
+        }
+      }
+    }
+  ],
+
+  "fixed_pins": [
+    { "pad": "RGB0",          "name": "RGB0",    "ball": "A5", "note": "LED driver output" },
+    { "pad": "RGB1",          "name": "RGB1",    "ball": "B5", "note": "LED driver output" },
+    { "pad": "RGB2",          "name": "RGB2",    "ball": "C5", "note": "LED driver output" },
+    { "pad": "IOB_32a_SPI_SO", "name": "SPI_SO",  "ball": "F1", "note": "SPI configuration flash" },
+    { "pad": "IOB_33b_SPI_SI", "name": "SPI_SI",  "ball": "E1", "note": "SPI configuration flash" },
+    { "pad": "IOB_34a_SPI_SCK","name": "SPI_SCK", "ball": "D1", "note": "SPI configuration flash" },
+    { "pad": "IOB_35b_SPI_SS", "name": "SPI_SS",  "ball": "C1", "note": "SPI configuration flash" },
+    { "pad": "creset_b",       "name": "CRESET",  "ball": "F3", "note": "Configuration reset" },
+    { "pad": "IOB_12a_G4_CDONE","name": "CDONE",  "ball": "D3", "note": "Configuration done" }
+  ]
+}

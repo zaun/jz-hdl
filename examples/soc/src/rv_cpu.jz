@@ -1,0 +1,667 @@
+// RV32I Base Integer ISA CPU
+// 32-bit RISC-V, multi-cycle implementation
+// Register file: x0=zero, x1-x31 general purpose
+// Bus interface: 32-bit byte address, 32-bit data
+
+// CPU state machine
+@global RVS
+    FETCH      = 4'h0;
+    WAIT_FETCH = 4'h1;
+    DECODE     = 4'h2;
+    EXECUTE    = 4'h3;
+    MEM_WAIT   = 4'h4;
+    WRITEBACK  = 4'h5;
+    RMW_WAIT   = 4'h6;
+    MULDIV_WAIT = 4'h7;
+    HALT       = 4'hF;
+@endglob
+
+// RV32I opcode groups (instr[6:0])
+@global RVO
+    LUI     = 7'b0110111;
+    AUIPC   = 7'b0010111;
+    JAL     = 7'b1101111;
+    JALR    = 7'b1100111;
+    BRANCH  = 7'b1100011;
+    LOAD    = 7'b0000011;
+    STORE   = 7'b0100011;
+    ALU_IMM = 7'b0010011;
+    ALU_REG = 7'b0110011;
+    FENCE   = 7'b0001111;
+    SYSTEM  = 7'b1110011;
+@endglob
+
+// RV32I funct3 values
+@global F3
+    ADD  = 3'b000;
+    SLL  = 3'b001;
+    SLT  = 3'b010;
+    SLTU = 3'b011;
+    XOR  = 3'b100;
+    SRL  = 3'b101;
+    OR   = 3'b110;
+    AND  = 3'b111;
+    BEQ  = 3'b000;
+    BNE  = 3'b001;
+    BLT  = 3'b100;
+    BGE  = 3'b101;
+    BLTU = 3'b110;
+    BGEU = 3'b111;
+    LB   = 3'b000;
+    LH   = 3'b001;
+    LW   = 3'b010;
+    LBU  = 3'b100;
+    LHU  = 3'b101;
+@endglob
+
+// CSR funct3 values (SYSTEM opcode)
+@global CF3
+    CSRRW  = 3'b001;
+    CSRRS  = 3'b010;
+    CSRRC  = 3'b011;
+    CSRRWI = 3'b101;
+    CSRRSI = 3'b110;
+    CSRRCI = 3'b111;
+@endglob
+
+@module cpu
+    CONST {
+        CLK_FREQ_MHZ = 54;
+        SDRAM_SIZE_BYTES = 0;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [32] irq_lines;
+        BUS SIMPLE_BUS SOURCE pbus;
+        OUT [1] video_mode;
+        OUT [16] baud_div;
+    }
+
+    REGISTER {
+        // Program counter (byte address)
+        pc       [32] = 32'h00000000;
+
+        // State machine
+        state    [4]  = 4'h0;
+
+        // Instruction register
+        instr    [32] = 32'h00000000;
+
+        // Decoded register values
+        rs1_val  [32] = 32'h00000000;
+        rs2_val  [32] = 32'h00000000;
+
+        // Decoded immediate
+        imm_val  [32] = 32'h00000000;
+
+        // Writeback
+        wb_data  [32] = 32'h00000000;
+        wb_rd    [5]  = 5'd0;
+        next_pc  [32] = 32'h00000000;
+
+        // Memory access tracking
+        mem_funct3  [3] = 3'b000;
+        mem_addr_lo [2] = 2'b00;
+
+        // Bus control registers
+        bus_addr  [32] = 32'h00000000;
+        bus_data  [32] = 32'h00000000;
+        bus_cmd   [1]  = 1'b0;
+        bus_valid [1]  = 1'b0;
+
+        // Shadow register bank select (0=normal, 1=trap/ISR)
+        shadow_mode [1] = 1'b0;
+    }
+
+    WIRE {
+        // Decoded instruction fields
+        opcode    [7];
+        rd        [5];
+        funct3    [3];
+        rs1_addr  [5];
+        rs2_addr  [5];
+        funct7    [7];
+
+        // Register file interconnect
+        rf_rs1_data  [32];
+        rf_rs2_data  [32];
+        rf_wr_en_w   [1];
+        rf_wr_addr_w [5];
+        rf_wr_data_w [32];
+
+        // ALU interconnect
+        alu_a_w      [32];
+        alu_b_w      [32];
+        alu_f3_w     [3];
+        alu_alt_w    [1];
+        alu_result   [32];
+
+        // CSR interconnect
+        csr_rd_addr_w    [12];
+        csr_rd_data      [32];
+        csr_wr_addr_w    [12];
+        csr_wr_data_w    [32];
+        csr_wr_en_w      [1];
+        csr_trap_enter_w [1];
+        csr_trap_epc_w   [32];
+        csr_trap_cause_w [32];
+        csr_trap_mret_w  [1];
+        csr_mtvec        [32];
+        csr_mepc         [32];
+        csr_irqvec       [32];
+        csr_sdcardvec    [32];
+        csr_mstatus_mie  [1];
+        csr_mie_meie     [1];
+        irq_pending      [1];
+        csr_new_val      [32];
+        csr_zimm         [32];
+        csr_video_mode   [1];
+        csr_baud_div     [16];
+
+        // Multiply/divide interconnect
+        md_start  [1];
+        md_result [32];
+        md_done   [1];
+    }
+
+    @new rf0 rv_regfile {
+        IN  [1]  clk      = clk;
+        IN  [1]  rst_n    = rst_n;
+        IN  [5]  rs1_addr = rs1_addr;
+        IN  [5]  rs2_addr = rs2_addr;
+        OUT [32] rs1_data = rf_rs1_data;
+        OUT [32] rs2_data = rf_rs2_data;
+        IN  [5]  wr_addr  = rf_wr_addr_w;
+        IN  [32] wr_data  = rf_wr_data_w;
+        IN  [1]  wr_en    = rf_wr_en_w;
+        IN  [1]  shadow   = shadow_mode;
+    }
+
+    @new alu0 rv_alu {
+        IN  [32] a      = alu_a_w;
+        IN  [32] b      = alu_b_w;
+        IN  [3]  funct3 = alu_f3_w;
+        IN  [1]  alt    = alu_alt_w;
+        OUT [32] result = alu_result;
+    }
+
+    @new csr0 rv_csr {
+        OVERRIDE {
+            CLK_FREQ_MHZ = CLK_FREQ_MHZ;
+            SDRAM_SIZE_BYTES = SDRAM_SIZE_BYTES;
+        }
+        IN  [1]  clk         = clk;
+        IN  [1]  rst_n       = rst_n;
+        IN  [12] rd_addr     = csr_rd_addr_w;
+        OUT [32] rd_data     = csr_rd_data;
+        IN  [12] wr_addr     = csr_wr_addr_w;
+        IN  [32] wr_data     = csr_wr_data_w;
+        IN  [1]  wr_en       = csr_wr_en_w;
+        IN  [1]  trap_enter  = csr_trap_enter_w;
+        IN  [32] trap_epc    = csr_trap_epc_w;
+        IN  [32] trap_cause  = csr_trap_cause_w;
+        IN  [1]  trap_mret   = csr_trap_mret_w;
+        OUT [32] mtvec_out     = csr_mtvec;
+        OUT [32] mepc_out     = csr_mepc;
+        OUT [32] irqvec_out   = csr_irqvec;
+        OUT [32] sdcardvec_out = csr_sdcardvec;
+        OUT [1]  mstatus_mie = csr_mstatus_mie;
+        OUT [1]  mie_meie    = csr_mie_meie;
+        IN  [32] irq_lines   = irq_lines;
+        OUT [1]  video_mode  = csr_video_mode;
+        OUT [16] baud_div    = csr_baud_div;
+    }
+
+    @new md0 rv_muldiv {
+        IN  [1]  clk    = clk;
+        IN  [1]  rst_n  = rst_n;
+        IN  [32] a      = rs1_val;
+        IN  [32] b      = rs2_val;
+        IN  [3]  funct3 = funct3;
+        IN  [1]  start  = md_start;
+        OUT [32] result = md_result;
+        OUT [1]  done   = md_done;
+    }
+
+    ASYNCHRONOUS {
+        // Instruction field decode
+        opcode   = instr[6:0];
+        rd       = instr[11:7];
+        funct3   = instr[14:12];
+        rs1_addr = instr[19:15];
+        rs2_addr = instr[24:20];
+        funct7   = instr[31:25];
+
+        // Drive bus signals
+        pbus.ADDR  <= bus_addr;
+        pbus.DATA  <= (bus_valid == 1'b1 && bus_cmd == CMD.WRITE) ? bus_data : 32'bz;
+        pbus.CMD   <= bus_cmd;
+        pbus.VALID <= bus_valid;
+
+        // ALU inputs
+        alu_a_w   <= rs1_val;
+        alu_b_w   <= (opcode == RVO.ALU_REG) ? rs2_val : imm_val;
+        alu_f3_w  <= funct3;
+        alu_alt_w <= (opcode == RVO.ALU_REG || funct3 == F3.SRL) ? instr[30] : 1'b0;
+
+        // Register file write control (active during WRITEBACK)
+        rf_wr_en_w   <= (state == RVS.WRITEBACK) ? 1'b1 : 1'b0;
+        rf_wr_addr_w <= wb_rd;
+        rf_wr_data_w <= wb_data;
+
+        // CSR field decode
+        csr_zimm <= {27'd0, rs1_addr};
+
+        // CSR read address (combinational read)
+        csr_rd_addr_w <= instr[31:20];
+
+        // Video mode output
+        video_mode <= csr_video_mode;
+
+        // Baud rate divider output
+        baud_div <= csr_baud_div;
+
+        // Multiply/divide start signal
+        md_start <= (state == RVS.EXECUTE && opcode == RVO.ALU_REG && funct7 == 7'b0000001) ? 1'b1 : 1'b0;
+
+        // Interrupt pending: any IRQ line active & external IRQ enabled & global enable
+        irq_pending <= (irq_lines != 32'h00000000) ? (csr_mie_meie & csr_mstatus_mie) : 1'b0;
+
+        // CSR write value computation (read-modify-write)
+        IF (funct3 == CF3.CSRRW) {
+            csr_new_val <= rs1_val;
+        } ELIF (funct3 == CF3.CSRRS) {
+            csr_new_val <= csr_rd_data | rs1_val;
+        } ELIF (funct3 == CF3.CSRRC) {
+            csr_new_val <= csr_rd_data & ~rs1_val;
+        } ELIF (funct3 == CF3.CSRRWI) {
+            csr_new_val <= csr_zimm;
+        } ELIF (funct3 == CF3.CSRRSI) {
+            csr_new_val <= csr_rd_data | csr_zimm;
+        } ELIF (funct3 == CF3.CSRRCI) {
+            csr_new_val <= csr_rd_data & ~csr_zimm;
+        } ELSE {
+            csr_new_val <= 32'h00000000;
+        }
+
+        // CSR write enable: active during EXECUTE with valid CSR funct3
+        csr_wr_en_w   <= (state == RVS.EXECUTE && opcode == RVO.SYSTEM && funct3 != 3'b000) ? 1'b1 : 1'b0;
+        csr_wr_addr_w <= instr[31:20];
+        csr_wr_data_w <= csr_new_val;
+
+        // Trap signals (combinational)
+        // Trap enter: interrupt at FETCH, or ECALL/EBREAK at EXECUTE
+        IF (state == RVS.FETCH && irq_pending == 1'b1) {
+            csr_trap_enter_w <= 1'b1;
+            csr_trap_cause_w <= 32'h8000000B;
+        } ELIF (state == RVS.EXECUTE && opcode == RVO.SYSTEM && funct3 == 3'b000 && instr[31:20] != 12'h302 && instr[31:20] != 12'h105) {
+            csr_trap_enter_w <= 1'b1;
+            IF (instr[20] == 1'b1) {
+                // EBREAK (imm=0x001)
+                csr_trap_cause_w <= 32'h00000003;
+            } ELSE {
+                // ECALL (imm=0x000)
+                csr_trap_cause_w <= 32'h0000000B;
+            }
+        } ELSE {
+            csr_trap_enter_w <= 1'b0;
+            csr_trap_cause_w <= 32'h00000000;
+        }
+        csr_trap_epc_w  <= pc;
+        csr_trap_mret_w <= (state == RVS.EXECUTE && opcode == RVO.SYSTEM && funct3 == 3'b000 && instr[31:20] == 12'h302) ? 1'b1 : 1'b0;
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        // ============================================================
+        // FETCH: Start instruction fetch at PC (or take interrupt)
+        // ============================================================
+        IF (state == RVS.FETCH) {
+            IF (irq_pending == 1'b1) {
+                // Trap: CSR module saves mepc/mcause, clears MIE
+                pc          <= csr_mtvec;
+                shadow_mode <= 1'b1;
+                state       <= RVS.FETCH;
+            } ELSE {
+                bus_addr  <= pc;
+                bus_cmd   <= CMD.READ;
+                bus_valid <= 1'b1;
+                state     <= RVS.WAIT_FETCH;
+            }
+
+        // ============================================================
+        // WAIT_FETCH: Wait for bus DONE, latch instruction
+        // ============================================================
+        } ELIF (state == RVS.WAIT_FETCH) {
+            IF (pbus.DONE == 1'b1) {
+                instr     <= pbus.DATA;
+                bus_valid <= 1'b0;
+                state     <= RVS.DECODE;
+            }
+
+        // ============================================================
+        // DECODE: Latch register values, compute immediate
+        // ============================================================
+        } ELIF (state == RVS.DECODE) {
+            // Latch register file read outputs
+            rs1_val <= rf_rs1_data;
+            rs2_val <= rf_rs2_data;
+
+            // --- Decode immediate based on instruction type ---
+            IF (opcode == RVO.LUI || opcode == RVO.AUIPC) {
+                // U-type: {instr[31:12], 12'h000}
+                imm_val <= {instr[31:12], 12'h000};
+            } ELIF (opcode == RVO.JAL) {
+                // J-type
+                IF (instr[31] == 1'b1) {
+                    imm_val <= {11'h7FF, instr[31], instr[19:12], instr[20], instr[30:21], 1'b0};
+                } ELSE {
+                    imm_val <= {11'h000, instr[31], instr[19:12], instr[20], instr[30:21], 1'b0};
+                }
+            } ELIF (opcode == RVO.BRANCH) {
+                // B-type
+                IF (instr[31] == 1'b1) {
+                    imm_val <= {19'h7FFFF, instr[31], instr[7], instr[30:25], instr[11:8], 1'b0};
+                } ELSE {
+                    imm_val <= {19'h00000, instr[31], instr[7], instr[30:25], instr[11:8], 1'b0};
+                }
+            } ELIF (opcode == RVO.STORE) {
+                // S-type
+                IF (instr[31] == 1'b1) {
+                    imm_val <= {20'hFFFFF, instr[31:25], instr[11:7]};
+                } ELSE {
+                    imm_val <= {20'h00000, instr[31:25], instr[11:7]};
+                }
+            } ELSE {
+                // I-type (LOAD, ALU_IMM, JALR, FENCE, SYSTEM)
+                IF (instr[31] == 1'b1) {
+                    imm_val <= {20'hFFFFF, instr[31:20]};
+                } ELSE {
+                    imm_val <= {20'h00000, instr[31:20]};
+                }
+            }
+
+            state <= RVS.EXECUTE;
+
+        // ============================================================
+        // EXECUTE: ALU ops, branches, start memory ops
+        // ============================================================
+        } ELIF (state == RVS.EXECUTE) {
+
+            // --- LUI ---
+            IF (opcode == RVO.LUI) {
+                wb_data <= imm_val;
+                wb_rd   <= rd;
+                next_pc <= pc + 32'h00000004;
+                state   <= RVS.WRITEBACK;
+
+            // --- AUIPC ---
+            } ELIF (opcode == RVO.AUIPC) {
+                wb_data <= pc + imm_val;
+                wb_rd   <= rd;
+                next_pc <= pc + 32'h00000004;
+                state   <= RVS.WRITEBACK;
+
+            // --- JAL ---
+            } ELIF (opcode == RVO.JAL) {
+                wb_data <= pc + 32'h00000004;
+                wb_rd   <= rd;
+                next_pc <= pc + imm_val;
+                state   <= RVS.WRITEBACK;
+
+            // --- JALR ---
+            } ELIF (opcode == RVO.JALR) {
+                wb_data <= pc + 32'h00000004;
+                wb_rd   <= rd;
+                next_pc <= (rs1_val + imm_val) & 32'hFFFFFFFE;
+                state   <= RVS.WRITEBACK;
+
+            // --- BRANCH ---
+            } ELIF (opcode == RVO.BRANCH) {
+                IF (funct3 == F3.BEQ) {
+                    IF (rs1_val == rs2_val) {
+                        pc <= pc + imm_val;
+                    } ELSE {
+                        pc <= pc + 32'h00000004;
+                    }
+                } ELIF (funct3 == F3.BNE) {
+                    IF (rs1_val != rs2_val) {
+                        pc <= pc + imm_val;
+                    } ELSE {
+                        pc <= pc + 32'h00000004;
+                    }
+                } ELIF (funct3 == F3.BLT) {
+                    // Signed less than: ssub sign bit gives signed comparison
+                    IF (ssub(rs1_val, rs2_val)[32] == 1'b1) {
+                        pc <= pc + imm_val;
+                    } ELSE {
+                        pc <= pc + 32'h00000004;
+                    }
+                } ELIF (funct3 == F3.BGE) {
+                    // Signed greater or equal
+                    IF (ssub(rs1_val, rs2_val)[32] == 1'b0) {
+                        pc <= pc + imm_val;
+                    } ELSE {
+                        pc <= pc + 32'h00000004;
+                    }
+                } ELIF (funct3 == F3.BLTU) {
+                    IF (rs1_val < rs2_val) {
+                        pc <= pc + imm_val;
+                    } ELSE {
+                        pc <= pc + 32'h00000004;
+                    }
+                } ELIF (funct3 == F3.BGEU) {
+                    IF (rs1_val < rs2_val) {
+                        pc <= pc + 32'h00000004;
+                    } ELSE {
+                        pc <= pc + imm_val;
+                    }
+                } ELSE {
+                    pc <= pc + 32'h00000004;
+                }
+                state <= RVS.FETCH;
+
+            // --- LOAD ---
+            } ELIF (opcode == RVO.LOAD) {
+                bus_addr    <= rs1_val + imm_val;
+                mem_addr_lo <= (rs1_val + imm_val)[1:0];
+                mem_funct3  <= funct3;
+                bus_cmd     <= CMD.READ;
+                bus_valid   <= 1'b1;
+                wb_rd       <= rd;
+                next_pc     <= pc + 32'h00000004;
+                state       <= RVS.MEM_WAIT;
+
+            // --- STORE ---
+            } ELIF (opcode == RVO.STORE) {
+                bus_addr    <= rs1_val + imm_val;
+                mem_addr_lo <= (rs1_val + imm_val)[1:0];
+                mem_funct3  <= funct3;
+                next_pc     <= pc + 32'h00000004;
+
+                IF (funct3 == F3.LW) {
+                    // Word store: direct write
+                    bus_data  <= rs2_val;
+                    bus_cmd   <= CMD.WRITE;
+                    bus_valid <= 1'b1;
+                    state     <= RVS.MEM_WAIT;
+                } ELSE {
+                    // Byte/half store: read-modify-write, start with read
+                    bus_cmd   <= CMD.READ;
+                    bus_valid <= 1'b1;
+                    state     <= RVS.MEM_WAIT;
+                }
+
+            // --- ALU immediate ---
+            } ELIF (opcode == RVO.ALU_IMM) {
+                wb_data <= alu_result;
+                wb_rd   <= rd;
+                next_pc <= pc + 32'h00000004;
+                state   <= RVS.WRITEBACK;
+
+            // --- ALU register ---
+            } ELIF (opcode == RVO.ALU_REG) {
+                IF (funct7 == 7'b0000001) {
+                    // M extension: multiply/divide (muldiv unit started via async)
+                    wb_rd   <= rd;
+                    next_pc <= pc + 32'h00000004;
+                    state   <= RVS.MULDIV_WAIT;
+                } ELSE {
+                    wb_data <= alu_result;
+                    wb_rd   <= rd;
+                    next_pc <= pc + 32'h00000004;
+                    state   <= RVS.WRITEBACK;
+                }
+
+            // --- FENCE (treat as NOP) ---
+            } ELIF (opcode == RVO.FENCE) {
+                pc    <= pc + 32'h00000004;
+                state <= RVS.FETCH;
+
+            // --- SYSTEM (CSR / MRET / ECALL / EBREAK) ---
+            } ELIF (opcode == RVO.SYSTEM) {
+                IF (funct3 != 3'b000) {
+                    // CSR instruction: old value to rd, write handled by async wr_en
+                    wb_data <= csr_rd_data;
+                    wb_rd   <= rd;
+                    next_pc <= pc + 32'h00000004;
+                    state   <= RVS.WRITEBACK;
+                } ELSE {
+                    IF (instr[31:20] == 12'h302) {
+                        // MRET: return to mepc, CSR restores mstatus
+                        pc          <= csr_mepc;
+                        shadow_mode <= 1'b0;
+                        state       <= RVS.FETCH;
+                    } ELIF (instr[31:20] == 12'h105) {
+                        // WFI: treat as NOP (spec allows this)
+                        pc    <= pc + 32'h00000004;
+                        state <= RVS.FETCH;
+                    } ELSE {
+                        // ECALL/EBREAK -> trap to mtvec
+                        bus_valid <= 1'b0;
+                        pc        <= csr_mtvec;
+                        state     <= RVS.FETCH;
+                    }
+                }
+
+            // --- Unknown opcode: NOP ---
+            } ELSE {
+                pc    <= pc + 32'h00000004;
+                state <= RVS.FETCH;
+            }
+
+        // ============================================================
+        // MEM_WAIT: Wait for load/store bus completion
+        // ============================================================
+        } ELIF (state == RVS.MEM_WAIT) {
+            IF (pbus.DONE == 1'b1) {
+                IF (opcode == RVO.LOAD) {
+                    // Load: extract byte/half/word with sign extension
+                    bus_valid <= 1'b0;
+                    IF (mem_funct3 == F3.LB) {
+                        IF (mem_addr_lo == 2'b00) {
+                            wb_data <= (pbus.DATA[7] == 1'b1) ? {24'hFFFFFF, pbus.DATA[7:0]} : {24'h000000, pbus.DATA[7:0]};
+                        } ELIF (mem_addr_lo == 2'b01) {
+                            wb_data <= (pbus.DATA[15] == 1'b1) ? {24'hFFFFFF, pbus.DATA[15:8]} : {24'h000000, pbus.DATA[15:8]};
+                        } ELIF (mem_addr_lo == 2'b10) {
+                            wb_data <= (pbus.DATA[23] == 1'b1) ? {24'hFFFFFF, pbus.DATA[23:16]} : {24'h000000, pbus.DATA[23:16]};
+                        } ELSE {
+                            wb_data <= (pbus.DATA[31] == 1'b1) ? {24'hFFFFFF, pbus.DATA[31:24]} : {24'h000000, pbus.DATA[31:24]};
+                        }
+                    } ELIF (mem_funct3 == F3.LH) {
+                        IF (mem_addr_lo[1] == 1'b0) {
+                            wb_data <= (pbus.DATA[15] == 1'b1) ? {16'hFFFF, pbus.DATA[15:0]} : {16'h0000, pbus.DATA[15:0]};
+                        } ELSE {
+                            wb_data <= (pbus.DATA[31] == 1'b1) ? {16'hFFFF, pbus.DATA[31:16]} : {16'h0000, pbus.DATA[31:16]};
+                        }
+                    } ELIF (mem_funct3 == F3.LW) {
+                        wb_data <= pbus.DATA;
+                    } ELIF (mem_funct3 == F3.LBU) {
+                        IF (mem_addr_lo == 2'b00) {
+                            wb_data <= {24'h000000, pbus.DATA[7:0]};
+                        } ELIF (mem_addr_lo == 2'b01) {
+                            wb_data <= {24'h000000, pbus.DATA[15:8]};
+                        } ELIF (mem_addr_lo == 2'b10) {
+                            wb_data <= {24'h000000, pbus.DATA[23:16]};
+                        } ELSE {
+                            wb_data <= {24'h000000, pbus.DATA[31:24]};
+                        }
+                    } ELIF (mem_funct3 == F3.LHU) {
+                        IF (mem_addr_lo[1] == 1'b0) {
+                            wb_data <= {16'h0000, pbus.DATA[15:0]};
+                        } ELSE {
+                            wb_data <= {16'h0000, pbus.DATA[31:16]};
+                        }
+                    } ELSE {
+                        wb_data <= pbus.DATA;
+                    }
+                    state <= RVS.WRITEBACK;
+
+                } ELIF (bus_cmd == CMD.WRITE) {
+                    // Store write complete (SW or RMW write phase done)
+                    bus_valid <= 1'b0;
+                    pc        <= next_pc;
+                    state     <= RVS.FETCH;
+
+                } ELSE {
+                    // Store RMW read phase (SB/SH): merge byte/half into read word
+                    IF (mem_funct3 == F3.LB) {
+                        // Store byte
+                        IF (mem_addr_lo == 2'b00) {
+                            bus_data <= {pbus.DATA[31:8], rs2_val[7:0]};
+                        } ELIF (mem_addr_lo == 2'b01) {
+                            bus_data <= {pbus.DATA[31:16], rs2_val[7:0], pbus.DATA[7:0]};
+                        } ELIF (mem_addr_lo == 2'b10) {
+                            bus_data <= {pbus.DATA[31:24], rs2_val[7:0], pbus.DATA[15:0]};
+                        } ELSE {
+                            bus_data <= {rs2_val[7:0], pbus.DATA[23:0]};
+                        }
+                    } ELSE {
+                        // Store halfword
+                        IF (mem_addr_lo[1] == 1'b0) {
+                            bus_data <= {pbus.DATA[31:16], rs2_val[15:0]};
+                        } ELSE {
+                            bus_data <= {rs2_val[15:0], pbus.DATA[15:0]};
+                        }
+                    }
+                    bus_cmd   <= CMD.WRITE;
+                    bus_valid <= 1'b1;
+                    state     <= RVS.RMW_WAIT;
+                }
+            }
+
+        // ============================================================
+        // RMW_WAIT: Wait for RMW write to complete
+        // ============================================================
+        } ELIF (state == RVS.RMW_WAIT) {
+            IF (pbus.DONE == 1'b1) {
+                bus_valid <= 1'b0;
+                pc        <= next_pc;
+                state     <= RVS.FETCH;
+            }
+
+        // ============================================================
+        // MULDIV_WAIT: Wait for multiply/divide completion
+        // ============================================================
+        } ELIF (state == RVS.MULDIV_WAIT) {
+            IF (md_done == 1'b1) {
+                wb_data <= md_result;
+                state   <= RVS.WRITEBACK;
+            }
+
+        // ============================================================
+        // WRITEBACK: Update PC (register write handled by regfile)
+        // ============================================================
+        } ELIF (state == RVS.WRITEBACK) {
+            pc    <= next_pc;
+            state <= RVS.FETCH;
+
+        // ============================================================
+        // HALT: Stay halted (ECALL/EBREAK)
+        // ============================================================
+        } ELIF (state == RVS.HALT) {
+            state <= RVS.HALT;
+        }
+    }
+@endmod

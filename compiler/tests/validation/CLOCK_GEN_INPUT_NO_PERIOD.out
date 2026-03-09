@@ -1,0 +1,2 @@
+File: CLOCK_GEN_INPUT_NO_PERIOD.jz
+      12:7    error CLOCK_GEN_INPUT_NO_PERIOD S6.4.1 CLOCK_GEN input clock must have a period declared in CLOCKS block

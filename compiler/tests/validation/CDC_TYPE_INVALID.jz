@@ -1,0 +1,34 @@
+// CDC_TYPE_INVALID: CDC type must be BIT, BUS, or FIFO.
+// Verified
+
+@project CDC_TYPE_INVALID_PROJECT
+  @top CDC_TYPE_INVALID_EXAMPLE {
+    IN  [1] clk_a = _;
+    IN  [1] clk_b = _;
+    OUT [1] data = _;
+  }
+@endproj
+
+@module CDC_TYPE_INVALID_EXAMPLE
+  PORT {
+    IN  [1] clk_a;
+    IN  [1] clk_b;
+    OUT [1] data;
+  }
+
+  REGISTER {
+    r [1] = 1'b0;
+  }
+
+  CDC {
+    BADTYPE r (clk_a) => alias_r (clk_b);
+  }
+
+  ASYNCHRONOUS {
+    data = alias_r;
+  }
+
+  SYNCHRONOUS(CLK=clk_a) {
+    r <= 1'b1;
+  }
+@endmod

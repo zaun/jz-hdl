@@ -1,0 +1,3 @@
+File: BUS_WILDCARD_WIDTH_MISMATCH.jz
+      17:27   warn  NET_DANGLING_UNUSED S5.1/S8.3 Net has no drivers and no sinks (unused/dangling)
+      26:5    error BUS_WILDCARD_WIDTH_MISMATCH S4.4.1 BUS wildcard assignment requires RHS width of 1 or array count

@@ -1,0 +1,30 @@
+// BUS_TRISTATE_MISMATCH: only writable BUS signals may be assigned 'z'.
+// SOURCE role: OUT is writable, IN is readable, INOUT is both.
+// Verified
+
+@project BUS_TRISTATE_MISMATCH_EXAMPLE
+  BUS SIMPLE {
+    IN  [1] rx;
+    OUT [1] tx;
+    INOUT [1] data;
+  }
+
+  @top top {
+    OUT [1] out = _;
+    BUS SIMPLE SOURCE link = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+    BUS SIMPLE SOURCE link;
+  }
+
+  ASYNCHRONOUS {
+    link.rx <= 1'bz;    // ERROR: IN is readable for SOURCE (not writable)
+    link.tx <= 1'bz;    // OK: OUT is writable for SOURCE
+    link.data <= 1'bz;  // OK: INOUT is writable for SOURCE
+    out <= 1'b0;
+  }
+@endmod

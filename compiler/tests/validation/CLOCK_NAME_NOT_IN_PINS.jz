@@ -1,0 +1,32 @@
+// CLOCK_NAME_NOT_IN_PINS: clock name in CLOCKS has no matching IN_PINS declaration.
+// Verified
+
+@project CLOCK_DUPLICATE_NAME_EXAMPLES
+  CLOCKS {
+    clk = { period=10 };
+  }
+
+  OUT_PINS {
+    test = { standard=LVCMOS33, drive=8 };
+  }
+
+  MAP {
+    test = 4;
+  }
+
+  @top top {
+    IN  [1] clk = clk;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    IN  [1] clk;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = clk;
+  }
+@endmod

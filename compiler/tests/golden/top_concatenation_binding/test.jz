@@ -1,0 +1,68 @@
+// =============================================================================
+// TEST: Top-Level Concatenation Binding
+// Purpose: Verify that @top port bindings using concatenation expressions
+//          correctly map all elements to physical pins in the generated
+//          Verilog wrapper. Tests multi-pin concatenations with mixed pin
+//          categories (INOUT_PINS + OUT_PINS) and multi-element inputs.
+// =============================================================================
+
+@project(CHIP=GENERIC) top_concat_test
+
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK    = { standard=LVCMOS33 };
+        BTN[2]  = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[5]  = { standard=LVCMOS33, drive=8 };
+    }
+
+    INOUT_PINS {
+        BIDIR  = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK   = 1;
+        BTN[0] = 2;
+        BTN[1] = 3;
+        LED[0] = 10;
+        LED[1] = 11;
+        LED[2] = 12;
+        LED[3] = 13;
+        LED[4] = 14;
+        BIDIR  = 20;
+    }
+
+    @top concat_mod {
+        IN   [1] clk        = SCLK;
+        IN   [2] btn        = BTN;
+        IN   [1] bidir_in   = BIDIR;
+        OUT  [6] leds       = { BIDIR, LED };
+    }
+
+@endproj
+
+@module concat_mod
+    PORT {
+        IN   [1] clk;
+        IN   [2] btn;
+        IN   [1] bidir_in;
+        OUT  [6] leds;
+    }
+
+    REGISTER {
+        count [5] = 5'b00000;
+    }
+
+    ASYNCHRONOUS {
+        leds <= { bidir_in, count };
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        count <= count + { 3'b000, btn };
+    }
+@endmod

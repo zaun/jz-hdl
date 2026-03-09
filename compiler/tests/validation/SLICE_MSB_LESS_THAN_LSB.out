@@ -1,0 +1,2 @@
+File: SLICE_MSB_LESS_THAN_LSB.jz
+      18:11   error SLICE_MSB_LESS_THAN_LSB S1.3/S8.1 Slice uses MSB < LSB

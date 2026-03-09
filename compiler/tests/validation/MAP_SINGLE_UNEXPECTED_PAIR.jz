@@ -1,0 +1,28 @@
+// MAP_SINGLE_UNEXPECTED_PAIR: single-ended pin uses { P, N } MAP syntax.
+// Verified
+
+@project MAP_SINGLE_UNEXPECTED_PAIR_PROJECT
+  OUT_PINS {
+    led = { standard=LVCMOS33, drive=8 };
+  }
+
+  MAP {
+    led = { P=10, N=11 };
+  }
+
+  @top MAP_SINGLE_UNEXPECTED_PAIR_EXAMPLE {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module MAP_SINGLE_UNEXPECTED_PAIR_EXAMPLE
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = in;
+  }
+@endmod

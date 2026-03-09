@@ -1,0 +1,91 @@
+@project(CHIP="GW1NR-9-QN88-C6-I5") DVI_AUDIO_TEST
+    @import "por.jz"
+    @import "video_timing.jz"
+    @import "tmds_encoder.jz"
+    @import "terc4_encoder.jz"
+    @import "dvi_data_island.jz"
+    @import "melodies.jz"
+    @import "tone_gen.jz"
+    @import "mixer.jz"
+    @import "spectrum_analyzer.jz"
+    @import "spectrum_display.jz"
+    @import "debounce.jz"
+    @import "dvi.jz"
+
+    CLOCKS {
+        SCLK       = { period=37.037 }; // 27MHz crystal
+        serial_clk;                      // 185.625MHz (5x pixel, from PLL)
+        pixel_clk;                       // 37.125MHz (from CLKDIV)
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+        DONE   = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6]       = { standard=LVCMOS18, drive=8 };
+        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk = serial_clk, pclk = pixel_clk };
+        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk = serial_clk, pclk = pixel_clk };
+    }
+
+    MAP {
+        // System Clock 27MHz
+        SCLK = 52;
+
+        // Buttons (active high)
+        KEY[0] = 3;
+        KEY[1] = 4;
+
+        // LEDs (active low)
+        LED[0] = 10;
+        LED[1] = 11;
+        LED[2] = 13;
+        LED[3] = 14;
+        LED[4] = 15;
+        LED[5] = 16;
+
+        // DVI TMDS differential pairs
+        TMDS_CLK     = { P=69, N=68 };
+        TMDS_DATA[0] = { P=71, N=70 };
+        TMDS_DATA[1] = { P=73, N=72 };
+        TMDS_DATA[2] = { P=75, N=74 };
+
+        // DONE (POR)
+        DONE = IOL14A;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK SCLK;
+            OUT BASE  serial_clk;  // 185.625 MHz (5x pixel clock)
+
+            CONFIG {
+                IDIV = 7;           // divider = 8
+                FBDIV = 54;         // multiplier = 55
+                ODIV = 4;           // VCO = 185.625 * 4 = 742.5 MHz
+            };
+        };
+        CLKDIV {
+            IN REF_CLK serial_clk;
+            OUT BASE  pixel_clk;   // 185.625 / 5 = 37.125 MHz
+
+            CONFIG {
+                DIV_MODE = 5;
+            };
+        };
+    }
+
+    @top dvi_top {
+        IN   [1]  clk       = pixel_clk;
+        IN   [1]  por       = DONE;
+        IN   [1]  rst_n     = KEY[0];
+        IN   [1]  next      = KEY[1];
+        OUT  [6]  leds      = LED;
+        OUT  [10] tmds_clk  = TMDS_CLK;
+        OUT  [10] tmds_d0   = TMDS_DATA[0];
+        OUT  [10] tmds_d1   = TMDS_DATA[1];
+        OUT  [10] tmds_d2   = TMDS_DATA[2];
+    }
+@endproj

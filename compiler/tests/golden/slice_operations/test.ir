@@ -1,0 +1,397 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "slice_test_project",
+    "modules": [
+      {
+        "id": 0,
+        "name": "slice_demo",
+        "base_module_id": -1,
+        "source_line": 48,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "select",
+          "kind": "port",
+          "width": 2,
+          "owner_module_id": 0,
+          "source_line": 50,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "input",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 51,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "mem_addr",
+          "kind": "port",
+          "width": 4,
+          "owner_module_id": 0,
+          "source_line": 52,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 3,
+          "name": "out",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 53,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 4,
+          "name": "bit_out",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 54,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 5,
+          "name": "mem_out",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 55,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 6,
+          "name": "mux_data",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 56,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 7,
+          "name": "bus",
+          "kind": "net",
+          "width": 16,
+          "owner_module_id": 0,
+          "source_line": 61,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 8,
+          "name": "slice_a",
+          "kind": "net",
+          "width": 4,
+          "owner_module_id": 0,
+          "source_line": 62,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 9,
+          "name": "slice_b",
+          "kind": "net",
+          "width": 4,
+          "owner_module_id": 0,
+          "source_line": 63,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 10,
+          "name": "slice_c",
+          "kind": "net",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 64,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 11,
+          "name": "single_a",
+          "kind": "net",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 65,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 12,
+          "name": "single_b",
+          "kind": "net",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 66,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 13,
+          "name": "ch_a",
+          "kind": "net",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 69,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 14,
+          "name": "ch_b",
+          "kind": "net",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 70,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 15,
+          "name": "ch_c",
+          "kind": "net",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 71,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 16,
+          "name": "ch_d",
+          "kind": "net",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 72,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 17,
+          "name": "wide_reg",
+          "kind": "net",
+          "width": 32,
+          "owner_module_id": 0,
+          "source_line": 75,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 18,
+          "name": "gbit_result",
+          "kind": "net",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 78,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 19,
+          "name": "gslice_result",
+          "kind": "net",
+          "width": 4,
+          "owner_module_id": 0,
+          "source_line": 79,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 20,
+          "name": "sbit_result",
+          "kind": "net",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 80,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 21,
+          "name": "sslice_result",
+          "kind": "net",
+          "width": 16,
+          "owner_module_id": 0,
+          "source_line": 81,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 22,
+          "name": "lhs_target",
+          "kind": "net",
+          "width": 16,
+          "owner_module_id": 0,
+          "source_line": 84,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 23,
+          "name": "expr_slice_hi",
+          "kind": "net",
+          "width": 4,
+          "owner_module_id": 0,
+          "source_line": 87,
+          "can_be_z": false,
+          "iob": false
+        },
+        {
+          "id": 24,
+          "name": "expr_slice_lo",
+          "kind": "net",
+          "width": 4,
+          "owner_module_id": 0,
+          "source_line": 88,
+          "can_be_z": false,
+          "iob": false
+        }
+      ],
+        "clock_domains": [
+        ],
+        "instances": [
+        ],
+        "memories": [
+          {
+            "id": 0,
+            "name": "test_mem",
+            "type": "DISTRIBUTED",
+            "word_width": 8,
+            "depth": 16,
+            "address_width": 4,
+            "init_literal": { "value": 0, "width": 8 },
+            "ports": [
+              { "name": "rd", "kind": "READ_ASYNC", "address_width": 4, "addr_signal_id": 2, "data_out_signal_id": 5 }
+            ]
+          }
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 106, "statements": [{ "kind": "assignment", "id": 0, "source_line": 110, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 7, "is_sliced": false, "rhs": { "kind": "concat", "width": 16, "source_line": 110, "operands": [{ "kind": "signal_ref", "width": 8, "source_line": 110, "signal_id": 1 }, { "kind": "signal_ref", "width": 8, "source_line": 110, "signal_id": 1 }] } }, { "kind": "assignment", "id": 1, "source_line": 111, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 8, "is_sliced": false, "rhs": { "kind": "slice", "width": 4, "source_line": 111, "signal_id": 7, "msb": 15, "lsb": 12 } }, { "kind": "assignment", "id": 2, "source_line": 112, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 9, "is_sliced": false, "rhs": { "kind": "slice", "width": 4, "source_line": 112, "signal_id": 7, "msb": 7, "lsb": 4 } }, { "kind": "assignment", "id": 3, "source_line": 117, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 11, "is_sliced": false, "rhs": { "kind": "slice", "width": 1, "source_line": 117, "signal_id": 1, "msb": 0, "lsb": 0 } }, { "kind": "assignment", "id": 4, "source_line": 118, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 12, "is_sliced": false, "rhs": { "kind": "slice", "width": 1, "source_line": 118, "signal_id": 1, "msb": 7, "lsb": 7 } }, { "kind": "assignment", "id": 5, "source_line": 123, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 10, "is_sliced": false, "rhs": { "kind": "slice", "width": 8, "source_line": 123, "signal_id": 7, "msb": 7, "lsb": 0 } }, { "kind": "assignment", "id": 6, "source_line": 128, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 22, "is_sliced": true, "lhs_msb": 7, "lhs_lsb": 0, "rhs": { "kind": "signal_ref", "width": 8, "source_line": 128, "signal_id": 1 } }, { "kind": "assignment", "id": 7, "source_line": 129, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 22, "is_sliced": true, "lhs_msb": 15, "lhs_lsb": 8, "rhs": { "kind": "literal", "width": 8, "source_line": 129, "literal": { "value": 255, "width": 8 } } }, { "kind": "assignment", "id": 8, "source_line": 134, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 13, "is_sliced": false, "rhs": { "kind": "literal", "width": 8, "source_line": 134, "literal": { "value": 17, "width": 8 } } }, { "kind": "assignment", "id": 9, "source_line": 135, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 14, "is_sliced": false, "rhs": { "kind": "literal", "width": 8, "source_line": 135, "literal": { "value": 34, "width": 8 } } }, { "kind": "assignment", "id": 10, "source_line": 136, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 15, "is_sliced": false, "rhs": { "kind": "literal", "width": 8, "source_line": 136, "literal": { "value": 51, "width": 8 } } }, { "kind": "assignment", "id": 11, "source_line": 137, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 16, "is_sliced": false, "rhs": { "kind": "literal", "width": 8, "source_line": 137, "literal": { "value": 68, "width": 8 } } }, { "kind": "assignment", "id": 12, "source_line": 142, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 17, "is_sliced": false, "rhs": { "kind": "literal", "width": 32, "source_line": 142, "literal": { "value": 3721182122, "width": 32 } } }, { "kind": "assignment", "id": 13, "source_line": 147, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 5, "is_sliced": false, "rhs": { "kind": "mem_read", "width": 0, "source_line": 147, "memory_name": "test_mem", "port_name": "rd", "address": { "kind": "signal_ref", "width": 4, "source_line": 147, "signal_id": 2 } } }, { "kind": "assignment", "id": 14, "source_line": 152, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 18, "is_sliced": false, "rhs": { "kind": "intrinsic_gbit", "width": 1, "source_line": 152, "source": { "kind": "signal_ref", "width": 8, "source_line": 152, "signal_id": 1 }, "index": { "kind": "slice", "width": 1, "source_line": 152, "signal_id": 0, "msb": 0, "lsb": 0 }, "element_width": 1 } }, { "kind": "assignment", "id": 15, "source_line": 157, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 19, "is_sliced": false, "rhs": { "kind": "intrinsic_gslice", "width": 4, "source_line": 157, "source": { "kind": "signal_ref", "width": 8, "source_line": 157, "signal_id": 1 }, "index": { "kind": "signal_ref", "width": 2, "source_line": 157, "signal_id": 0 }, "element_width": 4 } }, { "kind": "assignment", "id": 16, "source_line": 162, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 20, "is_sliced": false, "rhs": { "kind": "intrinsic_sbit", "width": 8, "source_line": 162, "source": { "kind": "signal_ref", "width": 8, "source_line": 162, "signal_id": 1 }, "index": { "kind": "literal", "width": 2, "source_line": 162, "literal": { "value": 0, "width": 2 } }, "value": { "kind": "literal", "width": 1, "source_line": 162, "literal": { "value": 1, "width": 1 } }, "element_width": 1 } }, { "kind": "assignment", "id": 17, "source_line": 167, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 21, "is_sliced": false, "rhs": { "kind": "intrinsic_sslice", "width": 16, "source_line": 167, "source": { "kind": "signal_ref", "width": 16, "source_line": 167, "signal_id": 22 }, "index": { "kind": "literal", "width": 3, "source_line": 167, "literal": { "value": 0, "width": 3 } }, "value": { "kind": "literal", "width": 4, "source_line": 167, "literal": { "value": 15, "width": 4 } }, "element_width": 16 } }, { "kind": "assignment", "id": 18, "source_line": 174, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 23, "is_sliced": false, "rhs": { "kind": "slice", "width": 4, "source_line": 174, "signal_id": -1, "msb": 7, "lsb": 4 } }, { "kind": "assignment", "id": 19, "source_line": 175, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 24, "is_sliced": false, "rhs": { "kind": "slice", "width": 4, "source_line": 175, "signal_id": -1, "msb": 3, "lsb": 0 } }, { "kind": "if", "source_line": 180, "condition": { "kind": "binary_eq", "width": 1, "source_line": 180, "left": { "kind": "signal_ref", "width": 2, "source_line": 180, "signal_id": 0 }, "right": { "kind": "literal", "width": 2, "source_line": 180, "literal": { "value": 0, "width": 2 } } }, "then": { "kind": "block", "source_line": 180, "statements": [{ "kind": "assignment", "id": 20, "source_line": 182, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "concat", "width": 8, "source_line": 182, "operands": [{ "kind": "signal_ref", "width": 4, "source_line": 182, "signal_id": 8 }, { "kind": "signal_ref", "width": 4, "source_line": 182, "signal_id": 9 }] } }, { "kind": "assignment", "id": 21, "source_line": 183, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "source_line": 183, "signal_id": 11 } }, { "kind": "assignment", "id": 22, "source_line": 184, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 6, "is_sliced": false, "rhs": { "kind": "literal", "width": 8, "source_line": 184, "literal": { "value": 0, "width": 8 } } }] }, "elif_chain": [{ "kind": "if", "source_line": 185, "condition": { "kind": "binary_eq", "width": 1, "source_line": 185, "left": { "kind": "signal_ref", "width": 2, "source_line": 185, "signal_id": 0 }, "right": { "kind": "literal", "width": 2, "source_line": 185, "literal": { "value": 1, "width": 2 } } }, "then": { "kind": "block", "source_line": 185, "statements": [{ "kind": "assignment", "id": 23, "source_line": 187, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "intrinsic_gslice", "width": 8, "source_line": 187, "source": { "kind": "concat", "width": 32, "source_line": 93, "operands": [{ "kind": "signal_ref", "width": 8, "source_line": 72, "signal_id": 16 }, { "kind": "signal_ref", "width": 8, "source_line": 71, "signal_id": 15 }, { "kind": "signal_ref", "width": 8, "source_line": 70, "signal_id": 14 }, { "kind": "signal_ref", "width": 8, "source_line": 69, "signal_id": 13 }] }, "index": { "kind": "signal_ref", "width": 2, "source_line": 187, "signal_id": 0 }, "element_width": 8 } }, { "kind": "assignment", "id": 24, "source_line": 188, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "source_line": 188, "signal_id": 12 } }, { "kind": "assignment", "id": 25, "source_line": 189, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 6, "is_sliced": false, "rhs": { "kind": "intrinsic_gslice", "width": 8, "source_line": 189, "source": { "kind": "concat", "width": 32, "source_line": 93, "operands": [{ "kind": "signal_ref", "width": 8, "source_line": 72, "signal_id": 16 }, { "kind": "signal_ref", "width": 8, "source_line": 71, "signal_id": 15 }, { "kind": "signal_ref", "width": 8, "source_line": 70, "signal_id": 14 }, { "kind": "signal_ref", "width": 8, "source_line": 69, "signal_id": 13 }] }, "index": { "kind": "signal_ref", "width": 2, "source_line": 189, "signal_id": 0 }, "element_width": 8 } }] } }, { "kind": "if", "source_line": 190, "condition": { "kind": "binary_eq", "width": 1, "source_line": 190, "left": { "kind": "signal_ref", "width": 2, "source_line": 190, "signal_id": 0 }, "right": { "kind": "literal", "width": 2, "source_line": 190, "literal": { "value": 2, "width": 2 } } }, "then": { "kind": "block", "source_line": 190, "statements": [{ "kind": "assignment", "id": 26, "source_line": 192, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "intrinsic_gslice", "width": 8, "source_line": 192, "source": { "kind": "signal_ref", "width": 32, "source_line": 75, "signal_id": 17 }, "index": { "kind": "signal_ref", "width": 2, "source_line": 192, "signal_id": 0 }, "element_width": 8 } }, { "kind": "assignment", "id": 27, "source_line": 193, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "source_line": 193, "signal_id": 18 } }, { "kind": "assignment", "id": 28, "source_line": 194, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 6, "is_sliced": false, "rhs": { "kind": "intrinsic_gslice", "width": 8, "source_line": 194, "source": { "kind": "signal_ref", "width": 32, "source_line": 75, "signal_id": 17 }, "index": { "kind": "signal_ref", "width": 2, "source_line": 194, "signal_id": 0 }, "element_width": 8 } }] } }], "else": { "kind": "block", "source_line": 195, "statements": [{ "kind": "assignment", "id": 29, "source_line": 197, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "concat", "width": 8, "source_line": 197, "operands": [{ "kind": "signal_ref", "width": 4, "source_line": 197, "signal_id": 23 }, { "kind": "signal_ref", "width": 4, "source_line": 197, "signal_id": 24 }] } }, { "kind": "assignment", "id": 30, "source_line": 198, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "source_line": 198, "signal_id": 18 } }, { "kind": "assignment", "id": 31, "source_line": 199, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 6, "is_sliced": false, "rhs": { "kind": "concat", "width": 8, "source_line": 199, "operands": [{ "kind": "signal_ref", "width": 4, "source_line": 199, "signal_id": 19 }, { "kind": "signal_ref", "width": 4, "source_line": 199, "signal_id": 19 }] } }] } }] }
+      }
+    ],
+    "project": {
+      "name": "slice_test_project",
+      "clocks": [
+      ],
+      "clock_gens": [
+      ],
+      "pins": [
+        { "id": 0, "name": "sel", "kind": "IN", "width": 2, "standard": "LVCMOS33", "drive_ma": -1, "drive": -1, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 1, "name": "data_in", "kind": "IN", "width": 8, "standard": "LVCMOS33", "drive_ma": -1, "drive": -1, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 2, "name": "addr", "kind": "IN", "width": 4, "standard": "LVCMOS33", "drive_ma": -1, "drive": -1, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 3, "name": "result", "kind": "OUT", "width": 8, "standard": "LVCMOS33", "drive_ma": 4, "drive": 4, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 4, "name": "single", "kind": "OUT", "width": 1, "standard": "LVCMOS33", "drive_ma": 4, "drive": 4, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 5, "name": "mem_data", "kind": "OUT", "width": 8, "standard": "LVCMOS33", "drive_ma": 4, "drive": 4, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 6, "name": "mux_out", "kind": "OUT", "width": 8, "standard": "LVCMOS33", "drive_ma": 4, "drive": 4, "mode": "SINGLE", "term": false, "pull": "NONE" }
+      ],
+      "mappings": [
+        { "logical_pin_name": "sel", "bit_index": 0, "board_pin_id": "1" },
+        { "logical_pin_name": "sel", "bit_index": 1, "board_pin_id": "2" },
+        { "logical_pin_name": "data_in", "bit_index": 0, "board_pin_id": "10" },
+        { "logical_pin_name": "data_in", "bit_index": 1, "board_pin_id": "11" },
+        { "logical_pin_name": "data_in", "bit_index": 2, "board_pin_id": "12" },
+        { "logical_pin_name": "data_in", "bit_index": 3, "board_pin_id": "13" },
+        { "logical_pin_name": "data_in", "bit_index": 4, "board_pin_id": "14" },
+        { "logical_pin_name": "data_in", "bit_index": 5, "board_pin_id": "15" },
+        { "logical_pin_name": "data_in", "bit_index": 6, "board_pin_id": "16" },
+        { "logical_pin_name": "data_in", "bit_index": 7, "board_pin_id": "17" },
+        { "logical_pin_name": "addr", "bit_index": 0, "board_pin_id": "20" },
+        { "logical_pin_name": "addr", "bit_index": 1, "board_pin_id": "21" },
+        { "logical_pin_name": "addr", "bit_index": 2, "board_pin_id": "22" },
+        { "logical_pin_name": "addr", "bit_index": 3, "board_pin_id": "23" },
+        { "logical_pin_name": "result", "bit_index": 0, "board_pin_id": "30" },
+        { "logical_pin_name": "result", "bit_index": 1, "board_pin_id": "31" },
+        { "logical_pin_name": "result", "bit_index": 2, "board_pin_id": "32" },
+        { "logical_pin_name": "result", "bit_index": 3, "board_pin_id": "33" },
+        { "logical_pin_name": "result", "bit_index": 4, "board_pin_id": "34" },
+        { "logical_pin_name": "result", "bit_index": 5, "board_pin_id": "35" },
+        { "logical_pin_name": "result", "bit_index": 6, "board_pin_id": "36" },
+        { "logical_pin_name": "result", "bit_index": 7, "board_pin_id": "37" },
+        { "logical_pin_name": "single", "bit_index": -1, "board_pin_id": "40" },
+        { "logical_pin_name": "mem_data", "bit_index": 0, "board_pin_id": "50" },
+        { "logical_pin_name": "mem_data", "bit_index": 1, "board_pin_id": "51" },
+        { "logical_pin_name": "mem_data", "bit_index": 2, "board_pin_id": "52" },
+        { "logical_pin_name": "mem_data", "bit_index": 3, "board_pin_id": "53" },
+        { "logical_pin_name": "mem_data", "bit_index": 4, "board_pin_id": "54" },
+        { "logical_pin_name": "mem_data", "bit_index": 5, "board_pin_id": "55" },
+        { "logical_pin_name": "mem_data", "bit_index": 6, "board_pin_id": "56" },
+        { "logical_pin_name": "mem_data", "bit_index": 7, "board_pin_id": "57" },
+        { "logical_pin_name": "mux_out", "bit_index": 0, "board_pin_id": "60" },
+        { "logical_pin_name": "mux_out", "bit_index": 1, "board_pin_id": "61" },
+        { "logical_pin_name": "mux_out", "bit_index": 2, "board_pin_id": "62" },
+        { "logical_pin_name": "mux_out", "bit_index": 3, "board_pin_id": "63" },
+        { "logical_pin_name": "mux_out", "bit_index": 4, "board_pin_id": "64" },
+        { "logical_pin_name": "mux_out", "bit_index": 5, "board_pin_id": "65" },
+        { "logical_pin_name": "mux_out", "bit_index": 6, "board_pin_id": "66" },
+        { "logical_pin_name": "mux_out", "bit_index": 7, "board_pin_id": "67" }
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": 0, "pin_id": 0, "pin_bit_index": 0 },
+        { "top_port_signal_id": 0, "top_bit_index": 1, "pin_id": 0, "pin_bit_index": 1 },
+        { "top_port_signal_id": 1, "top_bit_index": 0, "pin_id": 1, "pin_bit_index": 0 },
+        { "top_port_signal_id": 1, "top_bit_index": 1, "pin_id": 1, "pin_bit_index": 1 },
+        { "top_port_signal_id": 1, "top_bit_index": 2, "pin_id": 1, "pin_bit_index": 2 },
+        { "top_port_signal_id": 1, "top_bit_index": 3, "pin_id": 1, "pin_bit_index": 3 },
+        { "top_port_signal_id": 1, "top_bit_index": 4, "pin_id": 1, "pin_bit_index": 4 },
+        { "top_port_signal_id": 1, "top_bit_index": 5, "pin_id": 1, "pin_bit_index": 5 },
+        { "top_port_signal_id": 1, "top_bit_index": 6, "pin_id": 1, "pin_bit_index": 6 },
+        { "top_port_signal_id": 1, "top_bit_index": 7, "pin_id": 1, "pin_bit_index": 7 },
+        { "top_port_signal_id": 2, "top_bit_index": 0, "pin_id": 2, "pin_bit_index": 0 },
+        { "top_port_signal_id": 2, "top_bit_index": 1, "pin_id": 2, "pin_bit_index": 1 },
+        { "top_port_signal_id": 2, "top_bit_index": 2, "pin_id": 2, "pin_bit_index": 2 },
+        { "top_port_signal_id": 2, "top_bit_index": 3, "pin_id": 2, "pin_bit_index": 3 },
+        { "top_port_signal_id": 3, "top_bit_index": 0, "pin_id": 3, "pin_bit_index": 0 },
+        { "top_port_signal_id": 3, "top_bit_index": 1, "pin_id": 3, "pin_bit_index": 1 },
+        { "top_port_signal_id": 3, "top_bit_index": 2, "pin_id": 3, "pin_bit_index": 2 },
+        { "top_port_signal_id": 3, "top_bit_index": 3, "pin_id": 3, "pin_bit_index": 3 },
+        { "top_port_signal_id": 3, "top_bit_index": 4, "pin_id": 3, "pin_bit_index": 4 },
+        { "top_port_signal_id": 3, "top_bit_index": 5, "pin_id": 3, "pin_bit_index": 5 },
+        { "top_port_signal_id": 3, "top_bit_index": 6, "pin_id": 3, "pin_bit_index": 6 },
+        { "top_port_signal_id": 3, "top_bit_index": 7, "pin_id": 3, "pin_bit_index": 7 },
+        { "top_port_signal_id": 4, "top_bit_index": -1, "pin_id": 4, "pin_bit_index": -1 },
+        { "top_port_signal_id": 5, "top_bit_index": 0, "pin_id": 5, "pin_bit_index": 0 },
+        { "top_port_signal_id": 5, "top_bit_index": 1, "pin_id": 5, "pin_bit_index": 1 },
+        { "top_port_signal_id": 5, "top_bit_index": 2, "pin_id": 5, "pin_bit_index": 2 },
+        { "top_port_signal_id": 5, "top_bit_index": 3, "pin_id": 5, "pin_bit_index": 3 },
+        { "top_port_signal_id": 5, "top_bit_index": 4, "pin_id": 5, "pin_bit_index": 4 },
+        { "top_port_signal_id": 5, "top_bit_index": 5, "pin_id": 5, "pin_bit_index": 5 },
+        { "top_port_signal_id": 5, "top_bit_index": 6, "pin_id": 5, "pin_bit_index": 6 },
+        { "top_port_signal_id": 5, "top_bit_index": 7, "pin_id": 5, "pin_bit_index": 7 },
+        { "top_port_signal_id": 6, "top_bit_index": 0, "pin_id": 6, "pin_bit_index": 0 },
+        { "top_port_signal_id": 6, "top_bit_index": 1, "pin_id": 6, "pin_bit_index": 1 },
+        { "top_port_signal_id": 6, "top_bit_index": 2, "pin_id": 6, "pin_bit_index": 2 },
+        { "top_port_signal_id": 6, "top_bit_index": 3, "pin_id": 6, "pin_bit_index": 3 },
+        { "top_port_signal_id": 6, "top_bit_index": 4, "pin_id": 6, "pin_bit_index": 4 },
+        { "top_port_signal_id": 6, "top_bit_index": 5, "pin_id": 6, "pin_bit_index": 5 },
+        { "top_port_signal_id": 6, "top_bit_index": 6, "pin_id": 6, "pin_bit_index": 6 },
+        { "top_port_signal_id": 6, "top_bit_index": 7, "pin_id": 6, "pin_bit_index": 7 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 202 }
+    ]
+  }
+}

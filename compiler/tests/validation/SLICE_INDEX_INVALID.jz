@@ -1,0 +1,20 @@
+// SLICE_INDEX_INVALID: slice index is not a valid non-negative integer literal.
+// Verified
+
+@project SLICE_INDEX_INVALID_PROJECT
+  @top SLICE_INDEX_INVALID_EXAMPLE {
+    IN  [8] bus = _;
+    OUT [4] out = _;
+  }
+@endproj
+
+@module SLICE_INDEX_INVALID_EXAMPLE
+  PORT {
+    IN  [8] bus;
+    OUT [4] out;
+  }
+
+  ASYNCHRONOUS {
+    out = bus[4'b0011:0];  // sized literal index is invalid for slicing
+  }
+@endmod

@@ -1,0 +1,35 @@
+// CDC_SOURCE_NOT_REGISTER: CDC source must be a REGISTER declared in the module.
+// Expect ERR> CDC_SOURCE_NOT_REGISTER on CDC entry.
+
+@project CDC_SOURCE_NOT_REGISTER_PROJECT
+  @top CDC_SOURCE_NOT_REGISTER_EXAMPLE {
+    IN  [1] clk_a = _;
+    IN  [1] clk_b = _;
+    OUT [1] data = _;
+  }
+@endproj
+
+@module CDC_SOURCE_NOT_REGISTER_EXAMPLE
+  PORT {
+    IN  [1] clk_a;
+    IN  [1] clk_b;
+    OUT [1] data;
+  }
+
+  WIRE {
+    w [1];
+  }
+
+  // Illegal: CDC uses WIRE 'w' as source instead of REGISTER.
+  CDC {
+    BIT w (clk_a) => alias_a (clk_b);
+  }
+
+  ASYNCHRONOUS {
+    data = alias_a;
+    w <= 1'b1;
+  }
+
+  SYNCHRONOUS(CLK=clk_a) {
+  }
+@endmod

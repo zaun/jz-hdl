@@ -1,0 +1,4 @@
+File: CLOCK_GEN_OUTPUT_HAS_PERIOD.jz
+       7:5    error CLOCK_NAME_NOT_IN_PINS S6.4/S6.5/S6.9 Clock name in CLOCKS has no matching IN_PINS declaration
+       7:5    error CLOCK_SOURCE_AMBIGUOUS S6.4 Clock declared as both IN_PINS and CLOCK_GEN output
+      22:7    error CLOCK_GEN_OUTPUT_HAS_PERIOD S6.4.1 CLOCK_GEN output clock must not have a period in CLOCKS block

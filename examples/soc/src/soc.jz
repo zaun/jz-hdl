@@ -1,0 +1,261 @@
+@module SOC
+    PORT {
+        IN  [1] sclk;
+        IN  [1] rst_n;
+        IN  [1] done;
+        IN  [1] pixel_clk;
+        OUT [6] leds;
+        OUT [1] tx;
+        IN  [1] rx;
+
+        // HDMI/DVI TMDS outputs
+        OUT [10] tmds_clk;
+        OUT [10] tmds_d0;
+        OUT [10] tmds_d1;
+        OUT [10] tmds_d2;
+
+        // SDRAM physical interface
+        OUT   [1]  sdram_cke;
+        OUT   [1]  sdram_cs_n;
+        OUT   [1]  sdram_ras_n;
+        OUT   [1]  sdram_cas_n;
+        OUT   [1]  sdram_wen_n;
+        OUT   [4]  sdram_dqm;
+        OUT   [11] sdram_addr;
+        OUT   [2]  sdram_ba;
+        INOUT [32] sdram_dq;
+        OUT   [1]  sdram_clk_out;
+
+        // SD card SPI pins
+        OUT [1] sd_clk_pin;
+        OUT [1] sd_mosi_pin;
+        IN  [1] sd_miso_pin;
+        OUT [1] sd_cs_n_pin;
+    }
+
+    WIRE {
+        por_n       [1];
+        reset       [1];
+        cpu_bus     [widthof(SIMPLE_BUS)];
+        rom_bus     [widthof(SIMPLE_BUS)];
+        ram_bus     [widthof(SIMPLE_BUS)];
+        led_bus     [widthof(SIMPLE_BUS)];
+        uart_bus    [widthof(SIMPLE_BUS)];
+        sdram_bus   [widthof(SIMPLE_BUS)];
+        term_bus    [widthof(SIMPLE_BUS)];
+        sd_bus      [widthof(SIMPLE_BUS)];
+        audio_bus   [widthof(SIMPLE_BUS)];
+        led_sw      [6];
+        uart_tx_pin    [1];
+        uart_rx_pin    [1];
+        uart_irq_tx    [1];
+        uart_irq_rx    [1];
+        cpu_irq_lines  [32];
+        sdcard_irq     [1];
+        audio_irq      [1];
+        sd_clk_w       [1];
+        sd_mosi_w      [1];
+        sd_cs_n_w      [1];
+
+        // Video mode wire
+        video_mode_w  [1];
+
+        // Baud rate divider
+        baud_div_w    [16];
+
+        // Video read interface wires
+        vram_addr     [12];
+        vram_char     [8];
+        vram_attr     [32];
+
+        // Cursor wires
+        cursor_pos_w  [12];
+        cursor_style_w [3];
+
+        // TMDS output wires
+        tmds_clk_w    [10];
+        tmds_d0_w     [10];
+        tmds_d1_w     [10];
+        tmds_d2_w     [10];
+
+        // SDRAM internal wires
+        sdram_cke_w   [1];
+        sdram_cs_n_w  [1];
+        sdram_ras_n_w [1];
+        sdram_cas_n_w [1];
+        sdram_wen_n_w [1];
+        sdram_dqm_w   [4];
+        sdram_addr_w  [11];
+        sdram_ba_w    [2];
+        sdram_dq_w    [32];
+    }
+
+    @new por0 por {
+        IN  [1] clk = sclk;
+        IN  [1] done = done;
+        OUT [1] por_n = por_n;
+    }
+
+    // Address map (4-bit decode on addr[31:28]):
+    // ROM:   0x0000_0000 - 0x0000_0FFF  addr[31:28]=0x0 → val=0000 care=1111 = 8'h0F
+    // RAM:   0x1000_0000 - 0x1000_4FFF  addr[31:28]=0x1 → val=0001 care=1111 = 8'h1F
+    // LED:   0x2000_0000               addr[31:28]=0x2 → val=0010 care=1111 = 8'h2F
+    // UART:  0x3000_0000               addr[31:28]=0x3 → val=0011 care=1111 = 8'h3F
+    // SDRAM: 0x4000_0000 - 0x407F_FFFF  addr[31:28]=0x4 → val=0100 care=1111 = 8'h4F
+    // TERM:  0x5000_0000               addr[31:28]=0x5 → val=0101 care=1111 = 8'h5F
+    // SD:    0x6000_0000               addr[31:28]=0x6 → val=0110 care=1111 = 8'h6F
+    // AUDIO: 0x7000_0000               addr[31:28]=0x7 → val=0111 care=1111 = 8'h7F
+    @new arb0 arbiter {
+        OVERRIDE {
+            TARGET_COUNT = 8;
+        }
+        IN  [64] map_config = {8'h7F, 8'h6F, 8'h5F, 8'h4F, 8'h3F, 8'h2F, 8'h1F, 8'h0F};
+        BUS SIMPLE_BUS TARGET [1] src = {cpu_bus};
+        BUS SIMPLE_BUS SOURCE [8] tgt = {audio_bus, sd_bus, term_bus, sdram_bus, uart_bus, led_bus, ram_bus, rom_bus};
+    }
+
+    @new cpu0 cpu {
+        OVERRIDE {
+            CLK_FREQ_MHZ = CONFIG.CLK_FREQ_MHZ;
+            SDRAM_SIZE_BYTES = CONFIG.SDRAM_SIZE_BYTES;
+        }
+        IN  [1] clk = sclk;
+        IN  [1] rst_n = reset;
+        IN  [32] irq_lines = cpu_irq_lines;
+        BUS SIMPLE_BUS SOURCE pbus = cpu_bus;
+        OUT [1]  video_mode = video_mode_w;
+        OUT [16] baud_div = baud_div_w;
+    }
+
+    @new rom0 rom {
+        IN  [1] clk = sclk;
+        IN  [1] rst_n = reset;
+        BUS SIMPLE_BUS TARGET pbus = rom_bus;
+    }
+
+    @new ram0 ram {
+        IN  [1] clk = sclk;
+        IN  [1] rst_n = reset;
+        BUS SIMPLE_BUS TARGET pbus = ram_bus;
+    }
+
+    @new led0 led_out {
+        IN  [1] clk = sclk;
+        IN  [1] rst_n = reset;
+        BUS SIMPLE_BUS TARGET pbus = led_bus;
+        OUT [6] leds = led_sw;
+    }
+
+    @new uart0 uart {
+        IN  [1] clk = sclk;
+        IN  [1] rst_n = reset;
+        BUS SIMPLE_BUS TARGET pbus = uart_bus;
+        OUT [1] tx = uart_tx_pin;
+        IN  [1] rx = uart_rx_pin;
+        OUT [1] irq_tx_ready = uart_irq_tx;
+        OUT [1] irq_rx_data  = uart_irq_rx;
+        IN  [16] baud_div = baud_div_w;
+    }
+
+    @new sdram0 sdram_bus {
+        OVERRIDE {
+            CLK_FREQ_MHZ = CONFIG.CLK_FREQ_MHZ;
+        }
+        IN  [1]  clk       = sclk;
+        IN  [1]  rst_n     = reset;
+        BUS SIMPLE_BUS TARGET pbus = sdram_bus;
+        OUT   [1]  sdram_cke   = sdram_cke_w;
+        OUT   [1]  sdram_cs_n  = sdram_cs_n_w;
+        OUT   [1]  sdram_ras_n = sdram_ras_n_w;
+        OUT   [1]  sdram_cas_n = sdram_cas_n_w;
+        OUT   [1]  sdram_wen_n = sdram_wen_n_w;
+        OUT   [4]  sdram_dqm   = sdram_dqm_w;
+        OUT   [11] sdram_addr  = sdram_addr_w;
+        OUT   [2]  sdram_ba    = sdram_ba_w;
+        INOUT [32] sdram_dq    = sdram_dq_w;
+    }
+
+    @new term0 terminal_fb {
+        IN  [1]  clk       = sclk;
+        IN  [1]  rst_n     = reset;
+        IN  [1]  pixel_clk = pixel_clk;
+        BUS SIMPLE_BUS TARGET pbus = term_bus;
+        IN  [12] vram_addr = vram_addr;
+        OUT [8]  vram_char = vram_char;
+        OUT [32] vram_attr = vram_attr;
+        OUT [12] cursor_pos   = cursor_pos_w;
+        OUT [3]  cursor_style = cursor_style_w;
+    }
+
+    @new sd0 sdcard {
+        IN  [1] clk    = sclk;
+        IN  [1] rst_n  = reset;
+        BUS SIMPLE_BUS TARGET pbus = sd_bus;
+        OUT [1] irq    = sdcard_irq;
+        OUT [1] sd_clk  = sd_clk_w;
+        OUT [1] sd_mosi = sd_mosi_w;
+        IN  [1] sd_miso = sd_miso_pin;
+        OUT [1] sd_cs_n = sd_cs_n_w;
+    }
+
+    @new aud0 audio {
+        IN  [1] clk   = sclk;
+        IN  [1] rst_n = reset;
+        BUS SIMPLE_BUS TARGET pbus = audio_bus;
+        OUT [1] irq   = audio_irq;
+    }
+
+    @new vid0 video_out {
+        IN  [1]  pixel_clk  = pixel_clk;
+        IN  [1]  rst_n      = reset;
+        IN  [1]  video_mode = video_mode_w;
+        OUT [12] vram_addr  = vram_addr;
+        IN  [8]  vram_char  = vram_char;
+        IN  [32] vram_attr  = vram_attr;
+        IN  [12] cursor_pos   = cursor_pos_w;
+        IN  [3]  cursor_style = cursor_style_w;
+        OUT [10] tmds_clk   = tmds_clk_w;
+        OUT [10] tmds_d0    = tmds_d0_w;
+        OUT [10] tmds_d1    = tmds_d1_w;
+        OUT [10] tmds_d2    = tmds_d2_w;
+    }
+
+    ASYNCHRONOUS {
+        reset <= rst_n & por_n;
+
+        // IRQ lines: bit 0 = UART TX ready, bit 1 = UART RX data, bit 2 = SD card, bit 3 = audio
+        cpu_irq_lines <= {28'd0, audio_irq, sdcard_irq, uart_irq_rx, uart_irq_tx};
+
+        uart_rx_pin <= rx;
+
+        // Active-low LEDs, all 6 software controlled
+        leds <= ~led_sw;
+
+        tx <= uart_tx_pin;
+
+        // SDRAM physical pins
+        sdram_cke   <= sdram_cke_w;
+        sdram_cs_n  <= sdram_cs_n_w;
+        sdram_ras_n <= sdram_ras_n_w;
+        sdram_cas_n <= sdram_cas_n_w;
+        sdram_wen_n <= sdram_wen_n_w;
+        sdram_dqm   <= sdram_dqm_w;
+        sdram_addr  <= sdram_addr_w;
+        sdram_ba    <= sdram_ba_w;
+        sdram_dq    = sdram_dq_w;
+
+        // SDRAM clock (inverted for setup/hold margin)
+        sdram_clk_out <= ~sclk;
+
+        // SD card SPI pins
+        sd_clk_pin  <= sd_clk_w;
+        sd_mosi_pin <= sd_mosi_w;
+        sd_cs_n_pin <= sd_cs_n_w;
+
+        // HDMI/DVI TMDS outputs
+        tmds_clk <= tmds_clk_w;
+        tmds_d0  <= tmds_d0_w;
+        tmds_d1  <= tmds_d1_w;
+        tmds_d2  <= tmds_d2_w;
+    }
+@endmod

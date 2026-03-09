@@ -1,0 +1,222 @@
+// Bus commands
+@global CMD
+    READ  = 1'b0;
+    WRITE = 1'b1;
+@endglob
+
+@project read_only_bsram_project
+  IN_PINS {
+    clk     [1]  = { standard=LVCMOS33 };
+    rst_n   [1]  = { standard=LVCMOS33 };
+    sel     [3]  = { standard=LVCMOS33 };
+    addr    [13] = { standard=LVCMOS33 };
+    cmd     [1]  = { standard=LVCMOS33 };
+    valid   [1]  = { standard=LVCMOS33 };
+    din     [16] = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    dout     [16] = { standard=LVCMOS33, drive=4 };
+    done_out [1]  = { standard=LVCMOS33, drive=4 };
+  }
+
+  MAP {
+    clk   = 1;
+    rst_n = 2;
+    sel[0] = 3;
+    sel[1] = 4;
+    sel[2] = 5;
+    addr[0] = 6;
+    addr[1] = 7;
+    addr[2] = 8;
+    addr[3] = 9;
+    addr[4] = 10;
+    addr[5] = 11;
+    addr[6] = 12;
+    addr[7] = 13;
+    addr[8] = 14;
+    addr[9] = 15;
+    addr[10] = 16;
+    addr[11] = 17;
+    addr[12] = 18;
+    cmd   = 19;
+    valid = 20;
+    din[0]  = 21;
+    din[1]  = 22;
+    din[2]  = 23;
+    din[3]  = 24;
+    din[4]  = 25;
+    din[5]  = 26;
+    din[6]  = 27;
+    din[7]  = 28;
+    din[8]  = 29;
+    din[9]  = 30;
+    din[10] = 31;
+    din[11] = 32;
+    din[12] = 33;
+    din[13] = 34;
+    din[14] = 35;
+    din[15] = 36;
+    dout[0]  = 37;
+    dout[1]  = 38;
+    dout[2]  = 39;
+    dout[3]  = 40;
+    dout[4]  = 41;
+    dout[5]  = 42;
+    dout[6]  = 43;
+    dout[7]  = 44;
+    dout[8]  = 45;
+    dout[9]  = 46;
+    dout[10] = 47;
+    dout[11] = 48;
+    dout[12] = 49;
+    dout[13] = 50;
+    dout[14] = 51;
+    dout[15] = 52;
+    done_out = 53;
+  }
+
+  CLOCKS {
+    clk = { period=10.0, edge=Rising };
+  }
+
+  BUS PARALLEL_BUS {
+    OUT   [3]     SEL;
+    OUT   [13]    ADDR;
+    OUT   [1]     CMD;
+    OUT   [1]     VALID;
+    INOUT [16]    DATA;
+    IN    [1]     DONE;
+  }
+
+  @top rom_wrapper {
+    IN  [1]  clk      = clk;
+    IN  [1]  rst_n    = rst_n;
+    IN  [3]  sel      = sel;
+    IN  [13] addr     = addr;
+    IN  [1]  cmd      = cmd;
+    IN  [1]  valid    = valid;
+    IN  [16] din      = din;
+    OUT [16] dout     = dout;
+    OUT [1]  done_out = done_out;
+  }
+@endproj
+
+@module bus_driver
+    PORT {
+        IN  [3]  sel;
+        IN  [13] addr;
+        IN  [1]  cmd;
+        IN  [1]  valid;
+        IN  [16] din;
+        OUT [16] dout;
+        OUT [1]  done_out;
+        BUS PARALLEL_BUS SOURCE pbus;
+    }
+
+    ASYNCHRONOUS {
+        pbus.SEL   = sel;
+        pbus.ADDR  = addr;
+        pbus.CMD   = cmd;
+        pbus.VALID = valid;
+        pbus.DATA  <= (valid == 1'b1 && cmd == CMD.WRITE) ? din : 16'bz;
+
+        dout     <= pbus.DATA;
+        done_out <= pbus.DONE;
+    }
+@endmod
+
+@module rom_wrapper
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [3]  sel;
+        IN  [13] addr;
+        IN  [1]  cmd;
+        IN  [1]  valid;
+        IN  [16] din;
+        OUT [16] dout;
+        OUT [1]  done_out;
+    }
+
+    WIRE {
+        bus [widthof(PARALLEL_BUS)];
+    }
+
+    @new drv0 bus_driver {
+        IN  [3]  sel   = sel;
+        IN  [13] addr  = addr;
+        IN  [1]  cmd   = cmd;
+        IN  [1]  valid = valid;
+        IN  [16] din   = din;
+        OUT [16] dout  = dout;
+        OUT [1]  done_out = done_out;
+        BUS PARALLEL_BUS SOURCE pbus = bus;
+    }
+
+    @new rom0 rom {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = rst_n;
+        IN  [3] sel   = sel;
+        BUS PARALLEL_BUS TARGET pbus = bus;
+    }
+@endmod
+
+@module rom
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [3] sel;
+        BUS PARALLEL_BUS TARGET pbus;
+    }
+
+    MEM(TYPE=BLOCK) {
+        rom [16] [256] = 16'h0000 {
+            OUT read SYNC;
+        };
+    }
+
+    REGISTER {
+        pending_read [1] = 1'b0;
+        data_ready   [1] = 1'b0;
+        read_data    [16] = 16'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Drive data only when data_ready (after read_data has been latched)
+        pbus.DATA <= (pbus.SEL == sel && pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 16'bz;
+
+        // DONE on writes immediately, on reads once data_ready is set
+        IF (pbus.SEL == sel && pbus.VALID) {
+            IF (pbus.CMD == CMD.WRITE || data_ready == 1'b1) {
+                pbus.DONE <= 1'b1;
+            } ELSE {
+                pbus.DONE <= 1'b0;
+            }
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // 2-stage pipeline for SYNC memory read:
+        // Stage 1: pending_read=1 - address sent to memory
+        // Stage 2: data_ready=1 - data latched into read_data
+
+        IF (data_ready == 1'b1) {
+            // Clear data_ready after CPU has seen DONE
+            data_ready <= 1'b0;
+        } ELIF (pending_read == 1'b1) {
+            // Stage 2: Memory output is now valid, latch it
+            read_data <= rom.read.data;
+            data_ready <= 1'b1;
+            pending_read <= 1'b0;
+        } ELIF (pbus.SEL == sel && pbus.VALID && pbus.CMD == CMD.READ) {
+            // Stage 1: New read request, send address to memory
+            rom.read.addr <= pbus.ADDR[7:0];
+            pending_read <= 1'b1;
+        }
+
+        // No write (ROM is read-only)
+    }
+@endmod

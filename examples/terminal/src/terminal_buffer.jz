@@ -1,0 +1,518 @@
+// Terminal Buffer: 142 columns x 45 rows, SDRAM-backed with double-buffered line cache
+// Two BSRAM line buffers (256x32 each, using 142 entries).
+// While one is read by the pixel generator, the other is prefetched from SDRAM.
+// Swap when the text row changes.
+//
+// SDRAM addressing: {6'b0, use_alt, phys_row[5:0], col[7:0]} (21-bit, row stride = 256)
+// Data packing: One 32-bit SDRAM word = {attr[15:0], char[15:0]}
+//
+// On startup, the entire 45x142 SDRAM region is cleared to blank cells before
+// the terminal is allowed to operate (init_clear phase).
+@module terminal_buffer
+    CONST {
+        MAX_ROW = 44;
+        MAX_COL = 141;
+        DEFAULT_ATTR = 28672;
+
+        // State machine states
+        ST_IDLE      = 0;
+        ST_PREFETCH  = 1;
+        ST_WRITE     = 2;
+        ST_READBACK  = 3;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+
+        // Read port (pixel generator)
+        IN  [6] rd_row;
+        IN  [8] rd_col;
+        OUT [16] char_code;
+        OUT [16] attr_out;
+
+        // Write port (terminal)
+        IN  [6]  wr_row;
+        IN  [8]  wr_col;
+        IN  [16] wr_char;
+        IN  [16] wr_attr;
+        IN  [1]  wr_en;
+
+        // Terminal read-back port (for insert mode)
+        IN  [6]  tb_rd_row;
+        IN  [8]  tb_rd_col;
+        OUT [16] tb_rd_char;
+        OUT [16] tb_rd_attr;
+        IN  [1]  tb_rd_en;
+
+        // Scroll interface
+        IN  [1]  scroll;
+        IN  [1]  scroll_down;
+        IN  [1]  scroll_reset;
+        OUT [1]  busy;
+
+        // Alt screen select (from terminal)
+        IN  [1]  use_alt;
+
+        // Look-ahead row for prefetch
+        IN  [6]  rd_row_next;
+
+        // Display active (suppress active-buffer write-through to prevent tearing)
+        IN  [1]  display_active;
+
+        // High after init complete and first prefetch done
+        OUT [1]  buf_ready;
+
+        // SDRAM interface (directly to arbiter port)
+        OUT [21] sd_addr;
+        OUT [32] sd_wdata;
+        OUT [1]  sd_rd;
+        OUT [1]  sd_wr;
+        IN  [32] sd_rdata;
+        IN  [1]  sd_busy;
+        IN  [1]  sd_done;
+    }
+
+    WIRE {
+        // Physical row computation
+        rd_phys_row    [6];
+        wr_phys_row    [6];
+        tb_rd_phys_row [6];
+        next_phys_row  [6];
+    }
+
+    REGISTER {
+        scroll_offset [6] = 6'd0;
+
+        // Line buffer control
+        active_buf    [1] = 1'b0;       // Which buffer pixel gen reads (0=A, 1=B)
+        cached_row    [6] = 6'd63;      // Phys row currently in active buffer (63=invalid)
+        prefetch_row  [6] = 6'd63;      // Phys row currently in prefetch buffer
+
+        // State machine
+        state         [2] = 2'd0;
+        pf_col        [8] = 8'd0;       // Prefetch column counter
+        pf_target_row [6] = 6'd0;       // Row being prefetched
+
+        // SDRAM request registers
+        sd_addr_r     [21] = 21'd0;
+        sd_wdata_r    [32] = 32'd0;
+        sd_rd_r       [1]  = 1'b0;
+        sd_wr_r       [1]  = 1'b0;
+
+        // Scroll/init line clear state
+        clearing       [1]  = 1'b1;     // Start clearing on reset
+        clear_col      [8]  = 8'd0;
+        clear_phys_row [6]  = 6'd0;
+        init_clear     [1]  = 1'b1;     // Full-screen clear on startup
+
+        // Track need for prefetch
+        need_prefetch [1]  = 1'b0;
+
+        // Pixel gen output registers
+        char_out      [16] = 16'h0000;
+        attr_out_r    [16] = 16'h7000;
+
+        // Line buffer read pipeline
+        lb_bank_sel   [1]  = 1'b0;
+
+        // Read-back output registers
+        tb_rd_char_r  [16] = 16'h0000;
+        tb_rd_attr_r  [16] = 16'h7000;
+
+        // Line buffer write staging (single write site uses these next cycle)
+        lb_wr_en      [1]  = 1'b0;
+        lb_wr_to_a    [1]  = 1'b0;
+        lb_wr_addr_r  [8]  = 8'd0;
+        lb_wr_data_r  [32] = 32'd0;
+
+        // Pending write (latched when terminal writes while not idle)
+        pend_wr       [1]  = 1'b0;
+        pend_wr_row   [6]  = 6'd0;
+        pend_wr_col   [8]  = 8'd0;
+        pend_wr_char  [16] = 16'h0000;
+        pend_wr_attr  [16] = 16'h7000;
+
+        // Buffer ready (set after init_clear + first prefetch)
+        buf_ready_r   [1]  = 1'b0;
+
+        // Pending read-back
+        pend_rb       [1]  = 1'b0;
+        pend_rb_row   [6]  = 6'd0;
+        pend_rb_col   [8]  = 8'd0;
+    }
+
+    MEM(TYPE=BLOCK) {
+        // Line buffer A: 32-bit wide x 256 deep (uses 142 entries)
+        // Stores {attr[15:0], char[15:0]}
+        line_a [32] [256] = 32'h70000000 { OUT rd SYNC; IN wr; };
+
+        // Line buffer B
+        line_b [32] [256] = 32'h70000000 { OUT rd SYNC; IN wr; };
+    }
+
+    ASYNCHRONOUS {
+        // Map logical rows to physical rows via scroll offset (mod 64)
+        rd_phys_row    <= rd_row + scroll_offset;
+        wr_phys_row    <= wr_row + scroll_offset;
+        tb_rd_phys_row <= tb_rd_row + scroll_offset;
+        next_phys_row  <= rd_row_next + scroll_offset;
+
+        // SDRAM interface — mask with ~sd_done to prevent double-accept
+        // when SDRAM arbiter returns done on the same cycle
+        sd_addr  <= sd_addr_r;
+        sd_wdata <= sd_wdata_r;
+        sd_rd    <= sd_rd_r & ~sd_done;
+        sd_wr    <= sd_wr_r & ~sd_done;
+
+        // Output char/attr from registered values
+        char_code <= char_out;
+        attr_out  <= attr_out_r;
+
+        // Terminal read-back outputs
+        tb_rd_char <= tb_rd_char_r;
+        tb_rd_attr <= tb_rd_attr_r;
+
+        // Busy: prevents terminal from issuing new operations.
+        // Feed-forward terms (wr_en & ~pend_wr) / (tb_rd_en & ~pend_rb) make busy
+        // go high on the same cycle a write/read-back is accepted into the pending
+        // slot, closing the 1-cycle NBA window that could drop a second request.
+        busy <= clearing | pend_wr | pend_rb
+              | (state == lit(2, ST_WRITE)) | (state == lit(2, ST_READBACK))
+              | (wr_en & ~pend_wr) | (tb_rd_en & ~pend_rb);
+
+        // Buffer ready for display
+        buf_ready <= buf_ready_r;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // === Line buffer read path (always runs for pixel generator) ===
+        line_a.rd.addr <= rd_col;
+        line_b.rd.addr <= rd_col;
+        lb_bank_sel    <= active_buf;
+
+        // Capture line buffer output (mux based on registered bank select)
+        IF (lb_bank_sel == 1'b0) {
+            char_out   <= line_a.rd.data[15:0];
+            attr_out_r <= line_a.rd.data[31:16];
+        } ELSE {
+            char_out   <= line_b.rd.data[15:0];
+            attr_out_r <= line_b.rd.data[31:16];
+        }
+
+        // === Single line buffer write site (from staged values) ===
+        IF (lb_wr_en == 1'b1 && lb_wr_to_a == 1'b1) {
+            line_a.wr[lb_wr_addr_r] <= lb_wr_data_r;
+        } ELIF (lb_wr_en == 1'b1 && lb_wr_to_a == 1'b0) {
+            line_b.wr[lb_wr_addr_r] <= lb_wr_data_r;
+        }
+
+        // === Unified state machine ===
+        SELECT (state) {
+            CASE (lit(2, ST_IDLE)) {
+                // --- Latch incoming requests when they can't be handled directly ---
+                // (wr_en/tb_rd_en arrive here only if we process them directly;
+                //  in non-IDLE states they're latched in those CASEs below)
+
+                // --- Priority-ordered dispatch ---
+                IF (scroll == 1'b1 && clearing == 1'b0 && use_alt == 1'b0) {
+                    // Scroll up: advance offset, start clearing new bottom row
+                    scroll_offset  <= scroll_offset + 6'd1;
+                    clearing       <= 1'b1;
+                    clear_col      <= 8'd0;
+                    clear_phys_row <= lit(6, MAX_ROW) + scroll_offset + 6'd1;
+                    cached_row     <= 6'd63;
+                    prefetch_row   <= 6'd63;
+                    need_prefetch  <= 1'b1;
+                    sd_rd_r  <= 1'b0;
+                    sd_wr_r  <= 1'b0;
+                    lb_wr_en <= 1'b0;
+                } ELIF (scroll_down == 1'b1 && clearing == 1'b0 && use_alt == 1'b0) {
+                    // Scroll down: decrement offset, clear new top row
+                    scroll_offset  <= scroll_offset - 6'd1;
+                    clearing       <= 1'b1;
+                    clear_col      <= 8'd0;
+                    clear_phys_row <= scroll_offset - 6'd1;
+                    cached_row     <= 6'd63;
+                    prefetch_row   <= 6'd63;
+                    need_prefetch  <= 1'b1;
+                    sd_rd_r  <= 1'b0;
+                    sd_wr_r  <= 1'b0;
+                    lb_wr_en <= 1'b0;
+                } ELIF (scroll_reset == 1'b1 && clearing == 1'b0 && use_alt == 1'b0) {
+                    // Reset scroll offset
+                    scroll_offset <= 6'd0;
+                    cached_row    <= 6'd63;
+                    prefetch_row  <= 6'd63;
+                    need_prefetch <= 1'b1;
+                    sd_rd_r  <= 1'b0;
+                    sd_wr_r  <= 1'b0;
+                    lb_wr_en <= 1'b0;
+                } ELIF (clearing == 1'b1 && sd_busy == 1'b0) {
+                    // Clear one cell via SDRAM write
+                    sd_addr_r  <= { 6'b000000, use_alt, clear_phys_row, clear_col };
+                    sd_wdata_r <= { 16'h7000, 16'h0000 };
+                    sd_wr_r    <= 1'b1;
+                    sd_rd_r    <= 1'b0;
+                    state      <= lit(2, ST_WRITE);
+
+                    // Write-through to line buffer if row matches cache
+                    // Skip active buffer during display to prevent tearing
+                    IF (clear_phys_row == cached_row && display_active == 1'b0) {
+                        lb_wr_en     <= 1'b1;
+                        lb_wr_to_a   <= ~active_buf;
+                        lb_wr_addr_r <= clear_col;
+                        lb_wr_data_r <= { 16'h7000, 16'h0000 };
+                    } ELIF (clear_phys_row == prefetch_row) {
+                        lb_wr_en     <= 1'b1;
+                        lb_wr_to_a   <= active_buf;
+                        lb_wr_addr_r <= clear_col;
+                        lb_wr_data_r <= { 16'h7000, 16'h0000 };
+                    } ELSE {
+                        lb_wr_en <= 1'b0;
+                    }
+
+                    // Advance clear position
+                    IF (clear_col == lit(8, MAX_COL)) {
+                        IF (init_clear == 1'b1 && clear_phys_row != lit(6, MAX_ROW)) {
+                            // More rows to clear during startup init
+                            clear_col      <= 8'd0;
+                            clear_phys_row <= clear_phys_row + 6'd1;
+                        } ELSE {
+                            // Done clearing (single row or last init row)
+                            clearing   <= 1'b0;
+                            init_clear <= 1'b0;
+                        }
+                    } ELSE {
+                        clear_col <= clear_col + 8'd1;
+                    }
+                } ELIF (pend_wr == 1'b1 && sd_busy == 1'b0 && clearing == 1'b0) {
+                    // Process pending terminal write
+                    sd_addr_r  <= { 6'b000000, use_alt, pend_wr_row, pend_wr_col };
+                    sd_wdata_r <= { pend_wr_attr, pend_wr_char };
+                    sd_wr_r    <= 1'b1;
+                    sd_rd_r    <= 1'b0;
+                    pend_wr    <= 1'b0;
+                    state      <= lit(2, ST_WRITE);
+
+                    // Write-through to line buffer if row matches cache
+                    // Skip active buffer during display to prevent tearing
+                    IF (pend_wr_row == cached_row && display_active == 1'b0) {
+                        lb_wr_en     <= 1'b1;
+                        lb_wr_to_a   <= ~active_buf;
+                        lb_wr_addr_r <= pend_wr_col;
+                        lb_wr_data_r <= { pend_wr_attr, pend_wr_char };
+                    } ELIF (pend_wr_row == prefetch_row) {
+                        lb_wr_en     <= 1'b1;
+                        lb_wr_to_a   <= active_buf;
+                        lb_wr_addr_r <= pend_wr_col;
+                        lb_wr_data_r <= { pend_wr_attr, pend_wr_char };
+                    } ELSE {
+                        lb_wr_en <= 1'b0;
+                    }
+                } ELIF (pend_rb == 1'b1 && sd_busy == 1'b0 && clearing == 1'b0) {
+                    // Process pending read-back
+                    sd_addr_r <= { 6'b000000, use_alt, pend_rb_row, pend_rb_col };
+                    sd_rd_r   <= 1'b1;
+                    sd_wr_r   <= 1'b0;
+                    pend_rb   <= 1'b0;
+                    lb_wr_en  <= 1'b0;
+                    state     <= lit(2, ST_READBACK);
+                } ELIF (wr_en == 1'b1 && sd_busy == 1'b0 && clearing == 1'b0 && pend_wr == 1'b0) {
+                    // Direct terminal write (no pending, SDRAM ready)
+                    sd_addr_r  <= { 6'b000000, use_alt, wr_phys_row, wr_col };
+                    sd_wdata_r <= { wr_attr, wr_char };
+                    sd_wr_r    <= 1'b1;
+                    sd_rd_r    <= 1'b0;
+                    state      <= lit(2, ST_WRITE);
+
+                    // Write-through to line buffer if row matches cache
+                    // Skip active buffer during display to prevent tearing
+                    IF (wr_phys_row == cached_row && display_active == 1'b0) {
+                        lb_wr_en     <= 1'b1;
+                        lb_wr_to_a   <= ~active_buf;
+                        lb_wr_addr_r <= wr_col;
+                        lb_wr_data_r <= { wr_attr, wr_char };
+                    } ELIF (wr_phys_row == prefetch_row) {
+                        lb_wr_en     <= 1'b1;
+                        lb_wr_to_a   <= active_buf;
+                        lb_wr_addr_r <= wr_col;
+                        lb_wr_data_r <= { wr_attr, wr_char };
+                    } ELSE {
+                        lb_wr_en <= 1'b0;
+                    }
+                } ELIF (wr_en == 1'b1 && pend_wr == 1'b0) {
+                    // Latch write: SDRAM busy or clearing, save for later
+                    pend_wr      <= 1'b1;
+                    pend_wr_row  <= wr_phys_row;
+                    pend_wr_col  <= wr_col;
+                    pend_wr_char <= wr_char;
+                    pend_wr_attr <= wr_attr;
+                    sd_rd_r  <= 1'b0;
+                    sd_wr_r  <= 1'b0;
+                    lb_wr_en <= 1'b0;
+                } ELIF (tb_rd_en == 1'b1 && sd_busy == 1'b0 && clearing == 1'b0 && pend_rb == 1'b0) {
+                    // Direct read-back
+                    sd_addr_r <= { 6'b000000, use_alt, tb_rd_phys_row, tb_rd_col };
+                    sd_rd_r   <= 1'b1;
+                    sd_wr_r   <= 1'b0;
+                    lb_wr_en  <= 1'b0;
+                    state     <= lit(2, ST_READBACK);
+                } ELIF (tb_rd_en == 1'b1 && pend_rb == 1'b0) {
+                    // Latch read-back
+                    pend_rb     <= 1'b1;
+                    pend_rb_row <= tb_rd_phys_row;
+                    pend_rb_col <= tb_rd_col;
+                    sd_rd_r  <= 1'b0;
+                    sd_wr_r  <= 1'b0;
+                    lb_wr_en <= 1'b0;
+                } ELIF (rd_phys_row != cached_row && rd_phys_row == prefetch_row) {
+                    // Buffer swap: prefetch buffer has the row we need
+                    active_buf   <= ~active_buf;
+                    cached_row   <= prefetch_row;
+                    prefetch_row <= cached_row;
+                    sd_rd_r  <= 1'b0;
+                    sd_wr_r  <= 1'b0;
+                    lb_wr_en <= 1'b0;
+                } ELIF (need_prefetch == 1'b1 && sd_busy == 1'b0 && clearing == 1'b0) {
+                    // Start prefetching into inactive buffer
+                    // Prefer current row if not cached (urgent), else next row
+                    pf_col        <= 8'd0;
+                    need_prefetch <= 1'b0;
+                    IF (rd_phys_row != cached_row && rd_phys_row != prefetch_row) {
+                        pf_target_row <= rd_phys_row;
+                        sd_addr_r <= { 6'b000000, use_alt, rd_phys_row, 8'd0 };
+                    } ELSE {
+                        pf_target_row <= next_phys_row;
+                        sd_addr_r <= { 6'b000000, use_alt, next_phys_row, 8'd0 };
+                    }
+                    sd_rd_r   <= 1'b1;
+                    sd_wr_r   <= 1'b0;
+                    lb_wr_en  <= 1'b0;
+                    state     <= lit(2, ST_PREFETCH);
+                } ELSE {
+                    sd_rd_r  <= 1'b0;
+                    sd_wr_r  <= 1'b0;
+                    lb_wr_en <= 1'b0;
+
+                    // Detect prefetch need when truly idle
+                    // Current row takes priority (urgent), then look-ahead
+                    IF (rd_phys_row != cached_row && rd_phys_row != prefetch_row && need_prefetch == 1'b0) {
+                        need_prefetch <= 1'b1;
+                    } ELIF (next_phys_row != prefetch_row && next_phys_row != cached_row && need_prefetch == 1'b0) {
+                        need_prefetch <= 1'b1;
+                    }
+                }
+            }
+
+            CASE (lit(2, ST_WRITE)) {
+                sd_rd_r  <= 1'b0;
+                lb_wr_en <= 1'b0;
+                // sd_wr_r: hold at 1 until sd_done (don't clear unconditionally)
+
+                // Latch incoming write while we're busy with SDRAM
+                IF (wr_en == 1'b1 && pend_wr == 1'b0) {
+                    pend_wr      <= 1'b1;
+                    pend_wr_row  <= wr_phys_row;
+                    pend_wr_col  <= wr_col;
+                    pend_wr_char <= wr_char;
+                    pend_wr_attr <= wr_attr;
+                }
+
+                // Latch incoming read-back
+                IF (tb_rd_en == 1'b1 && pend_rb == 1'b0) {
+                    pend_rb     <= 1'b1;
+                    pend_rb_row <= tb_rd_phys_row;
+                    pend_rb_col <= tb_rd_col;
+                }
+
+                IF (sd_done == 1'b1) {
+                    sd_wr_r <= 1'b0;
+                    state   <= lit(2, ST_IDLE);
+                }
+            }
+
+            CASE (lit(2, ST_READBACK)) {
+                sd_wr_r  <= 1'b0;
+                lb_wr_en <= 1'b0;
+                // sd_rd_r: hold at 1 until sd_done (don't clear unconditionally)
+
+                // Latch incoming write while we're busy
+                IF (wr_en == 1'b1 && pend_wr == 1'b0) {
+                    pend_wr      <= 1'b1;
+                    pend_wr_row  <= wr_phys_row;
+                    pend_wr_col  <= wr_col;
+                    pend_wr_char <= wr_char;
+                    pend_wr_attr <= wr_attr;
+                }
+
+                // Latch incoming read-back
+                IF (tb_rd_en == 1'b1 && pend_rb == 1'b0) {
+                    pend_rb     <= 1'b1;
+                    pend_rb_row <= tb_rd_phys_row;
+                    pend_rb_col <= tb_rd_col;
+                }
+
+                IF (sd_done == 1'b1) {
+                    sd_rd_r      <= 1'b0;
+                    tb_rd_char_r <= sd_rdata[15:0];
+                    tb_rd_attr_r <= sd_rdata[31:16];
+                    state        <= lit(2, ST_IDLE);
+                }
+            }
+
+            CASE (lit(2, ST_PREFETCH)) {
+                // Latch incoming write while prefetching
+                IF (wr_en == 1'b1 && pend_wr == 1'b0) {
+                    pend_wr      <= 1'b1;
+                    pend_wr_row  <= wr_phys_row;
+                    pend_wr_col  <= wr_col;
+                    pend_wr_char <= wr_char;
+                    pend_wr_attr <= wr_attr;
+                }
+
+                // Latch incoming read-back
+                IF (tb_rd_en == 1'b1 && pend_rb == 1'b0) {
+                    pend_rb     <= 1'b1;
+                    pend_rb_row <= tb_rd_phys_row;
+                    pend_rb_col <= tb_rd_col;
+                }
+
+                IF (sd_done == 1'b1) {
+                    // Stage line buffer write for inactive buffer
+                    lb_wr_en     <= 1'b1;
+                    lb_wr_to_a   <= active_buf;
+                    lb_wr_addr_r <= pf_col;
+                    lb_wr_data_r <= sd_rdata;
+
+                    IF (pf_col == lit(8, MAX_COL)) {
+                        // Prefetch complete
+                        prefetch_row <= pf_target_row;
+                        buf_ready_r  <= 1'b1;
+                        sd_rd_r      <= 1'b0;
+                        sd_wr_r      <= 1'b0;
+                        state        <= lit(2, ST_IDLE);
+                    } ELSE {
+                        // Issue next SDRAM read
+                        pf_col    <= pf_col + 8'd1;
+                        sd_addr_r <= { 6'b000000, use_alt, pf_target_row, pf_col + 8'd1 };
+                        sd_rd_r   <= 1'b1;
+                        sd_wr_r   <= 1'b0;
+                    }
+                } ELSE {
+                    // sd_rd_r: hold at 1 (don't clear — keeps read request
+                    // asserted until SDRAM accepts it, surviving refresh cycles)
+                    sd_wr_r  <= 1'b0;
+                    lb_wr_en <= 1'b0;
+                }
+            }
+
+            DEFAULT {
+                sd_rd_r  <= 1'b0;
+                sd_wr_r  <= 1'b0;
+                lb_wr_en <= 1'b0;
+                state    <= lit(2, ST_IDLE);
+            }
+        }
+    }
+@endmod

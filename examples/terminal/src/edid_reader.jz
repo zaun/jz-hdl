@@ -1,0 +1,949 @@
+// EDID Reader — reads 128-byte EDID block from monitor via DDC/I2C
+// On reset, performs I2C read from address 0xA0, stores to internal memory,
+// parses descriptor blocks for monitor name (FC), serial (FF), text (FE),
+// and extracts resolution from preferred timing descriptor.
+// Exposes a byte-read interface: (field, byte_idx) → byte_out.
+@module edid_reader
+    CONST {
+        // I2C addresses
+        I2C_ADDR_W = 160;    // 0xA0 — EDID write address
+        I2C_ADDR_R = 161;    // 0xA1 — EDID read address
+
+        // Timing (74.25 MHz / 100 kHz / 4 ≈ 185)
+        QUARTER_BIT = 185;
+        INIT_DELAY  = 1113750;  // ~15ms power-up delay at 74.25 MHz
+
+        // I2C bit-level states
+        I2C_IDLE    = 0;
+        I2C_START   = 1;
+        I2C_TXBYTE  = 2;
+        I2C_RXBYTE  = 3;
+        I2C_STOP    = 4;
+
+        // Sequencer states
+        SEQ_INIT      = 0;
+        SEQ_START_W   = 1;
+        SEQ_ADDR_W    = 2;
+        SEQ_BYTE_ADDR = 3;
+        SEQ_START_R   = 4;
+        SEQ_ADDR_R    = 5;
+        SEQ_READ      = 6;
+        SEQ_STOP      = 7;
+        SEQ_PARSE     = 8;
+        SEQ_BCD_H     = 9;
+        SEQ_BCD_V     = 10;
+        SEQ_DONE      = 11;
+        SEQ_ERROR     = 12;
+
+        // Descriptor tags
+        TAG_FC = 252;   // 0xFC — Monitor Name
+        TAG_FF = 255;   // 0xFF — Serial Number
+        TAG_FE = 254;   // 0xFE — Unspecified Text
+    }
+
+    PORT {
+        IN    [1]  clk;
+        IN    [1]  rst_n;
+        INOUT [1]  sda;
+        OUT   [1]  scl;
+
+        // Byte read interface
+        IN  [2]  field;       // 0=name(FC), 1=serial(FF), 2=text(FE), 3=resolution
+        IN  [4]  byte_idx;    // 0-12 (13 chars per descriptor)
+        OUT [8]  byte_out;
+
+        OUT [1]  ready;       // EDID data valid and parsed
+        OUT [1]  error;       // I2C failed
+    }
+
+    WIRE {
+        byte_addr_for_read [7];
+        rd_addr_mux        [7];
+        byte_out_w         [8];
+        edid_wr_addr       [7];
+    }
+
+    REGISTER {
+        // I2C bit-level state
+        i2c_state  [4]  = 4'd0;
+        phase_cnt  [8]  = 8'd0;
+        phase      [2]  = 2'd0;
+        bit_cnt    [4]  = 4'd0;
+        sda_oe     [1]  = 1'b0;
+        scl_out    [1]  = 1'b1;
+        shift_out  [8]  = 8'h00;
+        shift_in   [8]  = 8'h00;
+        got_ack    [1]  = 1'b0;
+        send_nack  [1]  = 1'b0;
+
+        // SDA synchronizer
+        sda_sync1  [1]  = 1'b1;
+        sda_sync2  [1]  = 1'b1;
+
+        // Sequencer
+        seq_state  [4]  = 4'd0;
+        init_cnt   [21] = 21'd0;
+        byte_addr  [8]  = 8'd0;
+
+        // EDID status
+        edid_ready_r [1] = 1'b0;
+        edid_error_r [1] = 1'b0;
+
+        // Parse state
+        parse_step  [5]  = 5'd0;
+        parse_byte  [8]  = 8'd0;
+
+        // Descriptor data offsets (base+5 for the ASCII data area)
+        desc_fc_off [7]  = 7'd0;
+        desc_ff_off [7]  = 7'd0;
+        desc_fe_off [7]  = 7'd0;
+        has_fc      [1]  = 1'b0;
+        has_ff      [1]  = 1'b0;
+        has_fe      [1]  = 1'b0;
+
+        // Resolution from preferred timing descriptor
+        h_pixels    [12] = 12'd0;
+        v_pixels    [12] = 12'd0;
+
+        // BCD digits for resolution string
+        h_thou [4] = 4'd0;
+        h_hund [4] = 4'd0;
+        h_tens [4] = 4'd0;
+        h_ones [4] = 4'd0;
+        v_thou [4] = 4'd0;
+        v_hund [4] = 4'd0;
+        v_tens [4] = 4'd0;
+        v_ones [4] = 4'd0;
+        bcd_rem [12] = 12'd0;
+
+        // Byte output register
+        byte_out_r [8] = 8'd0;
+    }
+
+    MEM(TYPE=DISTRIBUTED) {
+        edid [8] [128] = 8'h00 { OUT rd SYNC; IN wr; };
+    }
+
+    ASYNCHRONOUS {
+        // I2C open-drain SDA: drive low or release
+        sda <= (sda_oe == 1'b1) ? 1'b0 : 1'bz;
+        scl <= scl_out;
+
+        ready <= edid_ready_r;
+        error <= edid_error_r;
+
+        // Read address mux: parse-controlled during parse, terminal-controlled otherwise
+        IF (seq_state == lit(4, SEQ_PARSE)) {
+            SELECT (parse_step) {
+                // Descriptor 0 check (offset 54)
+                CASE (5'd0)  { rd_addr_mux <= 7'd54; }
+                CASE (5'd1)  { rd_addr_mux <= 7'd55; }
+                CASE (5'd2)  { rd_addr_mux <= 7'd57; }
+                // Bubble step: sets addr for step 3 (timing path)
+                CASE (5'd20) { rd_addr_mux <= 7'd56; }
+                // Resolution extraction (from timing desc at 54)
+                // Each step N sets addr for step N+1's read
+                CASE (5'd3)  { rd_addr_mux <= 7'd58; }
+                CASE (5'd4)  { rd_addr_mux <= 7'd59; }
+                CASE (5'd5)  { rd_addr_mux <= 7'd61; }
+                CASE (5'd6)  { rd_addr_mux <= 7'd61; }
+                // Descriptor 1 check (offset 72)
+                CASE (5'd7)  { rd_addr_mux <= 7'd72; }
+                CASE (5'd8)  { rd_addr_mux <= 7'd73; }
+                CASE (5'd9)  { rd_addr_mux <= 7'd75; }
+                // Descriptor 2 check (offset 90)
+                CASE (5'd10) { rd_addr_mux <= 7'd90; }
+                CASE (5'd11) { rd_addr_mux <= 7'd91; }
+                CASE (5'd12) { rd_addr_mux <= 7'd93; }
+                // Descriptor 3 check (offset 108)
+                CASE (5'd13) { rd_addr_mux <= 7'd108; }
+                CASE (5'd14) { rd_addr_mux <= 7'd109; }
+                CASE (5'd15) { rd_addr_mux <= 7'd111; }
+                DEFAULT      { rd_addr_mux <= byte_addr_for_read; }
+            }
+        } ELSE {
+            rd_addr_mux <= byte_addr_for_read;
+        }
+
+        // Byte read address from field/byte_idx
+        SELECT (field) {
+            CASE (2'd0) { byte_addr_for_read <= desc_fc_off + { 3'b000, byte_idx }; }
+            CASE (2'd1) { byte_addr_for_read <= desc_ff_off + { 3'b000, byte_idx }; }
+            CASE (2'd2) { byte_addr_for_read <= desc_fe_off + { 3'b000, byte_idx }; }
+            DEFAULT     { byte_addr_for_read <= 7'd0; }
+        }
+
+        // Byte output mux: BCD digits for resolution (field 3),
+        // spaces for missing descriptors, memory data otherwise
+        IF (field == 2'd3 && edid_ready_r == 1'b1) {
+            SELECT (byte_idx) {
+                CASE (4'd0) { byte_out_w <= { 4'h3, h_thou }; }
+                CASE (4'd1) { byte_out_w <= { 4'h3, h_hund }; }
+                CASE (4'd2) { byte_out_w <= { 4'h3, h_tens }; }
+                CASE (4'd3) { byte_out_w <= { 4'h3, h_ones }; }
+                CASE (4'd4) { byte_out_w <= 8'h78; }
+                CASE (4'd5) { byte_out_w <= { 4'h3, v_thou }; }
+                CASE (4'd6) { byte_out_w <= { 4'h3, v_hund }; }
+                CASE (4'd7) { byte_out_w <= { 4'h3, v_tens }; }
+                CASE (4'd8) { byte_out_w <= { 4'h3, v_ones }; }
+                DEFAULT     { byte_out_w <= 8'h00; }
+            }
+        } ELIF (field == 2'd0 && has_fc == 1'b0) {
+            byte_out_w <= 8'h20;
+        } ELIF (field == 2'd1 && has_ff == 1'b0) {
+            byte_out_w <= 8'h20;
+        } ELIF (field == 2'd2 && has_fe == 1'b0) {
+            byte_out_w <= 8'h20;
+        } ELSE {
+            byte_out_w <= byte_out_r;
+        }
+
+        byte_out <= byte_out_w;
+
+        // EDID write address: byte_addr-1 normally, 127 for the last byte
+        IF (byte_addr[7] == 1'b1) {
+            edid_wr_addr <= 7'd127;
+        } ELSE {
+            IF (byte_addr == 8'd0) {
+                edid_wr_addr <= 7'd0;
+            } ELSE {
+                edid_wr_addr <= byte_addr[6:0] - 7'd1;
+            }
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // SDA synchronizer (always runs)
+        sda_sync1 <= sda;
+        sda_sync2 <= sda_sync1;
+
+        // Memory read port (always driven)
+        edid.rd.addr <= rd_addr_mux;
+        byte_out_r   <= edid.rd.data;
+
+        // -------------------------------------------------------
+        // I2C bit-level state machine
+        // -------------------------------------------------------
+        IF (i2c_state != lit(4, I2C_IDLE)) {
+
+            IF (phase_cnt != 8'd0) {
+                phase_cnt <= phase_cnt - 8'd1;
+            } ELSE {
+                phase_cnt <= lit(8, QUARTER_BIT);
+
+                SELECT (i2c_state) {
+                    // --- START condition ---
+                    CASE (lit(4, I2C_START)) {
+                        SELECT (phase) {
+                            CASE (2'd0) {
+                                // Ensure SDA and SCL released (high)
+                                sda_oe  <= 1'b0;
+                                scl_out <= 1'b1;
+                                phase   <= 2'd1;
+                            }
+                            CASE (2'd1) {
+                                // Pull SDA low while SCL high (START)
+                                sda_oe <= 1'b1;
+                                phase  <= 2'd2;
+                            }
+                            CASE (2'd2) {
+                                // Pull SCL low
+                                scl_out   <= 1'b0;
+                                i2c_state <= lit(4, I2C_IDLE);
+                                phase     <= 2'd0;
+                            }
+                            DEFAULT {
+                                i2c_state <= lit(4, I2C_IDLE);
+                                phase     <= 2'd0;
+                            }
+                        }
+                    }
+
+                    // --- Transmit byte (8 data bits + ACK) ---
+                    CASE (lit(4, I2C_TXBYTE)) {
+                        IF (bit_cnt != 4'd8) {
+                            // Data bits (MSB first)
+                            SELECT (phase) {
+                                CASE (2'd0) {
+                                    scl_out <= 1'b0;
+                                    // Open-drain: bit=1 → release, bit=0 → drive low
+                                    IF (shift_out[7] == 1'b1) {
+                                        sda_oe <= 1'b0;
+                                    } ELSE {
+                                        sda_oe <= 1'b1;
+                                    }
+                                    phase <= 2'd1;
+                                }
+                                CASE (2'd1) {
+                                    scl_out <= 1'b1;
+                                    phase   <= 2'd2;
+                                }
+                                CASE (2'd2) {
+                                    phase <= 2'd3;
+                                }
+                                CASE (2'd3) {
+                                    scl_out   <= 1'b0;
+                                    shift_out <= { shift_out[6:0], 1'b0 };
+                                    bit_cnt   <= bit_cnt + 4'd1;
+                                    phase     <= 2'd0;
+                                }
+                                DEFAULT {
+                                    phase <= 2'd0;
+                                }
+                            }
+                        } ELSE {
+                            // ACK phase (bit 8): release SDA, sample for ACK
+                            SELECT (phase) {
+                                CASE (2'd0) {
+                                    scl_out <= 1'b0;
+                                    sda_oe  <= 1'b0;
+                                    phase   <= 2'd1;
+                                }
+                                CASE (2'd1) {
+                                    scl_out <= 1'b1;
+                                    phase   <= 2'd2;
+                                }
+                                CASE (2'd2) {
+                                    // Sample ACK: SDA low = ACK, SDA high = NACK
+                                    IF (sda_sync2 == 1'b0) {
+                                        got_ack <= 1'b1;
+                                    } ELSE {
+                                        got_ack <= 1'b0;
+                                    }
+                                    phase <= 2'd3;
+                                }
+                                CASE (2'd3) {
+                                    scl_out   <= 1'b0;
+                                    bit_cnt   <= 4'd0;
+                                    i2c_state <= lit(4, I2C_IDLE);
+                                    phase     <= 2'd0;
+                                }
+                                DEFAULT {
+                                    phase <= 2'd0;
+                                }
+                            }
+                        }
+                    }
+
+                    // --- Receive byte (8 data bits + ACK/NACK) ---
+                    CASE (lit(4, I2C_RXBYTE)) {
+                        IF (bit_cnt != 4'd8) {
+                            // Data bits: release SDA, sample on SCL high
+                            SELECT (phase) {
+                                CASE (2'd0) {
+                                    scl_out <= 1'b0;
+                                    sda_oe  <= 1'b0;
+                                    phase   <= 2'd1;
+                                }
+                                CASE (2'd1) {
+                                    scl_out <= 1'b1;
+                                    phase   <= 2'd2;
+                                }
+                                CASE (2'd2) {
+                                    // Sample SDA, shift into shift_in (MSB first)
+                                    shift_in <= { shift_in[6:0], sda_sync2 };
+                                    phase    <= 2'd3;
+                                }
+                                CASE (2'd3) {
+                                    scl_out <= 1'b0;
+                                    bit_cnt <= bit_cnt + 4'd1;
+                                    phase   <= 2'd0;
+                                }
+                                DEFAULT {
+                                    phase <= 2'd0;
+                                }
+                            }
+                        } ELSE {
+                            // ACK/NACK phase: drive ACK (low) or NACK (release)
+                            SELECT (phase) {
+                                CASE (2'd0) {
+                                    scl_out <= 1'b0;
+                                    // ACK = drive low, NACK = release
+                                    IF (send_nack == 1'b1) {
+                                        sda_oe <= 1'b0;
+                                    } ELSE {
+                                        sda_oe <= 1'b1;
+                                    }
+                                    phase <= 2'd1;
+                                }
+                                CASE (2'd1) {
+                                    scl_out <= 1'b1;
+                                    phase   <= 2'd2;
+                                }
+                                CASE (2'd2) {
+                                    phase <= 2'd3;
+                                }
+                                CASE (2'd3) {
+                                    scl_out   <= 1'b0;
+                                    sda_oe    <= 1'b0;
+                                    bit_cnt   <= 4'd0;
+                                    i2c_state <= lit(4, I2C_IDLE);
+                                    phase     <= 2'd0;
+                                }
+                                DEFAULT {
+                                    phase <= 2'd0;
+                                }
+                            }
+                        }
+                    }
+
+                    // --- STOP condition ---
+                    CASE (lit(4, I2C_STOP)) {
+                        SELECT (phase) {
+                            CASE (2'd0) {
+                                // SCL low, SDA driven low
+                                scl_out <= 1'b0;
+                                sda_oe  <= 1'b1;
+                                phase   <= 2'd1;
+                            }
+                            CASE (2'd1) {
+                                // SCL high
+                                scl_out <= 1'b1;
+                                phase   <= 2'd2;
+                            }
+                            CASE (2'd2) {
+                                // Release SDA (goes high = STOP)
+                                sda_oe    <= 1'b0;
+                                i2c_state <= lit(4, I2C_IDLE);
+                                phase     <= 2'd0;
+                            }
+                            DEFAULT {
+                                i2c_state <= lit(4, I2C_IDLE);
+                                phase     <= 2'd0;
+                            }
+                        }
+                    }
+
+                    DEFAULT {
+                        i2c_state <= lit(4, I2C_IDLE);
+                    }
+                }
+            }
+
+        // -------------------------------------------------------
+        // Sequencer (runs when I2C is idle)
+        // -------------------------------------------------------
+        } ELSE {
+
+            SELECT (seq_state) {
+                CASE (lit(4, SEQ_INIT)) {
+                    // Power-up delay
+                    IF (init_cnt == lit(21, INIT_DELAY)) {
+                        seq_state <= lit(4, SEQ_START_W);
+                    } ELSE {
+                        init_cnt <= init_cnt + 21'd1;
+                    }
+                }
+
+                CASE (lit(4, SEQ_START_W)) {
+                    // Trigger I2C START
+                    i2c_state <= lit(4, I2C_START);
+                    phase_cnt <= lit(8, QUARTER_BIT);
+                    phase     <= 2'd0;
+                    seq_state <= lit(4, SEQ_ADDR_W);
+                }
+
+                CASE (lit(4, SEQ_ADDR_W)) {
+                    // Send write address 0xA0
+                    shift_out <= lit(8, I2C_ADDR_W);
+                    bit_cnt   <= 4'd0;
+                    i2c_state <= lit(4, I2C_TXBYTE);
+                    phase_cnt <= lit(8, QUARTER_BIT);
+                    phase     <= 2'd0;
+                    seq_state <= lit(4, SEQ_BYTE_ADDR);
+                }
+
+                CASE (lit(4, SEQ_BYTE_ADDR)) {
+                    // Check ACK from address byte, then send byte address 0x00
+                    IF (got_ack == 1'b1) {
+                        shift_out <= 8'h00;
+                        bit_cnt   <= 4'd0;
+                        i2c_state <= lit(4, I2C_TXBYTE);
+                        phase_cnt <= lit(8, QUARTER_BIT);
+                        phase     <= 2'd0;
+                        seq_state <= lit(4, SEQ_START_R);
+                    } ELSE {
+                        seq_state <= lit(4, SEQ_ERROR);
+                    }
+                }
+
+                CASE (lit(4, SEQ_START_R)) {
+                    // Check ACK, then repeated START
+                    IF (got_ack == 1'b1) {
+                        i2c_state <= lit(4, I2C_START);
+                        phase_cnt <= lit(8, QUARTER_BIT);
+                        phase     <= 2'd0;
+                        seq_state <= lit(4, SEQ_ADDR_R);
+                    } ELSE {
+                        seq_state <= lit(4, SEQ_ERROR);
+                    }
+                }
+
+                CASE (lit(4, SEQ_ADDR_R)) {
+                    // Send read address 0xA1
+                    shift_out <= lit(8, I2C_ADDR_R);
+                    bit_cnt   <= 4'd0;
+                    i2c_state <= lit(4, I2C_TXBYTE);
+                    phase_cnt <= lit(8, QUARTER_BIT);
+                    phase     <= 2'd0;
+                    seq_state <= lit(4, SEQ_READ);
+                }
+
+                CASE (lit(4, SEQ_READ)) {
+                    // byte_addr tracks progress: 0=check ACK, 1-128=store+read
+                    // Store received byte (single write point for MEM port)
+                    IF (byte_addr != 8'd0) {
+                        edid.wr[edid_wr_addr] <= shift_in;
+                    }
+
+                    IF (byte_addr == 8'd0) {
+                        // First entry: check ACK from address byte
+                        IF (got_ack == 1'b1) {
+                            // Start receiving first byte
+                            send_nack <= 1'b0;
+                            bit_cnt   <= 4'd0;
+                            i2c_state <= lit(4, I2C_RXBYTE);
+                            phase_cnt <= lit(8, QUARTER_BIT);
+                            phase     <= 2'd0;
+                            byte_addr <= 8'd1;
+                        } ELSE {
+                            seq_state <= lit(4, SEQ_ERROR);
+                        }
+                    } ELIF (byte_addr[7] == 1'b1) {
+                        // byte_addr >= 128: all 128 bytes received, go to STOP
+                        seq_state <= lit(4, SEQ_STOP);
+                    } ELSE {
+                        // Set up NACK for last byte (byte 127)
+                        IF (byte_addr == 8'd127) {
+                            send_nack <= 1'b1;
+                        } ELSE {
+                            send_nack <= 1'b0;
+                        }
+                        bit_cnt   <= 4'd0;
+                        i2c_state <= lit(4, I2C_RXBYTE);
+                        phase_cnt <= lit(8, QUARTER_BIT);
+                        phase     <= 2'd0;
+                        byte_addr <= byte_addr + 8'd1;
+                    }
+                }
+
+                CASE (lit(4, SEQ_STOP)) {
+                    // Trigger I2C STOP
+                    i2c_state <= lit(4, I2C_STOP);
+                    phase_cnt <= lit(8, QUARTER_BIT);
+                    phase     <= 2'd0;
+                    parse_step <= 5'd0;
+                    seq_state <= lit(4, SEQ_PARSE);
+                }
+
+                CASE (lit(4, SEQ_PARSE)) {
+                    // Parse EDID descriptors
+                    // Each step reads one byte (data available from PREVIOUS step's address)
+                    SELECT (parse_step) {
+                        CASE (5'd0) {
+                            // Set addr=54 (done in ASYNC), advance
+                            parse_step <= 5'd1;
+                        }
+                        CASE (5'd1) {
+                            // Got edid[54], store for later. Set addr=55
+                            parse_byte <= edid.rd.data;
+                            parse_step <= 5'd2;
+                        }
+                        CASE (5'd2) {
+                            // Got edid[55]. Check if timing descriptor (non-zero pixel clock)
+                            IF (parse_byte != 8'd0 || edid.rd.data != 8'd0) {
+                                // Timing descriptor → extract resolution
+                                // Go to bubble step 20 which sets addr=56 for step 3
+                                parse_step <= 5'd20;
+                            } ELSE {
+                                // Display descriptor → check tag at offset 57 (=54+3)
+                                // Set addr=57 (done in ASYNC for step 2... wait)
+                                // Already set addr=57 for this step. Read will be ready at step 3.
+                                // Actually, step 2 sets addr for step 3 read.
+                                // For display desc, we want tag at byte 57 (=54+3)
+                                // addr=57 is already set by ASYNC for parse_step==2
+                                // Data will be available at step 3
+                                parse_step <= 5'd16;
+                            }
+                        }
+                        CASE (5'd3) {
+                            // Got edid[56] (h_active low byte). Set addr=58
+                            parse_byte <= edid.rd.data;
+                            parse_step <= 5'd4;
+                        }
+                        CASE (5'd4) {
+                            // Got edid[58] (h_active high nibble in [7:4]). Set addr=59
+                            h_pixels   <= { edid.rd.data[7:4], parse_byte };
+                            parse_step <= 5'd5;
+                        }
+                        CASE (5'd5) {
+                            // Got edid[59] (v_active low byte). Set addr=61
+                            parse_byte <= edid.rd.data;
+                            parse_step <= 5'd6;
+                        }
+                        CASE (5'd6) {
+                            // Got edid[61] (v_active high nibble in [7:4])
+                            v_pixels   <= { edid.rd.data[7:4], parse_byte };
+                            // Now check descriptors 1-3 for tags
+                            parse_step <= 5'd7;
+                        }
+
+                        // Bubble step: addr=56 set in ASYNC, just advance
+                        CASE (5'd20) {
+                            parse_step <= 5'd3;
+                        }
+
+                        // Descriptor 1 check (offset 72)
+                        CASE (5'd7) {
+                            // Set addr=72 (done in ASYNC)
+                            parse_step <= 5'd8;
+                        }
+                        CASE (5'd8) {
+                            // Got edid[72]. Set addr=73
+                            parse_byte <= edid.rd.data;
+                            parse_step <= 5'd9;
+                        }
+                        CASE (5'd9) {
+                            // Got edid[73]. Check if display descriptor. Set addr=75
+                            IF (parse_byte == 8'd0 && edid.rd.data == 8'd0) {
+                                parse_step <= 5'd17;
+                            } ELSE {
+                                // Not a display descriptor, skip to desc 2
+                                parse_step <= 5'd10;
+                            }
+                        }
+
+                        // Descriptor 2 check (offset 90)
+                        CASE (5'd10) {
+                            // Set addr=90 (done in ASYNC)
+                            parse_step <= 5'd11;
+                        }
+                        CASE (5'd11) {
+                            // Got edid[90]. Set addr=91
+                            parse_byte <= edid.rd.data;
+                            parse_step <= 5'd12;
+                        }
+                        CASE (5'd12) {
+                            // Got edid[91]. Check if display descriptor. Set addr=93
+                            IF (parse_byte == 8'd0 && edid.rd.data == 8'd0) {
+                                parse_step <= 5'd18;
+                            } ELSE {
+                                parse_step <= 5'd13;
+                            }
+                        }
+
+                        // Descriptor 3 check (offset 108)
+                        CASE (5'd13) {
+                            // Set addr=108 (done in ASYNC)
+                            parse_step <= 5'd14;
+                        }
+                        CASE (5'd14) {
+                            // Got edid[108]. Set addr=109
+                            parse_byte <= edid.rd.data;
+                            parse_step <= 5'd15;
+                        }
+                        CASE (5'd15) {
+                            // Got edid[109]. Check if display descriptor. Set addr=111
+                            IF (parse_byte == 8'd0 && edid.rd.data == 8'd0) {
+                                parse_step <= 5'd19;
+                            } ELSE {
+                                // No more descriptors to check, go to BCD
+                                seq_state  <= lit(4, SEQ_BCD_H);
+                                parse_step <= 5'd0;
+                            }
+                        }
+
+                        // Tag reads — descriptor 0 (offset 54), tag at 57
+                        CASE (5'd16) {
+                            // Got edid[57] — tag byte for desc 0
+                            IF (edid.rd.data == lit(8, TAG_FC)) {
+                                desc_fc_off <= 7'd59;
+                                has_fc      <= 1'b1;
+                            } ELIF (edid.rd.data == lit(8, TAG_FF)) {
+                                desc_ff_off <= 7'd59;
+                                has_ff      <= 1'b1;
+                            } ELIF (edid.rd.data == lit(8, TAG_FE)) {
+                                desc_fe_off <= 7'd59;
+                                has_fe      <= 1'b1;
+                            }
+                            // Check desc 1
+                            parse_step <= 5'd7;
+                        }
+
+                        // Tag reads — descriptor 1 (offset 72), tag at 75
+                        CASE (5'd17) {
+                            // Got edid[75] — tag byte for desc 1
+                            IF (edid.rd.data == lit(8, TAG_FC)) {
+                                desc_fc_off <= 7'd77;
+                                has_fc      <= 1'b1;
+                            } ELIF (edid.rd.data == lit(8, TAG_FF)) {
+                                desc_ff_off <= 7'd77;
+                                has_ff      <= 1'b1;
+                            } ELIF (edid.rd.data == lit(8, TAG_FE)) {
+                                desc_fe_off <= 7'd77;
+                                has_fe      <= 1'b1;
+                            }
+                            // Check desc 2
+                            parse_step <= 5'd10;
+                        }
+
+                        // Tag reads — descriptor 2 (offset 90), tag at 93
+                        CASE (5'd18) {
+                            // Got edid[93] — tag byte for desc 2
+                            IF (edid.rd.data == lit(8, TAG_FC)) {
+                                desc_fc_off <= 7'd95;
+                                has_fc      <= 1'b1;
+                            } ELIF (edid.rd.data == lit(8, TAG_FF)) {
+                                desc_ff_off <= 7'd95;
+                                has_ff      <= 1'b1;
+                            } ELIF (edid.rd.data == lit(8, TAG_FE)) {
+                                desc_fe_off <= 7'd95;
+                                has_fe      <= 1'b1;
+                            }
+                            // Check desc 3
+                            parse_step <= 5'd13;
+                        }
+
+                        // Tag reads — descriptor 3 (offset 108), tag at 111
+                        CASE (5'd19) {
+                            // Got edid[111] — tag byte for desc 3
+                            IF (edid.rd.data == lit(8, TAG_FC)) {
+                                desc_fc_off <= 7'd113;
+                                has_fc      <= 1'b1;
+                            } ELIF (edid.rd.data == lit(8, TAG_FF)) {
+                                desc_ff_off <= 7'd113;
+                                has_ff      <= 1'b1;
+                            } ELIF (edid.rd.data == lit(8, TAG_FE)) {
+                                desc_fe_off <= 7'd113;
+                                has_fe      <= 1'b1;
+                            }
+                            // Done parsing, go to BCD
+                            seq_state  <= lit(4, SEQ_BCD_H);
+                            parse_step <= 5'd0;
+                        }
+
+                        DEFAULT {
+                            seq_state  <= lit(4, SEQ_BCD_H);
+                            parse_step <= 5'd0;
+                        }
+                    }
+                }
+
+                CASE (lit(4, SEQ_BCD_H)) {
+                    // BCD conversion for horizontal resolution
+                    SELECT (parse_step) {
+                        CASE (5'd0) {
+                            // Extract thousands digit
+                            IF (h_pixels >= 12'd4000) {
+                                h_thou  <= 4'd4;
+                                bcd_rem <= h_pixels - 12'd4000;
+                            } ELIF (h_pixels >= 12'd3000) {
+                                h_thou  <= 4'd3;
+                                bcd_rem <= h_pixels - 12'd3000;
+                            } ELIF (h_pixels >= 12'd2000) {
+                                h_thou  <= 4'd2;
+                                bcd_rem <= h_pixels - 12'd2000;
+                            } ELIF (h_pixels >= 12'd1000) {
+                                h_thou  <= 4'd1;
+                                bcd_rem <= h_pixels - 12'd1000;
+                            } ELSE {
+                                h_thou  <= 4'd0;
+                                bcd_rem <= h_pixels;
+                            }
+                            parse_step <= 5'd1;
+                        }
+                        CASE (5'd1) {
+                            // Extract hundreds digit
+                            IF (bcd_rem >= 12'd900) {
+                                h_hund  <= 4'd9;
+                                bcd_rem <= bcd_rem - 12'd900;
+                            } ELIF (bcd_rem >= 12'd800) {
+                                h_hund  <= 4'd8;
+                                bcd_rem <= bcd_rem - 12'd800;
+                            } ELIF (bcd_rem >= 12'd700) {
+                                h_hund  <= 4'd7;
+                                bcd_rem <= bcd_rem - 12'd700;
+                            } ELIF (bcd_rem >= 12'd600) {
+                                h_hund  <= 4'd6;
+                                bcd_rem <= bcd_rem - 12'd600;
+                            } ELIF (bcd_rem >= 12'd500) {
+                                h_hund  <= 4'd5;
+                                bcd_rem <= bcd_rem - 12'd500;
+                            } ELIF (bcd_rem >= 12'd400) {
+                                h_hund  <= 4'd4;
+                                bcd_rem <= bcd_rem - 12'd400;
+                            } ELIF (bcd_rem >= 12'd300) {
+                                h_hund  <= 4'd3;
+                                bcd_rem <= bcd_rem - 12'd300;
+                            } ELIF (bcd_rem >= 12'd200) {
+                                h_hund  <= 4'd2;
+                                bcd_rem <= bcd_rem - 12'd200;
+                            } ELIF (bcd_rem >= 12'd100) {
+                                h_hund  <= 4'd1;
+                                bcd_rem <= bcd_rem - 12'd100;
+                            } ELSE {
+                                h_hund  <= 4'd0;
+                            }
+                            parse_step <= 5'd2;
+                        }
+                        CASE (5'd2) {
+                            // Extract tens digit
+                            IF (bcd_rem >= 12'd90) {
+                                h_tens  <= 4'd9;
+                                bcd_rem <= bcd_rem - 12'd90;
+                            } ELIF (bcd_rem >= 12'd80) {
+                                h_tens  <= 4'd8;
+                                bcd_rem <= bcd_rem - 12'd80;
+                            } ELIF (bcd_rem >= 12'd70) {
+                                h_tens  <= 4'd7;
+                                bcd_rem <= bcd_rem - 12'd70;
+                            } ELIF (bcd_rem >= 12'd60) {
+                                h_tens  <= 4'd6;
+                                bcd_rem <= bcd_rem - 12'd60;
+                            } ELIF (bcd_rem >= 12'd50) {
+                                h_tens  <= 4'd5;
+                                bcd_rem <= bcd_rem - 12'd50;
+                            } ELIF (bcd_rem >= 12'd40) {
+                                h_tens  <= 4'd4;
+                                bcd_rem <= bcd_rem - 12'd40;
+                            } ELIF (bcd_rem >= 12'd30) {
+                                h_tens  <= 4'd3;
+                                bcd_rem <= bcd_rem - 12'd30;
+                            } ELIF (bcd_rem >= 12'd20) {
+                                h_tens  <= 4'd2;
+                                bcd_rem <= bcd_rem - 12'd20;
+                            } ELIF (bcd_rem >= 12'd10) {
+                                h_tens  <= 4'd1;
+                                bcd_rem <= bcd_rem - 12'd10;
+                            } ELSE {
+                                h_tens <= 4'd0;
+                            }
+                            parse_step <= 5'd3;
+                        }
+                        CASE (5'd3) {
+                            h_ones     <= bcd_rem[3:0];
+                            parse_step <= 5'd0;
+                            seq_state  <= lit(4, SEQ_BCD_V);
+                        }
+                        DEFAULT {
+                            parse_step <= 5'd0;
+                            seq_state  <= lit(4, SEQ_BCD_V);
+                        }
+                    }
+                }
+
+                CASE (lit(4, SEQ_BCD_V)) {
+                    // BCD conversion for vertical resolution
+                    SELECT (parse_step) {
+                        CASE (5'd0) {
+                            IF (v_pixels >= 12'd4000) {
+                                v_thou  <= 4'd4;
+                                bcd_rem <= v_pixels - 12'd4000;
+                            } ELIF (v_pixels >= 12'd3000) {
+                                v_thou  <= 4'd3;
+                                bcd_rem <= v_pixels - 12'd3000;
+                            } ELIF (v_pixels >= 12'd2000) {
+                                v_thou  <= 4'd2;
+                                bcd_rem <= v_pixels - 12'd2000;
+                            } ELIF (v_pixels >= 12'd1000) {
+                                v_thou  <= 4'd1;
+                                bcd_rem <= v_pixels - 12'd1000;
+                            } ELSE {
+                                v_thou  <= 4'd0;
+                                bcd_rem <= v_pixels;
+                            }
+                            parse_step <= 5'd1;
+                        }
+                        CASE (5'd1) {
+                            IF (bcd_rem >= 12'd900) {
+                                v_hund  <= 4'd9;
+                                bcd_rem <= bcd_rem - 12'd900;
+                            } ELIF (bcd_rem >= 12'd800) {
+                                v_hund  <= 4'd8;
+                                bcd_rem <= bcd_rem - 12'd800;
+                            } ELIF (bcd_rem >= 12'd700) {
+                                v_hund  <= 4'd7;
+                                bcd_rem <= bcd_rem - 12'd700;
+                            } ELIF (bcd_rem >= 12'd600) {
+                                v_hund  <= 4'd6;
+                                bcd_rem <= bcd_rem - 12'd600;
+                            } ELIF (bcd_rem >= 12'd500) {
+                                v_hund  <= 4'd5;
+                                bcd_rem <= bcd_rem - 12'd500;
+                            } ELIF (bcd_rem >= 12'd400) {
+                                v_hund  <= 4'd4;
+                                bcd_rem <= bcd_rem - 12'd400;
+                            } ELIF (bcd_rem >= 12'd300) {
+                                v_hund  <= 4'd3;
+                                bcd_rem <= bcd_rem - 12'd300;
+                            } ELIF (bcd_rem >= 12'd200) {
+                                v_hund  <= 4'd2;
+                                bcd_rem <= bcd_rem - 12'd200;
+                            } ELIF (bcd_rem >= 12'd100) {
+                                v_hund  <= 4'd1;
+                                bcd_rem <= bcd_rem - 12'd100;
+                            } ELSE {
+                                v_hund  <= 4'd0;
+                            }
+                            parse_step <= 5'd2;
+                        }
+                        CASE (5'd2) {
+                            IF (bcd_rem >= 12'd90) {
+                                v_tens  <= 4'd9;
+                                bcd_rem <= bcd_rem - 12'd90;
+                            } ELIF (bcd_rem >= 12'd80) {
+                                v_tens  <= 4'd8;
+                                bcd_rem <= bcd_rem - 12'd80;
+                            } ELIF (bcd_rem >= 12'd70) {
+                                v_tens  <= 4'd7;
+                                bcd_rem <= bcd_rem - 12'd70;
+                            } ELIF (bcd_rem >= 12'd60) {
+                                v_tens  <= 4'd6;
+                                bcd_rem <= bcd_rem - 12'd60;
+                            } ELIF (bcd_rem >= 12'd50) {
+                                v_tens  <= 4'd5;
+                                bcd_rem <= bcd_rem - 12'd50;
+                            } ELIF (bcd_rem >= 12'd40) {
+                                v_tens  <= 4'd4;
+                                bcd_rem <= bcd_rem - 12'd40;
+                            } ELIF (bcd_rem >= 12'd30) {
+                                v_tens  <= 4'd3;
+                                bcd_rem <= bcd_rem - 12'd30;
+                            } ELIF (bcd_rem >= 12'd20) {
+                                v_tens  <= 4'd2;
+                                bcd_rem <= bcd_rem - 12'd20;
+                            } ELIF (bcd_rem >= 12'd10) {
+                                v_tens  <= 4'd1;
+                                bcd_rem <= bcd_rem - 12'd10;
+                            } ELSE {
+                                v_tens <= 4'd0;
+                            }
+                            parse_step <= 5'd3;
+                        }
+                        CASE (5'd3) {
+                            v_ones       <= bcd_rem[3:0];
+                            edid_ready_r <= 1'b1;
+                            seq_state    <= lit(4, SEQ_DONE);
+                        }
+                        DEFAULT {
+                            edid_ready_r <= 1'b1;
+                            seq_state    <= lit(4, SEQ_DONE);
+                        }
+                    }
+                }
+
+                CASE (lit(4, SEQ_DONE)) {
+                    // Stay here, EDID data available
+                }
+
+                CASE (lit(4, SEQ_ERROR)) {
+                    edid_error_r <= 1'b1;
+                }
+
+                DEFAULT {
+                    seq_state <= lit(4, SEQ_ERROR);
+                }
+            }
+        }
+    }
+@endmod

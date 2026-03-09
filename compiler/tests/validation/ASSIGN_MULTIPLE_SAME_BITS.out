@@ -1,0 +1,2 @@
+File: ASSIGN_MULTIPLE_SAME_BITS.jz
+      22:5    error ASSIGN_MULTIPLE_SAME_BITS S1.5/S5.2/S8.1 Exclusive Assignment Rule violation: more than one assignment to same bits along any path

@@ -1,0 +1,67 @@
+// Opcodes (8-bit)
+@global OP
+    NOP   = 8'h00;
+    LDI_A = 8'h01;
+    LDI_X = 8'h02;
+    LD_A  = 8'h03;
+    ST_A  = 8'h04;
+    ADD   = 8'h05;
+    SUB   = 8'h06;
+    AND   = 8'h07;
+    OR    = 8'h08;
+    XOR   = 8'h09;
+    CMP   = 8'h0A;
+    JMP   = 8'h0B;
+    BEQ   = 8'h0C;
+    BNE   = 8'h0D;
+    PUSH  = 8'h0E;
+    POP   = 8'h0F;
+    CALL  = 8'h10;
+    RET   = 8'h11;
+    HLT   = 8'h12;
+    INC   = 8'h13;
+    DEC   = 8'h14;
+    SHL   = 8'h15;
+    SHR   = 8'h16;
+    LD_X  = 8'h17;
+    ST_X  = 8'h18;
+@endglob
+
+// CPU state machine states
+@global STATE
+    FETCH       = 4'b0000;
+    WAIT_FETCH  = 4'b0001;
+    DECODE      = 4'b0010;
+    EXECUTE     = 4'b0011;
+    MEM_READ    = 4'b0100;
+    MEM_WAIT    = 4'b0101;
+    WRITEBACK   = 4'b0110;
+    PUSH_EXEC   = 4'b0111;
+    POP_EXEC    = 4'b1000;
+    CALL_PUSH   = 4'b1001;
+    RET_POP     = 4'b1010;
+    HALT        = 4'b1111;
+@endglob
+
+// Audio waveform types
+@global WAVE
+    SQUARE   = 3'd0;
+    TRIANGLE = 3'd1;
+    SAWTOOTH = 3'd2;
+    NOISE    = 3'd3;
+@endglob
+
+// Audio envelope states
+@global ENV
+    IDLE    = 3'd0;
+    ATTACK  = 3'd1;
+    DECAY   = 3'd2;
+    SUSTAIN = 3'd3;
+    RELEASE = 3'd4;
+@endglob
+
+// Bus commands
+@global CMD
+    READ  = 1'b0;
+    WRITE = 1'b1;
+@endglob

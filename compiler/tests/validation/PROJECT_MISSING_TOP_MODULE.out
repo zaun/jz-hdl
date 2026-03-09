@@ -1,0 +1,2 @@
+File: PROJECT_MISSING_TOP_MODULE.jz
+       4:1    error PROJECT_MISSING_TOP_MODULE S6.9 Project does not declare a top-level @top module binding

@@ -1,0 +1,145 @@
+// Audio channel generator - waveform synthesis with ADSR envelope
+// Inspired by Yamaha FM synth voice channels
+// Waveforms: square (with duty), triangle, sawtooth, noise
+// ADSR envelope controls amplitude over time
+// Uses @global WAVE and ENV from global.jz
+
+@module aud_gen
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [1]  sample_tick;    // One-cycle pulse at sample rate
+        IN  [1]  key_on;         // Gate signal (key pressed)
+        IN  [1]  enabled;        // Channel enable
+        IN  [3]  waveform;       // WAVE.SQUARE/TRIANGLE/SAWTOOTH/NOISE
+        IN  [24] freq;           // Phase increment per sample
+        IN  [8]  volume;         // Channel volume 0-255
+        IN  [8]  duty;           // Square wave duty cycle 0-255
+        IN  [8]  attack_rate;    // Envelope attack speed
+        IN  [8]  decay_rate;     // Envelope decay speed
+        IN  [8]  sustain_level;  // Envelope sustain amplitude
+        IN  [8]  release_rate;   // Envelope release speed
+        OUT [16] sample_out;     // Signed 16-bit output
+    }
+
+    WIRE {
+        raw_wave     [16];   // Raw waveform (signed)
+        tri_phase    [15];   // Triangle intermediate
+        tri_wave     [16];   // Triangle output
+        env_byte     [8];    // Top 8 bits of envelope
+        vol_ext      [16];   // Volume zero-extended
+        env_ext      [16];   // Envelope zero-extended
+        wave_x_env   [32];   // waveform * envelope
+        scaled_wave  [16];   // After envelope scaling
+        scaled_ext   [32];   // For volume multiply
+    }
+
+    REGISTER {
+        phase       [24] = 24'd0;
+        env_state   [3]  = 3'd0;
+        env_value   [16] = 16'd0;
+        key_prev    [1]  = 1'b0;
+        lfsr        [16] = 16'hACE1;
+    }
+
+    ASYNCHRONOUS {
+        // Triangle: fold phase into up/down ramp
+        tri_phase <= (phase[23] == 1'b0) ? phase[22:8] : ~phase[22:8];
+        tri_wave  <= {1'b0, tri_phase};
+
+        // Waveform mux
+        IF (waveform == WAVE.SQUARE) {
+            raw_wave <= (phase[23:16] < duty) ? 16'h7FFF : 16'h8001;
+        } ELIF (waveform == WAVE.TRIANGLE) {
+            // Shift up to full signed range: (tri * 2) - 0x7FFF
+            raw_wave <= {tri_wave[14:0], 1'b0} - 16'h7FFF;
+        } ELIF (waveform == WAVE.SAWTOOTH) {
+            raw_wave <= {phase[23], phase[22:8]};
+        } ELSE {
+            raw_wave <= lfsr;
+        }
+
+        // Envelope scaling: wave * env[15:8] -> take upper 16 of 32
+        env_byte <= env_value[15:8];
+        env_ext  <= {8'd0, env_byte};
+        vol_ext  <= {8'd0, volume};
+
+        wave_x_env  <= smul(raw_wave, env_ext);
+        scaled_wave <= wave_x_env[23:8];
+
+        // Volume scaling: scaled_wave * volume -> take upper 16 of 32
+        scaled_ext  <= smul(scaled_wave, vol_ext);
+
+        // Output
+        IF (enabled == 1'b1) {
+            sample_out <= scaled_ext[23:8];
+        } ELSE {
+            sample_out <= 16'd0;
+        }
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        key_prev <= key_on;
+
+        IF (sample_tick == 1'b1) {
+            // Phase accumulator
+            IF (enabled == 1'b1) {
+                phase <= phase + freq;
+            }
+
+            // Noise LFSR (Galois, taps at 16,14,13,11 -> XOR feedback)
+            IF (waveform == WAVE.NOISE) {
+                IF (lfsr[0] == 1'b1) {
+                    lfsr <= {1'b0, lfsr[15:1]} ^ 16'hB400;
+                } ELSE {
+                    lfsr <= {1'b0, lfsr[15:1]};
+                }
+            }
+
+            // ---- ADSR Envelope State Machine ----
+
+            // Key-on rising edge -> start attack
+            IF (key_on == 1'b1 && key_prev == 1'b0) {
+                env_state <= ENV.ATTACK;
+                env_value <= 16'd0;
+
+            // Key-off -> start release
+            } ELIF (key_on == 1'b0 && key_prev == 1'b1) {
+                env_state <= ENV.RELEASE;
+
+            } ELSE {
+                // Envelope progression
+                IF (env_state == ENV.ATTACK) {
+                    IF (env_value + {8'd0, attack_rate} >= 16'hFF00) {
+                        env_value <= 16'hFF00;
+                        env_state <= ENV.DECAY;
+                    } ELSE {
+                        env_value <= env_value + {8'd0, attack_rate};
+                    }
+
+                } ELIF (env_state == ENV.DECAY) {
+                    IF (env_value[15:8] <= sustain_level) {
+                        env_value <= {sustain_level, 8'd0};
+                        env_state <= ENV.SUSTAIN;
+                    } ELIF (env_value < {8'd0, decay_rate}) {
+                        env_value <= {sustain_level, 8'd0};
+                        env_state <= ENV.SUSTAIN;
+                    } ELSE {
+                        env_value <= env_value - {8'd0, decay_rate};
+                    }
+
+                } ELIF (env_state == ENV.SUSTAIN) {
+                    env_value <= {sustain_level, 8'd0};
+
+                } ELIF (env_state == ENV.RELEASE) {
+                    IF (env_value < {8'd0, release_rate}) {
+                        env_value <= 16'd0;
+                        env_state <= ENV.IDLE;
+                    } ELSE {
+                        env_value <= env_value - {8'd0, release_rate};
+                    }
+                }
+            }
+        }
+    }
+@endmod

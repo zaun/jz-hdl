@@ -1,0 +1,422 @@
+// Goertzel DFT Spectrum Analyzer — 80-Bar Frequency Display
+// Takes 16-bit signed PCM samples at 48kHz and produces per-bar energy
+// data compatible with spectrum_display's rd_bar/rd_amp interface.
+//
+// Algorithm: Goertzel DFT with N=2048 (23.4 Hz resolution, 42.7ms blocks).
+// Per-sample recurrence for each bin k:
+//   s1[n] = coeff_k * s1[n-1] - s2[n-1] + x[n]
+//   s2[n] = s1[n-1]
+// After N samples: power = s1² + s2² (top 16 bits).
+// 80 bars map to DFT bins k=3..102 (55 Hz to 2400 Hz, log-spaced).
+// Coefficients: coeff_k = 2*cos(2*pi*k/N) in Q1.14 fixed-point.
+// Input scaled >>4 for headroom (24-bit state, split across 16-bit RAMs).
+@module spectrum_analyzer
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [16] audio_sample;    // signed 16-bit PCM
+        IN  [1]  samp_valid;      // 48kHz sample pulse
+        IN  [1]  frame_pulse;     // once per video frame
+        IN  [7]  rd_bar;          // bar index from display (0..79)
+        OUT [16] rd_amp;          // [7:0]=smooth_amp, [15:8]=peak_amp
+    }
+
+    WIRE {
+        // Goertzel coefficient from IF/ELIF LUT (Q1.14 signed)
+        coeff_val      [16];
+
+        // Goertzel state reconstructed from split RAMs (24-bit signed)
+        s1_val         [24];
+        s2_val         [24];
+
+        // Input scaling: cur_sample sign-extended to 24 bits, then >>4
+        x_full         [24];
+        x_scaled       [24];
+
+        // Goertzel multiply: coeff × s1 (Q1.14 × signed-24 → 48-bit)
+        product_raw    [48];
+        product_scaled [24];
+
+        // Goertzel accumulate: coeff*s1 - s2 + x (26-bit for headroom)
+        goertzel_sum    [26];
+        goertzel_result [24];
+
+        // Power: s1² + s2² (unsigned 16-bit from top magnitude bits)
+        power_s1sq     [48];
+        power_s2sq     [48];
+        power_sum      [17];
+        power_result   [16];
+
+        // State RAM write mux (24-bit values, split at write time)
+        s1_wr_data     [24];
+        s2_wr_data     [24];
+        state_wr_en    [1];
+
+        // Auto-gain normalization
+        raw_power      [16];
+        adj_power      [16];
+        floor_w        [16];
+        adj_max_w      [16];
+        norm_shift_w   [4];
+
+        // Barrel-shift normalized amplitude
+        target_amp     [8];
+
+        // Smoothing (from sweep_ram)
+        smooth_cur     [8];
+        smooth_delta   [9];
+        smooth_step    [9];
+        smooth_next    [9];
+        smooth_result  [8];
+
+        // Peak hold (from sweep_ram: [15:12]=peak_top4, [11:8]=timer)
+        peak_approx    [8];
+        timer_cur      [4];
+        new_peak_amp   [8];
+        new_peak_timer [4];
+
+        // Write values
+        display_wr_val [16];
+        sweep_wr_val   [16];
+    }
+
+    REGISTER {
+        // State machine: 0=IDLE, 1=PROCESS, 2=POWER, 3=SWEEP
+        state          [2]  = 2'd0;
+        // Bin iteration (0..79)
+        bin_idx        [7]  = 7'd0;
+        // Latched audio sample
+        cur_sample     [16] = 16'd0;
+        // DFT block sample counter (0..2047 = N-1)
+        sample_count   [11] = 11'd0;
+        // Frame sync
+        frame_pending  [1]  = 1'b0;
+        // Sweep iteration
+        sweep_idx      [7]  = 7'd0;
+        sweep_phase    [2]  = 2'b00;   // 00=SCAN, 01=COMPUTE, 10=WRITE
+        // Auto-gain state
+        scan_max       [16] = 16'd0;
+        energy_sum     [24] = 24'd0;
+        floor_val      [16] = 16'd0;
+        norm_shift     [4]  = 4'd0;
+    }
+
+    MEM(TYPE=DISTRIBUTED) {
+        // Goertzel state split across 16-bit RAMs:
+        // s1_lo/s2_lo store lower 16 bits; s_hi packs both upper bytes
+        s1_lo       [16] [128] = 16'd0 { OUT rd ASYNC; IN wr; };
+        s2_lo       [16] [128] = 16'd0 { OUT rd ASYNC; IN wr; };
+        s_hi        [16] [128] = 16'd0 { OUT rd ASYNC; IN wr; };
+        // DFT power per bin (written after each N-sample block)
+        power_ram   [16] [128] = 16'd0 { OUT rd ASYNC; IN wr; };
+        // Display: [7:0]=smooth_amp, [15:8]=peak_amp — read by display module
+        display_ram [16] [128] = 16'd0 { OUT rd ASYNC; IN wr; };
+        // Sweep: [7:0]=smooth, [11:8]=timer, [15:12]=peak_top4
+        sweep_ram   [16] [128] = 16'd0 { OUT rd ASYNC; IN wr; };
+    }
+
+    ASYNCHRONOUS {
+        // Read port for display module
+        rd_amp <= display_ram.rd[rd_bar];
+
+        // ---- Goertzel coefficient LUT: bin_idx → Q1.14 coeff ----
+        // coeff_k = round(2*cos(2*pi*k/N) * 16384), N=2048, fs=48kHz
+        // 80 log-spaced bars from 55 Hz (k=3) to 2400 Hz (k=102)
+        IF (bin_idx < 7'd9) { coeff_val <= 16'h7fff; }
+        ELIF (bin_idx < 7'd14) { coeff_val <= 16'h7ffe; }
+        ELIF (bin_idx < 7'd18) { coeff_val <= 16'h7ffc; }
+        ELIF (bin_idx < 7'd22) { coeff_val <= 16'h7ffa; }
+        ELIF (bin_idx < 7'd25) { coeff_val <= 16'h7ff8; }
+        ELIF (bin_idx < 7'd27) { coeff_val <= 16'h7ff6; }
+        ELIF (bin_idx < 7'd30) { coeff_val <= 16'h7ff4; }
+        ELIF (bin_idx < 7'd32) { coeff_val <= 16'h7ff1; }
+        ELIF (bin_idx < 7'd34) { coeff_val <= 16'h7fed; }
+        ELIF (bin_idx == 7'd34) { coeff_val <= 16'h7fea; }
+        ELIF (bin_idx < 7'd37) { coeff_val <= 16'h7fe6; }
+        ELIF (bin_idx < 7'd39) { coeff_val <= 16'h7fe2; }
+        ELIF (bin_idx == 7'd39) { coeff_val <= 16'h7fdd; }
+        ELIF (bin_idx == 7'd40) { coeff_val <= 16'h7fd9; }
+        ELIF (bin_idx < 7'd43) { coeff_val <= 16'h7fd3; }
+        ELIF (bin_idx == 7'd43) { coeff_val <= 16'h7fce; }
+        ELIF (bin_idx == 7'd44) { coeff_val <= 16'h7fc8; }
+        ELIF (bin_idx == 7'd45) { coeff_val <= 16'h7fc2; }
+        ELIF (bin_idx == 7'd46) { coeff_val <= 16'h7fbc; }
+        ELIF (bin_idx == 7'd47) { coeff_val <= 16'h7fb5; }
+        ELIF (bin_idx == 7'd48) { coeff_val <= 16'h7fae; }
+        ELIF (bin_idx == 7'd49) { coeff_val <= 16'h7fa7; }
+        ELIF (bin_idx == 7'd50) { coeff_val <= 16'h7f98; }
+        ELIF (bin_idx == 7'd51) { coeff_val <= 16'h7f90; }
+        ELIF (bin_idx == 7'd52) { coeff_val <= 16'h7f87; }
+        ELIF (bin_idx == 7'd53) { coeff_val <= 16'h7f75; }
+        ELIF (bin_idx == 7'd54) { coeff_val <= 16'h7f6c; }
+        ELIF (bin_idx == 7'd55) { coeff_val <= 16'h7f58; }
+        ELIF (bin_idx == 7'd56) { coeff_val <= 16'h7f4e; }
+        ELIF (bin_idx == 7'd57) { coeff_val <= 16'h7f38; }
+        ELIF (bin_idx == 7'd58) { coeff_val <= 16'h7f22; }
+        ELIF (bin_idx == 7'd59) { coeff_val <= 16'h7f16; }
+        ELIF (bin_idx == 7'd60) { coeff_val <= 16'h7efd; }
+        ELIF (bin_idx == 7'd61) { coeff_val <= 16'h7ee3; }
+        ELIF (bin_idx == 7'd62) { coeff_val <= 16'h7ec8; }
+        ELIF (bin_idx == 7'd63) { coeff_val <= 16'h7e9d; }
+        ELIF (bin_idx == 7'd64) { coeff_val <= 16'h7e7f; }
+        ELIF (bin_idx == 7'd65) { coeff_val <= 16'h7e60; }
+        ELIF (bin_idx == 7'd66) { coeff_val <= 16'h7e2f; }
+        ELIF (bin_idx == 7'd67) { coeff_val <= 16'h7dfb; }
+        ELIF (bin_idx == 7'd68) { coeff_val <= 16'h7dc4; }
+        ELIF (bin_idx == 7'd69) { coeff_val <= 16'h7d9e; }
+        ELIF (bin_idx == 7'd70) { coeff_val <= 16'h7d4e; }
+        ELIF (bin_idx == 7'd71) { coeff_val <= 16'h7d0f; }
+        ELIF (bin_idx == 7'd72) { coeff_val <= 16'h7cce; }
+        ELIF (bin_idx == 7'd73) { coeff_val <= 16'h7c72; }
+        ELIF (bin_idx == 7'd74) { coeff_val <= 16'h7c11; }
+        ELIF (bin_idx == 7'd75) { coeff_val <= 16'h7bac; }
+        ELIF (bin_idx == 7'd76) { coeff_val <= 16'h7b42; }
+        ELIF (bin_idx == 7'd77) { coeff_val <= 16'h7ad3; }
+        ELIF (bin_idx == 7'd78) { coeff_val <= 16'h7a42; }
+        ELIF (bin_idx == 7'd79) { coeff_val <= 16'h79c9; }
+        ELSE { coeff_val <= 16'h7fff; }
+
+        // ---- Reconstruct 24-bit Goertzel state from split RAMs ----
+        // s_hi packs {s2[23:16], s1[23:16]} in [15:8] and [7:0]
+        s1_val <= { s_hi.rd[bin_idx][7:0], s1_lo.rd[bin_idx] };
+        s2_val <= { s_hi.rd[bin_idx][15:8], s2_lo.rd[bin_idx] };
+
+        // ---- Input scaling: sign-extend cur_sample to 24 bits, then >>4 ----
+        x_full <= { cur_sample[15], cur_sample[15], cur_sample[15], cur_sample[15],
+                    cur_sample[15], cur_sample[15], cur_sample[15], cur_sample[15],
+                    cur_sample };
+        x_scaled <= { x_full[23], x_full[23], x_full[23], x_full[23], x_full[23:4] };
+
+        // ---- Goertzel multiply: coeff_val × s1_val (Q1.14 × integer) ----
+        product_raw    <= smul(coeff_val, s1_val);
+        product_scaled <= product_raw[37:14];
+
+        // ---- Goertzel accumulate: coeff*s1 - s2 + x (26-bit signed) ----
+        goertzel_sum <= { product_scaled[23], product_scaled[23], product_scaled }
+                      - { s2_val[23], s2_val[23], s2_val }
+                      + { x_scaled[23], x_scaled[23], x_scaled };
+
+        // Saturate to signed 24-bit
+        IF (goertzel_sum[25:23] == 3'b000 || goertzel_sum[25:23] == 3'b111) {
+            goertzel_result <= goertzel_sum[23:0];
+        } ELIF (goertzel_sum[25] == 1'b0) {
+            goertzel_result <= 24'h7FFFFF;
+        } ELSE {
+            goertzel_result <= 24'h800000;
+        }
+
+        // ---- Power computation: s1² + s2² (top 16 bits of magnitude) ----
+        power_s1sq <= smul(s1_val, s1_val);
+        power_s2sq <= smul(s2_val, s2_val);
+        power_sum  <= { 1'b0, power_s1sq[46:31] } + { 1'b0, power_s2sq[46:31] };
+        IF (power_sum[16] == 1'b1) {
+            power_result <= 16'hFFFF;
+        } ELSE {
+            power_result <= power_sum[15:0];
+        }
+
+        // ---- State RAM write mux (single write point for PROCESS + POWER) ----
+        IF (state == 2'd1) {
+            // PROCESS: Goertzel recurrence (new s2 = old s1)
+            s1_wr_data  <= goertzel_result;
+            s2_wr_data  <= s1_val;
+            state_wr_en <= 1'b1;
+        } ELIF (state == 2'd2) {
+            // POWER: clear for next DFT block
+            s1_wr_data  <= 24'd0;
+            s2_wr_data  <= 24'd0;
+            state_wr_en <= 1'b1;
+        } ELSE {
+            s1_wr_data  <= 24'd0;
+            s2_wr_data  <= 24'd0;
+            state_wr_en <= 1'b0;
+        }
+
+        // ---- Auto-gain normalization ----
+        raw_power <= power_ram.rd[sweep_idx];
+        floor_w   <= energy_sum[22:7];
+
+        IF (scan_max > floor_w) {
+            adj_max_w <= scan_max - floor_w;
+        } ELSE {
+            adj_max_w <= 16'd0;
+        }
+
+        // Leading-one priority encoder → right-shift to map max to 8 bits
+        IF      (adj_max_w[15] == 1'b1) { norm_shift_w <= 4'd8; }
+        ELIF (adj_max_w[14] == 1'b1) { norm_shift_w <= 4'd7; }
+        ELIF (adj_max_w[13] == 1'b1) { norm_shift_w <= 4'd6; }
+        ELIF (adj_max_w[12] == 1'b1) { norm_shift_w <= 4'd5; }
+        ELIF (adj_max_w[11] == 1'b1) { norm_shift_w <= 4'd4; }
+        ELIF (adj_max_w[10] == 1'b1) { norm_shift_w <= 4'd3; }
+        ELIF (adj_max_w[9] == 1'b1)  { norm_shift_w <= 4'd2; }
+        ELIF (adj_max_w[8] == 1'b1)  { norm_shift_w <= 4'd1; }
+        ELSE                          { norm_shift_w <= 4'd0; }
+
+        // Floor-subtracted power (clamped to 0)
+        IF (raw_power > floor_val) {
+            adj_power <= raw_power - floor_val;
+        } ELSE {
+            adj_power <= 16'd0;
+        }
+
+        // Barrel shift: map adj_power to 8-bit target_amp
+        IF      (norm_shift == 4'd8) { target_amp <= adj_power[15:8]; }
+        ELIF (norm_shift == 4'd7) { target_amp <= adj_power[14:7]; }
+        ELIF (norm_shift == 4'd6) { target_amp <= adj_power[13:6]; }
+        ELIF (norm_shift == 4'd5) { target_amp <= adj_power[12:5]; }
+        ELIF (norm_shift == 4'd4) { target_amp <= adj_power[11:4]; }
+        ELIF (norm_shift == 4'd3) { target_amp <= adj_power[10:3]; }
+        ELIF (norm_shift == 4'd2) { target_amp <= adj_power[9:2]; }
+        ELIF (norm_shift == 4'd1) { target_amp <= adj_power[8:1]; }
+        ELSE                       { target_amp <= adj_power[7:0]; }
+
+        // ---- Smoothing (from sweep_ram) ----
+        smooth_cur   <= sweep_ram.rd[sweep_idx][7:0];
+        smooth_delta <= { 1'b0, target_amp } - { 1'b0, smooth_cur };
+        smooth_step  <= { smooth_delta[8], smooth_delta[8], smooth_delta[8:2] };
+        smooth_next  <= { 1'b0, smooth_cur } + smooth_step;
+        IF (smooth_next[8] == 1'b1) {
+            smooth_result <= 8'd0;
+        } ELSE {
+            smooth_result <= smooth_next[7:0];
+        }
+
+        // ---- Peak hold ----
+        peak_approx <= { sweep_ram.rd[sweep_idx][15:12], 4'b0000 };
+        timer_cur   <= sweep_ram.rd[sweep_idx][11:8];
+
+        // Pre-compute write values
+        IF (smooth_result > peak_approx) {
+            new_peak_amp   <= smooth_result;
+            new_peak_timer <= 4'd15;
+            display_wr_val <= { smooth_result, smooth_result };
+        } ELIF (timer_cur == 4'd0) {
+            new_peak_amp   <= smooth_result;
+            new_peak_timer <= 4'd0;
+            display_wr_val <= { smooth_result, smooth_result };
+        } ELSE {
+            new_peak_amp   <= peak_approx;
+            new_peak_timer <= timer_cur - 4'd1;
+            display_wr_val <= { peak_approx, smooth_result };
+        }
+        sweep_wr_val <= { new_peak_amp[7:4], new_peak_timer, smooth_result };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Muxed state RAM write (split 24-bit across 16-bit memories)
+        IF (state_wr_en == 1'b1) {
+            s1_lo.wr[bin_idx] <= s1_wr_data[15:0];
+            s2_lo.wr[bin_idx] <= s2_wr_data[15:0];
+            s_hi.wr[bin_idx]  <= { s2_wr_data[23:16], s1_wr_data[23:16] };
+        }
+
+        IF (state == 2'd0) {
+            // ---- IDLE: wait for sample ----
+            IF (frame_pulse == 1'b1) {
+                frame_pending <= 1'b1;
+            }
+            IF (samp_valid == 1'b1) {
+                cur_sample <= audio_sample;
+                state      <= 2'd1;
+                bin_idx    <= 7'd0;
+            }
+        } ELIF (state == 2'd1) {
+            // ---- PROCESS: Goertzel recurrence, 1 bin per cycle (80 cycles) ----
+            // s1/s2 RAM write handled by mux above
+            IF (bin_idx == 7'd79) {
+                IF (sample_count == 11'd2047) {
+                    // N samples complete → compute power
+                    IF (frame_pulse == 1'b1) {
+                        frame_pending <= 1'b1;
+                    }
+                    sample_count <= 11'd0;
+                    state        <= 2'd2;
+                    bin_idx      <= 7'd0;
+                } ELSE {
+                    sample_count <= sample_count + 11'd1;
+                    IF (frame_pending == 1'b1 || frame_pulse == 1'b1) {
+                        frame_pending <= 1'b0;
+                        state         <= 2'd3;
+                        sweep_idx     <= 7'd0;
+                        sweep_phase   <= 2'b00;
+                    } ELSE {
+                        state <= 2'd0;
+                    }
+                }
+            } ELSE {
+                IF (frame_pulse == 1'b1) {
+                    frame_pending <= 1'b1;
+                }
+                bin_idx <= bin_idx + 7'd1;
+            }
+        } ELIF (state == 2'd2) {
+            // ---- POWER: compute s1² + s2² for all bins, 1 per cycle (80 cycles) ----
+            // s1/s2 RAM cleared by mux above; power written here
+            power_ram.wr[bin_idx] <= power_result;
+
+            IF (bin_idx == 7'd79) {
+                IF (frame_pending == 1'b1 || frame_pulse == 1'b1) {
+                    frame_pending <= 1'b0;
+                    state         <= 2'd3;
+                    sweep_idx     <= 7'd0;
+                    sweep_phase   <= 2'b00;
+                } ELSE {
+                    state <= 2'd0;
+                }
+            } ELSE {
+                IF (frame_pulse == 1'b1) {
+                    frame_pending <= 1'b1;
+                }
+                bin_idx <= bin_idx + 7'd1;
+            }
+        } ELIF (state == 2'd3) {
+            // ---- SWEEP: auto-gain normalize + smooth + peak-hold ----
+            IF (sweep_phase == 2'b00) {
+                // SCAN: accumulate sum and max over 80 bins
+                IF (frame_pulse == 1'b1) {
+                    frame_pending <= 1'b1;
+                }
+
+                IF (sweep_idx == 7'd0) {
+                    energy_sum <= { 8'd0, raw_power };
+                    scan_max   <= raw_power;
+                } ELSE {
+                    energy_sum <= energy_sum + { 8'd0, raw_power };
+                    IF (raw_power > scan_max) {
+                        scan_max <= raw_power;
+                    }
+                }
+
+                IF (sweep_idx == 7'd79) {
+                    sweep_phase <= 2'b01;
+                } ELSE {
+                    sweep_idx <= sweep_idx + 7'd1;
+                }
+            } ELIF (sweep_phase == 2'b01) {
+                // COMPUTE: register floor and norm_shift (1 cycle latency)
+                IF (frame_pulse == 1'b1) {
+                    frame_pending <= 1'b1;
+                }
+                floor_val   <= floor_w;
+                norm_shift  <= norm_shift_w;
+                sweep_phase <= 2'b10;
+                sweep_idx   <= 7'd0;
+            } ELSE {
+                // WRITE: normalized smoothing + peak hold
+                IF (frame_pulse == 1'b1) {
+                    frame_pending <= 1'b1;
+                }
+                sweep_ram.wr[sweep_idx]   <= sweep_wr_val;
+                display_ram.wr[sweep_idx] <= display_wr_val;
+
+                IF (sweep_idx == 7'd79) {
+                    state       <= 2'd0;
+                    sweep_phase <= 2'b00;
+                } ELSE {
+                    sweep_idx <= sweep_idx + 7'd1;
+                }
+            }
+        }
+    }
+@endmod

@@ -1,0 +1,18 @@
+@project SPECIAL_DRIVER_IN_EXPRESSION_PROJECT
+  @top SPECIAL_DRIVER_IN_EXPRESSION_EXAMPLE {
+    OUT [8] result = _;
+  }
+@endproj
+
+@module SPECIAL_DRIVER_IN_EXPRESSION_EXAMPLE
+
+PORT {
+    OUT [8] result;
+}
+
+ASYNCHRONOUS {
+    // GND/VCC may not appear in arithmetic/logical expressions
+    result <= GND + 1'b1;
+}
+
+@endmod

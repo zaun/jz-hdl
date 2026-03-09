@@ -1,0 +1,30 @@
+// WARN_DEAD_CODE_UNREACHABLE: code inside IF(0) is never executed.
+// Verified
+
+@project WARN_DEAD_CODE_UNREACHABLE_PROJECT
+  @top WARN_DEAD_CODE_UNREACHABLE_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module WARN_DEAD_CODE_UNREACHABLE_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [8] out;
+  }
+
+  REGISTER {
+    r [8] = 8'b0;
+  }
+
+  ASYNCHRONOUS {
+    out = r;
+  }
+
+  SYNCHRONOUS(clk=clk) {
+    IF (1'b0) {
+      r <= 8'hFF; // unreachable
+    }
+  }
+@endmod

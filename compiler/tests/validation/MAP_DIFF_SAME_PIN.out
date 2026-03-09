@@ -1,0 +1,3 @@
+File: MAP_DIFF_SAME_PIN.jz
+      10:5    error MAP_DIFF_SAME_PIN S6.6/S6.9 Differential MAP entry has same physical pin for P and N
+      10:5    warn  MAP_DUP_PHYSICAL_LOCATION S6.6/S6.9 Two logical pins mapped to same physical board pin (warning or error; treated as warning)

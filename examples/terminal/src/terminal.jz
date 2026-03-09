@@ -1,0 +1,2148 @@
+// Terminal controller — writes incoming characters to terminal buffer
+// Maintains a cursor (row, col). Each received byte is written at the
+// cursor position, then col increments. At end of line, wraps to next row.
+//
+// ANSI CSI parser: ESC [ <params> <final>
+//   - ESC (0x1B) followed by '[' enters CSI mode
+//   - ESC followed by non-'[' emits both ESC and that character
+//   - In CSI mode, digits (0-9), ';', '>', '?' are collected into cmd_buf
+//   - Any other byte is the final command byte; cmd_ready pulses
+//   - Buffer overflow (>80 param bytes) aborts the sequence
+//
+// SGR (Select Graphic Rendition) — ESC [ <params> m
+//   - 0 = reset all attributes and colors to default
+//   - 1 = bold (maps to bright color: fg_idx |= 8)
+//   - 4 = underline, 5 = slow blink, 6 = fast blink
+//   - 7 = inverse, 8 = conceal, 9 = strikethrough
+//   - 24 = no underline, 25 = no blink, 27 = no inverse
+//   - 28 = no conceal, 29 = no strikethrough
+//   - 30-37 = FG standard, 40-47 = BG standard
+//   - 90-97 = FG bright, 100-107 = BG bright
+//
+// Attribute word layout (16 bits, stored in terminal_buffer):
+//   [15:12] = FG color index (0-15)
+//   [11:8]  = BG color index (0-15)
+//   [7]     = underline
+//   [6]     = slow_blink
+//   [5]     = fast_blink
+//   [4]     = strikethrough
+//   [3:0]   = reserved
+//
+// Mode toggles (CSI ? h / CSI ? l):
+//   ?1  = application cursor keys
+//   ?7  = autowrap
+//   ?25 = cursor visible
+//   CSI 4 h/l = insert mode
+//   CSI 20 h/l = newline mode
+//
+// DCS (Device Control String):
+//   ESC P <content> ESC \
+//   EDID query: ESC P EDID ESC \
+//     Response: ESC P <n> EDID=<data> ESC \  (n=1..4)
+//   TEST1: ESC P TEST1 ESC \  (draws ruler pattern)
+@module terminal
+    CONST {
+        MAX_COL = 141;
+        MAX_ROW = 44;
+        CMD_BUF_MAX = 79;
+
+        // States (5 bits for 20 states)
+        ST_NORMAL       = 0;
+        ST_ESC          = 1;
+        ST_CSI          = 2;
+        ST_ESC_EMIT     = 3;
+        ST_CSI_COMMIT   = 4;
+        ST_CLEAR        = 5;
+        ST_SCROLL_MULTI = 6;
+        ST_RESP_COMPUTE = 7;
+        ST_RESP_SEND    = 8;
+        ST_DCS          = 9;
+        ST_DCS_ESC      = 10;
+        ST_EDID_FETCH   = 11;
+        ST_ESC_LPAREN   = 12;
+        ST_INSERT_READ  = 13;
+        ST_INSERT_WRITE = 14;
+        ST_TEST_DRAW    = 15;
+        ST_UTF8         = 16;
+        ST_OSC          = 17;
+        ST_OSC_ESC      = 18;
+        ST_ESC_HASH     = 19;
+        ST_WIDE_RIGHT   = 20;
+        ST_WIDE_WRAP    = 21;
+        ST_KANJI_READ   = 22;   // Binary search: read kanji_lut[mid]
+        ST_KANJI_CMP    = 23;   // Binary search: compare and narrow range
+        ST_KANJI_DONE   = 24;   // Search complete, proceed to wide char write
+        // ASCII
+        CHAR_LF        = 10;
+        CHAR_CR        = 13;
+        CHAR_TAB       = 9;
+        CHAR_ESC       = 27;
+        CHAR_DEL       = 127;
+        CHAR_LBRACKET  = 91;
+        CHAR_P         = 80;
+        CHAR_BACKSLASH = 92;
+        CHAR_LPAREN    = 40;
+        CHAR_0        = 48;
+        CHAR_9        = 57;
+        CHAR_SEMI     = 59;
+        CHAR_GT       = 62;
+        CHAR_QUESTION = 63;
+        CHAR_A        = 65;
+        CHAR_B_upper  = 66;
+        CHAR_C        = 67;
+        CHAR_D        = 68;
+        CHAR_E        = 69;
+        CHAR_F        = 70;
+        CHAR_G        = 71;
+        CHAR_H        = 72;
+        CHAR_J        = 74;
+        CHAR_K        = 75;
+        CHAR_R        = 82;
+        CHAR_S        = 83;
+        CHAR_T        = 84;
+        CHAR_U_upper  = 85;
+        CHAR_RBRACKET = 93;
+        CHAR_EQUALS   = 61;
+        CHAR_c_lower  = 99;
+        CHAR_HASH     = 35;
+        CHAR_BEL      = 7;
+        CHAR_M        = 77;
+        CHAR_7        = 55;
+        CHAR_8        = 56;
+        CHAR_h        = 104;
+        CHAR_l        = 108;
+        CHAR_m        = 109;
+        CHAR_n        = 110;
+        CHAR_o_lower  = 111;
+        CHAR_p_lower  = 112;
+        CHAR_q        = 113;
+        CHAR_s_lower  = 115;
+        CHAR_t_lower  = 116;
+        CHAR_u        = 117;
+
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+
+        // From UART receiver
+        IN  [8]  data;
+        IN  [1]  valid;
+
+        // Write interface to terminal_buffer
+        OUT [6]  wr_row;
+        OUT [8]  wr_col;
+        OUT [16] wr_char;
+        OUT [16] wr_attr;
+        OUT [1]  wr_en;
+
+        // Terminal buffer read-back (for insert mode)
+        OUT [6]  tb_rd_row;
+        OUT [8]  tb_rd_col;
+        IN  [16] tb_rd_char;
+        IN  [16] tb_rd_attr;
+        OUT [1]  tb_rd_en;
+
+        // Command buffer status
+        OUT [1]  cmd_ready;
+        OUT [8]  cmd_final;
+        OUT [7]  cmd_len;
+
+        // Command buffer read interface
+        IN  [7]  cmd_rd_addr;
+        OUT [8]  cmd_rd_data;
+
+        // Scroll interface
+        OUT [1]  scroll;
+        OUT [1]  scroll_down;
+        IN  [1]  busy;
+
+        // Scroll reset (for CSI 3 J)
+        OUT [1]  scroll_reset;
+
+        // UART TX interface (for CPR and version responses)
+        OUT [8]  tx_data;
+        OUT [1]  tx_valid;
+        IN  [1]  tx_ready;
+
+        // EDID reader interface
+        OUT [2]  edid_field;
+        OUT [4]  edid_byte_idx;
+        IN  [8]  edid_byte;
+        IN  [1]  edid_ready;
+        IN  [1]  edid_error;
+
+        // Alt screen active
+        OUT [1]  use_alt;
+
+        // Data acknowledge (pulses when byte consumed from valid/data)
+        OUT [1]  data_ack;
+
+    }
+
+    WIRE {
+        param_x10      [8];
+        dcs_expected   [8];
+        edid_data_idx  [5];
+        wr_attr_word   [16];
+        actual_fg      [4];
+        actual_bg      [4];
+
+        // Kanji binary search midpoint
+        search_mid_sum [9];
+        search_mid     [8];
+    }
+
+    REGISTER {
+        cursor_row  [6]  = 6'd0;
+        cursor_col  [8]  = 8'd0;
+
+        // Registered write outputs (hold for 1 cycle)
+        do_write    [1]  = 1'b0;
+        do_scroll   [1]  = 1'b0;
+        write_row   [6]  = 6'd0;
+        write_col   [8]  = 8'd0;
+        write_char  [16] = 16'h0000;
+        write_attr  [16] = 16'h0000;
+        use_write_attr [1] = 1'b0;
+
+        // State machine (5 bits for 16 states)
+        state       [5]  = 5'b00000;
+        buf_ptr     [7]  = 7'd0;
+        saved_char  [8]  = 8'h00;
+
+        // Command output registers
+        cmd_ready_r [1]  = 1'b0;
+        cmd_final_r [8]  = 8'h00;
+        cmd_len_r   [7]  = 7'd0;
+
+        // Command buffer read output
+        cmd_rd_out  [8]  = 8'h00;
+
+        // Color index registers (4-bit ANSI palette indices)
+        fg_idx      [4]  = 4'd7;
+        bg_idx      [4]  = 4'd0;
+
+        // Pending colors (updated during CSI, committed on 'm')
+        pend_fg_idx [4]  = 4'd7;
+        pend_bg_idx [4]  = 4'd0;
+
+        // SGR attribute flags
+        attr_underline    [1] = 1'b0;
+        attr_slow_blink   [1] = 1'b0;
+        attr_fast_blink   [1] = 1'b0;
+        attr_inverse      [1] = 1'b0;
+        attr_conceal      [1] = 1'b0;
+        attr_strikethrough [1] = 1'b0;
+
+        // Pending SGR attribute flags
+        pend_underline    [1] = 1'b0;
+        pend_slow_blink   [1] = 1'b0;
+        pend_fast_blink   [1] = 1'b0;
+        pend_inverse      [1] = 1'b0;
+        pend_conceal      [1] = 1'b0;
+        pend_strikethrough [1] = 1'b0;
+
+        // Inline decimal parameter accumulator
+        param_val   [8]  = 8'h00;
+
+        // CSI parameter tracking
+        param1      [8]  = 8'd0;
+        has_semi    [1]  = 1'b0;
+
+        // CSI prefix flags
+        csi_gt       [1] = 1'b0;
+        csi_question [1] = 1'b0;
+
+        // Screen clear state
+        clr_row     [6]  = 6'd0;
+        clr_col     [8]  = 8'd0;
+        clr_end_row [6]  = 6'd0;
+        clr_end_col [8]  = 8'd0;
+
+        // Scroll reset pulse
+        do_scroll_reset [1] = 1'b0;
+
+        // Save/restore cursor (includes color + attributes)
+        saved_cursor_row [6] = 6'd0;
+        saved_cursor_col [8] = 8'd0;
+        saved_fg_idx     [4] = 4'd7;
+        saved_bg_idx     [4] = 4'd0;
+        saved_underline    [1] = 1'b0;
+        saved_slow_blink   [1] = 1'b0;
+        saved_fast_blink   [1] = 1'b0;
+        saved_inverse      [1] = 1'b0;
+        saved_conceal      [1] = 1'b0;
+        saved_strikethrough [1] = 1'b0;
+
+        // Alt screen buffer state
+        use_alt_r      [1] = 1'b0;
+        alt_cursor_row [6] = 6'd0;
+        alt_cursor_col [8] = 8'd0;
+        param_overflow [1] = 1'b0;
+
+        // Multi-line scroll state
+        scroll_count [8] = 8'd0;
+        scroll_dir   [1] = 1'b0;
+        do_scroll_down [1] = 1'b0;
+
+        // UART TX state
+        do_tx      [1] = 1'b0;
+        tx_byte_r  [8] = 8'd0;
+
+        // Response state (CPR / version)
+        resp_type  [2] = 2'd0;
+        resp_idx   [5] = 5'd0;
+        resp_len   [5] = 5'd0;
+
+        // DCS parser state
+        dcs_match_idx  [4] = 4'd0;
+        dcs_matched    [1] = 1'b0;
+        dcs_test_matched [1] = 1'b0;
+
+        // EDID response phase (0-3)
+        edid_phase [2] = 2'd0;
+
+        // EDID reader interface registers
+        edid_field_r    [2] = 2'd0;
+        edid_byte_idx_r [4] = 4'd0;
+        edid_wait       [2] = 2'd0;
+
+        // CPR BCD digits
+        cpr_row    [7] = 7'd0;
+        cpr_col    [8] = 8'd0;
+        cpr_row_tens  [4] = 4'd0;
+        cpr_row_ones  [7] = 7'd0;
+        cpr_col_hund  [4] = 4'd0;
+        cpr_col_tens  [8] = 8'd0;
+        cpr_col_ones  [8] = 8'd0;
+
+        // Mode flags
+        newline_mode  [1] = 1'b0;
+        insert_mode   [1] = 1'b0;
+        autowrap      [1] = 1'b1;
+        cursor_visible [1] = 1'b1;
+        app_cursor    [1] = 1'b0;
+        char_set      [1] = 1'b0;
+
+        // Insert mode state
+        insert_src_col    [8] = 8'd0;
+        insert_saved_char [16] = 16'h0000;
+        insert_saved_attr [16] = 16'h0000;
+        insert_wait       [2] = 2'd0;
+        do_tb_rd_en       [1] = 1'b0;
+
+        // UTF-8 decoder
+        utf8_accum  [16] = 16'h0000;
+        utf8_remain [2]  = 2'd0;
+
+        // Wide character support
+        wide_char   [16] = 16'h0000;
+
+        // Kanji binary search state
+        kanji_target [16] = 16'h0000;  // Unicode codepoint being searched
+        search_lo    [8]  = 8'd0;
+        search_hi    [8]  = 8'd255;
+        search_found [1]  = 1'b0;      // 1 if match found
+        search_slot  [8]  = 8'd0;      // matched slot index
+
+        // TEST1 draw state
+        test_row         [6] = 6'd0;
+        test_col         [8] = 8'd0;
+        test_after_clear [1] = 1'b0;
+
+        // Data acknowledge pulse
+        do_data_ack [1] = 1'b0;
+
+    }
+
+    MEM(TYPE=DISTRIBUTED) {
+        cmd_buf [8] [80] = 8'h00 { OUT rd SYNC; IN wr; };
+    }
+
+    MEM(TYPE=BLOCK) {
+        // Kanji lookup ROM: 256 entries of 16-bit Unicode codepoints (sorted)
+        // Binary search maps CJK U+4E00-9FFF to slot index 0-255
+        kanji_lut [16] [256] = @file("../out/kanji_lut.mem") { OUT rd SYNC; };
+    }
+
+    ASYNCHRONOUS {
+        scroll   <= do_scroll & ~use_alt_r;
+        wr_en    <= do_write;
+        wr_row   <= write_row;
+        wr_col   <= write_col;
+        wr_char  <= write_char;
+
+        // Kanji binary search: midpoint = (lo + hi) / 2
+        search_mid_sum <= { 1'b0, search_lo } + { 1'b0, search_hi };
+        search_mid     <= search_mid_sum[8:1];
+
+        // Construct attribute word with inverse/conceal applied
+        IF (attr_inverse == 1'b1) {
+            actual_fg <= bg_idx;
+            actual_bg <= fg_idx;
+        } ELSE {
+            actual_fg <= fg_idx;
+            actual_bg <= bg_idx;
+        }
+        IF (attr_conceal == 1'b1) {
+            wr_attr_word <= { actual_bg, actual_bg, attr_underline, attr_slow_blink, attr_fast_blink, attr_strikethrough, 4'b0000 };
+        } ELSE {
+            wr_attr_word <= { actual_fg, actual_bg, attr_underline, attr_slow_blink, attr_fast_blink, attr_strikethrough, 4'b0000 };
+        }
+        IF (use_write_attr == 1'b1) {
+            wr_attr <= write_attr;
+        } ELSE {
+            wr_attr <= wr_attr_word;
+        }
+
+        cmd_ready   <= cmd_ready_r;
+        cmd_final   <= cmd_final_r;
+        cmd_len     <= cmd_len_r;
+        cmd_rd_data <= cmd_rd_out;
+
+        scroll_reset <= do_scroll_reset & ~use_alt_r;
+        scroll_down  <= do_scroll_down & ~use_alt_r;
+        tx_data      <= tx_byte_r;
+        tx_valid     <= do_tx;
+
+        edid_field    <= edid_field_r;
+        edid_byte_idx <= edid_byte_idx_r;
+        data_ack      <= do_data_ack;
+        use_alt       <= use_alt_r;
+
+        // Data byte index within EDID response (resp_idx - 8)
+        edid_data_idx <= resp_idx - 5'd8;
+
+        // param_val * 10 = param_val * 8 + param_val * 2
+        param_x10 <= { param_val[4:0], 3'b000 } + { param_val[6:0], 1'b0 };
+
+        // Terminal buffer read-back
+        tb_rd_row <= write_row;
+        tb_rd_col <= insert_src_col;
+        tb_rd_en  <= do_tb_rd_en;
+
+        // DCS match: expected bytes for "EDID" or "TEST1"
+        SELECT (dcs_match_idx) {
+            CASE (4'd0) { dcs_expected <= 8'h45; }
+            CASE (4'd1) { dcs_expected <= 8'h44; }
+            CASE (4'd2) { dcs_expected <= 8'h49; }
+            CASE (4'd3) { dcs_expected <= 8'h44; }
+            DEFAULT     { dcs_expected <= 8'h00; }
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Command buffer read port (1-cycle latency)
+        cmd_buf.rd.addr <= cmd_rd_addr;
+        cmd_rd_out <= cmd_buf.rd.data;
+
+        // ESC_EMIT: write saved character (runs without valid gate)
+        IF (state == lit(5, ST_ESC_EMIT)) {
+            write_char <= { 8'h00, saved_char };
+            write_row  <= cursor_row;
+            write_col  <= cursor_col;
+            do_write   <= 1'b1;
+            use_write_attr <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_scroll_down  <= 1'b0;
+            do_tx           <= 1'b0;
+            do_tb_rd_en     <= 1'b0;
+            do_data_ack     <= 1'b0;
+            state      <= lit(5, ST_NORMAL);
+
+            IF (cursor_col == lit(8, MAX_COL)) {
+                IF (autowrap == 1'b1) {
+                    cursor_col <= 8'd0;
+                    IF (cursor_row == lit(6, MAX_ROW)) {
+                        do_scroll <= 1'b1;
+                    } ELSE {
+                        cursor_row <= cursor_row + 6'd1;
+                        do_scroll <= 1'b0;
+                    }
+                } ELSE {
+                    do_scroll <= 1'b0;
+                }
+            } ELSE {
+                cursor_col <= cursor_col + 8'd1;
+                do_scroll <= 1'b0;
+            }
+
+        } ELIF (state == lit(5, ST_CSI_COMMIT)) {
+            do_write       <= 1'b0;
+            do_scroll      <= 1'b0;
+            do_scroll_down <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            SELECT (cmd_final_r) {
+                CASE (lit(8, CHAR_m)) {
+                    // SGR: commit pending colors and attributes
+                    fg_idx             <= pend_fg_idx;
+                    bg_idx             <= pend_bg_idx;
+                    attr_underline     <= pend_underline;
+                    attr_slow_blink    <= pend_slow_blink;
+                    attr_fast_blink    <= pend_fast_blink;
+                    attr_inverse       <= pend_inverse;
+                    attr_conceal       <= pend_conceal;
+                    attr_strikethrough <= pend_strikethrough;
+                    do_scroll_reset    <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                }
+                CASE (lit(8, CHAR_J)) {
+                    // Erase in Display
+                    SELECT (param_val) {
+                        CASE (8'd0) {
+                            clr_row <= cursor_row;
+                            clr_col <= cursor_col;
+                            clr_end_row <= lit(6, MAX_ROW);
+                            clr_end_col <= lit(8, MAX_COL);
+                            do_scroll_reset <= 1'b0;
+                            state <= lit(5, ST_CLEAR);
+                        }
+                        CASE (8'd1) {
+                            clr_row <= 6'd0;
+                            clr_col <= 8'd0;
+                            clr_end_row <= cursor_row;
+                            clr_end_col <= cursor_col;
+                            do_scroll_reset <= 1'b0;
+                            state <= lit(5, ST_CLEAR);
+                        }
+                        CASE (8'd2) {
+                            clr_row <= 6'd0;
+                            clr_col <= 8'd0;
+                            clr_end_row <= lit(6, MAX_ROW);
+                            clr_end_col <= lit(8, MAX_COL);
+                            do_scroll_reset <= 1'b0;
+                            state <= lit(5, ST_CLEAR);
+                        }
+                        CASE (8'd3) {
+                            clr_row <= 6'd0;
+                            clr_col <= 8'd0;
+                            clr_end_row <= lit(6, MAX_ROW);
+                            clr_end_col <= lit(8, MAX_COL);
+                            do_scroll_reset <= 1'b1;
+                            state <= lit(5, ST_CLEAR);
+                        }
+                        DEFAULT {
+                            do_scroll_reset <= 1'b0;
+                            state <= lit(5, ST_NORMAL);
+                        }
+                    }
+                }
+                CASE (lit(8, CHAR_H)) {
+                    // Cursor Position (1-based, default 1)
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                    IF (has_semi == 1'b1) {
+                        IF (param1 == 8'd0) {
+                            cursor_row <= 6'd0;
+                        } ELIF (param1 > 8'd45) {
+                            cursor_row <= lit(6, MAX_ROW);
+                        } ELSE {
+                            cursor_row <= param1[5:0] - 6'd1;
+                        }
+                        IF (param_val == 8'd0) {
+                            cursor_col <= 8'd0;
+                        } ELIF (param_val[7] == 1'b1) {
+                            cursor_col <= lit(8, MAX_COL);
+                        } ELSE {
+                            cursor_col <= param_val - 8'd1;
+                        }
+                    } ELSE {
+                        IF (param_val == 8'd0) {
+                            cursor_row <= 6'd0;
+                        } ELIF (param_val > 8'd45) {
+                            cursor_row <= lit(6, MAX_ROW);
+                        } ELSE {
+                            cursor_row <= param_val[5:0] - 6'd1;
+                        }
+                        cursor_col <= 8'd0;
+                    }
+                }
+                CASE (lit(8, CHAR_A)) {
+                    // Cursor Up
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                    IF (param_val == 8'd0) {
+                        IF (cursor_row != 6'd0) {
+                            cursor_row <= cursor_row - 6'd1;
+                        }
+                    } ELIF ({ 2'b00, cursor_row } < param_val) {
+                        cursor_row <= 6'd0;
+                    } ELSE {
+                        cursor_row <= cursor_row - param_val[5:0];
+                    }
+                }
+                CASE (lit(8, CHAR_B_upper)) {
+                    // Cursor Down
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                    IF (param_val == 8'd0) {
+                        IF (cursor_row != lit(6, MAX_ROW)) {
+                            cursor_row <= cursor_row + 6'd1;
+                        }
+                    } ELIF ({ 2'b00, lit(6, MAX_ROW) - cursor_row } < param_val) {
+                        cursor_row <= lit(6, MAX_ROW);
+                    } ELSE {
+                        cursor_row <= cursor_row + param_val[5:0];
+                    }
+                }
+                CASE (lit(8, CHAR_C)) {
+                    // Cursor Forward
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                    IF (param_val == 8'd0) {
+                        IF (cursor_col != lit(8, MAX_COL)) {
+                            cursor_col <= cursor_col + 8'd1;
+                        }
+                    } ELIF ({ 1'b0, lit(8, MAX_COL) - cursor_col } < { 1'b0, param_val }) {
+                        cursor_col <= lit(8, MAX_COL);
+                    } ELSE {
+                        cursor_col <= cursor_col + param_val;
+                    }
+                }
+                CASE (lit(8, CHAR_D)) {
+                    // Cursor Back
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                    IF (param_val == 8'd0) {
+                        IF (cursor_col != 8'd0) {
+                            cursor_col <= cursor_col - 8'd1;
+                        }
+                    } ELIF ({ 1'b0, cursor_col } < { 1'b0, param_val }) {
+                        cursor_col <= 8'd0;
+                    } ELSE {
+                        cursor_col <= cursor_col - param_val;
+                    }
+                }
+                CASE (lit(8, CHAR_E)) {
+                    // Cursor Next Line (col=0, row+n)
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                    cursor_col <= 8'd0;
+                    IF (param_val == 8'd0) {
+                        IF (cursor_row != lit(6, MAX_ROW)) {
+                            cursor_row <= cursor_row + 6'd1;
+                        }
+                    } ELIF ({ 2'b00, lit(6, MAX_ROW) - cursor_row } < param_val) {
+                        cursor_row <= lit(6, MAX_ROW);
+                    } ELSE {
+                        cursor_row <= cursor_row + param_val[5:0];
+                    }
+                }
+                CASE (lit(8, CHAR_F)) {
+                    // Cursor Previous Line (col=0, row-n)
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                    cursor_col <= 8'd0;
+                    IF (param_val == 8'd0) {
+                        IF (cursor_row != 6'd0) {
+                            cursor_row <= cursor_row - 6'd1;
+                        }
+                    } ELIF ({ 2'b00, cursor_row } < param_val) {
+                        cursor_row <= 6'd0;
+                    } ELSE {
+                        cursor_row <= cursor_row - param_val[5:0];
+                    }
+                }
+                CASE (lit(8, CHAR_G)) {
+                    // Cursor to Column (1-based, default 1)
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                    IF (param_val == 8'd0) {
+                        cursor_col <= 8'd0;
+                    } ELIF (param_val[7] == 1'b1) {
+                        cursor_col <= lit(8, MAX_COL);
+                    } ELSE {
+                        cursor_col <= param_val - 8'd1;
+                    }
+                }
+                CASE (lit(8, CHAR_K)) {
+                    // Erase in Line
+                    do_scroll_reset <= 1'b0;
+                    SELECT (param_val) {
+                        CASE (8'd0) {
+                            clr_row <= cursor_row;
+                            clr_col <= cursor_col;
+                            clr_end_row <= cursor_row;
+                            clr_end_col <= lit(8, MAX_COL);
+                            state <= lit(5, ST_CLEAR);
+                        }
+                        CASE (8'd1) {
+                            clr_row <= cursor_row;
+                            clr_col <= 8'd0;
+                            clr_end_row <= cursor_row;
+                            clr_end_col <= cursor_col;
+                            state <= lit(5, ST_CLEAR);
+                        }
+                        CASE (8'd2) {
+                            clr_row <= cursor_row;
+                            clr_col <= 8'd0;
+                            clr_end_row <= cursor_row;
+                            clr_end_col <= lit(8, MAX_COL);
+                            state <= lit(5, ST_CLEAR);
+                        }
+                        DEFAULT {
+                            state <= lit(5, ST_NORMAL);
+                        }
+                    }
+                }
+                CASE (lit(8, CHAR_S)) {
+                    // Scroll Up
+                    do_scroll_reset <= 1'b0;
+                    IF (param_val == 8'd0) {
+                        scroll_count <= 8'd1;
+                    } ELSE {
+                        scroll_count <= param_val;
+                    }
+                    scroll_dir <= 1'b0;
+                    state <= lit(5, ST_SCROLL_MULTI);
+                }
+                CASE (lit(8, CHAR_T)) {
+                    // Scroll Down
+                    do_scroll_reset <= 1'b0;
+                    IF (param_val == 8'd0) {
+                        scroll_count <= 8'd1;
+                    } ELSE {
+                        scroll_count <= param_val;
+                    }
+                    scroll_dir <= 1'b1;
+                    state <= lit(5, ST_SCROLL_MULTI);
+                }
+                CASE (lit(8, CHAR_s_lower)) {
+                    // Save Cursor Position (+ colors + attributes)
+                    do_scroll_reset     <= 1'b0;
+                    saved_cursor_row    <= cursor_row;
+                    saved_cursor_col    <= cursor_col;
+                    saved_fg_idx        <= fg_idx;
+                    saved_bg_idx        <= bg_idx;
+                    saved_underline     <= attr_underline;
+                    saved_slow_blink    <= attr_slow_blink;
+                    saved_fast_blink    <= attr_fast_blink;
+                    saved_inverse       <= attr_inverse;
+                    saved_conceal       <= attr_conceal;
+                    saved_strikethrough <= attr_strikethrough;
+                    state <= lit(5, ST_NORMAL);
+                }
+                CASE (lit(8, CHAR_u)) {
+                    // Restore Cursor Position (+ colors + attributes)
+                    do_scroll_reset    <= 1'b0;
+                    cursor_row         <= saved_cursor_row;
+                    cursor_col         <= saved_cursor_col;
+                    fg_idx             <= saved_fg_idx;
+                    bg_idx             <= saved_bg_idx;
+                    attr_underline     <= saved_underline;
+                    attr_slow_blink    <= saved_slow_blink;
+                    attr_fast_blink    <= saved_fast_blink;
+                    attr_inverse       <= saved_inverse;
+                    attr_conceal       <= saved_conceal;
+                    attr_strikethrough <= saved_strikethrough;
+                    state <= lit(5, ST_NORMAL);
+                }
+                CASE (lit(8, CHAR_n)) {
+                    // Device Status Report
+                    do_scroll_reset <= 1'b0;
+                    IF (param_val == 8'd6) {
+                        cpr_row   <= { 1'b0, cursor_row } + 7'd1;
+                        cpr_col   <= cursor_col + 8'd1;
+                        resp_type <= 2'd1;
+                        resp_idx  <= 5'd0;
+                        resp_len  <= 5'd9;
+                        state <= lit(5, ST_RESP_COMPUTE);
+                    } ELSE {
+                        state <= lit(5, ST_NORMAL);
+                    }
+                }
+                CASE (lit(8, CHAR_q)) {
+                    // Terminal version report (CSI > q)
+                    do_scroll_reset <= 1'b0;
+                    IF (csi_gt == 1'b1) {
+                        resp_type <= 2'd2;
+                        resp_idx  <= 5'd0;
+                        resp_len  <= 5'd25;
+                        state <= lit(5, ST_RESP_SEND);
+                    } ELSE {
+                        state <= lit(5, ST_NORMAL);
+                    }
+                }
+                CASE (lit(8, CHAR_h)) {
+                    // Set Mode
+                    do_scroll_reset <= 1'b0;
+                    IF (csi_question == 1'b1) {
+                        // Private modes (CSI ? ... h)
+                        IF (param_val == 8'd25 && param_overflow == 1'b1) {
+                            // ?1049h — switch to alt screen
+                            alt_cursor_row <= cursor_row;
+                            alt_cursor_col <= cursor_col;
+                            cursor_row     <= 6'd0;
+                            cursor_col     <= 8'd0;
+                            use_alt_r      <= 1'b1;
+                        } ELSE {
+                            SELECT (param_val) {
+                                CASE (8'd1)  { app_cursor     <= 1'b1; }
+                                CASE (8'd7)  { autowrap       <= 1'b1; }
+                                CASE (8'd25) { cursor_visible <= 1'b1; }
+                                DEFAULT { }
+                            }
+                        }
+                    } ELSE {
+                        // Standard modes (CSI ... h)
+                        SELECT (param_val) {
+                            CASE (8'd4)  { insert_mode   <= 1'b1; }
+                            CASE (8'd20) { newline_mode  <= 1'b1; }
+                            DEFAULT { }
+                        }
+                    }
+                    state <= lit(5, ST_NORMAL);
+                }
+                CASE (lit(8, CHAR_l)) {
+                    // Reset Mode
+                    do_scroll_reset <= 1'b0;
+                    IF (csi_question == 1'b1) {
+                        IF (param_val == 8'd25 && param_overflow == 1'b1) {
+                            // ?1049l — switch back to main screen
+                            cursor_row <= alt_cursor_row;
+                            cursor_col <= alt_cursor_col;
+                            use_alt_r  <= 1'b0;
+                        } ELSE {
+                            SELECT (param_val) {
+                                CASE (8'd1)  { app_cursor     <= 1'b0; }
+                                CASE (8'd7)  { autowrap       <= 1'b0; }
+                                CASE (8'd25) { cursor_visible <= 1'b0; }
+                                DEFAULT { }
+                            }
+                        }
+                    } ELSE {
+                        SELECT (param_val) {
+                            CASE (8'd4)  { insert_mode   <= 1'b0; }
+                            CASE (8'd20) { newline_mode  <= 1'b0; }
+                            DEFAULT { }
+                        }
+                    }
+                    state <= lit(5, ST_NORMAL);
+                }
+                DEFAULT {
+                    do_scroll_reset <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                }
+            }
+
+        } ELIF (state == lit(5, ST_CLEAR)) {
+            // Screen clear: write one blank cell per cycle
+            do_scroll      <= 1'b0;
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+            IF (busy == 1'b0) {
+                write_char     <= 16'h0000;
+                write_row      <= clr_row;
+                write_col      <= clr_col;
+                do_write       <= 1'b1;
+                use_write_attr <= 1'b0;
+                IF (clr_row == clr_end_row && clr_col == clr_end_col) {
+                    IF (test_after_clear == 1'b1) {
+                        test_after_clear <= 1'b0;
+                        test_row <= 6'd0;
+                        test_col <= 8'd0;
+                        state <= lit(5, ST_TEST_DRAW);
+                    } ELSE {
+                        state <= lit(5, ST_NORMAL);
+                    }
+                } ELIF (clr_col == lit(8, MAX_COL)) {
+                    clr_col <= 8'd0;
+                    clr_row <= clr_row + 6'd1;
+                } ELSE {
+                    clr_col <= clr_col + 8'd1;
+                }
+            } ELSE {
+                do_write <= 1'b0;
+            }
+
+        } ELIF (state == lit(5, ST_TEST_DRAW)) {
+            // Draw ruler test pattern (one cell per SDRAM write cycle)
+            do_scroll      <= 1'b0;
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            IF (busy == 1'b0) {
+                write_row      <= test_row;
+                write_col      <= test_col;
+                do_write       <= 1'b1;
+                use_write_attr <= 1'b0;
+
+                // Determine character for this cell
+                IF (test_row == 6'd0 && test_col == 8'd0) {
+                    // Origin: '+'
+                    write_char <= 16'h002B;
+                } ELIF (test_row == 6'd0) {
+                    // Top ruler: cycling "1234567890" (col mod 10)
+                    SELECT (test_col - 8'd1) {
+                        CASE (8'd0)  { write_char <= 16'h0031; }
+                        CASE (8'd10) { write_char <= 16'h0031; }
+                        CASE (8'd20) { write_char <= 16'h0031; }
+                        CASE (8'd30) { write_char <= 16'h0031; }
+                        CASE (8'd40) { write_char <= 16'h0031; }
+                        CASE (8'd50) { write_char <= 16'h0031; }
+                        CASE (8'd60) { write_char <= 16'h0031; }
+                        CASE (8'd70) { write_char <= 16'h0031; }
+                        CASE (8'd80) { write_char <= 16'h0031; }
+                        CASE (8'd90) { write_char <= 16'h0031; }
+                        CASE (8'd100) { write_char <= 16'h0031; }
+                        CASE (8'd110) { write_char <= 16'h0031; }
+                        CASE (8'd120) { write_char <= 16'h0031; }
+                        CASE (8'd130) { write_char <= 16'h0031; }
+                        CASE (8'd140) { write_char <= 16'h0031; }
+                        CASE (8'd9)  { write_char <= 16'h007C; }
+                        CASE (8'd19) { write_char <= 16'h007C; }
+                        CASE (8'd29) { write_char <= 16'h007C; }
+                        CASE (8'd39) { write_char <= 16'h007C; }
+                        CASE (8'd49) { write_char <= 16'h007C; }
+                        CASE (8'd59) { write_char <= 16'h007C; }
+                        CASE (8'd69) { write_char <= 16'h007C; }
+                        CASE (8'd79) { write_char <= 16'h007C; }
+                        CASE (8'd89) { write_char <= 16'h007C; }
+                        CASE (8'd99) { write_char <= 16'h007C; }
+                        CASE (8'd109) { write_char <= 16'h007C; }
+                        CASE (8'd119) { write_char <= 16'h007C; }
+                        CASE (8'd129) { write_char <= 16'h007C; }
+                        CASE (8'd139) { write_char <= 16'h007C; }
+                        DEFAULT {
+                            // Use position mod 10 to pick digit
+                            // Simplified: just write dots for non-decade positions
+                            write_char <= 16'h002E;
+                        }
+                    }
+                } ELIF (test_col == 8'd0) {
+                    // Left ruler: cycling "1234567890" (row mod 10)
+                    SELECT ({ 2'b00, test_row } - 8'd1) {
+                        CASE (8'd0)  { write_char <= 16'h0031; }
+                        CASE (8'd10) { write_char <= 16'h0031; }
+                        CASE (8'd20) { write_char <= 16'h0031; }
+                        CASE (8'd30) { write_char <= 16'h0031; }
+                        CASE (8'd40) { write_char <= 16'h0031; }
+                        CASE (8'd9)  { write_char <= 16'h002D; }
+                        CASE (8'd19) { write_char <= 16'h002D; }
+                        CASE (8'd29) { write_char <= 16'h002D; }
+                        CASE (8'd39) { write_char <= 16'h002D; }
+                        DEFAULT      { write_char <= 16'h002E; }
+                    }
+                } ELSE {
+                    write_char <= 16'h0020;
+                }
+
+                // Advance position
+                IF (test_col == lit(8, MAX_COL)) {
+                    test_col <= 8'd0;
+                    IF (test_row == lit(6, MAX_ROW)) {
+                        // Done — cursor to 0,0
+                        cursor_row <= 6'd0;
+                        cursor_col <= 8'd0;
+                        state <= lit(5, ST_NORMAL);
+                    } ELSE {
+                        test_row <= test_row + 6'd1;
+                    }
+                } ELSE {
+                    test_col <= test_col + 8'd1;
+                }
+            } ELSE {
+                do_write <= 1'b0;
+            }
+
+        } ELIF (state == lit(5, ST_SCROLL_MULTI)) {
+            // Multi-line scroll loop
+            do_write       <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+            IF (scroll_count == 8'd0) {
+                do_scroll      <= 1'b0;
+                do_scroll_down <= 1'b0;
+                state <= lit(5, ST_NORMAL);
+            } ELIF (busy == 1'b0) {
+                scroll_count <= scroll_count - 8'd1;
+                IF (scroll_dir == 1'b0) {
+                    do_scroll      <= 1'b1;
+                    do_scroll_down <= 1'b0;
+                } ELSE {
+                    do_scroll      <= 1'b0;
+                    do_scroll_down <= 1'b1;
+                }
+            } ELSE {
+                do_scroll      <= 1'b0;
+                do_scroll_down <= 1'b0;
+            }
+
+        } ELIF (state == lit(5, ST_INSERT_READ)) {
+            // Insert mode: read cell at insert_src_col, shift right
+            do_scroll      <= 1'b0;
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            IF (insert_wait == 2'd0) {
+                // Start read from buffer
+                do_write       <= 1'b0;
+                use_write_attr <= 1'b0;
+                do_tb_rd_en    <= 1'b1;
+                insert_wait    <= 2'd1;
+            } ELIF (insert_wait == 2'd1) {
+                // Wait for BSRAM latency
+                do_write       <= 1'b0;
+                use_write_attr <= 1'b0;
+                do_tb_rd_en    <= 1'b0;
+                insert_wait    <= 2'd2;
+            } ELIF (insert_wait == 2'd2) {
+                // Data ready — write it to insert_src_col+1
+                do_tb_rd_en    <= 1'b0;
+                insert_wait    <= 2'd0;
+                write_row      <= cursor_row;
+                write_col      <= insert_src_col + 8'd1;
+                write_char     <= tb_rd_char;
+                write_attr     <= tb_rd_attr;
+                use_write_attr <= 1'b1;
+                do_write       <= 1'b1;
+
+                IF (insert_src_col == cursor_col) {
+                    // Done shifting — write saved char at cursor position
+                    state <= lit(5, ST_INSERT_WRITE);
+                } ELSE {
+                    insert_src_col <= insert_src_col - 8'd1;
+                }
+            } ELSE {
+                do_write       <= 1'b0;
+                use_write_attr <= 1'b0;
+                do_tb_rd_en    <= 1'b0;
+                insert_wait    <= 2'd0;
+            }
+
+        } ELIF (state == lit(5, ST_INSERT_WRITE)) {
+            // Insert mode: write saved char at cursor position and advance
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            write_char     <= insert_saved_char;
+            write_attr     <= insert_saved_attr;
+            use_write_attr <= 1'b1;
+            write_row      <= cursor_row;
+            write_col      <= cursor_col;
+            do_write       <= 1'b1;
+            state      <= lit(5, ST_NORMAL);
+
+            // Advance cursor
+            IF (cursor_col == lit(8, MAX_COL)) {
+                IF (autowrap == 1'b1) {
+                    cursor_col <= 8'd0;
+                    IF (cursor_row == lit(6, MAX_ROW)) {
+                        do_scroll <= 1'b1;
+                    } ELSE {
+                        do_scroll <= 1'b0;
+                        cursor_row <= cursor_row + 6'd1;
+                    }
+                } ELSE {
+                    do_scroll <= 1'b0;
+                }
+            } ELSE {
+                do_scroll <= 1'b0;
+                cursor_col <= cursor_col + 8'd1;
+            }
+
+        } ELIF (state == lit(5, ST_RESP_COMPUTE)) {
+            // Compute BCD digits for CPR response (one cycle)
+            do_write       <= 1'b0;
+            do_scroll      <= 1'b0;
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            // Row BCD (1-45)
+            IF (cpr_row >= 7'd40) {
+                cpr_row_tens <= 4'd4;
+                cpr_row_ones <= cpr_row - 7'd40;
+            } ELIF (cpr_row >= 7'd30) {
+                cpr_row_tens <= 4'd3;
+                cpr_row_ones <= cpr_row - 7'd30;
+            } ELIF (cpr_row >= 7'd20) {
+                cpr_row_tens <= 4'd2;
+                cpr_row_ones <= cpr_row - 7'd20;
+            } ELIF (cpr_row >= 7'd10) {
+                cpr_row_tens <= 4'd1;
+                cpr_row_ones <= cpr_row - 7'd10;
+            } ELSE {
+                cpr_row_tens <= 4'd0;
+                cpr_row_ones <= cpr_row;
+            }
+
+            // Col BCD (1-142)
+            IF (cpr_col >= 8'd100) {
+                cpr_col_hund <= 4'd1;
+                IF (cpr_col >= 8'd140) {
+                    cpr_col_tens <= 8'd4;
+                    cpr_col_ones <= cpr_col - 8'd140;
+                } ELIF (cpr_col >= 8'd130) {
+                    cpr_col_tens <= 8'd3;
+                    cpr_col_ones <= cpr_col - 8'd130;
+                } ELIF (cpr_col >= 8'd120) {
+                    cpr_col_tens <= 8'd2;
+                    cpr_col_ones <= cpr_col - 8'd120;
+                } ELIF (cpr_col >= 8'd110) {
+                    cpr_col_tens <= 8'd1;
+                    cpr_col_ones <= cpr_col - 8'd110;
+                } ELSE {
+                    cpr_col_tens <= 8'd0;
+                    cpr_col_ones <= cpr_col - 8'd100;
+                }
+            } ELSE {
+                cpr_col_hund <= 4'd0;
+                IF (cpr_col >= 8'd90) {
+                    cpr_col_tens <= 8'd9;
+                    cpr_col_ones <= cpr_col - 8'd90;
+                } ELIF (cpr_col >= 8'd80) {
+                    cpr_col_tens <= 8'd8;
+                    cpr_col_ones <= cpr_col - 8'd80;
+                } ELIF (cpr_col >= 8'd70) {
+                    cpr_col_tens <= 8'd7;
+                    cpr_col_ones <= cpr_col - 8'd70;
+                } ELIF (cpr_col >= 8'd60) {
+                    cpr_col_tens <= 8'd6;
+                    cpr_col_ones <= cpr_col - 8'd60;
+                } ELIF (cpr_col >= 8'd50) {
+                    cpr_col_tens <= 8'd5;
+                    cpr_col_ones <= cpr_col - 8'd50;
+                } ELIF (cpr_col >= 8'd40) {
+                    cpr_col_tens <= 8'd4;
+                    cpr_col_ones <= cpr_col - 8'd40;
+                } ELIF (cpr_col >= 8'd30) {
+                    cpr_col_tens <= 8'd3;
+                    cpr_col_ones <= cpr_col - 8'd30;
+                } ELIF (cpr_col >= 8'd20) {
+                    cpr_col_tens <= 8'd2;
+                    cpr_col_ones <= cpr_col - 8'd20;
+                } ELIF (cpr_col >= 8'd10) {
+                    cpr_col_tens <= 8'd1;
+                    cpr_col_ones <= cpr_col - 8'd10;
+                } ELSE {
+                    cpr_col_tens <= 8'd0;
+                    cpr_col_ones <= cpr_col;
+                }
+            }
+
+            state <= lit(5, ST_RESP_SEND);
+
+        } ELIF (state == lit(5, ST_RESP_SEND)) {
+            // Send response bytes via UART TX
+            do_write       <= 1'b0;
+            do_scroll      <= 1'b0;
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            IF (resp_idx == resp_len) {
+                do_tx <= 1'b0;
+                IF (resp_type == 2'd3 && edid_phase != 2'd3) {
+                    edid_phase <= edid_phase + 2'd1;
+                    resp_idx   <= 5'd0;
+                    SELECT (edid_phase) {
+                        CASE (2'd0) { resp_len <= 5'd23; }
+                        CASE (2'd1) { resp_len <= 5'd23; }
+                        CASE (2'd2) { resp_len <= 5'd19; }
+                        DEFAULT     { resp_len <= 5'd0; }
+                    }
+                } ELSE {
+                    state <= lit(5, ST_NORMAL);
+                }
+            } ELIF (tx_ready == 1'b1 && do_tx == 1'b0) {
+
+                IF (resp_type == 2'd3 && resp_idx > 5'd7 && resp_idx + 5'd2 < resp_len) {
+                    edid_field_r    <= edid_phase;
+                    edid_byte_idx_r <= edid_data_idx[3:0];
+                    edid_wait       <= 2'd0;
+                    do_tx           <= 1'b0;
+                    state           <= lit(5, ST_EDID_FETCH);
+                } ELSE {
+                    do_tx <= 1'b1;
+                    resp_idx <= resp_idx + 5'd1;
+
+                    IF (resp_type == 2'd1) {
+                        SELECT (resp_idx) {
+                            CASE (5'd0) { tx_byte_r <= 8'h1B; }
+                            CASE (5'd1) { tx_byte_r <= 8'h5B; }
+                            CASE (5'd2) { tx_byte_r <= { 4'b0011, cpr_row_tens }; }
+                            CASE (5'd3) { tx_byte_r <= { 1'b0, cpr_row_ones } + 8'h30; }
+                            CASE (5'd4) { tx_byte_r <= 8'h3B; }
+                            CASE (5'd5) { tx_byte_r <= { 4'b0011, cpr_col_hund }; }
+                            CASE (5'd6) { tx_byte_r <= cpr_col_tens + 8'h30; }
+                            CASE (5'd7) { tx_byte_r <= cpr_col_ones + 8'h30; }
+                            CASE (5'd8) { tx_byte_r <= lit(8, CHAR_R); }
+                            DEFAULT     { tx_byte_r <= 8'h00; }
+                        }
+                    } ELIF (resp_type == 2'd2) {
+                        SELECT (resp_idx) {
+                            CASE (5'd0)  { tx_byte_r <= 8'h1B; }
+                            CASE (5'd1)  { tx_byte_r <= 8'h50; }
+                            CASE (5'd2)  { tx_byte_r <= 8'h3E; }
+                            CASE (5'd3)  { tx_byte_r <= 8'h7C; }
+                            CASE (5'd4)  { tx_byte_r <= 8'h53; }
+                            CASE (5'd5)  { tx_byte_r <= 8'h69; }
+                            CASE (5'd6)  { tx_byte_r <= 8'h6D; }
+                            CASE (5'd7)  { tx_byte_r <= 8'h70; }
+                            CASE (5'd8)  { tx_byte_r <= 8'h6C; }
+                            CASE (5'd9)  { tx_byte_r <= 8'h65; }
+                            CASE (5'd10) { tx_byte_r <= 8'h20; }
+                            CASE (5'd11) { tx_byte_r <= 8'h54; }
+                            CASE (5'd12) { tx_byte_r <= 8'h65; }
+                            CASE (5'd13) { tx_byte_r <= 8'h72; }
+                            CASE (5'd14) { tx_byte_r <= 8'h6D; }
+                            CASE (5'd15) { tx_byte_r <= 8'h69; }
+                            CASE (5'd16) { tx_byte_r <= 8'h6E; }
+                            CASE (5'd17) { tx_byte_r <= 8'h61; }
+                            CASE (5'd18) { tx_byte_r <= 8'h6C; }
+                            CASE (5'd19) { tx_byte_r <= 8'h20; }
+                            CASE (5'd20) { tx_byte_r <= 8'h31; }
+                            CASE (5'd21) { tx_byte_r <= 8'h2E; }
+                            CASE (5'd22) { tx_byte_r <= 8'h30; }
+                            CASE (5'd23) { tx_byte_r <= 8'h1B; }
+                            CASE (5'd24) { tx_byte_r <= 8'h5C; }
+                            DEFAULT      { tx_byte_r <= 8'h00; }
+                        }
+                    } ELIF (resp_type == 2'd3) {
+                        // EDID response: ESC P <n> EDID=<data> ESC \
+                        SELECT (resp_idx) {
+                            CASE (5'd0)  { tx_byte_r <= 8'h1B; }
+                            CASE (5'd1)  { tx_byte_r <= 8'h50; }
+                            CASE (5'd2)  {
+                                SELECT (edid_phase) {
+                                    CASE (2'd0) { tx_byte_r <= 8'h31; }
+                                    CASE (2'd1) { tx_byte_r <= 8'h32; }
+                                    CASE (2'd2) { tx_byte_r <= 8'h33; }
+                                    CASE (2'd3) { tx_byte_r <= 8'h34; }
+                                    DEFAULT     { tx_byte_r <= 8'h31; }
+                                }
+                            }
+                            CASE (5'd3)  { tx_byte_r <= 8'h45; }
+                            CASE (5'd4)  { tx_byte_r <= 8'h44; }
+                            CASE (5'd5)  { tx_byte_r <= 8'h49; }
+                            CASE (5'd6)  { tx_byte_r <= 8'h44; }
+                            CASE (5'd7)  { tx_byte_r <= 8'h3D; }
+                            DEFAULT {
+                                IF (resp_idx + 5'd1 == resp_len) {
+                                    tx_byte_r <= 8'h5C;
+                                } ELSE {
+                                    tx_byte_r <= 8'h1B;
+                                }
+                            }
+                        }
+                    } ELSE {
+                        tx_byte_r <= 8'h00;
+                    }
+                }
+            } ELSE {
+                do_tx <= 1'b0;
+            }
+
+        } ELIF (state == lit(5, ST_EDID_FETCH)) {
+            // Wait for EDID reader byte (2-cycle MEM read latency)
+            do_write       <= 1'b0;
+            do_scroll      <= 1'b0;
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            IF (edid_wait == 2'd2) {
+                IF (edid_byte == 8'h0A || edid_byte == 8'h00) {
+                    tx_byte_r <= 8'h20;
+                } ELSE {
+                    tx_byte_r <= edid_byte;
+                }
+                do_tx    <= 1'b1;
+                resp_idx <= resp_idx + 5'd1;
+                state    <= lit(5, ST_RESP_SEND);
+            } ELSE {
+                do_tx     <= 1'b0;
+                edid_wait <= edid_wait + 2'd1;
+            }
+
+        } ELIF (state == lit(5, ST_WIDE_RIGHT)) {
+            // Write right half of wide character (char | 0x8000)
+            // Must wait for terminal_buffer to be ready — if the left-half
+            // write was latched into the single pend_wr slot (e.g. during
+            // prefetch), busy stays high until that write completes.
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            IF (busy == 1'b0) {
+                write_char     <= wide_char | 16'h8000;
+                write_row      <= cursor_row;
+                write_col      <= cursor_col + 8'd1;
+                do_write       <= 1'b1;
+                use_write_attr <= 1'b0;
+
+                // Advance cursor by 2 from original position
+                IF (cursor_col + 8'd1 >= lit(8, MAX_COL)) {
+                    // Wide char ends at or past last column — wrap
+                    IF (autowrap == 1'b1) {
+                        cursor_col <= 8'd0;
+                        IF (cursor_row == lit(6, MAX_ROW)) {
+                            do_scroll <= 1'b1;
+                        } ELSE {
+                            cursor_row <= cursor_row + 6'd1;
+                            do_scroll <= 1'b0;
+                        }
+                    } ELSE {
+                        do_scroll <= 1'b0;
+                    }
+                } ELSE {
+                    cursor_col <= cursor_col + 8'd2;
+                    do_scroll <= 1'b0;
+                }
+                state <= lit(5, ST_NORMAL);
+            } ELSE {
+                // Buffer busy — wait, don't write yet
+                do_write <= 1'b0;
+                do_scroll <= 1'b0;
+            }
+
+        } ELIF (state == lit(5, ST_WIDE_WRAP)) {
+            // After wrap/scroll completes, write left half at col 0
+            // Must wait for busy=0 (scroll sets clearing=1 which sets busy=1)
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            do_data_ack    <= 1'b0;
+
+            IF (busy == 1'b0) {
+                write_char     <= wide_char;
+                write_row      <= cursor_row;
+                write_col      <= cursor_col;
+                do_write       <= 1'b1;
+                use_write_attr <= 1'b0;
+                do_scroll      <= 1'b0;
+                state          <= lit(5, ST_WIDE_RIGHT);
+            } ELSE {
+                // Buffer still busy (scroll/clear in progress) — wait
+                do_write <= 1'b0;
+                do_scroll <= 1'b0;
+            }
+
+        // === Kanji binary search state machine ===
+        // Uses BSRAM for kanji_lut, so reads have 1-cycle latency.
+        // ST_KANJI_READ: drive address (search_mid), wait for BSRAM
+        // ST_KANJI_CMP:  compare result, narrow range, loop or done
+        } ELIF (state == lit(5, ST_KANJI_READ)) {
+            do_scroll_down  <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx           <= 1'b0;
+            do_tb_rd_en     <= 1'b0;
+            do_data_ack     <= 1'b0;
+            do_write        <= 1'b0;
+            do_scroll       <= 1'b0;
+
+            // Drive BSRAM read address; data available next cycle
+            kanji_lut.rd.addr <= search_mid;
+            // Also register search_mid so ST_KANJI_CMP knows which slot matched
+            search_slot <= search_mid;
+            state       <= lit(5, ST_KANJI_CMP);
+
+        } ELIF (state == lit(5, ST_KANJI_CMP)) {
+            do_scroll_down  <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx           <= 1'b0;
+            do_tb_rd_en     <= 1'b0;
+            do_data_ack     <= 1'b0;
+            do_write        <= 1'b0;
+            do_scroll       <= 1'b0;
+
+            IF (search_lo > search_hi) {
+                // Search exhausted — not found
+                state <= lit(5, ST_KANJI_DONE);
+            } ELIF (kanji_lut.rd.data == kanji_target) {
+                // Found! slot = search_slot (registered from previous cycle)
+                search_found <= 1'b1;
+                state        <= lit(5, ST_KANJI_DONE);
+            } ELIF (kanji_lut.rd.data < kanji_target) {
+                search_lo <= search_slot + 8'd1;
+                state     <= lit(5, ST_KANJI_READ);
+            } ELSE {
+                IF (search_slot == 8'd0) {
+                    // Prevent underflow — not found
+                    state <= lit(5, ST_KANJI_DONE);
+                } ELSE {
+                    search_hi <= search_slot - 8'd1;
+                    state     <= lit(5, ST_KANJI_READ);
+                }
+            }
+
+        } ELIF (state == lit(5, ST_KANJI_DONE)) {
+            // Search complete — if found, write as wide char at U+4000+slot
+            do_scroll_down  <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx           <= 1'b0;
+            do_tb_rd_en     <= 1'b0;
+            do_data_ack     <= 1'b0;
+
+            IF (search_found == 1'b1) {
+                // Remap to internal code U+4000 + slot
+                wide_char      <= { 8'h40, search_slot };
+                use_write_attr <= 1'b0;
+
+                IF (cursor_col >= lit(8, MAX_COL)) {
+                    IF (autowrap == 1'b1) {
+                        cursor_col <= 8'd0;
+                        IF (cursor_row == lit(6, MAX_ROW)) {
+                            do_scroll <= 1'b1;
+                        } ELSE {
+                            cursor_row <= cursor_row + 6'd1;
+                            do_scroll  <= 1'b0;
+                        }
+                        state <= lit(5, ST_WIDE_WRAP);
+                    } ELSE {
+                        write_char <= { 8'h40, search_slot };
+                        write_row  <= cursor_row;
+                        write_col  <= cursor_col;
+                        do_write   <= 1'b1;
+                        do_scroll  <= 1'b0;
+                        state      <= lit(5, ST_NORMAL);
+                    }
+                } ELSE {
+                    write_char <= { 8'h40, search_slot };
+                    write_row  <= cursor_row;
+                    write_col  <= cursor_col;
+                    do_write   <= 1'b1;
+                    do_scroll  <= 1'b0;
+                    state      <= lit(5, ST_WIDE_RIGHT);
+                }
+            } ELSE {
+                // Not found — write fallback character '?' (U+003F)
+                write_char     <= 16'h003F;
+                write_row      <= cursor_row;
+                write_col      <= cursor_col;
+                do_write       <= 1'b1;
+                use_write_attr <= 1'b0;
+                state          <= lit(5, ST_NORMAL);
+
+                IF (cursor_col == lit(8, MAX_COL) && autowrap == 1'b1) {
+                    cursor_col <= 8'd0;
+                    IF (cursor_row == lit(6, MAX_ROW)) {
+                        do_scroll <= 1'b1;
+                    } ELSE {
+                        cursor_row <= cursor_row + 6'd1;
+                        do_scroll <= 1'b0;
+                    }
+                } ELIF (cursor_col != lit(8, MAX_COL)) {
+                    cursor_col <= cursor_col + 8'd1;
+                    do_scroll <= 1'b0;
+                } ELSE {
+                    do_scroll <= 1'b0;
+                }
+            }
+
+        } ELIF (valid == 1'b1 && busy == 1'b0 && do_data_ack == 1'b0) {
+            do_data_ack <= 1'b1;
+            SELECT (state) {
+                CASE (lit(5, ST_NORMAL)) {
+                    IF (data == lit(8, CHAR_ESC)) {
+                        // Got ESC
+                        state    <= lit(5, ST_ESC);
+                        do_write <= 1'b0;
+                        do_scroll <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELIF (data == lit(8, CHAR_CR)) {
+                        // CR: move to column 0 and advance row
+                        // (serial terminals typically send CR alone on Enter)
+                        do_write <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                        cursor_col <= 8'd0;
+                        IF (cursor_row == lit(6, MAX_ROW)) {
+                            do_scroll <= 1'b1;
+                        } ELSE {
+                            cursor_row <= cursor_row + 6'd1;
+                            do_scroll <= 1'b0;
+                        }
+                    } ELIF (data == lit(8, CHAR_LF)) {
+                        // LF: move down one row; if newline_mode, also col=0
+                        do_write <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                        IF (newline_mode == 1'b1) {
+                            cursor_col <= 8'd0;
+                        }
+                        IF (cursor_row == lit(6, MAX_ROW)) {
+                            do_scroll <= 1'b1;
+                        } ELSE {
+                            cursor_row <= cursor_row + 6'd1;
+                            do_scroll <= 1'b0;
+                        }
+                    } ELIF (data == lit(8, CHAR_BEL)) {
+                        // BEL: ignored (no audio hardware)
+                        do_write <= 1'b0;
+                        do_scroll <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                        do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELIF (data == lit(8, CHAR_TAB)) {
+                        // TAB: advance to next 8-column boundary
+                        do_write <= 1'b0;
+                        do_scroll <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                        IF ({ cursor_col[7:3], 3'b000 } + 8'd8 > lit(8, MAX_COL)) {
+                            cursor_col <= lit(8, MAX_COL);
+                        } ELSE {
+                            cursor_col <= { cursor_col[7:3] + 5'd1, 3'b000 };
+                        }
+                    } ELIF (data == lit(8, CHAR_DEL)) {
+                        // DEL (backspace): move back one and write space
+                        do_scroll <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                        IF (cursor_col != 8'd0) {
+                            cursor_col <= cursor_col - 8'd1;
+                            write_char     <= 16'h0020;
+                            write_row      <= cursor_row;
+                            write_col      <= cursor_col - 8'd1;
+                            do_write       <= 1'b1;
+                            use_write_attr <= 1'b0;
+                        } ELSE {
+                            do_write <= 1'b0;
+                        }
+                    } ELIF (data[7:5] == 3'b110) {
+                        // UTF-8 2-byte lead (U+0080 - U+07FF)
+                        utf8_accum  <= { 11'b00000000000, data[4:0] };
+                        utf8_remain <= 2'd1;
+                        state       <= lit(5, ST_UTF8);
+                        do_write <= 1'b0;
+                        do_scroll <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELIF (data[7:4] == 4'b1110) {
+                        // UTF-8 3-byte lead (U+0800 - U+FFFF)
+                        utf8_accum  <= { 12'b000000000000, data[3:0] };
+                        utf8_remain <= 2'd2;
+                        state       <= lit(5, ST_UTF8);
+                        do_write <= 1'b0;
+                        do_scroll <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELIF (data[7] == 1'b1) {
+                        // Unexpected continuation byte or 4-byte lead — ignore
+                        do_write <= 1'b0;
+                        do_scroll <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELSE {
+                        // Normal ASCII character — write to terminal buffer
+                        IF (insert_mode == 1'b1 && cursor_col != lit(8, MAX_COL)) {
+                            // Insert mode: shift right before writing
+                            insert_saved_char <= { 8'h00, data };
+                            insert_saved_attr <= wr_attr_word;
+                            insert_src_col    <= lit(8, MAX_COL) - 8'd1;
+                            insert_wait       <= 2'd0;
+                            do_write          <= 1'b0;
+                            do_scroll         <= 1'b0;
+                            do_scroll_down    <= 1'b0;
+                            do_scroll_reset   <= 1'b0;
+                            do_tx             <= 1'b0;
+                            do_tb_rd_en       <= 1'b0;
+                            cmd_ready_r       <= 1'b0;
+                            write_row         <= cursor_row;
+                            state <= lit(5, ST_INSERT_READ);
+                        } ELSE {
+                            write_char     <= { 8'h00, data };
+                            write_row      <= cursor_row;
+                            write_col      <= cursor_col;
+                            do_write       <= 1'b1;
+                            use_write_attr <= 1'b0;
+                            do_scroll_down <= 1'b0;
+                            do_scroll_reset <= 1'b0;
+                            do_tx <= 1'b0;
+                                    do_tb_rd_en <= 1'b0;
+                            cmd_ready_r <= 1'b0;
+
+                            IF (cursor_col == lit(8, MAX_COL)) {
+                                IF (autowrap == 1'b1) {
+                                    cursor_col <= 8'd0;
+                                    IF (cursor_row == lit(6, MAX_ROW)) {
+                                        do_scroll <= 1'b1;
+                                    } ELSE {
+                                        cursor_row <= cursor_row + 6'd1;
+                                        do_scroll <= 1'b0;
+                                    }
+                                } ELSE {
+                                    do_scroll <= 1'b0;
+                                }
+                            } ELSE {
+                                cursor_col <= cursor_col + 8'd1;
+                                do_scroll <= 1'b0;
+                            }
+                        }
+                    }
+                }
+
+                CASE (lit(5, ST_ESC)) {
+                    IF (data == lit(8, CHAR_LBRACKET)) {
+                        // ESC [ — enter CSI parameter collection
+                        state          <= lit(5, ST_CSI);
+                        buf_ptr        <= 7'd0;
+                        param_val      <= 8'd0;
+                        param1         <= 8'd0;
+                        has_semi       <= 1'b0;
+                        csi_gt         <= 1'b0;
+                        csi_question   <= 1'b0;
+                        param_overflow <= 1'b0;
+                        // Copy current attributes to pending
+                        pend_fg_idx        <= fg_idx;
+                        pend_bg_idx        <= bg_idx;
+                        pend_underline     <= attr_underline;
+                        pend_slow_blink    <= attr_slow_blink;
+                        pend_fast_blink    <= attr_fast_blink;
+                        pend_inverse       <= attr_inverse;
+                        pend_conceal       <= attr_conceal;
+                        pend_strikethrough <= attr_strikethrough;
+                        do_write   <= 1'b0;
+                        do_scroll  <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx      <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELIF (data == lit(8, CHAR_P)) {
+                        // ESC P — enter DCS sequence
+                        state          <= lit(5, ST_DCS);
+                        dcs_match_idx  <= 4'd0;
+                        dcs_matched    <= 1'b1;
+                        dcs_test_matched <= 1'b1;
+                        do_write       <= 1'b0;
+                        do_scroll      <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx          <= 1'b0;
+                        do_tb_rd_en    <= 1'b0;
+                        cmd_ready_r    <= 1'b0;
+                    } ELIF (data == lit(8, CHAR_RBRACKET)) {
+                        // ESC ] — enter OSC sequence (consume until BEL or ESC \)
+                        state      <= lit(5, ST_OSC);
+                        do_write   <= 1'b0;
+                        do_scroll  <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx      <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELIF (data == lit(8, CHAR_LPAREN)) {
+                        // ESC ( — character set selection
+                        state      <= lit(5, ST_ESC_LPAREN);
+                        do_write   <= 1'b0;
+                        do_scroll  <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx      <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELIF (data == lit(8, CHAR_HASH)) {
+                        // ESC # — DEC test (consume one more byte)
+                        state      <= lit(5, ST_ESC_HASH);
+                        do_write   <= 1'b0;
+                        do_scroll  <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx      <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELIF (data == lit(8, CHAR_c_lower) || data == lit(8, CHAR_EQUALS) || data == lit(8, CHAR_GT) || data == lit(8, CHAR_M) || data == lit(8, CHAR_7) || data == lit(8, CHAR_8)) {
+                        // ESC c (RIS), ESC = (DECKPAM), ESC > (DECKPNM),
+                        // ESC M (RI), ESC 7 (DECSC), ESC 8 (DECRC) — silently ignore
+                        state      <= lit(5, ST_NORMAL);
+                        do_write   <= 1'b0;
+                        do_scroll  <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx      <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        cmd_ready_r <= 1'b0;
+                    } ELSE {
+                        // Unrecognized ESC sequence — write ESC then saved byte
+                        write_char     <= { 8'h00, lit(8, CHAR_ESC) };
+                        write_row      <= cursor_row;
+                        write_col      <= cursor_col;
+                        do_write       <= 1'b1;
+                        use_write_attr <= 1'b0;
+                        do_scroll_down <= 1'b0;
+                        do_scroll_reset <= 1'b0;
+                        do_tx      <= 1'b0;
+                            do_tb_rd_en <= 1'b0;
+                        saved_char <= data;
+                        state      <= lit(5, ST_ESC_EMIT);
+                        cmd_ready_r <= 1'b0;
+
+                        IF (cursor_col == lit(8, MAX_COL)) {
+                            IF (autowrap == 1'b1) {
+                                cursor_col <= 8'd0;
+                                IF (cursor_row == lit(6, MAX_ROW)) {
+                                    do_scroll <= 1'b1;
+                                } ELSE {
+                                    cursor_row <= cursor_row + 6'd1;
+                                    do_scroll <= 1'b0;
+                                }
+                            } ELSE {
+                                do_scroll <= 1'b0;
+                            }
+                        } ELSE {
+                            cursor_col <= cursor_col + 8'd1;
+                            do_scroll <= 1'b0;
+                        }
+                    }
+                }
+
+                CASE (lit(5, ST_ESC_LPAREN)) {
+                    // Character set: ESC ( B = ASCII, ESC ( U = CP437
+                    do_write  <= 1'b0;
+                    do_scroll <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_scroll_reset <= 1'b0;
+                    do_tx     <= 1'b0;
+                    do_tb_rd_en <= 1'b0;
+                    cmd_ready_r <= 1'b0;
+
+                    IF (data == lit(8, CHAR_B_upper)) {
+                        char_set <= 1'b0;
+                    } ELIF (data == lit(8, CHAR_U_upper)) {
+                        char_set <= 1'b1;
+                    }
+                    state <= lit(5, ST_NORMAL);
+                }
+
+                CASE (lit(5, ST_CSI)) {
+                    do_write  <= 1'b0;
+                    do_scroll <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_scroll_reset <= 1'b0;
+                    do_tx     <= 1'b0;
+                    do_tb_rd_en <= 1'b0;
+
+                    IF ((data >= lit(8, CHAR_0) && data <= lit(8, CHAR_9)) || data == lit(8, CHAR_SEMI) || data == lit(8, CHAR_GT) || data == lit(8, CHAR_QUESTION)) {
+                        // Digit, semicolon, '>', or '?' — store in buffer
+                        IF (buf_ptr == lit(7, CMD_BUF_MAX)) {
+                            state <= lit(5, ST_NORMAL);
+                            cmd_ready_r <= 1'b0;
+                        } ELSE {
+                            cmd_buf.wr[buf_ptr] <= data;
+                            buf_ptr <= buf_ptr + 7'd1;
+                            cmd_ready_r <= 1'b0;
+
+                            IF (data == lit(8, CHAR_SEMI)) {
+                                // Semicolon — process completed parameter for SGR
+                                param1   <= param_val;
+                                has_semi <= 1'b1;
+                                SELECT (param_val) {
+                                    CASE (8'd0)   { pend_fg_idx <= 4'd7; pend_bg_idx <= 4'd0; pend_underline <= 1'b0; pend_slow_blink <= 1'b0; pend_fast_blink <= 1'b0; pend_inverse <= 1'b0; pend_conceal <= 1'b0; pend_strikethrough <= 1'b0; }
+                                    CASE (8'd4)   { pend_underline <= 1'b1; }
+                                    CASE (8'd5)   { pend_slow_blink <= 1'b1; }
+                                    CASE (8'd6)   { pend_fast_blink <= 1'b1; }
+                                    CASE (8'd7)   { pend_inverse <= 1'b1; }
+                                    CASE (8'd8)   { pend_conceal <= 1'b1; }
+                                    CASE (8'd9)   { pend_strikethrough <= 1'b1; }
+                                    CASE (8'd24)  { pend_underline <= 1'b0; }
+                                    CASE (8'd25)  { pend_slow_blink <= 1'b0; pend_fast_blink <= 1'b0; }
+                                    CASE (8'd27)  { pend_inverse <= 1'b0; }
+                                    CASE (8'd28)  { pend_conceal <= 1'b0; }
+                                    CASE (8'd29)  { pend_strikethrough <= 1'b0; }
+                                    CASE (8'd30)  { pend_fg_idx <= 4'd0; }
+                                    CASE (8'd31)  { pend_fg_idx <= 4'd1; }
+                                    CASE (8'd32)  { pend_fg_idx <= 4'd2; }
+                                    CASE (8'd33)  { pend_fg_idx <= 4'd3; }
+                                    CASE (8'd34)  { pend_fg_idx <= 4'd4; }
+                                    CASE (8'd35)  { pend_fg_idx <= 4'd5; }
+                                    CASE (8'd36)  { pend_fg_idx <= 4'd6; }
+                                    CASE (8'd37)  { pend_fg_idx <= 4'd7; }
+                                    CASE (8'd40)  { pend_bg_idx <= 4'd0; }
+                                    CASE (8'd41)  { pend_bg_idx <= 4'd1; }
+                                    CASE (8'd42)  { pend_bg_idx <= 4'd2; }
+                                    CASE (8'd43)  { pend_bg_idx <= 4'd3; }
+                                    CASE (8'd44)  { pend_bg_idx <= 4'd4; }
+                                    CASE (8'd45)  { pend_bg_idx <= 4'd5; }
+                                    CASE (8'd46)  { pend_bg_idx <= 4'd6; }
+                                    CASE (8'd47)  { pend_bg_idx <= 4'd7; }
+                                    CASE (8'd90)  { pend_fg_idx <= 4'd8; }
+                                    CASE (8'd91)  { pend_fg_idx <= 4'd9; }
+                                    CASE (8'd92)  { pend_fg_idx <= 4'd10; }
+                                    CASE (8'd93)  { pend_fg_idx <= 4'd11; }
+                                    CASE (8'd94)  { pend_fg_idx <= 4'd12; }
+                                    CASE (8'd95)  { pend_fg_idx <= 4'd13; }
+                                    CASE (8'd96)  { pend_fg_idx <= 4'd14; }
+                                    CASE (8'd97)  { pend_fg_idx <= 4'd15; }
+                                    CASE (8'd100) { pend_bg_idx <= 4'd8; }
+                                    CASE (8'd101) { pend_bg_idx <= 4'd9; }
+                                    CASE (8'd102) { pend_bg_idx <= 4'd10; }
+                                    CASE (8'd103) { pend_bg_idx <= 4'd11; }
+                                    CASE (8'd104) { pend_bg_idx <= 4'd12; }
+                                    CASE (8'd105) { pend_bg_idx <= 4'd13; }
+                                    CASE (8'd106) { pend_bg_idx <= 4'd14; }
+                                    CASE (8'd107) { pend_bg_idx <= 4'd15; }
+                                    DEFAULT { }
+                                }
+                                param_val <= 8'd0;
+                            } ELIF (data == lit(8, CHAR_GT)) {
+                                csi_gt <= 1'b1;
+                            } ELIF (data == lit(8, CHAR_QUESTION)) {
+                                csi_question <= 1'b1;
+                            } ELSE {
+                                // Digit — accumulate
+                                IF (param_val >= 8'd26) {
+                                    param_overflow <= 1'b1;
+                                }
+                                param_val <= param_x10 + { 4'b0000, data[3:0] };
+                            }
+                        }
+                    } ELSE {
+                        // Final byte — process last parameter for SGR, go to commit
+                        SELECT (param_val) {
+                            CASE (8'd0)   { pend_fg_idx <= 4'd7; pend_bg_idx <= 4'd0; pend_underline <= 1'b0; pend_slow_blink <= 1'b0; pend_fast_blink <= 1'b0; pend_inverse <= 1'b0; pend_conceal <= 1'b0; pend_strikethrough <= 1'b0; }
+                            CASE (8'd4)   { pend_underline <= 1'b1; }
+                            CASE (8'd5)   { pend_slow_blink <= 1'b1; }
+                            CASE (8'd6)   { pend_fast_blink <= 1'b1; }
+                            CASE (8'd7)   { pend_inverse <= 1'b1; }
+                            CASE (8'd8)   { pend_conceal <= 1'b1; }
+                            CASE (8'd9)   { pend_strikethrough <= 1'b1; }
+                            CASE (8'd24)  { pend_underline <= 1'b0; }
+                            CASE (8'd25)  { pend_slow_blink <= 1'b0; pend_fast_blink <= 1'b0; }
+                            CASE (8'd27)  { pend_inverse <= 1'b0; }
+                            CASE (8'd28)  { pend_conceal <= 1'b0; }
+                            CASE (8'd29)  { pend_strikethrough <= 1'b0; }
+                            CASE (8'd30)  { pend_fg_idx <= 4'd0; }
+                            CASE (8'd31)  { pend_fg_idx <= 4'd1; }
+                            CASE (8'd32)  { pend_fg_idx <= 4'd2; }
+                            CASE (8'd33)  { pend_fg_idx <= 4'd3; }
+                            CASE (8'd34)  { pend_fg_idx <= 4'd4; }
+                            CASE (8'd35)  { pend_fg_idx <= 4'd5; }
+                            CASE (8'd36)  { pend_fg_idx <= 4'd6; }
+                            CASE (8'd37)  { pend_fg_idx <= 4'd7; }
+                            CASE (8'd40)  { pend_bg_idx <= 4'd0; }
+                            CASE (8'd41)  { pend_bg_idx <= 4'd1; }
+                            CASE (8'd42)  { pend_bg_idx <= 4'd2; }
+                            CASE (8'd43)  { pend_bg_idx <= 4'd3; }
+                            CASE (8'd44)  { pend_bg_idx <= 4'd4; }
+                            CASE (8'd45)  { pend_bg_idx <= 4'd5; }
+                            CASE (8'd46)  { pend_bg_idx <= 4'd6; }
+                            CASE (8'd47)  { pend_bg_idx <= 4'd7; }
+                            CASE (8'd90)  { pend_fg_idx <= 4'd8; }
+                            CASE (8'd91)  { pend_fg_idx <= 4'd9; }
+                            CASE (8'd92)  { pend_fg_idx <= 4'd10; }
+                            CASE (8'd93)  { pend_fg_idx <= 4'd11; }
+                            CASE (8'd94)  { pend_fg_idx <= 4'd12; }
+                            CASE (8'd95)  { pend_fg_idx <= 4'd13; }
+                            CASE (8'd96)  { pend_fg_idx <= 4'd14; }
+                            CASE (8'd97)  { pend_fg_idx <= 4'd15; }
+                            CASE (8'd100) { pend_bg_idx <= 4'd8; }
+                            CASE (8'd101) { pend_bg_idx <= 4'd9; }
+                            CASE (8'd102) { pend_bg_idx <= 4'd10; }
+                            CASE (8'd103) { pend_bg_idx <= 4'd11; }
+                            CASE (8'd104) { pend_bg_idx <= 4'd12; }
+                            CASE (8'd105) { pend_bg_idx <= 4'd13; }
+                            CASE (8'd106) { pend_bg_idx <= 4'd14; }
+                            CASE (8'd107) { pend_bg_idx <= 4'd15; }
+                            DEFAULT { }
+                        }
+                        cmd_final_r <= data;
+                        cmd_len_r   <= buf_ptr;
+                        cmd_ready_r <= 1'b1;
+                        state       <= lit(5, ST_CSI_COMMIT);
+                    }
+                }
+
+                CASE (lit(5, ST_DCS)) {
+                    // DCS: match incoming bytes against "EDID" and "TEST1"
+                    do_write       <= 1'b0;
+                    do_scroll      <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_scroll_reset <= 1'b0;
+                    do_tx          <= 1'b0;
+                    do_tb_rd_en    <= 1'b0;
+                    cmd_ready_r    <= 1'b0;
+
+                    IF (data == lit(8, CHAR_ESC)) {
+                        state <= lit(5, ST_DCS_ESC);
+                    } ELSE {
+                        dcs_match_idx <= dcs_match_idx + 4'd1;
+                        IF (data != dcs_expected) {
+                            dcs_matched <= 1'b0;
+                        }
+                        // TEST1 match: "TEST1" = 0x54 0x45 0x53 0x54 0x31 (5 bytes)
+                        SELECT (dcs_match_idx) {
+                            CASE (4'd0) { IF (data != 8'h54) { dcs_test_matched <= 1'b0; } }
+                            CASE (4'd1) { IF (data != 8'h45) { dcs_test_matched <= 1'b0; } }
+                            CASE (4'd2) { IF (data != 8'h53) { dcs_test_matched <= 1'b0; } }
+                            CASE (4'd3) { IF (data != 8'h54) { dcs_test_matched <= 1'b0; } }
+                            CASE (4'd4) { IF (data != 8'h31) { dcs_test_matched <= 1'b0; } }
+                            DEFAULT     { dcs_test_matched <= 1'b0; }
+                        }
+                    }
+                }
+
+                CASE (lit(5, ST_DCS_ESC)) {
+                    // Got ESC inside DCS, check for '\' (ST terminator)
+                    do_write       <= 1'b0;
+                    do_scroll      <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_tx          <= 1'b0;
+                    do_tb_rd_en    <= 1'b0;
+                    cmd_ready_r    <= 1'b0;
+
+                    IF (data == lit(8, CHAR_BACKSLASH)) {
+                        IF (dcs_matched == 1'b1 && dcs_match_idx == 4'd4) {
+                            // Valid EDID query
+                            do_scroll_reset <= 1'b0;
+                            resp_type  <= 2'd3;
+                            resp_idx   <= 5'd0;
+                            resp_len   <= 5'd23;
+                            edid_phase <= 2'd0;
+                            state      <= lit(5, ST_RESP_SEND);
+                        } ELIF (dcs_test_matched == 1'b1 && dcs_match_idx == 4'd5) {
+                            // Valid TEST1 query — clear screen then draw ruler
+                            test_after_clear <= 1'b1;
+                            clr_row     <= 6'd0;
+                            clr_col     <= 8'd0;
+                            clr_end_row <= lit(6, MAX_ROW);
+                            clr_end_col <= lit(8, MAX_COL);
+                            do_scroll_reset <= 1'b1;
+                            state <= lit(5, ST_CLEAR);
+                        } ELSE {
+                            do_scroll_reset <= 1'b0;
+                            state <= lit(5, ST_NORMAL);
+                        }
+                    } ELSE {
+                        do_scroll_reset <= 1'b0;
+                        state <= lit(5, ST_NORMAL);
+                    }
+                }
+
+                CASE (lit(5, ST_OSC)) {
+                    // OSC: consume bytes until BEL (0x07) or ESC (for ESC \)
+                    do_write       <= 1'b0;
+                    do_scroll      <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_scroll_reset <= 1'b0;
+                    do_tx          <= 1'b0;
+                    do_tb_rd_en    <= 1'b0;
+                    cmd_ready_r    <= 1'b0;
+
+                    IF (data == lit(8, CHAR_BEL)) {
+                        // BEL terminates OSC
+                        state <= lit(5, ST_NORMAL);
+                    } ELIF (data == lit(8, CHAR_ESC)) {
+                        // ESC inside OSC — check for '\'
+                        state <= lit(5, ST_OSC_ESC);
+                    }
+                    // Otherwise stay in ST_OSC, consuming the byte
+                }
+
+                CASE (lit(5, ST_OSC_ESC)) {
+                    // Got ESC inside OSC, check for '\' (ST terminator)
+                    do_write       <= 1'b0;
+                    do_scroll      <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_scroll_reset <= 1'b0;
+                    do_tx          <= 1'b0;
+                    do_tb_rd_en    <= 1'b0;
+                    cmd_ready_r    <= 1'b0;
+
+                    IF (data == lit(8, CHAR_BACKSLASH)) {
+                        // ESC \ terminates OSC
+                        state <= lit(5, ST_NORMAL);
+                    } ELSE {
+                        // Not '\' — back to OSC (treat ESC as consumed)
+                        state <= lit(5, ST_OSC);
+                    }
+                }
+
+                CASE (lit(5, ST_ESC_HASH)) {
+                    // ESC # X — consume one byte and discard (e.g., ESC # 8 = DECALN)
+                    do_write       <= 1'b0;
+                    do_scroll      <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_scroll_reset <= 1'b0;
+                    do_tx          <= 1'b0;
+                    do_tb_rd_en    <= 1'b0;
+                    cmd_ready_r    <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                }
+
+                CASE (lit(5, ST_UTF8)) {
+                    // Collecting UTF-8 continuation bytes
+                    do_tx          <= 1'b0;
+                    do_tb_rd_en    <= 1'b0;
+                    cmd_ready_r    <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_scroll_reset <= 1'b0;
+
+                    IF (data[7:6] == 2'b10) {
+                        // Valid continuation byte — shift 6 bits in
+                        IF (utf8_remain == 2'd1) {
+                            // Last continuation byte — check for wide character
+                            // Wide: U+3000-30FF (Hiragana/Katakana)
+                            IF ({ utf8_accum[9:0], data[5:0] } >= 16'h3000 && { utf8_accum[9:0], data[5:0] } <= 16'h30FF) {
+                                // Wide character — needs 2 cells
+                                wide_char      <= { utf8_accum[9:0], data[5:0] };
+                                use_write_attr <= 1'b0;
+
+                                IF (cursor_col >= lit(8, MAX_COL)) {
+                                    // No room for 2 cells — need to wrap first
+                                    IF (autowrap == 1'b1) {
+                                        cursor_col <= 8'd0;
+                                        IF (cursor_row == lit(6, MAX_ROW)) {
+                                            do_scroll <= 1'b1;
+                                        } ELSE {
+                                            cursor_row <= cursor_row + 6'd1;
+                                            do_scroll  <= 1'b0;
+                                        }
+                                        // After wrap/scroll, write left half
+                                        state <= lit(5, ST_WIDE_WRAP);
+                                    } ELSE {
+                                        // No autowrap — write left half at MAX_COL, no right half
+                                        write_char <= { utf8_accum[9:0], data[5:0] };
+                                        write_row  <= cursor_row;
+                                        write_col  <= cursor_col;
+                                        do_write   <= 1'b1;
+                                        do_scroll  <= 1'b0;
+                                        state      <= lit(5, ST_NORMAL);
+                                    }
+                                } ELSE {
+                                    // Room available — write left half now
+                                    write_char <= { utf8_accum[9:0], data[5:0] };
+                                    write_row  <= cursor_row;
+                                    write_col  <= cursor_col;
+                                    do_write   <= 1'b1;
+                                    do_scroll  <= 1'b0;
+                                    state      <= lit(5, ST_WIDE_RIGHT);
+                                }
+                            // CJK Unified Ideographs: U+4E00-9FFF — remap via lookup
+                            } ELIF ({ utf8_accum[9:0], data[5:0] } >= 16'h4E00 && { utf8_accum[9:0], data[5:0] } <= 16'h9FFF) {
+                                // Start binary search to find Kanji slot
+                                kanji_target   <= { utf8_accum[9:0], data[5:0] };
+                                search_lo      <= 8'd0;
+                                search_hi      <= 8'd228;  // max valid slot (229 entries - 1)
+                                search_found   <= 1'b0;
+                                do_write       <= 1'b0;
+                                do_scroll      <= 1'b0;
+                                use_write_attr <= 1'b0;
+                                state          <= lit(5, ST_KANJI_READ);
+                            } ELSE {
+                                // Normal single-width character
+                                write_char <= { utf8_accum[9:0], data[5:0] };
+                                write_row  <= cursor_row;
+                                write_col  <= cursor_col;
+                                do_write   <= 1'b1;
+                                use_write_attr <= 1'b0;
+                                state      <= lit(5, ST_NORMAL);
+
+                                IF (cursor_col == lit(8, MAX_COL)) {
+                                    IF (autowrap == 1'b1) {
+                                        cursor_col <= 8'd0;
+                                        IF (cursor_row == lit(6, MAX_ROW)) {
+                                            do_scroll <= 1'b1;
+                                        } ELSE {
+                                            cursor_row <= cursor_row + 6'd1;
+                                            do_scroll <= 1'b0;
+                                        }
+                                    } ELSE {
+                                        do_scroll <= 1'b0;
+                                    }
+                                } ELSE {
+                                    cursor_col <= cursor_col + 8'd1;
+                                    do_scroll <= 1'b0;
+                                }
+                            }
+                        } ELSE {
+                            // More continuation bytes expected
+                            utf8_accum  <= { utf8_accum[9:0], data[5:0] };
+                            utf8_remain <= utf8_remain - 2'd1;
+                            do_write    <= 1'b0;
+                            do_scroll   <= 1'b0;
+                        }
+                    } ELSE {
+                        // Invalid byte in UTF-8 sequence — abandon
+                        do_write <= 1'b0;
+                        do_scroll <= 1'b0;
+                        state <= lit(5, ST_NORMAL);
+                    }
+                }
+
+                DEFAULT {
+                    do_write  <= 1'b0;
+                    do_scroll <= 1'b0;
+                    do_scroll_down <= 1'b0;
+                    do_scroll_reset <= 1'b0;
+                    do_tx <= 1'b0;
+                    do_tb_rd_en <= 1'b0;
+                    cmd_ready_r <= 1'b0;
+                    state <= lit(5, ST_NORMAL);
+                }
+            }
+        } ELSE {
+            do_write       <= 1'b0;
+            do_scroll      <= 1'b0;
+            do_scroll_down <= 1'b0;
+            do_scroll_reset <= 1'b0;
+            do_tx          <= 1'b0;
+            do_tb_rd_en    <= 1'b0;
+            cmd_ready_r    <= 1'b0;
+            do_data_ack    <= 1'b0;
+        }
+    }
+@endmod

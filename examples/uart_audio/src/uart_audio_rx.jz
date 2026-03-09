@@ -1,0 +1,214 @@
+// UART Audio Packet Receiver
+// Protocol: Python -> FPGA: [LEN] [DATA x LEN] [PARITY]
+//           FPGA -> Python: [ACK]
+// LEN:    Number of data bytes (must be even for 16-bit samples)
+// DATA:   16-bit samples, little-endian (low byte first)
+// PARITY: XOR of all data bytes
+// ACK:    bits[7:1] = buffer fill (0-127), bit[0] = status (0=OK, 1=RESEND)
+//
+// Samples are buffered in local RAM during reception. Only flushed to
+// the audio ring buffer after parity verification passes. This prevents
+// corrupted packets from producing static in the audio output.
+@module uart_audio_rx
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+
+        // UART RX interface
+        IN  [8]  rx_data;
+        IN  [1]  rx_valid;
+
+        // UART TX interface (for ACK)
+        OUT [8]  tx_data;
+        OUT [1]  tx_valid;
+        IN  [1]  tx_ready;
+
+        // Audio buffer write interface
+        OUT [16] wr_data;
+        OUT [1]  wr_valid;
+
+        // Buffer status (from audio_buffer)
+        IN  [7]  buf_fill;
+    }
+
+    MEM(TYPE=DISTRIBUTED) {
+        // Local packet buffer: up to 64 samples per packet (128 data bytes)
+        pkt_ram [16] [64] = 16'h0000 { OUT rd ASYNC; IN wr; };
+    }
+
+    CONST {
+        // Watchdog timeout: ~200us at 37.125 MHz = 7425 cycles
+        WD_TIMEOUT = 7424;
+
+        // Periodic fill report interval: ~1ms at 37.125 MHz
+        FILL_INTERVAL = 37124;
+    }
+
+    REGISTER {
+        // State: 0=IDLE, 1=RX_DATA, 2=RX_PARITY, 3=FLUSH, 4=TX_ACK
+        state       [3]  = 3'd0;
+
+        // Packet state
+        pkt_len     [8]  = 8'd0;       // expected data byte count
+        byte_cnt    [8]  = 8'd0;       // bytes received so far
+        parity_acc  [8]  = 8'h00;      // running XOR parity
+        parity_ok   [1]  = 1'b0;       // parity check result
+
+        // Sample assembly (little-endian: low byte first)
+        low_byte    [8]  = 8'h00;      // stored low byte
+        have_low    [1]  = 1'b0;       // waiting for high byte
+
+        // Sample counting and flush
+        samp_cnt    [6]  = 6'd0;       // samples assembled so far (0-63)
+        flush_idx   [6]  = 6'd0;       // index during flush to audio buffer
+
+        // Watchdog timer: resets to IDLE on timeout during RX_DATA/RX_PARITY
+        wd_cnt      [13] = 13'd0;
+
+        // Periodic fill-level report timer (counts down in IDLE)
+        fill_timer  [16] = 16'd0;
+
+        // Output registers
+        wr_data_r   [16] = 16'h0000;
+        wr_valid_r  [1]  = 1'b0;
+        tx_data_r   [8]  = 8'h00;
+        tx_valid_r  [1]  = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        wr_data  <= wr_data_r;
+        wr_valid <= wr_valid_r;
+        tx_data  <= tx_data_r;
+        tx_valid <= tx_valid_r;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        SELECT (state) {
+            CASE (3'd0) {
+                // IDLE: wait for LEN byte, send periodic fill reports
+                wr_valid_r <= 1'b0;
+                have_low   <= 1'b0;
+                IF (rx_valid == 1'b1) {
+                    // Start receiving a new packet
+                    pkt_len    <= rx_data;
+                    byte_cnt   <= 8'd0;
+                    parity_acc <= 8'h00;
+                    samp_cnt   <= 6'd0;
+                    wd_cnt     <= 13'd0;
+                    tx_valid_r <= 1'b0;
+                    state      <= 3'd1;
+                } ELIF (fill_timer == 16'd0 && tx_ready == 1'b1) {
+                    // Timer expired: send unsolicited fill-level report
+                    tx_data_r  <= { buf_fill, 1'b0 };
+                    tx_valid_r <= 1'b1;
+                    fill_timer <= lit(16, FILL_INTERVAL);
+                } ELSE {
+                    tx_valid_r <= 1'b0;
+                    IF (fill_timer != 16'd0) {
+                        fill_timer <= fill_timer - 16'd1;
+                    }
+                }
+            }
+
+            CASE (3'd1) {
+                // RX_DATA: receive pkt_len data bytes, buffer samples locally
+                tx_valid_r <= 1'b0;
+                wr_valid_r <= 1'b0;
+                IF (wd_cnt == lit(13, WD_TIMEOUT)) {
+                    // Watchdog timeout: no byte for ~200us, resync
+                    state  <= 3'd0;
+                    wd_cnt <= 13'd0;
+                } ELIF (rx_valid == 1'b1) {
+                    // Reset watchdog on each received byte
+                    wd_cnt <= 13'd0;
+
+                    // Accumulate parity
+                    parity_acc <= parity_acc ^ rx_data;
+
+                    // Assemble 16-bit samples (little-endian)
+                    IF (have_low == 1'b0) {
+                        // Low byte: store and wait for high byte
+                        low_byte <= rx_data;
+                        have_low <= 1'b1;
+                    } ELSE {
+                        // High byte: store complete sample in local RAM
+                        pkt_ram.wr[samp_cnt] <= { rx_data, low_byte };
+                        samp_cnt <= samp_cnt + 6'd1;
+                        have_low <= 1'b0;
+                    }
+
+                    // Count bytes
+                    IF (byte_cnt + 8'd1 == pkt_len) {
+                        // All data received, expect parity next
+                        state <= 3'd2;
+                    } ELSE {
+                        byte_cnt <= byte_cnt + 8'd1;
+                    }
+                } ELSE {
+                    wd_cnt <= wd_cnt + 13'd1;
+                }
+            }
+
+            CASE (3'd2) {
+                // RX_PARITY: receive and check parity byte
+                wr_valid_r <= 1'b0;
+                tx_valid_r <= 1'b0;
+                IF (wd_cnt == lit(13, WD_TIMEOUT)) {
+                    // Watchdog timeout: resync
+                    state  <= 3'd0;
+                    wd_cnt <= 13'd0;
+                } ELIF (rx_valid == 1'b1) {
+                    wd_cnt <= 13'd0;
+                    IF (parity_acc == rx_data) {
+                        parity_ok <= 1'b1;
+                        // Parity OK: flush buffered samples to audio buffer
+                        flush_idx <= 6'd0;
+                        state     <= 3'd3;
+                    } ELSE {
+                        parity_ok <= 1'b0;
+                        // Parity failed: skip flush, go straight to ACK
+                        state <= 3'd4;
+                    }
+                } ELSE {
+                    wd_cnt <= wd_cnt + 13'd1;
+                }
+            }
+
+            CASE (3'd3) {
+                // FLUSH: write buffered samples to audio ring buffer (1 per cycle)
+                tx_valid_r <= 1'b0;
+                wr_data_r  <= pkt_ram.rd[flush_idx];
+                wr_valid_r <= 1'b1;
+                IF (flush_idx + 6'd1 == samp_cnt) {
+                    // Last sample flushed, send ACK
+                    state <= 3'd4;
+                } ELSE {
+                    flush_idx <= flush_idx + 6'd1;
+                }
+            }
+
+            CASE (3'd4) {
+                // TX_ACK: send ACK byte when TX is ready
+                wr_valid_r <= 1'b0;
+                IF (tx_ready == 1'b1) {
+                    // ACK: bits[7:1] = buffer fill (0-127), bit[0] = status
+                    IF (parity_ok == 1'b1) {
+                        tx_data_r  <= { buf_fill, 1'b0 };
+                    } ELSE {
+                        tx_data_r  <= { buf_fill, 1'b1 };
+                    }
+                    tx_valid_r <= 1'b1;
+                    state      <= 3'd0;
+                } ELSE {
+                    tx_valid_r <= 1'b0;
+                }
+            }
+
+            DEFAULT {
+                wr_valid_r <= 1'b0;
+                tx_valid_r <= 1'b0;
+                state      <= 3'd0;
+            }
+        }
+    }
+@endmod

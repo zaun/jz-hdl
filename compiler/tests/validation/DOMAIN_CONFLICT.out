@@ -1,0 +1,2 @@
+File: DOMAIN_CONFLICT.jz
+      36:12   error DOMAIN_CONFLICT S4.11/S4.12 Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock

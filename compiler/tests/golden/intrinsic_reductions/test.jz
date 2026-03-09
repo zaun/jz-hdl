@@ -1,0 +1,61 @@
+// ============================================================================
+// TEST: INTRINSIC REDUCTIONS (reduce_and, reduce_or, reduce_xor)
+// VERIFIES: Sections 5.5.26–5.5.28 — Reduction operators.
+//   - Result width = 1 for all reductions
+//   - 8-bit source → 1-bit result
+//   - Usage in ASYNCHRONOUS context
+// ============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") ReductionTest
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK     = { standard=LVCMOS33 };
+        DONE     = { standard=LVCMOS33 };
+        data[8]  = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        r_and [1] = { standard=LVCMOS33, drive=8 };
+        r_or  [1] = { standard=LVCMOS33, drive=8 };
+        r_xor [1] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+        DONE = IOR32B;
+        data[0] = 10; data[1] = 11; data[2] = 12; data[3] = 13;
+        data[4] = 14; data[5] = 15; data[6] = 16; data[7] = 17;
+        r_and[0] = 30;
+        r_or[0]  = 31;
+        r_xor[0] = 32;
+    }
+
+    @top ReductionCore {
+        IN  [1] clk   = SCLK;
+        IN  [1] rst_n = DONE;
+        IN  [8] data  = data;
+        OUT [1] r_and = r_and;
+        OUT [1] r_or  = r_or;
+        OUT [1] r_xor = r_xor;
+    }
+@endproj
+
+@module ReductionCore
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [8] data;
+        OUT [1] r_and;
+        OUT [1] r_or;
+        OUT [1] r_xor;
+    }
+
+    ASYNCHRONOUS {
+        r_and <= reduce_and(data);
+        r_or  <= reduce_or(data);
+        r_xor <= reduce_xor(data);
+    }
+@endmod

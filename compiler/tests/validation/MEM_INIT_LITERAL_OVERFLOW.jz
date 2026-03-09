@@ -1,0 +1,25 @@
+// MEM_INIT_LITERAL_OVERFLOW: initialization literal wider than MEM word width.
+// Verfied
+
+@project MEM_INIT_LITERAL_OVERFLOW_PROJECT
+  @top MEM_INIT_LITERAL_OVERFLOW_EXAMPLE {
+    OUT [8] data = _;
+  }
+@endproj
+
+@module MEM_INIT_LITERAL_OVERFLOW_EXAMPLE
+  PORT {
+    OUT [8] data;
+  }
+
+  MEM {
+    // Word width 8, but init literal is 16 bits wide.
+    too_narrow [8] [4] = 16'hFFFF {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    data <= too_narrow.rd[1];
+  }
+@endmod

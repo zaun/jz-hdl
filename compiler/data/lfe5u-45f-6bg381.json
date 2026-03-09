@@ -1,0 +1,537 @@
+{
+  "chipid": "LFE5U-45F-6BG381",
+  "description": "Primitives available on the Lattice ECP5 LFE5U-45F in BG381 (381-ball caBGA) package, speed grade -6.",
+
+  "boards": [
+    {
+      "name": "Colorlight i9",
+      "url": "https://www.colorlight.net/colorlight-i9-led-receiving-card"
+    }
+  ],
+
+  "resources": {
+    "LUT4": 44000,
+    "DFF": 44000,
+    "IOB": 203,
+    "LVDS_PAIRS": 64,
+    "GSR": 1
+  },
+
+  "latches": {
+    "source": "FPGA-DS-02012-3.1, Section 2.3 (PFU Architecture)",
+    "PFU": {
+      "description": "Programmable Function Unit (General Logic)",
+      "D": false,
+      "SR": false,
+      "note": "PFU storage elements are strictly edge-triggered registers."
+    },
+    "IOB": {
+      "description": "I/O Blocks (Input/Output Pins)",
+      "D": true,
+      "SR": false,
+      "modes": ["Transparent"],
+      "note": "PIO register can be configured as a transparent latch."
+    }
+  },
+
+  "dsp": {
+    "source": "FPGA-DS-02012-3.1, Table 1.1; TN1267 ECP5 SYSDSP Usage Guide",
+    "description": "Hardware multipliers and ALUs (two DSP rows, 36 slices)",
+    "MULT18X18": {
+      "quantity": 72,
+      "description": "18x18 bit multiplier (two per DSP slice)"
+    },
+    "MULT9X9": {
+      "quantity": 144,
+      "description": "9x9 bit multiplier (four per DSP slice)"
+    },
+    "ALU54": {
+      "quantity": 36,
+      "description": "54-bit ALU (one per DSP slice)"
+    }
+  },
+
+  "memory": [
+    {
+      "type": "DISTRIBUTED",
+      "source": "FPGA-DS-02012-3.1, Table 1.1 (Distributed RAM 351 Kbits)",
+      "description": "Distributed memory from PFU slices",
+      "total_bits": 359424,
+      "r_ports": 1,
+      "w_ports": 1,
+      "configurations": [
+        { "width": 1,  "depth": 359424 },
+        { "width": 2,  "depth": 179712 },
+        { "width": 4,  "depth": 89856 },
+        { "width": 8,  "depth": 44928 },
+        { "width": 16, "depth": 22464 }
+      ]
+    },
+    {
+      "type": "BLOCK",
+      "source": "FPGA-DS-02012-3.1, Table 1.1, Section 2.5 (EBR), Table 2.7 (EBR Configurations), Table 3.20 (EBR Timing)",
+      "description": "Embedded Block RAM (EBR). Each block is 18,432 bits (18 Kbits). Total of 108 blocks providing 1,990,656 bits.",
+      "quantity": 108,
+      "bits_per_block": 18432,
+      "total_bits": 1990656,
+      "max_freq_mhz": 200,
+      "note": "108 blocks x 18,432 bits = 1,990,656 bits. Max freq conservative estimate for -6 speed grade (272 MHz at -8).",
+      "modes": [{
+        "name": "Single Port",
+        "description": "Single port read/write",
+        "ports": [
+            { "id": "A", "read": true, "write": true }
+        ],
+        "configurations": [
+          { "width": 1,  "depth": 16384 },
+          { "width": 2,  "depth": 8192 },
+          { "width": 4,  "depth": 4096 },
+          { "width": 9,  "depth": 2048 },
+          { "width": 18, "depth": 1024 },
+          { "width": 36, "depth": 512 }
+        ]
+      },
+      {
+        "name": "True Dual Port",
+        "description": "Two independent ports with read/write on each",
+        "ports": [
+            { "id": "A", "read": true, "write": true },
+            { "id": "B", "read": true, "write": true }
+        ],
+        "configurations": [
+          { "width": 1,  "depth": 16384 },
+          { "width": 2,  "depth": 8192 },
+          { "width": 4,  "depth": 4096 },
+          { "width": 9,  "depth": 2048 },
+          { "width": 18, "depth": 1024 }
+        ]
+      },
+      {
+        "name": "Pseudo-Dual Port",
+        "description": "Write on Port A, read on Port B simultaneously",
+        "ports": [
+            { "id": "A", "read": false, "write": true },
+            { "id": "B", "read": true,  "write": false }
+        ],
+        "configurations": [
+          { "width": 1,  "depth": 16384 },
+          { "width": 2,  "depth": 8192 },
+          { "width": 4,  "depth": 4096 },
+          { "width": 9,  "depth": 2048 },
+          { "width": 18, "depth": 1024 },
+          { "width": 36, "depth": 512 }
+        ]
+      },
+      {
+        "name": "Read Only Memory",
+        "description": "Read-only with initialization during power-on",
+        "ports": [
+            { "id": "A", "read": true, "write": false }
+        ],
+        "configurations": [
+          { "width": 1,  "depth": 16384 },
+          { "width": 2,  "depth": 8192 },
+          { "width": 4,  "depth": 4096 },
+          { "width": 9,  "depth": 2048 },
+          { "width": 18, "depth": 1024 },
+          { "width": 36, "depth": 512 }
+        ]
+      }]
+    }
+  ],
+
+  "clock_gen": [
+    {
+      "type": "osc",
+      "source": "FPGA-DS-02012-3.1, Section 2.12 (Internal Oscillator); FPGA-TN-02200-1.3",
+      "description": "Internal Oscillator (OSCG). Programmable output frequency via DIV parameter. Nominal base ~580 MHz / DIV.",
+      "count": 1,
+      "map": {
+        "verilog-2005": [
+          "OSCG #(\n",
+          "    .DIV(%%DIV%%)\n",
+          ") u_osc (\n",
+          "    .OSC(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\OSCG $auto$osc\n",
+          "  parameter \\DIV %%DIV%%\n",
+          "  connect \\OSC \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "required": false,
+          "description": "OSC has no external clock input"
+        }
+      },
+
+      "parameters": {
+        "DIV": {
+          "description": "Oscillator divider. Output frequency = ~580 MHz / DIV. Common values: DIV=10 -> 62.0 MHz, DIV=15 -> 38.8 MHz, DIV=30 -> 19.4 MHz, DIV=60 -> 9.7 MHz, DIV=120 -> 4.8 MHz, DIV=240 -> 2.4 MHz.",
+          "type": "int",
+          "default": 10,
+          "min": 2,
+          "max": 240
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "Internal oscillator output",
+          "port": "OSC",
+          "frequency_mhz": { "expr": "580.0 / DIV" }
+        }
+      }
+    },
+    {
+      "type": "pll",
+      "source": "FPGA-DS-02012-3.1, Section 2.8 (sysCLOCK PLLs), Table 3.23 (PLL Timing); FPGA-TN-02200-1.3 ECP5 sysCLOCK PLL/DLL Design and Usage Guide",
+      "description": "Phase-Locked Loop (EHXPLLL). Internal feedback mode (FEEDBK_PATH=CLKOP). Four outputs: CLKOP (primary), CLKOS, CLKOS2, CLKOS3.",
+
+      "count": 4,
+      "chaining": false,
+
+      "map": {
+        "verilog-2005": [
+          "EHXPLLL #(\n",
+          "    .PLLRST_ENA(\"DISABLED\"),\n",
+          "    .INTFB_WAKE(\"DISABLED\"),\n",
+          "    .STDBY_ENABLE(\"DISABLED\"),\n",
+          "    .DPHASE_SOURCE(\"DISABLED\"),\n",
+          "    .OUTDIVIDER_MUXA(\"DIVA\"),\n",
+          "    .OUTDIVIDER_MUXB(\"DIVB\"),\n",
+          "    .OUTDIVIDER_MUXC(\"DIVC\"),\n",
+          "    .OUTDIVIDER_MUXD(\"DIVD\"),\n",
+          "    .CLKI_DIV(%%CLKI_DIV%%),\n",
+          "    .CLKFB_DIV(%%CLKFB_DIV%%),\n",
+          "    .CLKOP_DIV(%%CLKOP_DIV%%),\n",
+          "    .CLKOS_DIV(%%CLKOS_DIV%%),\n",
+          "    .CLKOS2_DIV(%%CLKOS2_DIV%%),\n",
+          "    .CLKOS3_DIV(%%CLKOS3_DIV%%),\n",
+          "    .CLKOP_ENABLE(\"ENABLED\"),\n",
+          "    .CLKOS_ENABLE(\"ENABLED\"),\n",
+          "    .CLKOS2_ENABLE(\"ENABLED\"),\n",
+          "    .CLKOS3_ENABLE(\"ENABLED\"),\n",
+          "    .CLKOP_CPHASE(0),\n",
+          "    .CLKOS_CPHASE(0),\n",
+          "    .CLKOS2_CPHASE(0),\n",
+          "    .CLKOS3_CPHASE(0),\n",
+          "    .CLKOP_FPHASE(0),\n",
+          "    .CLKOS_FPHASE(0),\n",
+          "    .CLKOS2_FPHASE(0),\n",
+          "    .CLKOS3_FPHASE(0),\n",
+          "    .FEEDBK_PATH(\"CLKOP\")\n",
+          ") u_pll_%%instance_idx%% (\n",
+          "    .CLKI(%%REF_CLK%%),\n",
+          "    .CLKFB(%%BASE%%),\n",
+          "    .RST(1'b0),\n",
+          "    .STDBY(1'b0),\n",
+          "    .PHASESEL0(1'b0),\n",
+          "    .PHASESEL1(1'b0),\n",
+          "    .PHASEDIR(1'b0),\n",
+          "    .PHASESTEP(1'b0),\n",
+          "    .PHASELOADREG(1'b0),\n",
+          "    .PLLWAKESYNC(1'b0),\n",
+          "    .ENCLKOP(1'b0),\n",
+          "    .ENCLKOS(1'b0),\n",
+          "    .ENCLKOS2(1'b0),\n",
+          "    .ENCLKOS3(1'b0),\n",
+          "    .CLKOP(%%BASE%%),\n",
+          "    .CLKOS(%%CLKOS%%),\n",
+          "    .CLKOS2(%%CLKOS2%%),\n",
+          "    .CLKOS3(%%CLKOS3%%),\n",
+          "    .LOCK(%%LOCK%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\EHXPLLL $auto$%%instance_idx%%\n",
+          "  parameter \\PLLRST_ENA \"DISABLED\"\n",
+          "  parameter \\INTFB_WAKE \"DISABLED\"\n",
+          "  parameter \\STDBY_ENABLE \"DISABLED\"\n",
+          "  parameter \\DPHASE_SOURCE \"DISABLED\"\n",
+          "  parameter \\OUTDIVIDER_MUXA \"DIVA\"\n",
+          "  parameter \\OUTDIVIDER_MUXB \"DIVB\"\n",
+          "  parameter \\OUTDIVIDER_MUXC \"DIVC\"\n",
+          "  parameter \\OUTDIVIDER_MUXD \"DIVD\"\n",
+          "  parameter \\CLKI_DIV %%CLKI_DIV%%\n",
+          "  parameter \\CLKFB_DIV %%CLKFB_DIV%%\n",
+          "  parameter \\CLKOP_DIV %%CLKOP_DIV%%\n",
+          "  parameter \\CLKOS_DIV %%CLKOS_DIV%%\n",
+          "  parameter \\CLKOS2_DIV %%CLKOS2_DIV%%\n",
+          "  parameter \\CLKOS3_DIV %%CLKOS3_DIV%%\n",
+          "  parameter \\CLKOP_ENABLE \"ENABLED\"\n",
+          "  parameter \\CLKOS_ENABLE \"ENABLED\"\n",
+          "  parameter \\CLKOS2_ENABLE \"ENABLED\"\n",
+          "  parameter \\CLKOS3_ENABLE \"ENABLED\"\n",
+          "  parameter \\CLKOP_CPHASE 0\n",
+          "  parameter \\CLKOS_CPHASE 0\n",
+          "  parameter \\CLKOS2_CPHASE 0\n",
+          "  parameter \\CLKOS3_CPHASE 0\n",
+          "  parameter \\CLKOP_FPHASE 0\n",
+          "  parameter \\CLKOS_FPHASE 0\n",
+          "  parameter \\CLKOS2_FPHASE 0\n",
+          "  parameter \\CLKOS3_FPHASE 0\n",
+          "  parameter \\FEEDBK_PATH \"CLKOP\"\n",
+          "  connect \\CLKI \\%%REF_CLK%%\n",
+          "  connect \\CLKFB \\%%BASE%%\n",
+          "  connect \\RST 1'0\n",
+          "  connect \\STDBY 1'0\n",
+          "  connect \\PHASESEL0 1'0\n",
+          "  connect \\PHASESEL1 1'0\n",
+          "  connect \\PHASEDIR 1'0\n",
+          "  connect \\PHASESTEP 1'0\n",
+          "  connect \\PHASELOADREG 1'0\n",
+          "  connect \\PLLWAKESYNC 1'0\n",
+          "  connect \\ENCLKOP 1'0\n",
+          "  connect \\ENCLKOS 1'0\n",
+          "  connect \\ENCLKOS2 1'0\n",
+          "  connect \\ENCLKOS3 1'0\n",
+          "  connect \\CLKOP \\%%BASE%%\n",
+          "  connect \\CLKOS \\%%CLKOS%%\n",
+          "  connect \\CLKOS2 \\%%CLKOS2%%\n",
+          "  connect \\CLKOS3 \\%%CLKOS3%%\n",
+          "  connect \\LOCK \\%%LOCK%%\n",
+          "end\n"
+        ]
+      },
+
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the PLL (CLKI)",
+          "required": true,
+          "width": 1,
+          "requires_period": true,
+          "min_mhz": 8,
+          "max_mhz": 400
+        }
+      },
+
+      "parameters": {
+        "CLKI_DIV": {
+          "description": "Input clock divider (1-128)",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 128
+        },
+
+        "CLKFB_DIV": {
+          "description": "Feedback divider / VCO multiplier (1-128)",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 128
+        },
+
+        "CLKOP_DIV": {
+          "description": "Primary output divider (1-128)",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+
+        "CLKOS_DIV": {
+          "description": "Secondary output divider (1-128)",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+
+        "CLKOS2_DIV": {
+          "description": "Tertiary output divider (1-128)",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+
+        "CLKOS3_DIV": {
+          "description": "Quaternary output divider (1-128)",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        }
+      },
+
+      "derived": {
+        "FVCO": {
+          "description": "Internal VCO frequency: fIN * CLKFB_DIV / CLKI_DIV",
+          "expr": "(1000.0 / REF_CLK_period_ns) * CLKFB_DIV / CLKI_DIV",
+          "min": 400,
+          "max": 800
+        }
+      },
+
+      "outputs": {
+        "BASE": {
+          "description": "Primary PLL output (CLKOP)",
+          "port": "CLKOP",
+          "frequency_mhz": {
+            "description": "Primary output frequency: FVCO / CLKOP_DIV",
+            "expr": "FVCO / CLKOP_DIV"
+          }
+        },
+
+        "CLKOS": {
+          "description": "Secondary PLL output",
+          "port": "CLKOS",
+          "frequency_mhz": {
+            "description": "Secondary output frequency: FVCO / CLKOS_DIV",
+            "expr": "FVCO / CLKOS_DIV"
+          }
+        },
+
+        "CLKOS2": {
+          "description": "Tertiary PLL output",
+          "port": "CLKOS2",
+          "frequency_mhz": {
+            "description": "Tertiary output frequency: FVCO / CLKOS2_DIV",
+            "expr": "FVCO / CLKOS2_DIV"
+          }
+        },
+
+        "CLKOS3": {
+          "description": "Quaternary PLL output",
+          "port": "CLKOS3",
+          "frequency_mhz": {
+            "description": "Quaternary output frequency: FVCO / CLKOS3_DIV",
+            "expr": "FVCO / CLKOS3_DIV"
+          }
+        },
+
+        "LOCK": {
+          "description": "PLL lock indicator, high when PLL is locked",
+          "port": "LOCK"
+        }
+      },
+
+      "constraints": [
+        {
+          "description": "VCO frequency must be within 400-800 MHz range for -6 speed grade.",
+          "rule": "FVCO range check"
+        },
+        {
+          "description": "Output frequency must be within 3.125-400 MHz range.",
+          "rule": "output frequency range check"
+        }
+      ]
+    },
+    {
+      "type": "buf",
+      "source": "FPGA-DS-02012-3.1, Section 2.5.1.1 (Dynamic Clock Control); FPGA-TN-02200-1.3, Section 11 (DCCA)",
+      "mode": "global",
+      "description": "Dynamic Clock Control (DCCA). Glitchless enable/disable gate on the primary clock network. CE is active-high.",
+      "count": 56,
+
+      "map": {
+        "verilog-2005": [
+          "DCCA u_dcca_%%instance_idx%% (\n",
+          "    .CLKI(%%REF_CLK%%),\n",
+          "    .CE(%%CE%%),\n",
+          "    .CLKO(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\DCCA $auto$%%instance_idx%%\n",
+          "  connect \\CLKI \\%%REF_CLK%%\n",
+          "  connect \\CE 1'1\n",
+          "  connect \\CLKO \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the buffer",
+          "required": true,
+          "width": 1,
+          "requires_period": true
+        },
+        "CE": {
+          "description": "Clock enable (active-high). When deasserted, output is held low.",
+          "required": false,
+          "default": "1'b1",
+          "width": 1
+        }
+      },
+
+      "outputs": {
+        "BASE": {
+          "description": "Buffered clock output on primary clock network",
+          "port": "CLKO",
+          "frequency_mhz": {
+            "description": "Same frequency as input (buffer, no division).",
+            "expr": "(1000.0 / REF_CLK_period_ns)"
+          }
+        }
+      }
+    }
+  ],
+
+  "differential": {
+    "source": "FPGA-DS-02012-3.1, Section 3.14 (Differential I/O); FPGA-TN-02204-1.6",
+    "type": "true",
+    "io_type": "LVDS25",
+    "output": {
+      "buffer": {
+        "description": "LVDS differential output buffer (emulated via LVDS25E)",
+        "map": {
+          "verilog-2005": [
+            "LVDS25E_OBUF u_%%instance%% (\n",
+            "    .I(%%input%%),\n",
+            "    .O(%%pin_p%%),\n",
+            "    .OB(%%pin_n%%)\n",
+            ");\n"
+          ],
+          "rtlil": [
+            "cell \\LVDS25E_OBUF $auto$%%instance%%\n",
+            "  connect \\I \\%%input%%\n",
+            "  connect \\O \\%%pin_p%%\n",
+            "  connect \\OB \\%%pin_n%%\n",
+            "end\n"
+          ]
+        }
+      }
+    },
+    "input": {
+      "buffer": {
+        "description": "LVDS differential input buffer",
+        "map": {
+          "verilog-2005": [
+            "LVDS25_IBUF u_%%instance%% (\n",
+            "    .I(%%pin_p%%),\n",
+            "    .IB(%%pin_n%%),\n",
+            "    .O(%%output%%)\n",
+            ");\n"
+          ],
+          "rtlil": [
+            "cell \\LVDS25_IBUF $auto$%%instance%%\n",
+            "  connect \\I \\%%pin_p%%\n",
+            "  connect \\IB \\%%pin_n%%\n",
+            "  connect \\O \\%%output%%\n",
+            "end\n"
+          ]
+        }
+      }
+    }
+  },
+
+  "fixed_pins": [
+    { "pad": "TDI",      "name": "TDI",      "note": "JTAG test data in" },
+    { "pad": "TDO",      "name": "TDO",      "note": "JTAG test data out" },
+    { "pad": "TCK",      "name": "TCK",      "note": "JTAG test clock" },
+    { "pad": "TMS",      "name": "TMS",      "note": "JTAG test mode select" },
+    { "pad": "PROGRAMN", "name": "PROGRAMN", "note": "Active-low program initiation" },
+    { "pad": "INITN",    "name": "INITN",    "note": "Active-low initialization indicator" },
+    { "pad": "DONE",     "name": "DONE",     "note": "Configuration done indicator" },
+    { "pad": "CCLK",     "name": "CCLK",     "note": "Configuration clock" },
+    { "pad": "CFG0",     "name": "CFG0",     "note": "Configuration mode select 0" },
+    { "pad": "CFG1",     "name": "CFG1",     "note": "Configuration mode select 1" },
+    { "pad": "CFG2",     "name": "CFG2",     "note": "Configuration mode select 2" }
+  ]
+}

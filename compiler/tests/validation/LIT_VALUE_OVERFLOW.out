@@ -1,0 +1,2 @@
+File: LIT_VALUE_OVERFLOW.jz
+      16:13   error LIT_VALUE_OVERFLOW S5.5.11 lit() value exceeds declared width

@@ -1,0 +1,341 @@
+// Simple 32-bit accumulator-based CPU
+// Registers: A (accumulator), X (index) - 32-bit
+//            SP (stack pointer), PC (program counter) - 16-bit
+// Flags: Z (zero), C (carry), N (negative)
+//
+// Instruction format (32-bit fixed):
+//   [31:24] opcode (8-bit)
+//   [23:16] operand byte
+//   [15:0]  immediate/address (16-bit)
+//
+// Memory map:
+//   0x0000-0x0FFF  ROM (4096 words)
+//   0x1000-0x1FFF  RAM (4096 words, stack at top)
+//   0x2000         LED output
+@module cpu
+    CONST {
+        START_PC = 0;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        BUS SIMPLE_BUS SOURCE pbus;
+    }
+
+    REGISTER {
+        // Program counter
+        PC      [16] = lit(16, START_PC);
+
+        // Registers
+        reg_a   [32] = 32'h00000000;
+        reg_x   [32] = 32'h00000000;
+
+        // Stack pointer
+        SP      [16] = 16'h1FFF;
+
+        // Flags
+        flag_z  [1] = 1'b0;
+        flag_c  [1] = 1'b0;
+        flag_n  [1] = 1'b0;
+
+        // State machine
+        state   [4] = STATE.FETCH;
+
+        // Instruction register
+        instr   [32] = 32'h00000000;
+
+        // Bus control registers
+        bus_addr  [16] = 16'h0000;
+        bus_data  [32] = 32'h00000000;
+        bus_cmd   [1]  = 1'b0;
+        bus_valid [1]  = 1'b0;
+
+        // Load/store destination tracking
+        mem_dst   [1] = 1'b0;    // 0=A, 1=X
+    }
+
+    WIRE {
+        // Decoded instruction fields
+        opcode    [8];
+        imm_addr  [16];
+    }
+
+    ASYNCHRONOUS {
+        // Instruction decode
+        opcode   = instr[31:24];
+        imm_addr = instr[15:0];
+
+        // Drive bus signals
+        pbus.ADDR  <= bus_addr;
+        pbus.DATA  <= (bus_valid == 1'b1 && bus_cmd == CMD.WRITE) ? bus_data : 32'bz;
+        pbus.CMD   <= bus_cmd;
+        pbus.VALID <= bus_valid;
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        IF (state == STATE.FETCH) {
+            // Start instruction fetch from memory at PC
+            bus_addr  <= PC;
+            bus_cmd   <= CMD.READ;
+            bus_valid <= 1'b1;
+            state     <= STATE.WAIT_FETCH;
+
+        } ELIF (state == STATE.WAIT_FETCH) {
+            // Wait for memory to respond
+            IF (pbus.DONE == 1'b1) {
+                instr     <= pbus.DATA;
+                bus_valid <= 1'b0;
+                state     <= STATE.DECODE;
+            }
+
+        } ELIF (state == STATE.DECODE) {
+            // Decode and execute simple instructions, or set up memory access
+            IF (opcode == OP.NOP) {
+                PC    <= PC + 16'h0001;
+                state <= STATE.FETCH;
+
+            } ELIF (opcode == OP.LDI_A) {
+                // Load 16-bit immediate into A (zero-extended)
+                reg_a  <= {16'h0000, imm_addr};
+                flag_z <= (imm_addr == 16'h0000) ? 1'b1 : 1'b0;
+                flag_n <= 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.LDI_X) {
+                // Load 16-bit immediate into X (zero-extended)
+                reg_x  <= {16'h0000, imm_addr};
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.LD_A) {
+                // Start memory read for A
+                bus_addr  <= imm_addr;
+                bus_cmd   <= CMD.READ;
+                bus_valid <= 1'b1;
+                mem_dst   <= 1'b0;
+                PC        <= PC + 16'h0001;
+                state     <= STATE.MEM_WAIT;
+
+            } ELIF (opcode == OP.LD_X) {
+                // Start memory read for X
+                bus_addr  <= imm_addr;
+                bus_cmd   <= CMD.READ;
+                bus_valid <= 1'b1;
+                mem_dst   <= 1'b1;
+                PC        <= PC + 16'h0001;
+                state     <= STATE.MEM_WAIT;
+
+            } ELIF (opcode == OP.ST_A) {
+                // Start memory write from A
+                bus_addr  <= imm_addr;
+                bus_data  <= reg_a;
+                bus_cmd   <= CMD.WRITE;
+                bus_valid <= 1'b1;
+                PC        <= PC + 16'h0001;
+                state     <= STATE.MEM_WAIT;
+
+            } ELIF (opcode == OP.ST_X) {
+                // Start memory write from X
+                bus_addr  <= imm_addr;
+                bus_data  <= reg_x;
+                bus_cmd   <= CMD.WRITE;
+                bus_valid <= 1'b1;
+                PC        <= PC + 16'h0001;
+                state     <= STATE.MEM_WAIT;
+
+            } ELIF (opcode == OP.ADD) {
+                // A = A + X
+                reg_a  <= reg_a[31:0] + reg_x[31:0];
+                flag_z <= ((reg_a[31:0] + reg_x[31:0]) == 32'h00000000) ? 1'b1 : 1'b0;
+                flag_n <= reg_a[31] ^ reg_x[31];
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.SUB) {
+                // A = A - X
+                reg_a  <= reg_a[31:0] - reg_x[31:0];
+                flag_z <= ((reg_a[31:0] - reg_x[31:0]) == 32'h00000000) ? 1'b1 : 1'b0;
+                flag_n <= (reg_a < reg_x) ? 1'b1 : 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.AND) {
+                reg_a  <= reg_a & reg_x;
+                flag_z <= ((reg_a & reg_x) == 32'h00000000) ? 1'b1 : 1'b0;
+                flag_n <= 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.OR) {
+                reg_a  <= reg_a | reg_x;
+                flag_z <= ((reg_a | reg_x) == 32'h00000000) ? 1'b1 : 1'b0;
+                flag_n <= 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.XOR) {
+                reg_a  <= reg_a ^ reg_x;
+                flag_z <= ((reg_a ^ reg_x) == 32'h00000000) ? 1'b1 : 1'b0;
+                flag_n <= 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.CMP) {
+                // Set flags from A - X (don't store result)
+                flag_z <= (reg_a == reg_x) ? 1'b1 : 1'b0;
+                flag_c <= (reg_a >= reg_x) ? 1'b1 : 1'b0;
+                flag_n <= (reg_a < reg_x) ? 1'b1 : 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.JMP) {
+                PC    <= imm_addr;
+                state <= STATE.FETCH;
+
+            } ELIF (opcode == OP.BEQ) {
+                IF (flag_z == 1'b1) {
+                    PC <= imm_addr;
+                } ELSE {
+                    PC <= PC + 16'h0001;
+                }
+                state <= STATE.FETCH;
+
+            } ELIF (opcode == OP.BNE) {
+                IF (flag_z == 1'b0) {
+                    PC <= imm_addr;
+                } ELSE {
+                    PC <= PC + 16'h0001;
+                }
+                state <= STATE.FETCH;
+
+            } ELIF (opcode == OP.INC) {
+                reg_a  <= reg_a + 32'h00000001;
+                flag_z <= ((reg_a + 32'h00000001) == 32'h00000000) ? 1'b1 : 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.DEC) {
+                reg_a  <= reg_a - 32'h00000001;
+                flag_z <= ((reg_a - 32'h00000001) == 32'h00000000) ? 1'b1 : 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.SHL) {
+                flag_c <= reg_a[31];
+                reg_a  <= {reg_a[30:0], 1'b0};
+                flag_z <= ({reg_a[30:0], 1'b0} == 32'h00000000) ? 1'b1 : 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.SHR) {
+                flag_c <= reg_a[0];
+                reg_a  <= {1'b0, reg_a[31:1]};
+                flag_z <= ({1'b0, reg_a[31:1]} == 32'h00000000) ? 1'b1 : 1'b0;
+                PC     <= PC + 16'h0001;
+                state  <= STATE.FETCH;
+
+            } ELIF (opcode == OP.PUSH) {
+                // Push A: write A to mem[SP], then SP -= 1
+                bus_addr  <= SP;
+                bus_data  <= reg_a;
+                bus_cmd   <= CMD.WRITE;
+                bus_valid <= 1'b1;
+                state     <= STATE.PUSH_EXEC;
+
+            } ELIF (opcode == OP.POP) {
+                // Pop A: SP += 1, then read mem[SP]
+                SP        <= SP + 16'h0001;
+                bus_addr  <= SP + 16'h0001;
+                bus_cmd   <= CMD.READ;
+                bus_valid <= 1'b1;
+                mem_dst   <= 1'b0;
+                state     <= STATE.POP_EXEC;
+
+            } ELIF (opcode == OP.CALL) {
+                // Push PC+1, then jump to addr
+                bus_addr  <= SP;
+                bus_data  <= {16'h0000, PC + 16'h0001};
+                bus_cmd   <= CMD.WRITE;
+                bus_valid <= 1'b1;
+                state     <= STATE.CALL_PUSH;
+
+            } ELIF (opcode == OP.RET) {
+                // Pop PC
+                SP        <= SP + 16'h0001;
+                bus_addr  <= SP + 16'h0001;
+                bus_cmd   <= CMD.READ;
+                bus_valid <= 1'b1;
+                state     <= STATE.RET_POP;
+
+            } ELIF (opcode == OP.HLT) {
+                bus_valid <= 1'b0;
+                state     <= STATE.HALT;
+
+            } ELSE {
+                // Unknown opcode: treat as NOP
+                PC    <= PC + 16'h0001;
+                state <= STATE.FETCH;
+            }
+
+        } ELIF (state == STATE.MEM_WAIT) {
+            // Wait for memory read/write to complete
+            IF (pbus.DONE == 1'b1) {
+                bus_valid <= 1'b0;
+                IF (bus_cmd == CMD.READ) {
+                    // Load result into destination register
+                    IF (mem_dst == 1'b0) {
+                        reg_a  <= pbus.DATA;
+                        flag_z <= (pbus.DATA == 32'h00000000) ? 1'b1 : 1'b0;
+                        flag_n <= pbus.DATA[31];
+                    } ELSE {
+                        reg_x <= pbus.DATA;
+                    }
+                }
+                state <= STATE.FETCH;
+            }
+
+        } ELIF (state == STATE.PUSH_EXEC) {
+            // Wait for push write to complete
+            IF (pbus.DONE == 1'b1) {
+                bus_valid <= 1'b0;
+                SP        <= SP - 16'h0001;
+                PC        <= PC + 16'h0001;
+                state     <= STATE.FETCH;
+            }
+
+        } ELIF (state == STATE.POP_EXEC) {
+            // Wait for pop read to complete
+            IF (pbus.DONE == 1'b1) {
+                bus_valid <= 1'b0;
+                reg_a     <= pbus.DATA;
+                flag_z    <= (pbus.DATA == 32'h00000000) ? 1'b1 : 1'b0;
+                flag_n    <= pbus.DATA[31];
+                PC        <= PC + 16'h0001;
+                state     <= STATE.FETCH;
+            }
+
+        } ELIF (state == STATE.CALL_PUSH) {
+            // Wait for push of return address to complete
+            IF (pbus.DONE == 1'b1) {
+                bus_valid <= 1'b0;
+                SP        <= SP - 16'h0001;
+                PC        <= imm_addr;
+                state     <= STATE.FETCH;
+            }
+
+        } ELIF (state == STATE.RET_POP) {
+            // Wait for pop of return address to complete
+            IF (pbus.DONE == 1'b1) {
+                bus_valid <= 1'b0;
+                PC        <= pbus.DATA[15:0];
+                state     <= STATE.FETCH;
+            }
+
+        } ELIF (state == STATE.HALT) {
+            // Stay halted
+            state <= STATE.HALT;
+        }
+    }
+@endmod

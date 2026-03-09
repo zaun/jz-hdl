@@ -1,0 +1,2 @@
+File: WARN_UNDRIVEN_REGISTER.jz
+      17:5    warn  WARN_UNDRIVEN_REGISTER S8.3 Register is read but never written

@@ -1,0 +1,2 @@
+File: SELECT_NO_MATCH_SYNC_OK.jz
+      28:5    warn  SELECT_NO_MATCH_SYNC_OK S5.4 In SYNCHRONOUS, missing DEFAULT simply holds registers (no error)

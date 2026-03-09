@@ -1,0 +1,113 @@
+// Golden test: Two BUS SOURCE ports from arbiter connected to same parent wire
+// Tests:
+//   - PORT_OUT ports (VALID) from same instance on same wire: OE-extraction mux
+//   - PORT_OUT alias-group ports (ADDR) from same instance: deduplication
+//   - PORT_INOUT alias-group ports (DATA): pass-through merge
+// Mirrors SOC_2 pattern where tgt[5] and tgt[6] both connect to ram_bus
+
+@project shared_bus_test
+  IN_PINS {
+    clk_pin [1] = { standard=LVCMOS33 };
+  }
+  OUT_PINS {
+    out_pin [1] = { standard=LVCMOS33, drive=8 };
+  }
+  MAP {
+    clk_pin = 4;
+    out_pin = 5;
+  }
+
+  BUS SIMPLE_BUS {
+    OUT   [1]  VALID;
+    OUT   [8]  ADDR;
+    INOUT [8]  DATA;
+    IN    [1]  DONE;
+  }
+
+  @top top_mod {
+    IN  [1] clk = clk_pin;
+    OUT [1] result = out_pin;
+  }
+@endproj
+
+// Simplified arbiter: has 3 SOURCE ports, drives VALID based on address match
+@module mini_arb
+  PORT {
+    IN  [1] sel;
+    BUS SIMPLE_BUS SOURCE [3] tgt;
+  }
+
+  WIRE {
+    src_addr [8];
+    src_data [8];
+  }
+
+  ASYNCHRONOUS {
+    src_addr <= 8'hAA;
+    src_data <= 8'h00;
+
+    // Target 0: sel==0
+    tgt[0].VALID <= (sel == 1'b0) ? 1'b1 : 1'b0;
+    tgt[0].ADDR  = src_addr;
+    tgt[0].DATA  = src_data;
+
+    // Target 1: sel==1
+    tgt[1].VALID <= (sel == 1'b1) ? 1'b1 : 1'b0;
+    tgt[1].ADDR  = src_addr;
+    tgt[1].DATA  = src_data;
+
+    // Target 2: never active
+    tgt[2].VALID <= 1'b0;
+    tgt[2].ADDR  = src_addr;
+    tgt[2].DATA  = src_data;
+  }
+@endmod
+
+// Simple peripheral that responds with DONE
+@module periph
+  PORT {
+    BUS SIMPLE_BUS TARGET pbus;
+  }
+
+  ASYNCHRONOUS {
+    pbus.DATA <= (pbus.VALID == 1'b1) ? 8'hFF : 8'bz;
+    IF (pbus.VALID == 1'b1) {
+      pbus.DONE <= 1'b1;
+    } ELSE {
+      pbus.DONE <= 1'bz;
+    }
+  }
+@endmod
+
+@module top_mod
+  PORT {
+    IN  [1] clk;
+    OUT [1] result;
+  }
+
+  WIRE {
+    bus_a   [widthof(SIMPLE_BUS)];
+    bus_b   [widthof(SIMPLE_BUS)];
+    sel     [1];
+  }
+
+  // tgt[0] and tgt[1] both connect to bus_a (shared wire!)
+  // tgt[2] connects to bus_b (separate)
+  @new arb0 mini_arb {
+    IN  [1] sel = sel;
+    BUS SIMPLE_BUS SOURCE [3] tgt = {bus_b, bus_a, bus_a};
+  }
+
+  @new p0 periph {
+    BUS SIMPLE_BUS TARGET pbus = bus_a;
+  }
+
+  @new p1 periph {
+    BUS SIMPLE_BUS TARGET pbus = bus_b;
+  }
+
+  ASYNCHRONOUS {
+    sel <= 1'b0;
+    result <= 1'b0;
+  }
+@endmod

@@ -1,0 +1,25 @@
+// MUX_SELECTOR_OUT_OF_RANGE_CONST: selector statically provable outside valid index range.
+// Verified
+
+@project MUX_SELECTOR_OUT_OF_RANGE_CONST_PROJECT
+  @top MUX_SELECTOR_OUT_OF_RANGE_CONST_EXAMPLE {
+    IN  [8] data = _;
+    OUT [4] dout = _;
+  }
+@endproj
+
+@module MUX_SELECTOR_OUT_OF_RANGE_CONST_EXAMPLE
+  PORT {
+    IN  [8] data;
+    OUT [4] dout;
+  }
+
+  MUX {
+    // Two elements -> valid indices are 0 and 1.
+    group_mux [4] = data;
+  }
+
+  ASYNCHRONOUS {
+    dout = group_mux[2]; // Constant index 2 is out of range.
+  }
+@endmod

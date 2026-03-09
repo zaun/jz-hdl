@@ -1,0 +1,59 @@
+// BUS_FIELD_BIT_SLICE: bit-slicing on BUS field accesses must work
+// without producing spurious MEM_UNDEFINED_NAME errors.
+// Verified
+
+@project BUS_FIELD_BIT_SLICE_PROJECT
+  BUS MYBUS {
+    OUT   [1] VALID;
+    OUT   [8] DATA;
+    IN    [1] DONE;
+  }
+
+  @top BUS_FIELD_BIT_SLICE_EXAMPLE {
+    IN  [1] clk = _;
+    IN  [1] rst_n = _;
+    OUT [3] upper = _;
+    OUT [3] lower = _;
+    OUT [8] saved_out = _;
+    BUS MYBUS TARGET tgt = _;
+  }
+@endproj
+
+@module BUS_FIELD_BIT_SLICE_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    IN  [1] rst_n;
+    OUT [3] upper;
+    OUT [3] lower;
+    OUT [8] saved_out;
+    BUS MYBUS TARGET tgt;
+  }
+
+  WIRE {
+    hi [3];
+    lo [3];
+  }
+
+  REGISTER {
+    saved [8] = 8'b0;
+  }
+
+  ASYNCHRONOUS {
+    // Bit-slice on a readable BUS field (OUT from TARGET role = readable)
+    hi = tgt.DATA[7:5];
+    lo = tgt.DATA[2:0];
+
+    upper = hi;
+    lower = lo;
+    saved_out = saved;
+
+    tgt.DONE <= 1'b1;
+  }
+
+  SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+    // Bit-slice on a readable BUS field inside SYNCHRONOUS
+    IF (tgt.DATA[7:7] == 1'b1) {
+      saved <= tgt.DATA;
+    }
+  }
+@endmod

@@ -1,0 +1,382 @@
+// DVI 1280x720 @ 30Hz with UART Audio Input
+// Receives 16-bit mono PCM audio via UART, stores in BRAM ring buffer,
+// plays back at 48kHz via DVI/HDMI audio data islands.
+// Display shows 80-bar spectrum-style amplitude visualization.
+//
+// All TMDS outputs go through a registered mux in the SYNCHRONOUS block
+// to give the OSER10 a clean register-to-primitive path.
+@module dvi_top
+    PORT {
+        IN   [1]  clk;         // pixel_clk (37.125 MHz)
+        IN   [1]  por;         // POR input from DONE
+        IN   [1]  rst_n;       // Active-low reset from button
+        IN   [1]  uart_rx_pin; // UART RX from host
+        OUT  [1]  uart_tx_pin; // UART TX to host
+        OUT  [6]  leds;        // Status LEDs
+        OUT  [10] tmds_clk;    // TMDS clock channel (serialized)
+        OUT  [10] tmds_d0;     // TMDS data channel 0 (blue)
+        OUT  [10] tmds_d1;     // TMDS data channel 1 (green)
+        OUT  [10] tmds_d2;     // TMDS data channel 2 (red)
+    }
+
+    WIRE {
+        reset       [1];
+        por_n       [1];
+        hsync       [1];
+        vsync       [1];
+        de          [1];
+        x_pos       [11];
+        y_pos       [10];
+        red         [8];
+        green       [8];
+        blue        [8];
+
+        // DVI TMDS encoder outputs
+        dvi_tmds_d0 [10];
+        dvi_tmds_d1 [10];
+        dvi_tmds_d2 [10];
+
+        // TERC4 encoder outputs
+        terc4_ch0_data [4];
+        terc4_ch1_data [4];
+        terc4_ch2_data [4];
+        terc4_d0       [10];
+        terc4_d1       [10];
+        terc4_d2       [10];
+
+        // Data island control
+        di_active      [1];
+        di_preamble    [1];
+        di_guard       [1];
+
+        // DVI encoder control signals
+        enc1_c0        [1];
+        enc1_c1        [1];
+        enc2_c0        [1];
+        enc2_c1        [1];
+
+        // Video preamble and guard band (combinational)
+        video_preamble_pre [1];
+        video_guard_pre    [1];
+
+        // UART wires
+        rx_data        [8];
+        rx_valid       [1];
+        tx_data        [8];
+        tx_valid       [1];
+        tx_ready       [1];
+
+        // Audio buffer wires
+        wr_data        [16];
+        wr_valid       [1];
+        audio_sample   [16];
+        audio_valid    [1];
+        buf_fill       [7];
+
+        // Frame pulse for analyzer
+        frame_pulse    [1];
+
+        // Spectrum analyzer <-> display interconnect
+        sp_rd_bar      [7];
+        sp_rd_amp      [16];
+
+        // Mixer outputs
+        mix_samp_lo   [32];
+        mix_samp_hi   [32];
+        mix_valid     [1];
+    }
+
+    REGISTER {
+        heartbeat_cnt [25] = 25'b0;
+        heartbeat_led [1]  = 1'b0;
+
+        // RX activity LED stretch
+        rx_led_cnt    [20] = 20'd0;
+        rx_led        [1]  = 1'b0;
+
+        // Data island pipeline (1 cycle to align TERC4 with encoder output)
+        di_active_r  [1]  = 1'b0;
+        di_guard_r   [1]  = 1'b0;
+        terc4_d0_r   [10] = 10'd0;
+        terc4_d1_r   [10] = 10'd0;
+        terc4_d2_r   [10] = 10'd0;
+
+        // Video preamble and guard band
+        video_preamble_r [1] = 1'b0;
+        video_guard_r    [1] = 1'b0;
+
+        // Two-stage TMDS output pipeline
+        tmds_d0_pre  [10] = 10'd0;
+        tmds_d1_pre  [10] = 10'd0;
+        tmds_d2_pre  [10] = 10'd0;
+        tmds_d0_r    [10] = 10'd0;
+        tmds_d1_r    [10] = 10'd0;
+        tmds_d2_r    [10] = 10'd0;
+    }
+
+    // --- Power-on reset ---
+    @new por0 por {
+        IN  [1] clk   = clk;
+        IN  [1] done  = por;
+        OUT [1] por_n = por_n;
+    }
+
+    // --- Video timing generator ---
+    @new vt0 video_timing {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        OUT [1]  hsync          = hsync;
+        OUT [1]  vsync          = vsync;
+        OUT [1]  display_enable = de;
+        OUT [11] x_pos          = x_pos;
+        OUT [10] y_pos          = y_pos;
+    }
+
+    // --- TMDS encoders ---
+    @new enc0 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = blue;
+        IN  [1]  c0             = hsync;
+        IN  [1]  c1             = vsync;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d0;
+    }
+
+    @new enc1 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = green;
+        IN  [1]  c0             = enc1_c0;
+        IN  [1]  c1             = enc1_c1;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d1;
+    }
+
+    @new enc2 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = red;
+        IN  [1]  c0             = enc2_c0;
+        IN  [1]  c1             = enc2_c1;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d2;
+    }
+
+    // --- TERC4 encoders for data island period ---
+    @new t4_0 terc4_encoder {
+        IN  [4]  data_in   = terc4_ch0_data;
+        OUT [10] terc4_out = terc4_d0;
+    }
+
+    @new t4_1 terc4_encoder {
+        IN  [4]  data_in   = terc4_ch1_data;
+        OUT [10] terc4_out = terc4_d1;
+    }
+
+    @new t4_2 terc4_encoder {
+        IN  [4]  data_in   = terc4_ch2_data;
+        OUT [10] terc4_out = terc4_d2;
+    }
+
+    // --- UART ---
+    @new urx0 uart_rx {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = reset;
+        IN  [1] rx    = uart_rx_pin;
+        OUT [8] data  = rx_data;
+        OUT [1] valid = rx_valid;
+    }
+
+    @new utx0 uart_tx {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = reset;
+        IN  [8] data  = tx_data;
+        IN  [1] valid = tx_valid;
+        OUT [1] ready = tx_ready;
+        OUT [1] tx    = uart_tx_pin;
+    }
+
+    // --- UART audio packet receiver ---
+    @new uarx0 uart_audio_rx {
+        IN  [1]  clk      = clk;
+        IN  [1]  rst_n    = reset;
+        IN  [8]  rx_data  = rx_data;
+        IN  [1]  rx_valid = rx_valid;
+        OUT [8]  tx_data  = tx_data;
+        OUT [1]  tx_valid = tx_valid;
+        IN  [1]  tx_ready = tx_ready;
+        OUT [16] wr_data  = wr_data;
+        OUT [1]  wr_valid = wr_valid;
+        IN  [7]  buf_fill = buf_fill;
+    }
+
+    // --- Audio ring buffer + 48kHz playback ---
+    @new abuf0 audio_buffer {
+        IN  [1]  clk        = clk;
+        IN  [1]  rst_n      = reset;
+        IN  [16] wr_data    = wr_data;
+        IN  [1]  wr_valid   = wr_valid;
+        OUT [16] sample     = audio_sample;
+        OUT [1]  samp_valid = audio_valid;
+        OUT [7]  fill_level = buf_fill;
+    }
+
+    // --- Mixer: feed mono audio to ch0, silence on ch1-ch3 ---
+    @new mx0 mixer {
+        IN  [16] s0         = audio_sample;
+        IN  [16] s1         = 16'h0000;
+        IN  [16] s2         = 16'h0000;
+        IN  [16] s3         = 16'h0000;
+        IN  [1]  samp_valid = audio_valid;
+        OUT [32] samp_lo    = mix_samp_lo;
+        OUT [32] samp_hi    = mix_samp_hi;
+        OUT [1]  out_valid  = mix_valid;
+    }
+
+    // --- DVI data island controller ---
+    @new di0 dvi_data_island {
+        IN  [1]  clk               = clk;
+        IN  [1]  rst_n             = reset;
+        IN  [1]  hsync             = hsync;
+        IN  [1]  vsync             = vsync;
+        IN  [1]  display_enable    = de;
+        IN  [11] x_pos             = x_pos;
+        IN  [32] samp_lo           = mix_samp_lo;
+        IN  [32] samp_hi           = mix_samp_hi;
+        IN  [1]  samp_valid        = mix_valid;
+        OUT [4]  terc4_ch0         = terc4_ch0_data;
+        OUT [4]  terc4_ch1         = terc4_ch1_data;
+        OUT [4]  terc4_ch2         = terc4_ch2_data;
+        OUT [1]  data_island_active = di_active;
+        OUT [1]  preamble_active   = di_preamble;
+        OUT [1]  guard_active      = di_guard;
+    }
+
+    // --- PCM comb-filter spectrum analyzer ---
+    @new sa0 spectrum_analyzer {
+        IN  [1]  clk          = clk;
+        IN  [1]  rst_n        = reset;
+        IN  [16] audio_sample = audio_sample;
+        IN  [1]  samp_valid   = audio_valid;
+        IN  [1]  frame_pulse  = frame_pulse;
+        IN  [7]  rd_bar       = sp_rd_bar;
+        OUT [16] rd_amp       = sp_rd_amp;
+    }
+
+    // --- Spectrum display (same as dvi_audio) ---
+    @new sd0 spectrum_display {
+        IN  [1]  clk     = clk;
+        IN  [1]  rst_n   = reset;
+        IN  [11] x_pos   = x_pos;
+        IN  [10] y_pos   = y_pos;
+        OUT [7]  rd_bar  = sp_rd_bar;
+        IN  [16] rd_amp  = sp_rd_amp;
+        OUT [8]  red     = red;
+        OUT [8]  green   = green;
+        OUT [8]  blue    = blue;
+    }
+
+    ASYNCHRONOUS {
+        reset <= rst_n & por_n;
+
+        // Frame pulse: high for 1 cycle at top-left pixel (start of each frame)
+        frame_pulse <= (x_pos == 11'd0 && y_pos == 10'd0) ? 1'b1 : 1'b0;
+
+        // TMDS clock channel: fixed 1111100000 pattern
+        tmds_clk <= 10'b1111100000;
+
+        // Registered TMDS output to port
+        tmds_d0 <= tmds_d0_r;
+        tmds_d1 <= tmds_d1_r;
+        tmds_d2 <= tmds_d2_r;
+
+        // Preamble CTL signals on ch1/ch2
+        IF (di_preamble == 1'b1) {
+            enc1_c0 <= 1'b1;
+            enc1_c1 <= 1'b0;
+            enc2_c0 <= 1'b1;
+            enc2_c1 <= 1'b0;
+        } ELIF (video_preamble_r == 1'b1) {
+            enc1_c0 <= 1'b1;
+            enc1_c1 <= 1'b0;
+            enc2_c0 <= 1'b0;
+            enc2_c1 <= 1'b0;
+        } ELSE {
+            enc1_c0 <= 1'b0;
+            enc1_c1 <= 1'b0;
+            enc2_c0 <= 1'b0;
+            enc2_c1 <= 1'b0;
+        }
+
+        // Video preamble
+        video_preamble_pre <= (
+            x_pos >= 11'd1640 && x_pos < 11'd1648 &&
+            (y_pos < 10'd719 || y_pos == 10'd749)
+        ) ? 1'b1 : 1'b0;
+
+        // Video guard band
+        video_guard_pre <= (
+            (x_pos == 11'd1648 || x_pos == 11'd1649) &&
+            (y_pos < 10'd719 || y_pos == 10'd749)
+        ) ? 1'b1 : 1'b0;
+
+        // LED status: LED[0]=heartbeat, LED[1]=RX activity
+        leds <= ~{ heartbeat_led, rx_led, 4'b0000 };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        // Registration pipeline
+        di_active_r      <= di_active;
+        di_guard_r       <= di_guard;
+        terc4_d0_r       <= terc4_d0;
+        terc4_d1_r       <= terc4_d1;
+        terc4_d2_r       <= terc4_d2;
+        video_preamble_r <= video_preamble_pre;
+        video_guard_r    <= video_guard_pre;
+
+        // Output mux
+        IF (di_active_r == 1'b1) {
+            IF (di_guard_r == 1'b1) {
+                tmds_d0_pre <= terc4_d0_r;
+                tmds_d1_pre <= 10'b0100110011;
+                tmds_d2_pre <= 10'b0100110011;
+            } ELSE {
+                tmds_d0_pre <= terc4_d0_r;
+                tmds_d1_pre <= terc4_d1_r;
+                tmds_d2_pre <= terc4_d2_r;
+            }
+        } ELIF (video_guard_r == 1'b1) {
+            tmds_d0_pre <= 10'b1011001100;
+            tmds_d1_pre <= 10'b0100110011;
+            tmds_d2_pre <= 10'b1011001100;
+        } ELSE {
+            tmds_d0_pre <= dvi_tmds_d0;
+            tmds_d1_pre <= dvi_tmds_d1;
+            tmds_d2_pre <= dvi_tmds_d2;
+        }
+
+        // Stage 2: clean FF-to-OSER10 path
+        tmds_d0_r <= tmds_d0_pre;
+        tmds_d1_r <= tmds_d1_pre;
+        tmds_d2_r <= tmds_d2_pre;
+
+        // Heartbeat blinker
+        IF (heartbeat_cnt == 25'd33_554_431) {
+            heartbeat_cnt <= 25'b0;
+            heartbeat_led <= ~heartbeat_led;
+        } ELSE {
+            heartbeat_cnt <= heartbeat_cnt + 25'b1;
+        }
+
+        // RX activity LED (stretch pulse to ~28ms for visibility)
+        IF (rx_valid == 1'b1) {
+            rx_led     <= 1'b1;
+            rx_led_cnt <= 20'd0;
+        } ELIF (rx_led_cnt == 20'd1_048_575) {
+            rx_led <= 1'b0;
+        } ELSE {
+            rx_led_cnt <= rx_led_cnt + 20'd1;
+        }
+    }
+@endmod

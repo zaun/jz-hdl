@@ -1,0 +1,4 @@
+File: MEM_INOUT_MIXED_WITH_IN_OUT.jz
+      17:5    error MEM_INOUT_MIXED_WITH_IN_OUT S7.1 INOUT ports cannot be mixed with IN/OUT ports in the same MEM declaration
+      18:13   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      19:10   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used

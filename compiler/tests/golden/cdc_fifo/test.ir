@@ -1,0 +1,417 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "CDC_FIFO_PROJECT",
+    "modules": [
+      {
+        "id": 0,
+        "name": "cdc_fifo_test",
+        "base_module_id": -1,
+        "source_line": 9,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk_a",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 11,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "clk_b",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 12,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "q",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 13,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 3,
+          "name": "counter",
+          "kind": "register",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 16,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 8 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 4,
+          "name": "dest_reg",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 17,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 5,
+          "name": "counter_sync",
+          "kind": "net",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 20,
+          "can_be_z": false,
+          "iob": false
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [3],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 25, "statements": [{ "kind": "assignment", "id": 0, "source_line": 26, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "binary_add", "width": 8, "source_line": 26, "left": { "kind": "signal_ref", "width": 8, "source_line": 26, "signal_id": 3 }, "right": { "kind": "literal", "width": 8, "source_line": 26, "literal": { "value": 1, "width": 8 } } } }] }
+          },
+          {
+            "id": 1,
+            "clock_signal_id": 1,
+            "edge": "RISING",
+            "register_ids": [4],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 1, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 28, "statements": [{ "kind": "assignment", "id": 0, "source_line": 29, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "slice", "width": 1, "source_line": 29, "signal_id": 5, "msb": 0, "lsb": 0 } }] }
+          }
+        ],
+        "instances": [
+          {
+            "id": 0,
+            "name": "u_cdc_fifo_counter_sync",
+            "child_module_id": 1,
+            "connections": [{ "parent_signal_id": 0, "child_port_id": 0 }, { "parent_signal_id": 1, "child_port_id": 1 }, { "parent_signal_id": -1, "child_port_id": 2, "const_expr": "1'b0" }, { "parent_signal_id": -1, "child_port_id": 3, "const_expr": "1'b0" }, { "parent_signal_id": 3, "child_port_id": 4 }, { "parent_signal_id": -1, "child_port_id": 5, "const_expr": "1'b1" }, { "parent_signal_id": -1, "child_port_id": 6, "const_expr": "1'b1" }, { "parent_signal_id": 5, "child_port_id": 7 }]
+          }
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 22, "statements": [{ "kind": "assignment", "id": 0, "source_line": 23, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 2, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 0, "source_line": 23, "signal_id": 5 } }] }
+      },
+      {
+        "id": 1,
+        "name": "JZHDL_LIB_CDC_FIFO__W8",
+        "base_module_id": -1,
+        "source_line": 0,
+        "source_file": "",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk_wr",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "clk_rd",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "rst_wr",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 3,
+          "name": "rst_rd",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 4,
+          "name": "data_in",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 5,
+          "name": "write_en",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 6,
+          "name": "read_en",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 7,
+          "name": "data_out",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 8,
+          "name": "full",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 9,
+          "name": "empty",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 10,
+          "name": "wr_ptr_bin",
+          "kind": "register",
+          "width": 5,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 5 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 11,
+          "name": "wr_ptr_gray",
+          "kind": "register",
+          "width": 5,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 5 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 12,
+          "name": "rd_ptr_bin",
+          "kind": "register",
+          "width": 5,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 5 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 13,
+          "name": "rd_ptr_gray",
+          "kind": "register",
+          "width": 5,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 5 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 14,
+          "name": "wr_ptr_gray_sync1",
+          "kind": "register",
+          "width": 5,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 5 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 15,
+          "name": "wr_ptr_gray_sync2",
+          "kind": "register",
+          "width": 5,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 5 }, "home_clock_domain_id": 1 }
+        },
+        {
+          "id": 16,
+          "name": "rd_ptr_gray_sync1",
+          "kind": "register",
+          "width": 5,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 5 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 17,
+          "name": "rd_ptr_gray_sync2",
+          "kind": "register",
+          "width": 5,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 5 }, "home_clock_domain_id": 0 }
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [10, 11],
+            "reset_signal_id": 2,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_HIGH",
+            "reset_type": "IMMEDIATE",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }, { "signal_id": 2, "edge": "RISING" }],
+            "statements": { "kind": "if", "condition": { "kind": "signal_ref", "width": 1, "signal_id": 2 }, "then": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 10, "is_sliced": false, "rhs": { "kind": "literal", "width": 5, "literal": { "value": 0, "width": 5 } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 11, "is_sliced": false, "rhs": { "kind": "literal", "width": 5, "literal": { "value": 0, "width": 5 } } }] }, "else": { "kind": "block", "statements": [{ "kind": "if", "condition": { "kind": "logical_and", "width": 1, "left": { "kind": "signal_ref", "width": 1, "signal_id": 5 }, "right": { "kind": "unary_not", "width": 1, "operand": { "kind": "signal_ref", "width": 1, "signal_id": 8 } } }, "then": { "kind": "block", "statements": [{ "kind": "mem_write", "memory_name": "mem", "port_name": "write", "address": { "kind": "slice", "width": 4, "signal_id": 10, "msb": 3, "lsb": 0 }, "data": { "kind": "signal_ref", "width": 8, "signal_id": 4 } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 10, "is_sliced": false, "rhs": { "kind": "binary_add", "width": 5, "left": { "kind": "signal_ref", "width": 5, "signal_id": 10 }, "right": { "kind": "literal", "width": 5, "literal": { "value": 1, "width": 5 } } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 11, "is_sliced": false, "rhs": { "kind": "binary_xor", "width": 5, "left": { "kind": "binary_shr", "width": 5, "left": { "kind": "binary_add", "width": 5, "left": { "kind": "signal_ref", "width": 5, "signal_id": 10 }, "right": { "kind": "literal", "width": 5, "literal": { "value": 1, "width": 5 } } }, "right": { "kind": "literal", "width": 5, "literal": { "value": 1, "width": 5 } } }, "right": { "kind": "binary_add", "width": 5, "left": { "kind": "signal_ref", "width": 5, "signal_id": 10 }, "right": { "kind": "literal", "width": 5, "literal": { "value": 1, "width": 5 } } } } }] } }] } }
+          },
+          {
+            "id": 1,
+            "clock_signal_id": 1,
+            "edge": "RISING",
+            "register_ids": [12, 13],
+            "reset_signal_id": 3,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_HIGH",
+            "reset_type": "IMMEDIATE",
+            "sensitivity_list": [{ "signal_id": 1, "edge": "RISING" }, { "signal_id": 3, "edge": "RISING" }],
+            "statements": { "kind": "if", "condition": { "kind": "signal_ref", "width": 1, "signal_id": 3 }, "then": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 12, "is_sliced": false, "rhs": { "kind": "literal", "width": 5, "literal": { "value": 0, "width": 5 } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 13, "is_sliced": false, "rhs": { "kind": "literal", "width": 5, "literal": { "value": 0, "width": 5 } } }] }, "else": { "kind": "block", "statements": [{ "kind": "if", "condition": { "kind": "logical_and", "width": 1, "left": { "kind": "signal_ref", "width": 1, "signal_id": 6 }, "right": { "kind": "unary_not", "width": 1, "operand": { "kind": "signal_ref", "width": 1, "signal_id": 9 } } }, "then": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 12, "is_sliced": false, "rhs": { "kind": "binary_add", "width": 5, "left": { "kind": "signal_ref", "width": 5, "signal_id": 12 }, "right": { "kind": "literal", "width": 5, "literal": { "value": 1, "width": 5 } } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 13, "is_sliced": false, "rhs": { "kind": "binary_xor", "width": 5, "left": { "kind": "binary_shr", "width": 5, "left": { "kind": "binary_add", "width": 5, "left": { "kind": "signal_ref", "width": 5, "signal_id": 12 }, "right": { "kind": "literal", "width": 5, "literal": { "value": 1, "width": 5 } } }, "right": { "kind": "literal", "width": 5, "literal": { "value": 1, "width": 5 } } }, "right": { "kind": "binary_add", "width": 5, "left": { "kind": "signal_ref", "width": 5, "signal_id": 12 }, "right": { "kind": "literal", "width": 5, "literal": { "value": 1, "width": 5 } } } } }] } }] } }
+          },
+          {
+            "id": 2,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [16, 17],
+            "reset_signal_id": 2,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_HIGH",
+            "reset_type": "IMMEDIATE",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }, { "signal_id": 2, "edge": "RISING" }],
+            "statements": { "kind": "if", "condition": { "kind": "signal_ref", "width": 1, "signal_id": 2 }, "then": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 16, "is_sliced": false, "rhs": { "kind": "literal", "width": 5, "literal": { "value": 0, "width": 5 } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 17, "is_sliced": false, "rhs": { "kind": "literal", "width": 5, "literal": { "value": 0, "width": 5 } } }] }, "else": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 16, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 5, "signal_id": 13 } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 17, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 5, "signal_id": 16 } }] } }
+          },
+          {
+            "id": 3,
+            "clock_signal_id": 1,
+            "edge": "RISING",
+            "register_ids": [14, 15],
+            "reset_signal_id": 3,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_HIGH",
+            "reset_type": "IMMEDIATE",
+            "sensitivity_list": [{ "signal_id": 1, "edge": "RISING" }, { "signal_id": 3, "edge": "RISING" }],
+            "statements": { "kind": "if", "condition": { "kind": "signal_ref", "width": 1, "signal_id": 3 }, "then": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 14, "is_sliced": false, "rhs": { "kind": "literal", "width": 5, "literal": { "value": 0, "width": 5 } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 15, "is_sliced": false, "rhs": { "kind": "literal", "width": 5, "literal": { "value": 0, "width": 5 } } }] }, "else": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 14, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 5, "signal_id": 11 } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 15, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 5, "signal_id": 14 } }] } }
+          }
+        ],
+        "instances": [
+        ],
+        "memories": [
+          {
+            "id": 0,
+            "name": "mem",
+            "type": "DISTRIBUTED",
+            "word_width": 8,
+            "depth": 16,
+            "address_width": 4,
+            "ports": [
+              { "name": "write", "kind": "WRITE", "address_width": 4, "write_mode": "WRITE_FIRST" },
+              { "name": "read", "kind": "READ_ASYNC", "address_width": 4 }
+            ]
+          }
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 7, "is_sliced": false, "rhs": { "kind": "mem_read", "width": 8, "memory_name": "mem", "port_name": "read", "address": { "kind": "slice", "width": 4, "signal_id": 12, "msb": 3, "lsb": 0 } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 8, "is_sliced": false, "rhs": { "kind": "binary_eq", "width": 1, "left": { "kind": "signal_ref", "width": 5, "signal_id": 11 }, "right": { "kind": "concat", "width": 5, "operands": [{ "kind": "unary_not", "width": 2, "operand": { "kind": "slice", "width": 2, "signal_id": 17, "msb": 4, "lsb": 3 } }, { "kind": "slice", "width": 3, "signal_id": 17, "msb": 2, "lsb": 0 }] } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 9, "is_sliced": false, "rhs": { "kind": "binary_eq", "width": 1, "left": { "kind": "signal_ref", "width": 5, "signal_id": 13 }, "right": { "kind": "signal_ref", "width": 5, "signal_id": 15 } } }] }
+      }
+    ],
+    "project": {
+      "name": "CDC_FIFO_PROJECT",
+      "clocks": [
+      ],
+      "clock_gens": [
+      ],
+      "pins": [
+      ],
+      "mappings": [
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 1, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 2, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 31 }
+    ]
+  }
+}

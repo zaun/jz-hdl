@@ -1,0 +1,94 @@
+// Dual-Mode Video Timing Generator
+// Mode 0: 1280x720 @60Hz (CEA-861 VIC 4)
+// Mode 1: 1920x1080 @30Hz (CEA-861 VIC 34)
+// Both modes use 74.25 MHz pixel clock.
+// Sync polarity: positive (sync HIGH during sync pulse)
+@module video_timing
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [1]  mode;
+        OUT [1]  hsync;
+        OUT [1]  vsync;
+        OUT [1]  display_enable;
+        OUT [12] x_pos;
+        OUT [11] y_pos;
+    }
+
+    CONST {
+        // 720p timing
+        H_ACTIVE_720 = 1280;
+        H_FRONT_720  = 110;
+        H_SYNC_720   = 40;
+        H_BACK_720   = 220;
+        H_TOTAL_720  = 1650;
+        V_ACTIVE_720 = 720;
+        V_FRONT_720  = 5;
+        V_SYNC_720   = 5;
+        V_BACK_720   = 20;
+        V_TOTAL_720  = 750;
+
+        // 1080p@30 timing (CEA-861 VIC 34)
+        H_ACTIVE_1080 = 1920;
+        H_FRONT_1080  = 88;
+        H_SYNC_1080   = 44;
+        H_BACK_1080   = 148;
+        H_TOTAL_1080  = 2200;
+        V_ACTIVE_1080 = 1080;
+        V_FRONT_1080  = 4;
+        V_SYNC_1080   = 5;
+        V_BACK_1080   = 36;
+        V_TOTAL_1080  = 1125;
+    }
+
+    WIRE {
+        h_total_m1    [12];
+        v_total_m1    [11];
+        h_active      [12];
+        v_active      [11];
+        h_sync_start  [12];
+        h_sync_end    [12];
+        v_sync_start  [11];
+        v_sync_end    [11];
+    }
+
+    REGISTER {
+        h_cnt [12] = 12'b0;
+        v_cnt [11] = 11'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Mux timing parameters based on mode
+        h_total_m1   <= (mode == 1'b1) ? lit(12, H_TOTAL_1080 - 1)              : lit(12, H_TOTAL_720 - 1);
+        v_total_m1   <= (mode == 1'b1) ? lit(11, V_TOTAL_1080 - 1)              : lit(11, V_TOTAL_720 - 1);
+        h_active     <= (mode == 1'b1) ? lit(12, H_ACTIVE_1080)                 : lit(12, H_ACTIVE_720);
+        v_active     <= (mode == 1'b1) ? lit(11, V_ACTIVE_1080)                 : lit(11, V_ACTIVE_720);
+        h_sync_start <= (mode == 1'b1) ? lit(12, H_ACTIVE_1080 + H_FRONT_1080)  : lit(12, H_ACTIVE_720 + H_FRONT_720);
+        h_sync_end   <= (mode == 1'b1) ? lit(12, H_ACTIVE_1080 + H_FRONT_1080 + H_SYNC_1080) : lit(12, H_ACTIVE_720 + H_FRONT_720 + H_SYNC_720);
+        v_sync_start <= (mode == 1'b1) ? lit(11, V_ACTIVE_1080 + V_FRONT_1080)  : lit(11, V_ACTIVE_720 + V_FRONT_720);
+        v_sync_end   <= (mode == 1'b1) ? lit(11, V_ACTIVE_1080 + V_FRONT_1080 + V_SYNC_1080) : lit(11, V_ACTIVE_720 + V_FRONT_720 + V_SYNC_720);
+
+        // Positive sync polarity: HIGH during sync pulse
+        hsync <= (h_cnt >= h_sync_start && h_cnt < h_sync_end) ? 1'b1 : 1'b0;
+        vsync <= (v_cnt >= v_sync_start && v_cnt < v_sync_end) ? 1'b1 : 1'b0;
+
+        // Display enable: active region
+        display_enable <= (h_cnt < h_active && v_cnt < v_active) ? 1'b1 : 1'b0;
+
+        x_pos <= h_cnt;
+        y_pos <= v_cnt;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        IF (h_cnt == h_total_m1) {
+            h_cnt <= 12'b0;
+            IF (v_cnt == v_total_m1) {
+                v_cnt <= 11'b0;
+            } ELSE {
+                v_cnt <= v_cnt + 11'b1;
+            }
+        } ELSE {
+            h_cnt <= h_cnt + 12'b1;
+        }
+    }
+@endmod

@@ -1,0 +1,141 @@
+// Bus-mapped SDRAM peripheral
+// Bridges SIMPLE_BUS protocol to sdram_ctrl rd/wr/done interface
+@module sdram_bus
+    CONST {
+        CLK_FREQ_MHZ = 54;
+        ST_IDLE = 0;
+        ST_WAIT = 1;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        BUS SIMPLE_BUS TARGET pbus;
+
+        // SDRAM physical interface (directly to pins)
+        OUT   [1]  sdram_cke;
+        OUT   [1]  sdram_cs_n;
+        OUT   [1]  sdram_ras_n;
+        OUT   [1]  sdram_cas_n;
+        OUT   [1]  sdram_wen_n;
+        OUT   [4]  sdram_dqm;
+        OUT   [11] sdram_addr;
+        OUT   [2]  sdram_ba;
+        INOUT [32] sdram_dq;
+    }
+
+    WIRE {
+        ctrl_rdata [32];
+        ctrl_busy  [1];
+        ctrl_done  [1];
+
+        ctrl_cke     [1];
+        ctrl_cs_n    [1];
+        ctrl_ras_n   [1];
+        ctrl_cas_n   [1];
+        ctrl_wen_n   [1];
+        ctrl_dqm     [4];
+        ctrl_addr    [11];
+        ctrl_ba      [2];
+        ctrl_dq      [32];
+    }
+
+    REGISTER {
+        state      [1] = 1'b0;
+        rd_hold    [1] = 1'b0;
+        wr_hold    [1] = 1'b0;
+        req_addr   [21] = 21'b0;
+        req_wdata  [32] = 32'b0;
+    }
+
+    @new ctrl0 sdram_ctrl {
+        OVERRIDE {
+            CLK_FREQ_MHZ = CLK_FREQ_MHZ;
+        }
+        IN  [1]  clk       = clk;
+        IN  [1]  rst_n     = rst_n;
+        IN  [21] addr      = req_addr;
+        IN  [32] wdata     = req_wdata;
+        OUT [32] rdata     = ctrl_rdata;
+        IN  [1]  rd        = rd_hold;
+        IN  [1]  wr        = wr_hold;
+        OUT [1]  busy      = ctrl_busy;
+        OUT [1]  done      = ctrl_done;
+        OUT [1]  sdram_cke   = ctrl_cke;
+        OUT [1]  sdram_cs_n  = ctrl_cs_n;
+        OUT [1]  sdram_ras_n = ctrl_ras_n;
+        OUT [1]  sdram_cas_n = ctrl_cas_n;
+        OUT [1]  sdram_wen_n = ctrl_wen_n;
+        OUT [4]  sdram_dqm   = ctrl_dqm;
+        OUT [11] sdram_addr  = ctrl_addr;
+        OUT [2]  sdram_ba    = ctrl_ba;
+        INOUT [32] sdram_dq  = ctrl_dq;
+    }
+
+    ASYNCHRONOUS {
+        // Pass through SDRAM physical pins
+        sdram_cke   <= ctrl_cke;
+        sdram_cs_n  <= ctrl_cs_n;
+        sdram_ras_n <= ctrl_ras_n;
+        sdram_cas_n <= ctrl_cas_n;
+        sdram_wen_n <= ctrl_wen_n;
+        sdram_dqm   <= ctrl_dqm;
+        sdram_addr  <= ctrl_addr;
+        sdram_ba    <= ctrl_ba;
+        sdram_dq    = ctrl_dq;
+
+        // Drive bus DATA on read completion
+        pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && state == lit(1, ST_WAIT) && ctrl_done == 1'b1) ? ctrl_rdata : 32'bz;
+
+        // DONE signaling: multi-cycle, assert when sdram_ctrl done fires
+        IF (pbus.VALID) {
+            IF (state == lit(1, ST_WAIT) && ctrl_done == 1'b1) {
+                pbus.DONE <= 1'b1;
+            } ELSE {
+                pbus.DONE <= 1'b0;
+            }
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        SELECT(state) {
+            CASE (lit(1, ST_IDLE)) {
+                IF (pbus.VALID && ctrl_busy == 1'b0) {
+                    req_addr  <= pbus.ADDR[22:2];
+                    req_wdata <= pbus.DATA;
+
+                    IF (pbus.CMD == CMD.WRITE) {
+                        wr_hold <= 1'b1;
+                        rd_hold <= 1'b0;
+                    } ELSE {
+                        rd_hold <= 1'b1;
+                        wr_hold <= 1'b0;
+                    }
+                    state <= lit(1, ST_WAIT);
+                } ELSE {
+                    rd_hold <= 1'b0;
+                    wr_hold <= 1'b0;
+                }
+            }
+
+            CASE (lit(1, ST_WAIT)) {
+                // Hold rd/wr high until ctrl completes.
+                // If ctrl was refreshing when we asserted, it will see
+                // rd/wr=1 when it returns to IDLE and start the access.
+                IF (ctrl_done == 1'b1) {
+                    rd_hold <= 1'b0;
+                    wr_hold <= 1'b0;
+                    state <= lit(1, ST_IDLE);
+                }
+            }
+
+            DEFAULT {
+                rd_hold <= 1'b0;
+                wr_hold <= 1'b0;
+                state <= lit(1, ST_IDLE);
+            }
+        }
+    }
+@endmod

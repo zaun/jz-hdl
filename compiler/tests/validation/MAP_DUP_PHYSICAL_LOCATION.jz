@@ -1,0 +1,28 @@
+// MAP_DUP_PHYSICAL_LOCATION: two logical pins mapped to same physical board pin.
+// Verified
+
+@project MAP_DUP_PHYSICAL_LOCATION_PROJECT
+  OUT_PINS {
+    a = { standard=LVCMOS33, drive=8 };
+    b = { standard=LVCMOS33, drive=8 };
+  }
+
+  MAP {
+    a = 10;
+    b = 10; // duplicate physical location
+  }
+
+  @top MAP_DUP_PHYSICAL_LOCATION_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module MAP_DUP_PHYSICAL_LOCATION_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

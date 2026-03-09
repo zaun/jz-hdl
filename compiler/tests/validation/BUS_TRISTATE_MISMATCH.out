@@ -1,0 +1,4 @@
+File: BUS_TRISTATE_MISMATCH.jz
+      21:23   warn  WARN_INTERNAL_TRISTATE Internal tri-state logic is not FPGA-compatible; use --tristate-default to enable automatic tri-state elimination
+      25:5    error BUS_TRISTATE_MISMATCH S4.4.1 Only writable BUS signals (INOUT or OUT from this role) may be assigned 'z' for tri-state
+      25:5    error BUS_SIGNAL_WRITE_TO_READABLE S4.4.1 Write access to readable BUS signal is not allowed

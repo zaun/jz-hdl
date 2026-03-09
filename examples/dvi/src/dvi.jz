@@ -1,0 +1,227 @@
+// DVI 1280x720 @ 30Hz Color Bar Test Pattern Top Module
+// Outputs R/G/B/White/Black vertical bars (256px each).
+// Uses TMDS encoding for DVI output.
+//
+// All TMDS outputs go through a registered mux in the SYNCHRONOUS block
+// to give the OSER10 a clean register-to-primitive path.
+@module dvi_top
+    PORT {
+        IN   [1]  clk;         // pixel_clk (37.125 MHz)
+        IN   [1]  por;         // POR input from DONE
+        IN   [1]  rst_n;       // Active-low reset from button
+        IN   [1]  next;        // Pattern select button
+        OUT  [6]  leds;        // Status LEDs
+        OUT  [10] tmds_clk;    // TMDS clock channel (serialized)
+        OUT  [10] tmds_d0;     // TMDS data channel 0 (blue)
+        OUT  [10] tmds_d1;     // TMDS data channel 1 (green)
+        OUT  [10] tmds_d2;     // TMDS data channel 2 (red)
+    }
+
+    WIRE {
+        reset       [1];
+        por_n       [1];
+        hsync       [1];
+        vsync       [1];
+        de          [1];
+        x_pos       [11];
+        y_pos       [10];
+        red         [8];
+        green       [8];
+        blue        [8];
+
+        // DVI TMDS encoder outputs
+        dvi_tmds_d0 [10];
+        dvi_tmds_d1 [10];
+        dvi_tmds_d2 [10];
+
+        // Debounced button press pulse
+        next_press  [1];
+
+        // Color bar pattern outputs
+        hbar_r  [8];
+        hbar_g  [8];
+        hbar_b  [8];
+        vbar_r  [8];
+        vbar_g  [8];
+        vbar_b  [8];
+        @feature CONFIG.warp == 1
+            warp_r  [8];
+            warp_g  [8];
+            warp_b  [8];
+        @endfeat
+    }
+
+    REGISTER {
+        heartbeat_cnt [25] = 25'b0;
+        heartbeat_led [1]  = 1'b0;
+
+        // Pattern select (0=hbars, 1=vbars, 2=warp)
+        pattern_sel     [2] = 2'b00;
+        pattern_pending [1] = 1'b0;
+
+        vsync_prev [1] = 1'b0;
+
+        // TMDS output register
+        tmds_d0_r    [10] = 10'd0;
+        tmds_d1_r    [10] = 10'd0;
+        tmds_d2_r    [10] = 10'd0;
+    }
+
+    @new por0 por {
+        IN  [1] clk   = clk;
+        IN  [1] done  = por;
+        OUT [1] por_n = por_n;
+    }
+
+    @new vt0 video_timing {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        OUT [1]  hsync          = hsync;
+        OUT [1]  vsync          = vsync;
+        OUT [1]  display_enable = de;
+        OUT [11] x_pos          = x_pos;
+        OUT [10] y_pos          = y_pos;
+    }
+
+    // Blue channel (data channel 0) - carries sync signals
+    @new enc0 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = blue;
+        IN  [1]  c0             = hsync;
+        IN  [1]  c1             = vsync;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d0;
+    }
+
+    // Green channel (data channel 1)
+    @new enc1 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = green;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d1;
+    }
+
+    // Red channel (data channel 2)
+    @new enc2 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = red;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d2;
+    }
+
+    @new hb0 hbars {
+        IN  [11] x_pos = x_pos;
+        OUT [8]  red   = hbar_r;
+        OUT [8]  green = hbar_g;
+        OUT [8]  blue  = hbar_b;
+    }
+
+    @new vb0 vbars {
+        IN  [10] y_pos = y_pos;
+        OUT [8]  red   = vbar_r;
+        OUT [8]  green = vbar_g;
+        OUT [8]  blue  = vbar_b;
+    }
+
+    @new db0 debounce {
+        IN  [1] clk       = clk;
+        IN  [1] rst_n     = reset;
+        IN  [1] btn_in    = next;
+        OUT [1] btn_press = next_press;
+    }
+
+    @feature CONFIG.warp == 1
+        @new wp0 warp {
+            IN  [1]  clk   = clk;
+            IN  [1]  rst_n = reset;
+            IN  [11] x_pos = x_pos;
+            IN  [10] y_pos = y_pos;
+            IN  [1]  vsync = vsync;
+            OUT [8]  red   = warp_r;
+            OUT [8]  green = warp_g;
+            OUT [8]  blue  = warp_b;
+        }
+    @endfeat
+
+    ASYNCHRONOUS {
+        reset <= rst_n & por_n;
+
+        // TMDS clock channel: fixed 1111100000 pattern
+        tmds_clk <= 10'b1111100000;
+
+        // Registered TMDS output to port
+        tmds_d0 <= tmds_d0_r;
+        tmds_d1 <= tmds_d1_r;
+        tmds_d2 <= tmds_d2_r;
+
+        // Pattern mux: select based on pattern_sel
+        IF (pattern_sel == 2'd0) {
+            red   <= hbar_r;
+            green <= hbar_g;
+            blue  <= hbar_b;
+        } ELSE {
+            @feature CONFIG.warp == 1
+                IF (pattern_sel == 2'd1) {
+                    red   <= vbar_r;
+                    green <= vbar_g;
+                    blue  <= vbar_b;
+                } ELSE {
+                    red   <= warp_r;
+                    green <= warp_g;
+                    blue  <= warp_b;
+                }
+            @else
+                red   <= vbar_r;
+                green <= vbar_g;
+                blue  <= vbar_b;
+            @endfeat
+        }
+
+        // LED status
+        leds <= ~{ heartbeat_led, 5'b00000 };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        // DVI TMDS straight to output register
+        tmds_d0_r <= dvi_tmds_d0;
+        tmds_d1_r <= dvi_tmds_d1;
+        tmds_d2_r <= dvi_tmds_d2;
+
+        vsync_prev <= vsync;
+
+        // Latch toggle on button press, apply on vsync rising edge
+        IF (vsync == 1'b1 && vsync_prev == 1'b0 && pattern_pending == 1'b1) {
+            @feature CONFIG.warp == 1
+                IF (pattern_sel == 2'd2) {
+                    pattern_sel <= 2'd0;
+                } ELSE {
+                    pattern_sel <= pattern_sel + 2'd1;
+                }
+            @else
+                IF (pattern_sel == 2'd1) {
+                    pattern_sel <= 2'd0;
+                } ELSE {
+                    pattern_sel <= pattern_sel + 2'd1;
+                }
+            @endfeat
+            pattern_pending <= 1'b0;
+        } ELIF (next_press == 1'b1) {
+            pattern_pending <= 1'b1;
+        }
+
+        // Heartbeat blinker
+        IF (heartbeat_cnt == 25'd33_554_431) {
+            heartbeat_cnt <= 25'b0;
+            heartbeat_led <= ~heartbeat_led;
+        } ELSE {
+            heartbeat_cnt <= heartbeat_cnt + 25'b1;
+        }
+    }
+@endmod

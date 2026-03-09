@@ -1,0 +1,53 @@
+@project(CHIP="GW2AR-18-QN88-C8-I7") SIMPLE_SOC
+    @import "cpu.jz"
+    @import "por.jz"
+
+    CLOCKS {
+        SCLK = { period=37.04 }; // 27MHz clock
+    }
+
+    IN_PINS {
+        SCLK = { standard=LVCMOS33 };
+        DONE = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock
+        // 27MHz
+        SCLK = 4;
+
+        // 2 BUttons
+        // High = Closed
+        // Low = Open
+        KEY[0] = 88;
+        KEY[1] = 87;
+
+        // 6 LEDs
+        // High = OFF
+        // Low = ON
+        LED[0] = 15;
+        LED[1] = 16;
+        LED[2] = 17;
+        LED[3] = 18;
+        LED[4] = 19;
+        LED[5] = 20;
+
+        // DONE can be used as a POR signal
+        // Low = programming ongoing
+        // High = programming successfully
+        DONE    = IOR32B;
+    }
+
+    @top CPU {
+        IN  [1] clk   = SCLK;
+        IN  [1] rst_n = ~KEY[0];
+        IN  [1] por   = DONE;
+        IN  [1] btn   = KEY[1];
+        OUT [6] leds  = LED;
+    }
+@endproj

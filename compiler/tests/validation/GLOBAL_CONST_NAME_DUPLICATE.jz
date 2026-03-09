@@ -1,0 +1,23 @@
+// GLOBAL_CONST_NAME_DUPLICATE: duplicate constant identifier within a single @global block.
+// Verified
+
+@global GLOBAL_CONSTS
+  DUP = 8'hFF;
+  DUP = 16'hFFFF;
+@endglob
+
+@project GLOBAL_CONST_NAME_DUPLICATE_EXAMPLE
+  @top top {
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= 1'b1;
+  }
+@endmod

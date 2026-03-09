@@ -1,0 +1,25 @@
+@module top {
+  PORT {
+    IN [1] enable;
+    IN [8] data_in;
+    OUT [8] data_out;
+  }
+
+  LATCH {
+    my_latch [8] D;
+  }
+
+  ASYNCHRONOUS {
+    my_latch <= enable : data_in;
+    data_out <= my_latch;
+  }
+}
+@endmod
+
+@project(CHIP="ICE40UP-5K-SG48") demo
+  @top top {
+    IN [1] enable = _;
+    IN [8] data_in = _;
+    OUT [8] data_out = _;
+  }
+@endproj

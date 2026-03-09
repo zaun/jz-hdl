@@ -1,0 +1,26 @@
+// LATCH_ASSIGN_NON_GUARDED: latch write in ASYNCHRONOUS block without guarded syntax.
+// Verified
+
+@project LATCH_ASSIGN_NON_GUARDED_PROJECT
+  @top LATCH_ASSIGN_NON_GUARDED_EXAMPLE {
+    IN  [1] d   = _;
+    OUT [1] q   = _;
+  }
+@endproj
+
+@module LATCH_ASSIGN_NON_GUARDED_EXAMPLE
+  PORT {
+    IN  [1] d;
+    OUT [1] q;
+  }
+
+  LATCH {
+    q_latch [1] D;
+  }
+
+  ASYNCHRONOUS {
+    // Illegal: latch write must use '<=' with ':' guard, but this is plain receive.
+    q_latch <= d;
+    q <= q_latch;
+  }
+@endmod

@@ -1,0 +1,32 @@
+// MEM_PORT_UNDEFINED: access to a MEM port name that does not exist.
+// Verified
+
+@project MEM_PORT_UNDEFINED_EXAMPLES
+  @top M {
+    IN  [1] clk = _;
+    IN  [8] in = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module M
+  PORT {
+    IN  [1] clk;
+    IN  [8] in;
+    OUT [8] out;
+  }
+
+  MEM {
+    m [8] [16] = 8'h00 {
+      IN wr;
+    };
+  }
+
+  ASYNCHRONOUS {
+    out = m.unknown[0];
+  }
+
+  SYNCHRONOUS(clk=clk) {
+    m.wr[1] <= in;
+  }
+@endmod

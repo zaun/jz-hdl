@@ -1,0 +1,30 @@
+// DIV_GUARD_WRONG_SIGNAL: guard on a different signal does not suppress warning.
+// IF (c != 0) does not prove b != 0.
+// Verified
+
+@project DIV_GUARD_WRONG_SIGNAL_PROJECT
+  @top DIV_GUARD_WRONG_SIGNAL_EXAMPLE {
+    IN  [8] a = _;
+    IN  [8] b = _;
+    IN  [8] c = _;
+    OUT [8] out_a = _;
+  }
+@endproj
+
+@module DIV_GUARD_WRONG_SIGNAL_EXAMPLE
+  PORT {
+    IN  [8] a;
+    IN  [8] b;
+    IN  [8] c;
+    OUT [8] out_a;
+  }
+
+  ASYNCHRONOUS {
+    // Guard is for c, but divisor is b — should warn
+    IF (c != 8'd0) {
+      out_a <= a / b;
+    } ELSE {
+      out_a <= 8'd0;
+    }
+  }
+@endmod

@@ -1,0 +1,105 @@
+{"type": "Project", "name": "SafeArithTest", "text": "GW2AR-18-QN88-C8-I7", "loc": {"line": 8, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 9, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10 . 0", "loc": {"line": 10, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 13, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "SCLK", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 14, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "DONE", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 15, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "a", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "8", "loc": {"line": 16, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "b", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "8", "loc": {"line": 17, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 20, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "udiff", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "9", "loc": {"line": 21, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "sdiff", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "9", "loc": {"line": 22, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "absv", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "9", "loc": {"line": 23, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 26, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "SCLK", "text": "4", "loc": {"line": 27, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "DONE", "text": "IOR32B", "loc": {"line": 28, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "a [ 0 ]", "text": "10", "loc": {"line": 29, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "a [ 1 ]", "text": "11", "loc": {"line": 29, "column": 20, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "a [ 2 ]", "text": "12", "loc": {"line": 29, "column": 31, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "a [ 3 ]", "text": "13", "loc": {"line": 29, "column": 42, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "a [ 4 ]", "text": "14", "loc": {"line": 30, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "a [ 5 ]", "text": "15", "loc": {"line": 30, "column": 20, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "a [ 6 ]", "text": "16", "loc": {"line": 30, "column": 31, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "a [ 7 ]", "text": "17", "loc": {"line": 30, "column": 42, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "b [ 0 ]", "text": "20", "loc": {"line": 31, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "b [ 1 ]", "text": "21", "loc": {"line": 31, "column": 20, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "b [ 2 ]", "text": "22", "loc": {"line": 31, "column": 31, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "b [ 3 ]", "text": "23", "loc": {"line": 31, "column": 42, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "b [ 4 ]", "text": "24", "loc": {"line": 32, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "b [ 5 ]", "text": "25", "loc": {"line": 32, "column": 20, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "b [ 6 ]", "text": "26", "loc": {"line": 32, "column": 31, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "b [ 7 ]", "text": "27", "loc": {"line": 32, "column": 42, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 0 ]", "text": "30", "loc": {"line": 33, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 1 ]", "text": "31", "loc": {"line": 33, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 2 ]", "text": "32", "loc": {"line": 33, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 3 ]", "text": "33", "loc": {"line": 33, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 4 ]", "text": "34", "loc": {"line": 34, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 5 ]", "text": "35", "loc": {"line": 34, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 6 ]", "text": "36", "loc": {"line": 34, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 7 ]", "text": "37", "loc": {"line": 34, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "udiff [ 8 ]", "text": "38", "loc": {"line": 35, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 0 ]", "text": "39", "loc": {"line": 36, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 1 ]", "text": "40", "loc": {"line": 36, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 2 ]", "text": "41", "loc": {"line": 36, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 3 ]", "text": "42", "loc": {"line": 36, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 4 ]", "text": "43", "loc": {"line": 37, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 5 ]", "text": "44", "loc": {"line": 37, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 6 ]", "text": "45", "loc": {"line": 37, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 7 ]", "text": "46", "loc": {"line": 37, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "sdiff [ 8 ]", "text": "47", "loc": {"line": 38, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 0 ]", "text": "48", "loc": {"line": 39, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 1 ]", "text": "49", "loc": {"line": 39, "column": 23, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 2 ]", "text": "50", "loc": {"line": 39, "column": 37, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 3 ]", "text": "51", "loc": {"line": 39, "column": 51, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 4 ]", "text": "52", "loc": {"line": 40, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 5 ]", "text": "53", "loc": {"line": 40, "column": 23, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 6 ]", "text": "54", "loc": {"line": 40, "column": 37, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 7 ]", "text": "55", "loc": {"line": 40, "column": 51, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "absv [ 8 ]", "text": "56", "loc": {"line": 41, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "SafeArithCore", "loc": {"line": 44, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "SCLK", "width": "1", "loc": {"line": 45, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "rst_n", "block_kind": "IN", "text": "DONE", "width": "1", "loc": {"line": 46, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "a", "block_kind": "IN", "text": "a", "width": "8", "loc": {"line": 47, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "b", "block_kind": "IN", "text": "b", "width": "8", "loc": {"line": 48, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "udiff", "block_kind": "OUT", "text": "udiff", "width": "9", "loc": {"line": 49, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "sdiff", "block_kind": "OUT", "text": "sdiff", "width": "9", "loc": {"line": 50, "column": 17, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "absv", "block_kind": "OUT", "text": "absv", "width": "9", "loc": {"line": 51, "column": 17, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "SafeArithCore", "loc": {"line": 55, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 56, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 57, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "rst_n", "block_kind": "IN", "width": "1", "loc": {"line": 58, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "a", "block_kind": "IN", "width": "8", "loc": {"line": 59, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "b", "block_kind": "IN", "width": "8", "loc": {"line": 60, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "udiff", "block_kind": "OUT", "width": "9", "loc": {"line": 61, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "sdiff", "block_kind": "OUT", "width": "9", "loc": {"line": 62, "column": 17, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "absv", "block_kind": "OUT", "width": "9", "loc": {"line": 63, "column": 17, "file": "test.jz"}}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 66, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 67, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "udiff", "loc": {"line": 67, "column": 9, "file": "test.jz"}},
+        {"type": "BuiltinCall", "name": "usub", "loc": {"line": 67, "column": 18, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "a", "loc": {"line": 67, "column": 23, "file": "test.jz"}},
+          {"type": "Identifier", "name": "b", "loc": {"line": 67, "column": 26, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 68, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "sdiff", "loc": {"line": 68, "column": 9, "file": "test.jz"}},
+        {"type": "BuiltinCall", "name": "ssub", "loc": {"line": 68, "column": 18, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "a", "loc": {"line": 68, "column": 23, "file": "test.jz"}},
+          {"type": "Identifier", "name": "b", "loc": {"line": 68, "column": 26, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 69, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "absv", "loc": {"line": 69, "column": 9, "file": "test.jz"}},
+        {"type": "BuiltinCall", "name": "abs", "loc": {"line": 69, "column": 18, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "a", "loc": {"line": 69, "column": 22, "file": "test.jz"}}
+        ]}
+      ]}
+    ]}
+  ]}
+]}

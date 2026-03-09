@@ -1,0 +1,78 @@
+// Dual-clock simulation test: two counters in separate clock domains.
+//
+// Verifies:
+//   - Two clocks with different periods toggle independently
+//   - GCD tick resolution handles non-trivial periods (10ns and 14ns)
+//   - Each SYNCHRONOUS block fires only on its own clock edge
+//   - VCD captures both domains correctly
+
+@module dual_counter
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] rst_n;
+        OUT [8] count_a;
+        OUT [8] count_b;
+    }
+
+    REGISTER {
+        cnt_a [8] = 8'h00;
+        cnt_b [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        count_a <= cnt_a;
+        count_b <= cnt_b;
+    }
+
+    // Domain A: 10 ns period (100 MHz)
+    SYNCHRONOUS(CLK=clk_a RESET=rst_n RESET_ACTIVE=Low) {
+        cnt_a <= cnt_a + 8'h01;
+    }
+
+    // Domain B: 14 ns period (~71.4 MHz)
+    SYNCHRONOUS(CLK=clk_b RESET=rst_n RESET_ACTIVE=Low) {
+        cnt_b <= cnt_b + 8'h01;
+    }
+@endmod
+
+@simulation dual_counter
+    CLOCK {
+        clk_a = { period=10.0 };
+        clk_b = { period=14.0 };
+    }
+
+    WIRE {
+        rst_n   [1];
+        count_a [8];
+        count_b [8];
+    }
+
+    TAP {
+        dut.cnt_a;
+        dut.cnt_b;
+    }
+
+    @new dut dual_counter {
+        clk_a   [1] = clk_a;
+        clk_b   [1] = clk_b;
+        rst_n   [1] = rst_n;
+        count_a [8] = count_a;
+        count_b [8] = count_b;
+    }
+
+    // Hold reset for 50 ns
+    @setup {
+        rst_n <= 1'b0;
+    }
+
+    @run(ns=50)
+
+    // Release reset — both counters start incrementing
+    @update {
+        rst_n <= 1'b1;
+    }
+
+    // Run for 140 ns (14 cycles of clk_a, 10 cycles of clk_b)
+    @run(ns=140)
+@endsim

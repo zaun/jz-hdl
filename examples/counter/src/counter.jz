@@ -1,0 +1,26 @@
+@module counter
+    PORT {
+        IN  [1] clk;
+        IN  [1] por;
+        IN  [1] rst_n;
+        OUT [6] leds;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        counter [27] = 27'b1;
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+
+        leds <= ~counter[26:21];
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        counter <= counter + 27'b1;
+    }
+@endmod

@@ -1,0 +1,186 @@
+// Tone Generator
+// Reads melody data from BRAM, sequences notes, runs a Bresenham 48kHz
+// sample clock, and outputs raw signed 16-bit PCM samples.
+// Square wave tone with per-note articulation gap and volume.
+// Each instance reads its own track binary file (up to 500 notes).
+@module tone_gen
+    CONST {
+        DATA_FILE = "../out/track0.bin";
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [1]  next_song;     // single-cycle pulse to switch to next song
+        OUT [16] sample;        // raw signed 16-bit PCM
+        OUT [1]  samp_valid;    // pulses high for 1 cycle when a new sample is ready
+        OUT [16] half_period_out; // current note half-period (frequency indicator)
+        OUT [8]  volume_out;      // current note volume (amplitude envelope)
+        OUT [1]  in_gap_out;      // articulation gap flag
+    }
+
+    CONST {
+        // Bresenham audio sample rate: 48000/37125000 = 16/12375
+        BRES_STEP         = 16;
+        BRES_THRESH       = 12375;
+        BRES_FIRE_MIN     = 12359;
+    }
+
+    WIRE {
+        // Bresenham pre-computation
+        bres_fire       [1];
+        bres_next       [14];
+
+        // Melody/tone wires
+        mel_addr         [11];
+        mel_half_period  [16];
+        mel_duration     [24];
+        mel_gap          [16];
+        mel_volume       [8];
+        at_song_end      [1];
+        cur_half_period  [16];
+        cur_note_dur     [24];
+        cur_gap          [16];
+        cur_volume       [8];
+        in_gap           [1];
+
+        // Current audio sample value
+        cur_sample       [16];
+
+        // 2-tap moving average filter
+        filt_sum         [17];          // sadd sign-extended sum
+        filt_out         [16];          // averaged output
+    }
+
+    REGISTER {
+        // Bresenham audio sample clock accumulator
+        bres_acc     [14] = 14'd0;
+
+        // Melody sequencer and tone generator
+        tone_phase    [16] = 16'd0;
+        tone_polarity [1]  = 1'b0;
+        note_idx      [10] = 10'd0;
+        song_base     [11] = 11'd0;   // 0=song 1, 500=song 2, 1000=song 3
+        note_dur_cnt  [24] = 24'd0;
+
+        // Sample valid pulse
+        samp_valid_r  [1]  = 1'b0;
+
+        // Previous sample for 2-tap moving average filter
+        prev_sample   [16] = 16'd0;
+    }
+
+    @new mel0 melodies {
+        OVERRIDE {
+            DATA_FILE = DATA_FILE;
+        }
+        IN  [1]  clk          = clk;
+        IN  [1]  rst_n        = rst_n;
+        IN  [11] addr         = mel_addr;
+        OUT [16] half_period  = mel_half_period;
+        OUT [24] duration     = mel_duration;
+        OUT [16] gap          = mel_gap;
+        OUT [8]  volume       = mel_volume;
+    }
+
+    ASYNCHRONOUS {
+        // ---- Bresenham pre-computation ----
+        bres_fire <= (bres_acc >= lit(14, BRES_FIRE_MIN)) ? 1'b1 : 1'b0;
+        IF (bres_acc >= lit(14, BRES_FIRE_MIN)) {
+            bres_next <= bres_acc - lit(14, BRES_FIRE_MIN);
+        } ELSE {
+            bres_next <= bres_acc + lit(14, BRES_STEP);
+        }
+
+        // ---- Melody BRAM address ----
+        mel_addr <= song_base + { 1'b0, note_idx };
+
+        // Drive current note parameters from BRAM output
+        cur_half_period <= mel_half_period;
+        cur_note_dur    <= mel_duration;
+        cur_gap         <= mel_gap;
+        cur_volume      <= mel_volume;
+
+        // Sentinel detection: half_period = 0xFFFF marks end of song
+        at_song_end <= (mel_half_period == 16'hFFFF) ? 1'b1 : 1'b0;
+
+        // Gap: silence during last N samples of each note for articulation
+        in_gap <= (note_dur_cnt >= cur_note_dur - { 8'h00, cur_gap }) ? 1'b1 : 1'b0;
+
+        // ---- Current audio sample value (raw signed 16-bit PCM) ----
+        // Volume is unsigned 8-bit, scaled up 8x (shift left 3) so the
+        // 4-channel mix uses ~15% of the 16-bit range (max sum ~4800).
+        IF (in_gap == 1'b1) {
+            cur_sample <= 16'h0000;
+        } ELIF (tone_polarity == 1'b0) {
+            cur_sample <= { 5'h00, cur_volume, 3'h0 };
+        } ELSE {
+            cur_sample <= 16'h0000 - { 5'h00, cur_volume, 3'h0 };
+        }
+
+        // 2-tap moving average anti-alias filter: (cur + prev) / 2
+        filt_sum <= sadd(cur_sample, prev_sample);
+        filt_out <= filt_sum[16:1];
+
+        // Drive output ports
+        sample         <= filt_out;
+        samp_valid     <= samp_valid_r;
+        half_period_out <= cur_half_period;
+        volume_out     <= cur_volume;
+        in_gap_out     <= in_gap;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // ---- Bresenham accumulator (runs every cycle) ----
+        bres_acc <= bres_next;
+
+        // ---- Sample valid pulse: high for 1 cycle when Bresenham fires ----
+        samp_valid_r <= bres_fire;
+
+        // ---- Capture previous sample for moving average filter ----
+        IF (bres_fire == 1'b1) {
+            prev_sample <= cur_sample;
+        }
+
+        // ---- Song switch: cycle song_base on next_song pulse ----
+        IF (next_song == 1'b1) {
+            IF (song_base == 11'd0) {
+                song_base <= 11'd500;
+            } ELIF (song_base == 11'd500) {
+                song_base <= 11'd1000;
+            } ELSE {
+                song_base <= 11'd0;
+            }
+            note_idx      <= 10'd0;
+            note_dur_cnt  <= 24'd0;
+            tone_phase    <= 16'd0;
+            tone_polarity <= 1'b0;
+        } ELSE {
+            // ---- Audio state advance ----
+            // Song-end sentinel: wrap back to start immediately
+            IF (at_song_end == 1'b1) {
+                note_idx      <= 10'd0;
+                note_dur_cnt  <= 24'd0;
+                tone_phase    <= 16'd0;
+                tone_polarity <= 1'b0;
+            } ELIF (bres_fire == 1'b1) {
+                // Note boundary: advance to next note and reset tone
+                IF (note_dur_cnt + 24'd1 >= cur_note_dur) {
+                    note_dur_cnt  <= 24'd0;
+                    tone_phase    <= 16'd0;
+                    tone_polarity <= 1'b0;
+                    note_idx      <= note_idx + 10'd1;
+                } ELSE {
+                    note_dur_cnt <= note_dur_cnt + 24'd1;
+                    // Advance tone: toggle polarity at half-period boundary
+                    IF (tone_phase + 16'd1 >= cur_half_period) {
+                        tone_phase    <= 16'd0;
+                        tone_polarity <= ~tone_polarity;
+                    } ELSE {
+                        tone_phase <= tone_phase + 16'd1;
+                    }
+                }
+            }
+        }
+    }
+@endmod

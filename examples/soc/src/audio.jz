@@ -1,0 +1,566 @@
+// Audio controller - Yamaha FM synth inspired
+// 8 configurable channels with waveform, ADSR envelope, volume, pan
+// Mixes to stereo, fills internal ring buffer (512 stereo samples)
+// CPU reads samples via bus register interface
+//
+// Register map (ADDR[8:2] = register index):
+//   Global registers (ADDR[8:5] = 0000):
+//     0x00 [RW] CTRL:       [0]=enable, [1]=irq_en, [2]=irq_clear(W)
+//     0x04 [R]  STATUS:     [9:0]=buf_level, [10]=half_full, [11]=underrun
+//     0x08 [R]  SAMPLE:     {left[15:0], right[15:0]} - read pops from buffer
+//     0x0C [RW] DIVIDER:    [15:0]=sample rate divider (sclk/divider = sample rate)
+//     0x10 [RW] MASTER_VOL: [7:0]=master volume 0-255
+//
+//   Per-channel registers (ADDR[8:5] = 0001..1000 for ch0..ch7):
+//     +0x00 [RW] CH_CTRL:   [0]=key_on, [3:1]=waveform, [4]=enabled
+//     +0x04 [RW] FREQ_LO:   [15:0]=phase increment low
+//     +0x08 [RW] FREQ_HI:   [7:0]=phase increment high (24-bit total)
+//     +0x0C [RW] VOLUME:    [7:0]=volume, [15:8]=pan (0=L, 128=center, 255=R)
+//     +0x10 [RW] ENV_AD:    [7:0]=attack rate, [15:8]=decay rate
+//     +0x14 [RW] ENV_SR:    [7:0]=sustain level, [15:8]=release rate
+//     +0x18 [RW] DUTY:      [7:0]=duty cycle (square wave)
+
+@module audio
+    CONST {
+        NUM_CHANNELS = 8;
+        BUF_DEPTH    = 128;   // Stereo sample pairs in ring buffer
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        BUS SIMPLE_BUS TARGET pbus;
+        OUT [1] irq;
+    }
+
+    WIRE {
+        // Bus decode
+        reg_group   [4];    // ADDR[8:5] - 0=global, 1-8=channel
+        reg_sel     [3];    // ADDR[4:2] - register within group
+        bus_read    [1];
+        bus_write   [1];
+
+        // Sample rate tick generation
+        tick        [1];
+
+        // Channel outputs (16-bit signed each)
+        ch0_out [16]; ch1_out [16]; ch2_out [16]; ch3_out [16];
+        ch4_out [16]; ch5_out [16]; ch6_out [16]; ch7_out [16];
+        all_samples [128];
+        all_pans    [64];
+
+        // Mixer outputs
+        mix_left    [16];
+        mix_right   [16];
+        mix_valid   [1];
+
+        // Buffer level
+        buf_count   [8];
+        buf_half    [1];
+
+    }
+
+    REGISTER {
+        // Global control
+        enable      [1]  = 1'b0;
+        irq_en      [1]  = 1'b0;
+        master_vol  [8]  = 8'h80;
+        divider     [16] = 16'd1125;  // 54MHz/1125 ≈ 48kHz
+        div_count   [16] = 16'd0;
+        sample_tick [1]  = 1'b0;
+        underrun    [1]  = 1'b0;
+
+        // Ring buffer pointers (7-bit for 128-deep buffer)
+        wr_ptr      [7]  = 7'd0;
+        rd_ptr      [7]  = 7'd0;
+
+        // Per-channel registers: key_on, waveform, enabled
+        ch0_key [1] = 1'b0; ch1_key [1] = 1'b0; ch2_key [1] = 1'b0; ch3_key [1] = 1'b0;
+        ch4_key [1] = 1'b0; ch5_key [1] = 1'b0; ch6_key [1] = 1'b0; ch7_key [1] = 1'b0;
+        ch0_wf [3] = 3'd0; ch1_wf [3] = 3'd0; ch2_wf [3] = 3'd0; ch3_wf [3] = 3'd0;
+        ch4_wf [3] = 3'd0; ch5_wf [3] = 3'd0; ch6_wf [3] = 3'd0; ch7_wf [3] = 3'd0;
+        ch0_en [1] = 1'b0; ch1_en [1] = 1'b0; ch2_en [1] = 1'b0; ch3_en [1] = 1'b0;
+        ch4_en [1] = 1'b0; ch5_en [1] = 1'b0; ch6_en [1] = 1'b0; ch7_en [1] = 1'b0;
+
+        // Frequency (24-bit, split into hi/lo registers)
+        ch0_freq [24] = 24'd0; ch1_freq [24] = 24'd0; ch2_freq [24] = 24'd0; ch3_freq [24] = 24'd0;
+        ch4_freq [24] = 24'd0; ch5_freq [24] = 24'd0; ch6_freq [24] = 24'd0; ch7_freq [24] = 24'd0;
+
+        // Volume + pan
+        ch0_vol [8] = 8'd0; ch1_vol [8] = 8'd0; ch2_vol [8] = 8'd0; ch3_vol [8] = 8'd0;
+        ch4_vol [8] = 8'd0; ch5_vol [8] = 8'd0; ch6_vol [8] = 8'd0; ch7_vol [8] = 8'd0;
+        ch0_pan [8] = 8'h80; ch1_pan [8] = 8'h80; ch2_pan [8] = 8'h80; ch3_pan [8] = 8'h80;
+        ch4_pan [8] = 8'h80; ch5_pan [8] = 8'h80; ch6_pan [8] = 8'h80; ch7_pan [8] = 8'h80;
+
+        // Envelope params
+        ch0_atk [8] = 8'd0; ch1_atk [8] = 8'd0; ch2_atk [8] = 8'd0; ch3_atk [8] = 8'd0;
+        ch4_atk [8] = 8'd0; ch5_atk [8] = 8'd0; ch6_atk [8] = 8'd0; ch7_atk [8] = 8'd0;
+        ch0_dec [8] = 8'd0; ch1_dec [8] = 8'd0; ch2_dec [8] = 8'd0; ch3_dec [8] = 8'd0;
+        ch4_dec [8] = 8'd0; ch5_dec [8] = 8'd0; ch6_dec [8] = 8'd0; ch7_dec [8] = 8'd0;
+        ch0_sus [8] = 8'd0; ch1_sus [8] = 8'd0; ch2_sus [8] = 8'd0; ch3_sus [8] = 8'd0;
+        ch4_sus [8] = 8'd0; ch5_sus [8] = 8'd0; ch6_sus [8] = 8'd0; ch7_sus [8] = 8'd0;
+        ch0_rel [8] = 8'd0; ch1_rel [8] = 8'd0; ch2_rel [8] = 8'd0; ch3_rel [8] = 8'd0;
+        ch4_rel [8] = 8'd0; ch5_rel [8] = 8'd0; ch6_rel [8] = 8'd0; ch7_rel [8] = 8'd0;
+
+        // Duty cycle
+        ch0_duty [8] = 8'h80; ch1_duty [8] = 8'h80; ch2_duty [8] = 8'h80; ch3_duty [8] = 8'h80;
+        ch4_duty [8] = 8'h80; ch5_duty [8] = 8'h80; ch6_duty [8] = 8'h80; ch7_duty [8] = 8'h80;
+
+        // Bus read pipeline
+        read_reg     [32] = 32'd0;
+        data_ready   [1]  = 1'b0;
+
+        // IRQ output
+        irq_reg      [1]  = 1'b0;
+    }
+
+    MEM(TYPE=DISTRIBUTED) {
+        // Ring buffer: 128 entries, split into left/right 16-bit memories
+        buf_left [16] [128] = 16'h0000 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+        buf_right [16] [128] = 16'h0000 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // ---- Channel Generators ----
+    @new gen0 aud_gen {
+        IN  [1]  clk = clk;         IN  [1]  rst_n = rst_n;
+        IN  [1]  sample_tick = tick; IN  [1]  key_on = ch0_key;
+        IN  [1]  enabled = ch0_en;   IN  [3]  waveform = ch0_wf;
+        IN  [24] freq = ch0_freq;    IN  [8]  volume = ch0_vol;
+        IN  [8]  duty = ch0_duty;    IN  [8]  attack_rate = ch0_atk;
+        IN  [8]  decay_rate = ch0_dec; IN  [8] sustain_level = ch0_sus;
+        IN  [8]  release_rate = ch0_rel;
+        OUT [16] sample_out = ch0_out;
+    }
+    @new gen1 aud_gen {
+        IN  [1]  clk = clk;         IN  [1]  rst_n = rst_n;
+        IN  [1]  sample_tick = tick; IN  [1]  key_on = ch1_key;
+        IN  [1]  enabled = ch1_en;   IN  [3]  waveform = ch1_wf;
+        IN  [24] freq = ch1_freq;    IN  [8]  volume = ch1_vol;
+        IN  [8]  duty = ch1_duty;    IN  [8]  attack_rate = ch1_atk;
+        IN  [8]  decay_rate = ch1_dec; IN  [8] sustain_level = ch1_sus;
+        IN  [8]  release_rate = ch1_rel;
+        OUT [16] sample_out = ch1_out;
+    }
+    @new gen2 aud_gen {
+        IN  [1]  clk = clk;         IN  [1]  rst_n = rst_n;
+        IN  [1]  sample_tick = tick; IN  [1]  key_on = ch2_key;
+        IN  [1]  enabled = ch2_en;   IN  [3]  waveform = ch2_wf;
+        IN  [24] freq = ch2_freq;    IN  [8]  volume = ch2_vol;
+        IN  [8]  duty = ch2_duty;    IN  [8]  attack_rate = ch2_atk;
+        IN  [8]  decay_rate = ch2_dec; IN  [8] sustain_level = ch2_sus;
+        IN  [8]  release_rate = ch2_rel;
+        OUT [16] sample_out = ch2_out;
+    }
+    @new gen3 aud_gen {
+        IN  [1]  clk = clk;         IN  [1]  rst_n = rst_n;
+        IN  [1]  sample_tick = tick; IN  [1]  key_on = ch3_key;
+        IN  [1]  enabled = ch3_en;   IN  [3]  waveform = ch3_wf;
+        IN  [24] freq = ch3_freq;    IN  [8]  volume = ch3_vol;
+        IN  [8]  duty = ch3_duty;    IN  [8]  attack_rate = ch3_atk;
+        IN  [8]  decay_rate = ch3_dec; IN  [8] sustain_level = ch3_sus;
+        IN  [8]  release_rate = ch3_rel;
+        OUT [16] sample_out = ch3_out;
+    }
+    @new gen4 aud_gen {
+        IN  [1]  clk = clk;         IN  [1]  rst_n = rst_n;
+        IN  [1]  sample_tick = tick; IN  [1]  key_on = ch4_key;
+        IN  [1]  enabled = ch4_en;   IN  [3]  waveform = ch4_wf;
+        IN  [24] freq = ch4_freq;    IN  [8]  volume = ch4_vol;
+        IN  [8]  duty = ch4_duty;    IN  [8]  attack_rate = ch4_atk;
+        IN  [8]  decay_rate = ch4_dec; IN  [8] sustain_level = ch4_sus;
+        IN  [8]  release_rate = ch4_rel;
+        OUT [16] sample_out = ch4_out;
+    }
+    @new gen5 aud_gen {
+        IN  [1]  clk = clk;         IN  [1]  rst_n = rst_n;
+        IN  [1]  sample_tick = tick; IN  [1]  key_on = ch5_key;
+        IN  [1]  enabled = ch5_en;   IN  [3]  waveform = ch5_wf;
+        IN  [24] freq = ch5_freq;    IN  [8]  volume = ch5_vol;
+        IN  [8]  duty = ch5_duty;    IN  [8]  attack_rate = ch5_atk;
+        IN  [8]  decay_rate = ch5_dec; IN  [8] sustain_level = ch5_sus;
+        IN  [8]  release_rate = ch5_rel;
+        OUT [16] sample_out = ch5_out;
+    }
+    @new gen6 aud_gen {
+        IN  [1]  clk = clk;         IN  [1]  rst_n = rst_n;
+        IN  [1]  sample_tick = tick; IN  [1]  key_on = ch6_key;
+        IN  [1]  enabled = ch6_en;   IN  [3]  waveform = ch6_wf;
+        IN  [24] freq = ch6_freq;    IN  [8]  volume = ch6_vol;
+        IN  [8]  duty = ch6_duty;    IN  [8]  attack_rate = ch6_atk;
+        IN  [8]  decay_rate = ch6_dec; IN  [8] sustain_level = ch6_sus;
+        IN  [8]  release_rate = ch6_rel;
+        OUT [16] sample_out = ch6_out;
+    }
+    @new gen7 aud_gen {
+        IN  [1]  clk = clk;         IN  [1]  rst_n = rst_n;
+        IN  [1]  sample_tick = tick; IN  [1]  key_on = ch7_key;
+        IN  [1]  enabled = ch7_en;   IN  [3]  waveform = ch7_wf;
+        IN  [24] freq = ch7_freq;    IN  [8]  volume = ch7_vol;
+        IN  [8]  duty = ch7_duty;    IN  [8]  attack_rate = ch7_atk;
+        IN  [8]  decay_rate = ch7_dec; IN  [8] sustain_level = ch7_sus;
+        IN  [8]  release_rate = ch7_rel;
+        OUT [16] sample_out = ch7_out;
+    }
+
+    // ---- Mixer ----
+    @new mix0 aud_mixer {
+        IN  [1]   clk = clk;
+        IN  [1]   rst_n = rst_n;
+        IN  [1]   sample_tick = tick;
+        IN  [8]   master_vol = master_vol;
+        IN  [128] ch_samples = all_samples;
+        IN  [64]  ch_pans = all_pans;
+        OUT [16]  out_left = mix_left;
+        OUT [16]  out_right = mix_right;
+        OUT [1]   out_valid = mix_valid;
+    }
+
+    ASYNCHRONOUS {
+        // Bus decode
+        reg_group <= pbus.ADDR[8:5];
+        reg_sel   <= pbus.ADDR[4:2];
+        bus_read  <= pbus.VALID & ~pbus.CMD;
+        bus_write <= pbus.VALID & pbus.CMD;
+
+        // Sample tick wire (directly from register, pulsed in SYNC block)
+        tick <= sample_tick;
+
+        // Concatenate channel outputs for mixer
+        all_samples <= {ch7_out, ch6_out, ch5_out, ch4_out,
+                        ch3_out, ch2_out, ch1_out, ch0_out};
+        all_pans    <= {ch7_pan, ch6_pan, ch5_pan, ch4_pan,
+                        ch3_pan, ch2_pan, ch1_pan, ch0_pan};
+
+        // Buffer level = wr_ptr - rd_ptr (modular 9-bit, report 10 bits)
+        buf_count <= {1'b0, wr_ptr} - {1'b0, rd_ptr};
+        buf_half  <= buf_count[7] | buf_count[6];
+
+        // IRQ output
+        irq <= irq_reg;
+
+        // Bus data drive (reads)
+        IF (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) {
+            pbus.DATA <= read_reg;
+        } ELSE {
+            pbus.DATA <= 32'bz;
+        }
+
+        // Bus DONE
+        IF (pbus.VALID && pbus.CMD == CMD.WRITE) {
+            pbus.DONE <= 1'b1;
+        } ELIF (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) {
+            pbus.DONE <= 1'b1;
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        // =====================
+        // Chain 1: Sample rate divider (sample_tick, div_count)
+        // =====================
+        IF (enable == 1'b1 && div_count >= divider) {
+            div_count   <= 16'd0;
+            sample_tick <= 1'b1;
+        } ELIF (enable == 1'b1) {
+            div_count   <= div_count + 16'd1;
+            sample_tick <= 1'b0;
+        } ELSE {
+            div_count   <= 16'd0;
+            sample_tick <= 1'b0;
+        }
+
+        // =====================
+        // Chain 2: Ring buffer write (wr_ptr)
+        // =====================
+        IF (mix_valid == 1'b1) {
+            buf_left.wr[wr_ptr] <= mix_left;
+            buf_right.wr[wr_ptr] <= mix_right;
+            IF (wr_ptr == 7'd127) {
+                wr_ptr <= 7'd0;
+            } ELSE {
+                wr_ptr <= wr_ptr + 7'd1;
+            }
+        }
+
+        // =====================
+        // Chain 3: IRQ register (irq_reg)
+        // Bus write CTRL with bit[2] clears; buffer half-full sets
+        // =====================
+        IF (bus_write == 1'b1 && reg_group == 4'b0000 && reg_sel == 3'b000 && pbus.DATA[2] == 1'b1) {
+            irq_reg <= 1'b0;
+        } ELIF (irq_en == 1'b1 && buf_half == 1'b1) {
+            irq_reg <= 1'b1;
+        }
+
+        // =====================
+        // Chain 4: Underrun flag (underrun)
+        // Bus write CTRL with bit[2] clears; empty buffer read sets
+        // =====================
+        IF (bus_write == 1'b1 && reg_group == 4'b0000 && reg_sel == 3'b000 && pbus.DATA[2] == 1'b1) {
+            underrun <= 1'b0;
+        } ELIF (bus_read == 1'b1 && reg_group == 4'b0000 && reg_sel == 3'b010 && rd_ptr == wr_ptr && data_ready == 1'b0) {
+            underrun <= 1'b1;
+        }
+
+        // =====================
+        // Chain 5: Bus read pipeline (data_ready, read_reg, rd_ptr)
+        // Distributed mem reads are combinational (rd_data.addr set in ASYNC)
+        // =====================
+        IF (data_ready == 1'b1) {
+            data_ready <= 1'b0;
+        } ELIF (bus_read == 1'b1) {
+            // SAMPLE register: read from ring buffer (combinational)
+            IF (reg_group == 4'b0000 && reg_sel == 3'b010) {
+                IF (rd_ptr != wr_ptr) {
+                    read_reg   <= {buf_left.rd[rd_ptr], buf_right.rd[rd_ptr]};
+                    data_ready <= 1'b1;
+                    IF (rd_ptr == 7'd127) {
+                        rd_ptr <= 7'd0;
+                    } ELSE {
+                        rd_ptr <= rd_ptr + 7'd1;
+                    }
+                } ELSE {
+                    // Buffer empty
+                    read_reg   <= 32'd0;
+                    data_ready <= 1'b1;
+                }
+
+            // CTRL
+            } ELIF (reg_group == 4'b0000 && reg_sel == 3'b000) {
+                read_reg   <= {30'd0, irq_en, enable};
+                data_ready <= 1'b1;
+
+            // STATUS
+            } ELIF (reg_group == 4'b0000 && reg_sel == 3'b001) {
+                read_reg   <= {22'd0, underrun, buf_half, buf_count};
+                data_ready <= 1'b1;
+
+            // DIVIDER
+            } ELIF (reg_group == 4'b0000 && reg_sel == 3'b011) {
+                read_reg   <= {16'd0, divider};
+                data_ready <= 1'b1;
+
+            // MASTER_VOL
+            } ELIF (reg_group == 4'b0000 && reg_sel == 3'b100) {
+                read_reg   <= {24'd0, master_vol};
+                data_ready <= 1'b1;
+
+            // Channel 0 readback
+            } ELIF (reg_group == 4'b0001) {
+                data_ready <= 1'b1;
+                IF (reg_sel == 3'b000) {
+                    read_reg <= {27'd0, ch0_en, ch0_wf, ch0_key};
+                } ELIF (reg_sel == 3'b001) {
+                    read_reg <= {16'd0, ch0_freq[15:0]};
+                } ELIF (reg_sel == 3'b010) {
+                    read_reg <= {24'd0, ch0_freq[23:16]};
+                } ELIF (reg_sel == 3'b011) {
+                    read_reg <= {16'd0, ch0_pan, ch0_vol};
+                } ELIF (reg_sel == 3'b100) {
+                    read_reg <= {16'd0, ch0_dec, ch0_atk};
+                } ELIF (reg_sel == 3'b101) {
+                    read_reg <= {16'd0, ch0_rel, ch0_sus};
+                } ELIF (reg_sel == 3'b110) {
+                    read_reg <= {24'd0, ch0_duty};
+                } ELSE {
+                    read_reg <= 32'd0;
+                }
+
+            // Channel 1 readback
+            } ELIF (reg_group == 4'b0010) {
+                data_ready <= 1'b1;
+                IF (reg_sel == 3'b000) {
+                    read_reg <= {27'd0, ch1_en, ch1_wf, ch1_key};
+                } ELIF (reg_sel == 3'b001) {
+                    read_reg <= {16'd0, ch1_freq[15:0]};
+                } ELIF (reg_sel == 3'b010) {
+                    read_reg <= {24'd0, ch1_freq[23:16]};
+                } ELIF (reg_sel == 3'b011) {
+                    read_reg <= {16'd0, ch1_pan, ch1_vol};
+                } ELIF (reg_sel == 3'b100) {
+                    read_reg <= {16'd0, ch1_dec, ch1_atk};
+                } ELIF (reg_sel == 3'b101) {
+                    read_reg <= {16'd0, ch1_rel, ch1_sus};
+                } ELIF (reg_sel == 3'b110) {
+                    read_reg <= {24'd0, ch1_duty};
+                } ELSE {
+                    read_reg <= 32'd0;
+                }
+
+            } ELSE {
+                // Other channel reads: return 0
+                data_ready <= 1'b1;
+                read_reg   <= 32'd0;
+            }
+        }
+
+        // =====================
+        // Chain 6: Bus register writes (enable, irq_en, master_vol, divider, ch regs)
+        // NOTE: irq_reg and underrun are in their own chains above
+        // =====================
+        IF (bus_write == 1'b1) {
+            // Global registers
+            IF (reg_group == 4'b0000) {
+                IF (reg_sel == 3'b000) {
+                    enable <= pbus.DATA[0];
+                    irq_en <= pbus.DATA[1];
+                } ELIF (reg_sel == 3'b011) {
+                    divider <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b100) {
+                    master_vol <= pbus.DATA[7:0];
+                }
+
+            // Channel 0
+            } ELIF (reg_group == 4'b0001) {
+                IF (reg_sel == 3'b000) {
+                    ch0_key <= pbus.DATA[0]; ch0_wf <= pbus.DATA[3:1]; ch0_en <= pbus.DATA[4];
+                } ELIF (reg_sel == 3'b001) {
+                    ch0_freq[15:0] <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b010) {
+                    ch0_freq[23:16] <= pbus.DATA[7:0];
+                } ELIF (reg_sel == 3'b011) {
+                    ch0_vol <= pbus.DATA[7:0]; ch0_pan <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b100) {
+                    ch0_atk <= pbus.DATA[7:0]; ch0_dec <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b101) {
+                    ch0_sus <= pbus.DATA[7:0]; ch0_rel <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b110) {
+                    ch0_duty <= pbus.DATA[7:0];
+                }
+
+            // Channel 1
+            } ELIF (reg_group == 4'b0010) {
+                IF (reg_sel == 3'b000) {
+                    ch1_key <= pbus.DATA[0]; ch1_wf <= pbus.DATA[3:1]; ch1_en <= pbus.DATA[4];
+                } ELIF (reg_sel == 3'b001) {
+                    ch1_freq[15:0] <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b010) {
+                    ch1_freq[23:16] <= pbus.DATA[7:0];
+                } ELIF (reg_sel == 3'b011) {
+                    ch1_vol <= pbus.DATA[7:0]; ch1_pan <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b100) {
+                    ch1_atk <= pbus.DATA[7:0]; ch1_dec <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b101) {
+                    ch1_sus <= pbus.DATA[7:0]; ch1_rel <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b110) {
+                    ch1_duty <= pbus.DATA[7:0];
+                }
+
+            // Channel 2
+            } ELIF (reg_group == 4'b0011) {
+                IF (reg_sel == 3'b000) {
+                    ch2_key <= pbus.DATA[0]; ch2_wf <= pbus.DATA[3:1]; ch2_en <= pbus.DATA[4];
+                } ELIF (reg_sel == 3'b001) {
+                    ch2_freq[15:0] <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b010) {
+                    ch2_freq[23:16] <= pbus.DATA[7:0];
+                } ELIF (reg_sel == 3'b011) {
+                    ch2_vol <= pbus.DATA[7:0]; ch2_pan <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b100) {
+                    ch2_atk <= pbus.DATA[7:0]; ch2_dec <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b101) {
+                    ch2_sus <= pbus.DATA[7:0]; ch2_rel <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b110) {
+                    ch2_duty <= pbus.DATA[7:0];
+                }
+
+            // Channel 3
+            } ELIF (reg_group == 4'b0100) {
+                IF (reg_sel == 3'b000) {
+                    ch3_key <= pbus.DATA[0]; ch3_wf <= pbus.DATA[3:1]; ch3_en <= pbus.DATA[4];
+                } ELIF (reg_sel == 3'b001) {
+                    ch3_freq[15:0] <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b010) {
+                    ch3_freq[23:16] <= pbus.DATA[7:0];
+                } ELIF (reg_sel == 3'b011) {
+                    ch3_vol <= pbus.DATA[7:0]; ch3_pan <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b100) {
+                    ch3_atk <= pbus.DATA[7:0]; ch3_dec <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b101) {
+                    ch3_sus <= pbus.DATA[7:0]; ch3_rel <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b110) {
+                    ch3_duty <= pbus.DATA[7:0];
+                }
+
+            // Channel 4
+            } ELIF (reg_group == 4'b0101) {
+                IF (reg_sel == 3'b000) {
+                    ch4_key <= pbus.DATA[0]; ch4_wf <= pbus.DATA[3:1]; ch4_en <= pbus.DATA[4];
+                } ELIF (reg_sel == 3'b001) {
+                    ch4_freq[15:0] <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b010) {
+                    ch4_freq[23:16] <= pbus.DATA[7:0];
+                } ELIF (reg_sel == 3'b011) {
+                    ch4_vol <= pbus.DATA[7:0]; ch4_pan <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b100) {
+                    ch4_atk <= pbus.DATA[7:0]; ch4_dec <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b101) {
+                    ch4_sus <= pbus.DATA[7:0]; ch4_rel <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b110) {
+                    ch4_duty <= pbus.DATA[7:0];
+                }
+
+            // Channel 5
+            } ELIF (reg_group == 4'b0110) {
+                IF (reg_sel == 3'b000) {
+                    ch5_key <= pbus.DATA[0]; ch5_wf <= pbus.DATA[3:1]; ch5_en <= pbus.DATA[4];
+                } ELIF (reg_sel == 3'b001) {
+                    ch5_freq[15:0] <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b010) {
+                    ch5_freq[23:16] <= pbus.DATA[7:0];
+                } ELIF (reg_sel == 3'b011) {
+                    ch5_vol <= pbus.DATA[7:0]; ch5_pan <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b100) {
+                    ch5_atk <= pbus.DATA[7:0]; ch5_dec <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b101) {
+                    ch5_sus <= pbus.DATA[7:0]; ch5_rel <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b110) {
+                    ch5_duty <= pbus.DATA[7:0];
+                }
+
+            // Channel 6
+            } ELIF (reg_group == 4'b0111) {
+                IF (reg_sel == 3'b000) {
+                    ch6_key <= pbus.DATA[0]; ch6_wf <= pbus.DATA[3:1]; ch6_en <= pbus.DATA[4];
+                } ELIF (reg_sel == 3'b001) {
+                    ch6_freq[15:0] <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b010) {
+                    ch6_freq[23:16] <= pbus.DATA[7:0];
+                } ELIF (reg_sel == 3'b011) {
+                    ch6_vol <= pbus.DATA[7:0]; ch6_pan <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b100) {
+                    ch6_atk <= pbus.DATA[7:0]; ch6_dec <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b101) {
+                    ch6_sus <= pbus.DATA[7:0]; ch6_rel <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b110) {
+                    ch6_duty <= pbus.DATA[7:0];
+                }
+
+            // Channel 7
+            } ELIF (reg_group == 4'b1000) {
+                IF (reg_sel == 3'b000) {
+                    ch7_key <= pbus.DATA[0]; ch7_wf <= pbus.DATA[3:1]; ch7_en <= pbus.DATA[4];
+                } ELIF (reg_sel == 3'b001) {
+                    ch7_freq[15:0] <= pbus.DATA[15:0];
+                } ELIF (reg_sel == 3'b010) {
+                    ch7_freq[23:16] <= pbus.DATA[7:0];
+                } ELIF (reg_sel == 3'b011) {
+                    ch7_vol <= pbus.DATA[7:0]; ch7_pan <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b100) {
+                    ch7_atk <= pbus.DATA[7:0]; ch7_dec <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b101) {
+                    ch7_sus <= pbus.DATA[7:0]; ch7_rel <= pbus.DATA[15:8];
+                } ELIF (reg_sel == 3'b110) {
+                    ch7_duty <= pbus.DATA[7:0];
+                }
+            }
+        }
+    }
+@endmod

@@ -1,0 +1,2 @@
+File: CDC_RAW_STAGES_FORBIDDEN.jz
+      24:5    error CDC_RAW_STAGES_FORBIDDEN S4.12 RAW CDC type does not accept a stages parameter

@@ -1,0 +1,261 @@
+@global OPS
+    NOP  = 8'h00;
+    LDI  = 8'h01;
+    LDA  = 8'h02;
+    STA  = 8'h03;
+    ADD  = 8'h04;
+    SUB  = 8'h05;
+    JMP  = 8'h06;
+    JZ   = 8'h07;
+    LDIN = 8'h08;
+    STOU = 8'h09;
+    WAI  = 8'h0A;
+    HLT  = 8'hFF;
+@endglob
+
+@global PSTATE
+    STARTUP = 3'b000;
+    RUNNING = 3'b001;
+    BUBBLE  = 3'b010;
+    WAIT    = 3'b011;
+    HALT    = 3'b100;
+@endglob
+
+@module CPU
+    CONST {
+        CLOCK_MHZ = 27;
+        MILISEC_COUNT = CLOCK_MHZ * 1000;
+        MILISEC_BITS = clog2(MILISEC_COUNT);
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [1] por;
+        IN  [1] btn;
+        OUT [6] leds;
+    }
+
+    REGISTER {
+        A             [8] = 8'b0;
+        PC            [8] = 8'b0;
+        out_data      [8] = 8'b0;
+        zero          [1] = 1'b0;
+
+        wait_counter  [8] = 8'b0;
+        ms_counter    [MILISEC_BITS] = MILISEC_BITS'b0;
+
+        pipe_state    [3] = 3'b000;
+
+        // Pipeline registers (ID -> EX)
+        id_ex_instr   [8] = 8'b0;
+        id_ex_operand [8] = 8'b0;
+    }
+
+    WIRE {
+        reset [1];
+        por_n [1];
+    }
+
+    @new por0 por {
+        IN  [1] clk = clk;
+        IN  [1] done = por;
+        OUT [1] por_n = por_n;
+    }
+
+    MEM(TYPE=BLOCK) {
+        rom [8] [256] = @file("program.hex") {
+            OUT fetch SYNC;
+            OUT oper SYNC;
+        };
+        ram [8] [256] = 8'h00 {
+            IN  write;
+            OUT read SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        reset <= rst_n & por_n;
+        IF (btn == 1'b0) {
+            leds <= ~out_data[5:0];
+        } ELSE {
+            leds <= ~PC[5:0];
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        // 3-stage pipeline: IF -> ID -> EX
+        //
+        // Dual-port ROM fetches opcode (fetch port) and operand
+        // (oper port) in a single cycle. Variable-length instructions
+        // are handled by tracking whether the current fetch position
+        // needs adjustment based on the previous instruction's length.
+        //
+        // STARTUP: sets ROM addresses from PC, goes to BUBBLE.
+        // BUBBLE:  ID only - latches ROM data into pipeline regs,
+        //          advances PC based on instruction length.
+        // RUNNING: EX + ID + IF run simultaneously.
+
+        SELECT(pipe_state) {
+            CASE PSTATE.HALT {
+                pipe_state <= PSTATE.HALT;
+            }
+
+            CASE PSTATE.WAIT {
+                IF (ms_counter == lit(MILISEC_BITS, MILISEC_COUNT)) {
+                    ms_counter <= MILISEC_BITS'b0;
+                    wait_counter <= wait_counter - 8'b1;
+                    IF (wait_counter - 8'b1 == 8'b0) {
+                        pipe_state <= PSTATE.STARTUP;
+                    }
+                } ELSE {
+                    ms_counter <= ms_counter + MILISEC_BITS'b1;
+                }
+            }
+
+            CASE PSTATE.STARTUP {
+                // Present ROM addresses for fetch
+                rom.fetch.addr <= PC;
+                rom.oper.addr <= PC + 8'b1;
+                pipe_state <= PSTATE.BUBBLE;
+            }
+
+            CASE PSTATE.BUBBLE {
+                // ID stage only (no EX). Latch ROM data into
+                // pipeline registers.
+                id_ex_instr <= rom.fetch.data;
+                id_ex_operand <= rom.oper.data;
+
+                // Determine instruction length and set up next fetch
+                SELECT(rom.fetch.data) {
+                    CASE OPS.LDA
+                    CASE OPS.ADD
+                    CASE OPS.SUB {
+                        // 2-byte instruction that needs RAM prefetch
+                        ram.read.addr <= rom.oper.data;
+                        PC <= PC + 8'h02;
+                        rom.fetch.addr <= PC + 8'h02;
+                        rom.oper.addr <= PC + 8'h03;
+                    }
+                    CASE OPS.LDI
+                    CASE OPS.STA
+                    CASE OPS.JMP
+                    CASE OPS.JZ
+                    CASE OPS.WAI {
+                        // 2-byte instruction (no RAM prefetch needed)
+                        PC <= PC + 8'h02;
+                        rom.fetch.addr <= PC + 8'h02;
+                        rom.oper.addr <= PC + 8'h03;
+                    }
+                    DEFAULT {
+                        // 1-byte instruction (NOP, LDIN, STOU, HLT)
+                        PC <= PC + 8'b1;
+                        rom.fetch.addr <= PC + 8'b1;
+                        rom.oper.addr <= PC + 8'h02;
+                    }
+                }
+
+                pipe_state <= PSTATE.RUNNING;
+            }
+
+            CASE PSTATE.RUNNING {
+                // EX + ID + IF run simultaneously.
+                // Branches and special ops redirect through STARTUP.
+
+                SELECT(id_ex_instr) {
+                    CASE OPS.JMP {
+                        // Unconditional branch: update PC, flush
+                        PC <= id_ex_operand;
+                        pipe_state <= PSTATE.STARTUP;
+                    }
+                    CASE OPS.JZ {
+                        // Conditional branch: always flush, set PC
+                        // if taken (otherwise PC stays at next instr)
+                        IF (zero) {
+                            PC <= id_ex_operand;
+                        }
+                        pipe_state <= PSTATE.STARTUP;
+                    }
+                    CASE OPS.WAI {
+                        wait_counter <= id_ex_operand;
+                        pipe_state <= PSTATE.WAIT;
+                    }
+                    CASE OPS.HLT {
+                        pipe_state <= PSTATE.HALT;
+                    }
+                    DEFAULT {
+                        // Normal pipeline: EX + ID + IF
+
+                        // EX stage: execute the latched instruction
+                        SELECT(id_ex_instr) {
+                            CASE OPS.LDI {
+                                A <= id_ex_operand;
+                                zero <= (id_ex_operand == 8'h00);
+                            }
+                            CASE OPS.STA {
+                                ram.write[id_ex_operand] <= A;
+                            }
+                            CASE OPS.LDIN {
+                                A <= { 7'b0000000, btn };
+                                zero <= (btn == 1'b0);
+                            }
+                            CASE OPS.STOU {
+                                out_data <= A;
+                            }
+                            CASE OPS.LDA {
+                                A <= ram.read.data;
+                                zero <= (ram.read.data == 8'h00);
+                            }
+                            CASE OPS.ADD {
+                                A <= A + ram.read.data;
+                                zero <= (A + ram.read.data) == 8'h00;
+                            }
+                            CASE OPS.SUB {
+                                A <= A - ram.read.data;
+                                zero <= (A - ram.read.data) == 8'h00;
+                            }
+                            DEFAULT { }
+                        }
+
+                        // ID stage: latch next instruction
+                        id_ex_instr <= rom.fetch.data;
+                        id_ex_operand <= rom.oper.data;
+
+                        // IF stage: advance PC based on current instruction length
+                        SELECT(rom.fetch.data) {
+                            CASE OPS.LDA
+                            CASE OPS.ADD
+                            CASE OPS.SUB {
+                                // 2-byte instruction with RAM prefetch
+                                ram.read.addr <= rom.oper.data;
+                                PC <= PC + 8'h02;
+                                rom.fetch.addr <= PC + 8'h02;
+                                rom.oper.addr <= PC + 8'h03;
+                            }
+                            CASE OPS.LDI
+                            CASE OPS.STA
+                            CASE OPS.JMP
+                            CASE OPS.JZ
+                            CASE OPS.WAI {
+                                // 2-byte instruction (no RAM prefetch)
+                                PC <= PC + 8'h02;
+                                rom.fetch.addr <= PC + 8'h02;
+                                rom.oper.addr <= PC + 8'h03;
+                            }
+                            DEFAULT {
+                                // 1-byte instruction
+                                PC <= PC + 8'b1;
+                                rom.fetch.addr <= PC + 8'b1;
+                                rom.oper.addr <= PC + 8'h02;
+                            }
+                        }
+                    }
+                }
+            }
+
+            DEFAULT {
+                pipe_state <= PSTATE.STARTUP;
+            }
+        }
+    }
+@endmod

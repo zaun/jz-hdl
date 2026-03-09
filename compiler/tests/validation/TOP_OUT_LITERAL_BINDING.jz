@@ -1,0 +1,18 @@
+// TOP_OUT_LITERAL_BINDING: OUT port bound to literal in @top.
+// verified
+
+@project TOP_OUT_LITERAL_BINDING_PROJECT
+  @top TOP_OUT_LITERAL_BINDING_EXAMPLE {
+    OUT [8] leds = 8'b10101010;
+  }
+@endproj
+
+@module TOP_OUT_LITERAL_BINDING_EXAMPLE
+  PORT {
+    OUT [8] leds;
+  }
+
+  ASYNCHRONOUS {
+    leds <= 8'b00000000;
+  }
+@endmod

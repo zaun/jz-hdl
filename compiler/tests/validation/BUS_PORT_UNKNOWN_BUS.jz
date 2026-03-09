@@ -1,0 +1,24 @@
+// BUS_PORT_UNKNOWN_BUS: BUS port references BUS name not declared in project.
+// Verified
+
+@project BUS_PORT_UNKNOWN_BUS_EXAMPLE
+  // No BUS definitions here
+
+  @top endpoint {
+    OUT [1] data = _;
+    BUS FABRIC SOURCE link = _;
+  }
+@endproj
+
+@module endpoint
+  PORT {
+    OUT [1] data;
+    BUS FABRIC SOURCE link; // FABRIC not declared as BUS in project
+  }
+
+  ASYNCHRONOUS {
+    // no logic needed
+    link.rx <= 1'b1;
+    data <= 1'b1;
+  }
+@endmod

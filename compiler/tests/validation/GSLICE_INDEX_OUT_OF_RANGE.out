@@ -1,0 +1,2 @@
+File: GSLICE_INDEX_OUT_OF_RANGE.jz
+      18:22   error GSLICE_INDEX_OUT_OF_RANGE S5.5.8 gslice() index is out of range for source width

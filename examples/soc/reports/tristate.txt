@@ -1,0 +1,1242 @@
+JZ-HDL Tri-State Resolution Report
+Version: JZ-HDL 1.0
+Generated: 2026-03-08 07:47 HST
+
+Legend
+------
+Can produce Z: Driver can output high-impedance (tri-state)
+Can produce non-Z: Driver can output logic 0 or 1
+E0, E1, ...: Driver conditions (guards)
+G: Globally operator from temporal logic, globally true (at all times)
+AT_MOST_ONE: At most one driver active per execution path
+EXACTLY_ONE: Exactly one driver active per execution path (no floating nets)
+
+Input file: src/tang_nano_20k.jz
+Module: SOC
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@39: cpu_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@40: rom_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@41: ram_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@42: led_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@43: uart_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@44: sdram_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@45: term_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@46: sd_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@47: audio_bus, Possible Drivers: 2, Result: PROVEN
+
+cpu_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@39
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rv_cpu.jz@238: E1 := (bus_valid == 1'b1 && bus_cmd == CMD.WRITE)
+        Instance: cpu0 (module: cpu)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.ADDR  <= bus_addr;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+rom_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@40
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@23: E1 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Instance: rom0 (module: rom)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+ram_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@41
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@24: E1 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Instance: ram0 (module: ram)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+led_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@42
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@18: E1 := (pbus.VALID && pbus.CMD == CMD.READ)
+        Instance: led0 (module: led_out)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+uart_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@43
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@60: E1 := (unconditional)
+        Instance: uart0 (module: uart)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= {30'd0, rx_has_data, tx_ready};
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+sdram_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@44
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@88: E1 := (CMD == CMD.READ)
+        Instance: sdram0 (module: sdram_bus)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && state == lit(1, ST_WAIT) && ctrl_done == 1'b1) ? ctrl_rdata : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+term_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@45
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@244: E1 := (pbus.VALID && pbus.CMD == CMD.READ)
+        Instance: term0 (module: terminal_fb)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? read_data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+sd_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@46
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@198: E1 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Instance: sd0 (module: sdcard)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+audio_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@47
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@249: E1 := (unconditional)
+        Instance: aud0 (module: audio)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= read_reg;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+
+Input file: src/tang_nano_20k.jz
+Module: cpu
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/rv_cpu.jz@77: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rv_cpu.jz@77
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rv_cpu.jz@239: E0 := (bus_valid == 1'b1 && bus_cmd == CMD.WRITE)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA  <= (bus_valid == 1'b1 && bus_cmd == CMD.WRITE) ? bus_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+
+Input file: src/tang_nano_20k.jz
+Module: rom
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@5: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@5: pbus.DONE, Possible Drivers: 3, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@23: E0 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@28: E0 := (pbus.VALID && data_ready == 1'b1)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@30: E1 := (pbus.VALID && !(data_ready == 1'b1))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@33: E2 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers have distinct constant enable conditions
+
+
+Input file: src/tang_nano_20k.jz
+Module: ram
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@5: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@5: pbus.DONE, Possible Drivers: 4, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@24: E0 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@29: E0 := (pbus.VALID && pbus.CMD == CMD.WRITE)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@31: E1 := (pbus.VALID && !(pbus.CMD == CMD.WRITE) && data_ready == 1'b1)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@33: E2 := (pbus.VALID && !(data_ready == 1'b1) && !(pbus.CMD == CMD.WRITE))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@36: E3 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E0 && E3) AND G !(E1 && E2) AND G !(E1 && E3) AND G !(E2 && E3)
+    EXACTLY_ONE: G (E0 || E1 || E2 || E3) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers are in complementary IF/ELSE branches
+
+
+Input file: src/tang_nano_20k.jz
+Module: led_out
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@5: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@5: pbus.DONE, Possible Drivers: 2, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@18: E0 := (pbus.VALID && pbus.CMD == CMD.READ)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@22: E0 := (pbus.VALID)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@24: E1 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+
+Input file: src/tang_nano_20k.jz
+Module: uart
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@8: pbus.DATA, Possible Drivers: 3, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@8: pbus.DONE, Possible Drivers: 2, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@8
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@60: E0 := (pbus.VALID && pbus.CMD == CMD.READ && pbus.ADDR[2] == 1'b0)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DATA <= {30'd0, rx_has_data, tx_ready};
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@62: E1 := (pbus.VALID && pbus.CMD == CMD.READ && !(pbus.ADDR[2] == 1'b0))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DATA <= {24'h000000, rx_byte};
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@65: E2 := (!(pbus.VALID && pbus.CMD == CMD.READ))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DATA <= 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers are in complementary IF/ELSE branches
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@8
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@70: E0 := (pbus.VALID)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@72: E1 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+
+Input file: src/tang_nano_20k.jz
+Module: sdram_bus
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@13: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@13: pbus.DONE, Possible Drivers: 3, Result: UNKNOWN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@13
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@88: E0 := (pbus.CMD == CMD.READ)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && state == lit(1, ST_WAIT) && ctrl_done == 1'b1) ? ctrl_rdata : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@13
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@93: E0 := (unconditional)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@95: E1 := (unconditional)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@98: E2 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: UNKNOWN
+    Reason: Could not extract guard condition from one or more drivers
+
+
+Input file: src/tang_nano_20k.jz
+Module: terminal_fb
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@26: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@26: pbus.DONE, Possible Drivers: 2, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@26
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@244: E0 := (pbus.VALID && pbus.CMD == CMD.READ)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? read_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@26
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@247: E0 := (pbus.VALID)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@249: E1 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+
+Input file: src/tang_nano_20k.jz
+Module: sdcard
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@78: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@78: pbus.DONE, Possible Drivers: 3, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@78
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@198: E0 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@78
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@203: E0 := (pbus.VALID && (pbus.CMD == CMD.WRITE || data_ready == 1'b1))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@205: E1 := (pbus.VALID && !(pbus.CMD == CMD.WRITE || data_ready == 1'b1))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@208: E2 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers are in complementary IF/ELSE branches
+
+
+Input file: src/tang_nano_20k.jz
+Module: audio
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@32: pbus.DATA, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@32: pbus.DONE, Possible Drivers: 3, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@32
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@249: E0 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DATA <= read_reg;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@251: E1 := (!(pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DATA <= 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@32
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@256: E0 := (pbus.VALID && pbus.CMD == CMD.WRITE)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@258: E1 := (!(pbus.VALID && pbus.CMD == CMD.WRITE) && pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@260: E2 := (!(pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) && !(pbus.VALID && pbus.CMD == CMD.WRITE))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers have distinct constant enable conditions
+
+
+Overall Summary
+---------------
+cpu_bus, Possible Drivers: 2, Result: PROVEN
+rom_bus, Possible Drivers: 2, Result: PROVEN
+ram_bus, Possible Drivers: 2, Result: PROVEN
+led_bus, Possible Drivers: 2, Result: PROVEN
+uart_bus, Possible Drivers: 2, Result: PROVEN
+sdram_bus, Possible Drivers: 2, Result: PROVEN
+term_bus, Possible Drivers: 2, Result: PROVEN
+sd_bus, Possible Drivers: 2, Result: PROVEN
+audio_bus, Possible Drivers: 2, Result: PROVEN
+pbus.DATA, Possible Drivers: 12, Result: PROVEN
+pbus.DONE, Possible Drivers: 22, Result: UNKNOWN
+
+Input file: src/tang_nano_20k.jz
+Module: SOC
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@39: cpu_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@40: rom_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@41: ram_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@42: led_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@43: uart_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@44: sdram_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@45: term_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@46: sd_bus, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@47: audio_bus, Possible Drivers: 2, Result: PROVEN
+
+cpu_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@39
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rv_cpu.jz@238: E1 := (bus_valid == 1'b1 && bus_cmd == CMD.WRITE)
+        Instance: cpu0 (module: cpu)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.ADDR  <= bus_addr;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+rom_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@40
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@23: E1 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Instance: rom0 (module: rom)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+ram_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@41
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@24: E1 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Instance: ram0 (module: ram)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+led_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@42
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@18: E1 := (pbus.VALID && pbus.CMD == CMD.READ)
+        Instance: led0 (module: led_out)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+uart_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@43
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@60: E1 := (unconditional)
+        Instance: uart0 (module: uart)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= {30'd0, rx_has_data, tx_ready};
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+sdram_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@44
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@88: E1 := (CMD == CMD.READ)
+        Instance: sdram0 (module: sdram_bus)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && state == lit(1, ST_WAIT) && ctrl_done == 1'b1) ? ctrl_rdata : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+term_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@45
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@244: E1 := (pbus.VALID && pbus.CMD == CMD.READ)
+        Instance: term0 (module: terminal_fb)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? read_data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+sd_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@46
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@198: E1 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Instance: sd0 (module: sdcard)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+audio_bus Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@47
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/soc.jz@108: E0 := (unconditional)
+        Instance: arb0 (module: arbiter)
+        Can produce Z: no, Can produce non-Z: no
+        Code: @new arb0 arbiter {
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@249: E1 := (unconditional)
+        Instance: aud0 (module: audio)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= read_reg;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+
+Input file: src/tang_nano_20k.jz
+Module: cpu
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/rv_cpu.jz@77: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rv_cpu.jz@77
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rv_cpu.jz@239: E0 := (bus_valid == 1'b1 && bus_cmd == CMD.WRITE)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA  <= (bus_valid == 1'b1 && bus_cmd == CMD.WRITE) ? bus_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+
+Input file: src/tang_nano_20k.jz
+Module: rom
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@5: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@5: pbus.DONE, Possible Drivers: 3, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@23: E0 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@28: E0 := (pbus.VALID && data_ready == 1'b1)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@30: E1 := (pbus.VALID && !(data_ready == 1'b1))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@33: E2 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers have distinct constant enable conditions
+
+
+Input file: src/tang_nano_20k.jz
+Module: ram
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@5: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@5: pbus.DONE, Possible Drivers: 4, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@24: E0 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@29: E0 := (pbus.VALID && pbus.CMD == CMD.WRITE)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@31: E1 := (pbus.VALID && !(pbus.CMD == CMD.WRITE) && data_ready == 1'b1)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@33: E2 := (pbus.VALID && !(data_ready == 1'b1) && !(pbus.CMD == CMD.WRITE))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@36: E3 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E0 && E3) AND G !(E1 && E2) AND G !(E1 && E3) AND G !(E2 && E3)
+    EXACTLY_ONE: G (E0 || E1 || E2 || E3) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers are in complementary IF/ELSE branches
+
+
+Input file: src/tang_nano_20k.jz
+Module: led_out
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@5: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@5: pbus.DONE, Possible Drivers: 2, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@18: E0 := (pbus.VALID && pbus.CMD == CMD.READ)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@5
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@22: E0 := (pbus.VALID)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/led_out.jz@24: E1 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+
+Input file: src/tang_nano_20k.jz
+Module: uart
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@8: pbus.DATA, Possible Drivers: 3, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@8: pbus.DONE, Possible Drivers: 2, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@8
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@60: E0 := (pbus.VALID && pbus.CMD == CMD.READ && pbus.ADDR[2] == 1'b0)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DATA <= {30'd0, rx_has_data, tx_ready};
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@62: E1 := (pbus.VALID && pbus.CMD == CMD.READ && !(pbus.ADDR[2] == 1'b0))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DATA <= {24'h000000, rx_byte};
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@65: E2 := (!(pbus.VALID && pbus.CMD == CMD.READ))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DATA <= 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers are in complementary IF/ELSE branches
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@8
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@70: E0 := (pbus.VALID)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/uart.jz@72: E1 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+
+Input file: src/tang_nano_20k.jz
+Module: sdram_bus
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@13: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@13: pbus.DONE, Possible Drivers: 3, Result: UNKNOWN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@13
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@88: E0 := (pbus.CMD == CMD.READ)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && state == lit(1, ST_WAIT) && ctrl_done == 1'b1) ? ctrl_rdata : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@13
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@93: E0 := (unconditional)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@95: E1 := (unconditional)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdram_bus.jz@98: E2 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: UNKNOWN
+    Reason: Could not extract guard condition from one or more drivers
+
+
+Input file: src/tang_nano_20k.jz
+Module: terminal_fb
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@26: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@26: pbus.DONE, Possible Drivers: 2, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@26
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@244: E0 := (pbus.VALID && pbus.CMD == CMD.READ)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? read_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@26
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@247: E0 := (pbus.VALID)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@249: E1 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+
+Input file: src/tang_nano_20k.jz
+Module: sdcard
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@78: pbus.DATA, Possible Drivers: 1, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@78: pbus.DONE, Possible Drivers: 3, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@78
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@198: E0 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: yes, Can produce non-Z: yes
+        Code: pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+Proof Obligations:
+    (trivially satisfied - single driver)
+
+Result: PROVEN
+    Reason: Single driver - trivially safe
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@78
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@203: E0 := (pbus.VALID && (pbus.CMD == CMD.WRITE || data_ready == 1'b1))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@205: E1 := (pbus.VALID && !(pbus.CMD == CMD.WRITE || data_ready == 1'b1))
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@208: E2 := (!(pbus.VALID))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers are in complementary IF/ELSE branches
+
+
+Input file: src/tang_nano_20k.jz
+Module: audio
+
+Summary
+-------
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@32: pbus.DATA, Possible Drivers: 2, Result: PROVEN
+/Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@32: pbus.DONE, Possible Drivers: 3, Result: PROVEN
+
+pbus.DATA Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@32
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@249: E0 := (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DATA <= read_reg;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@251: E1 := (!(pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DATA <= 32'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1)
+    EXACTLY_ONE: G (E0 || E1) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Only one driver can produce non-Z values
+
+pbus.DONE Details
+------------------
+Width: 0
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@32
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@256: E0 := (pbus.VALID && pbus.CMD == CMD.WRITE)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@258: E1 := (!(pbus.VALID && pbus.CMD == CMD.WRITE) && pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1)
+        Can produce Z: no, Can produce non-Z: yes
+        Code: pbus.DONE <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@260: E2 := (!(pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) && !(pbus.VALID && pbus.CMD == CMD.WRITE))
+        Can produce Z: yes, Can produce non-Z: no
+        Code: pbus.DONE <= 1'bz;
+
+Proof Obligations:
+    AT_MOST_ONE: G !(E0 && E1) AND G !(E0 && E2) AND G !(E1 && E2)
+    EXACTLY_ONE: G (E0 || E1 || E2) AND AT_MOST_ONE
+
+Result: PROVEN
+    Reason: Drivers have distinct constant enable conditions
+
+
+Overall Summary
+---------------
+cpu_bus, Possible Drivers: 2, Result: PROVEN
+rom_bus, Possible Drivers: 2, Result: PROVEN
+ram_bus, Possible Drivers: 2, Result: PROVEN
+led_bus, Possible Drivers: 2, Result: PROVEN
+uart_bus, Possible Drivers: 2, Result: PROVEN
+sdram_bus, Possible Drivers: 2, Result: PROVEN
+term_bus, Possible Drivers: 2, Result: PROVEN
+sd_bus, Possible Drivers: 2, Result: PROVEN
+audio_bus, Possible Drivers: 2, Result: PROVEN
+pbus.DATA, Possible Drivers: 12, Result: PROVEN
+pbus.DONE, Possible Drivers: 22, Result: UNKNOWN

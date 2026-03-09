@@ -1,0 +1,21 @@
+Memory Report
+-------------
+Project: src/tang_nano_20k.jz
+Chip: GW2AR-18-QN88-C8-I7
+
+Memory Summary
+--------------
+Block Memory:
+    Requested: 0 bytes
+    Max Available: 105984 bytes (46 blocks x 18 Kbits)
+    Used: 0 / 46 blocks (one per BLOCK MEMORY)
+
+Distributed Memory:
+    Requested: 0 bytes
+    Max Available: 5120 bytes
+    Used: 0 bytes
+
+SDRAM (on-chip):
+    Capacity: 8388608 bytes
+
+Errors: 0

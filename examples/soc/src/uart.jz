@@ -1,0 +1,102 @@
+// Bus-mapped UART peripheral (TX + RX)
+// Offset 0x0 (ADDR[2]=0): Write → TX byte. Read → {30'b0, rx_has_data, tx_ready}
+// Offset 0x4 (ADDR[2]=1): Read → {24'h00, rx_byte} (clears rx_has_data)
+@module uart
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        BUS SIMPLE_BUS TARGET pbus;
+        OUT [1] tx;
+        IN  [1] rx;
+        OUT [1] irq_tx_ready;
+        OUT [1] irq_rx_data;
+        IN  [16] baud_div;
+    }
+
+    WIRE {
+        tx_ready   [1];
+        tx_wire    [1];
+        rx_data_w  [8];
+        rx_valid_w [1];
+    }
+
+    REGISTER {
+        tx_data     [8] = 8'h00;
+        tx_valid    [1] = 1'b0;
+        tx_ready_d  [1] = 1'b0;
+        irq_tx_r    [1] = 1'b0;
+
+        rx_byte     [8] = 8'h00;
+        rx_has_data [1] = 1'b0;
+    }
+
+    @new tx0 uart_tx {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = rst_n;
+        IN  [8] data  = tx_data;
+        IN  [1] valid = tx_valid;
+        OUT [1] ready = tx_ready;
+        OUT [1] tx    = tx_wire;
+        IN  [16] baud_div = baud_div;
+    }
+
+    @new rx0 uart_rx {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = rst_n;
+        IN  [1] rx    = rx;
+        OUT [8] data  = rx_data_w;
+        OUT [1] valid = rx_valid_w;
+        IN  [16] baud_div = baud_div;
+    }
+
+    ASYNCHRONOUS {
+        tx <= tx_wire;
+        irq_tx_ready <= irq_tx_r;
+        irq_rx_data  <= rx_has_data;
+
+        // Drive data on READ: mux on ADDR[2]
+        IF (pbus.VALID && pbus.CMD == CMD.READ) {
+            IF (pbus.ADDR[2] == 1'b0) {
+                pbus.DATA <= {30'd0, rx_has_data, tx_ready};
+            } ELSE {
+                pbus.DATA <= {24'h000000, rx_byte};
+            }
+        } ELSE {
+            pbus.DATA <= 32'bz;
+        }
+
+        // DONE: immediate when selected
+        IF (pbus.VALID) {
+            pbus.DONE <= 1'b1;
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        // TX: write byte when bus writes offset 0
+        IF (pbus.VALID && pbus.CMD == CMD.WRITE) {
+            tx_data  <= pbus.DATA[7:0];
+            tx_valid <= 1'b1;
+        } ELSE {
+            tx_valid <= 1'b0;
+        }
+
+        // TX ready rising-edge detect: pulse IRQ when transmitter becomes ready
+        tx_ready_d <= tx_ready;
+        IF (tx_ready == 1'b1 && tx_ready_d == 1'b0) {
+            irq_tx_r <= 1'b1;
+        } ELSE {
+            irq_tx_r <= 1'b0;
+        }
+
+        // RX: latch received byte
+        IF (rx_valid_w == 1'b1) {
+            rx_byte     <= rx_data_w;
+            rx_has_data <= 1'b1;
+        } ELIF (pbus.VALID && pbus.CMD == CMD.READ && pbus.ADDR[2] == 1'b1) {
+            // Clear rx_has_data when bus reads offset 0x4
+            rx_has_data <= 1'b0;
+        }
+    }
+@endmod

@@ -1,0 +1,25 @@
+// BUS_SIGNAL_WRITE_TO_READABLE: write access to readable BUS signal.
+// Verified
+
+@project BUS_SIGNAL_WRITE_TO_READABLE_EXAMPLE
+  BUS SIMPLE {
+    IN [1] tx;
+  }
+
+  @top top {
+    OUT [1] out = _;
+    BUS SIMPLE SOURCE link = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+    BUS SIMPLE SOURCE link;
+  }
+
+  ASYNCHRONOUS {
+    link.tx <= 1'b0; // tx is readable in SOURCE role
+    out <= 1'b0;
+  }
+@endmod

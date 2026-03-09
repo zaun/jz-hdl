@@ -1,0 +1,36 @@
+// INSTANCE_MISSING_PORT: not all child module ports are listed in a module-level @new.
+// Verified
+
+@project INSTANCE_MISSING_PORT_PROJECT
+  @top Parent {
+    IN  [1] in_sig = _;
+    OUT [1] out_sig = _;
+  }
+@endproj
+
+@module Child
+  PORT {
+    IN  [1] a;
+    OUT [1] y;
+  }
+
+  ASYNCHRONOUS {
+    y = a;
+  }
+@endmod
+
+@module Parent
+  PORT {
+    IN  [1] in_sig;
+    OUT [1] out_sig;
+  }
+
+  // Missing OUT [1] y; in the instance body.
+  @new u Child {
+    IN [1] a = _;
+  }
+
+  ASYNCHRONOUS {
+    out_sig = in_sig;
+  }
+@endmod

@@ -1,0 +1,26 @@
+// MEM_TYPE_INVALID: MEM TYPE value is not recognized.
+
+@project MEM_TYPE_INVALID_PROJECT
+  @top MEM_TYPE_INVALID_EXAMPLE {
+    IN  [1] clk = _;
+    IN  [4] addr = _;
+    OUT [8] read_data = _;
+  }
+@endproj
+
+@module MEM_TYPE_INVALID_EXAMPLE
+  PORT {
+    IN  [4] addr;
+    OUT [8] read_data;
+  }
+
+  MEM(TYPE=REGISTER) {
+    mem0 [8] [16] = 8'h00 {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    read_data = mem0.rd[addr];
+  }
+@endmod

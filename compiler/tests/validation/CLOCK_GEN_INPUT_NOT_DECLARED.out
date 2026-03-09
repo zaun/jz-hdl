@@ -1,0 +1,2 @@
+File: CLOCK_GEN_INPUT_NOT_DECLARED.jz
+      11:7    error CLOCK_GEN_INPUT_NOT_DECLARED S6.4.1 CLOCK_GEN input clock not declared in CLOCKS block

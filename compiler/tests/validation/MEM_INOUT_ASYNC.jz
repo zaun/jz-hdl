@@ -1,0 +1,25 @@
+// MEM_INOUT_ASYNC: INOUT ports are always synchronous; ASYNC/SYNC keyword not permitted.
+// Verified
+
+@project MEM_INOUT_ASYNC_PROJECT
+  @top MEM_INOUT_ASYNC_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module MEM_INOUT_ASYNC_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  MEM {
+    // INOUT port with ASYNC qualifier - illegal
+    bad_mem [8] [16] = 8'h00 {
+      INOUT rw ASYNC;   // ERROR: ASYNC not allowed on INOUT
+    };
+  }
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

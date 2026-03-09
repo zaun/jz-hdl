@@ -1,0 +1,2 @@
+File: MEM_TYPE_BLOCK_WITH_ASYNC_OUT.jz
+      20:11   error MEM_TYPE_BLOCK_WITH_ASYNC_OUT S7.1 Strict mode: MEM(TYPE=BLOCK) has IN port declared ASYNC

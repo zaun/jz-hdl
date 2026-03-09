@@ -1,0 +1,24 @@
+// MEM_EMPTY_PORT_LIST: MEM declared with no IN or OUT ports.
+// Verified
+
+@project MEM_EMPTY_PORT_LIST_PROJECT
+  @top MEM_EMPTY_PORT_LIST_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module MEM_EMPTY_PORT_LIST_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  MEM {
+    no_ports_mem [8] [16] = 8'h00 {
+      // No IN or OUT ports inside this MEM body.
+    };
+  }
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

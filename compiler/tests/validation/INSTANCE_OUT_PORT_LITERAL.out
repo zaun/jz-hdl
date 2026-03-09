@@ -1,0 +1,2 @@
+File: INSTANCE_OUT_PORT_LITERAL.jz
+      30:20   error INSTANCE_OUT_PORT_LITERAL S4.13 OUT port binding in @new may not be a literal value

@@ -1,0 +1,74 @@
+@project(CHIP=GENERIC) tristate_resolution_test
+  CLOCKS {
+    sys_clk = { period=10.0 };
+  }
+
+  IN_PINS {
+    sys_clk = { standard=LVCMOS33, drive=8 };
+  }
+
+  // Define physical pins with tri-state capability
+  INOUT_PINS {
+    ext_data_bus[8] = { standard=LVCMOS33, drive=8 };
+  }
+
+  // Map logical pins to physical package locations
+  MAP {
+    sys_clk = 5;
+    ext_data_bus[0] = 10;
+    ext_data_bus[1] = 11;
+    ext_data_bus[2] = 12;
+    ext_data_bus[3] = 13;
+    ext_data_bus[4] = 14;
+    ext_data_bus[5] = 15;
+    ext_data_bus[6] = 16;
+    ext_data_bus[7] = 17;
+  }
+
+  // Instantiate the top-level module and bind to pins
+  @top tri_state_manager {
+    IN    [1] clk     = sys_clk;
+    IN    [1] drive_en = _; 
+    IN    [8] internal_val = _;
+    INOUT [8] shared_bus = ext_data_bus;
+    OUT   [8] monitor = _;
+  }
+@endproj
+
+@module tri_state_manager
+  PORT {
+    IN    [1] clk;
+    IN    [1] drive_en;     // Control signal: 1=Drive, 0=Release
+    IN    [8] internal_val; // Data to drive onto bus
+    INOUT [8] shared_bus;   // The tri-state net
+    OUT   [8] monitor;      // View of the captured data
+  }
+
+  REGISTER {
+    bus_capture [8] = 8'h00;
+  }
+
+  ASYNCHRONOUS {
+    /* 
+       VALIDATION: Tri-State Driving
+       If drive_en is 0, the bus is assigned 8'bz. 
+       Per S1.6.1, this 8-bit literal has an intrinsic width of 1 ('z')
+       and is extended to match the 8-bit shared_bus width as 8'bzzzz_zzzz.
+    */
+    shared_bus <= drive_en ? internal_val : 8'bz;
+
+    // The monitor port always observes the current state of the bus
+    monitor = bus_capture;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    /* 
+       VALIDATION: Tri-State Reading
+       When we are NOT driving the bus (drive_en == 0), we assume an 
+       external device is driving it. We capture that value here.
+    */
+    IF (!drive_en) {
+      bus_capture <= shared_bus;
+    }
+  }
+@endmod

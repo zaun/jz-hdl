@@ -1,0 +1,37 @@
+// MEM_WARN_DEAD_CODE_ACCESS: memory access appears only in unreachable code.
+// WARN_DEAD_CODE_UNREACHABLE: dead code under IF(0).
+// Verified
+
+@project MEM_WARN_DEAD_CODE_ACCESS_PROJECT
+  @top MEM_WARN_DEAD_CODE_ACCESS_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module MEM_WARN_DEAD_CODE_ACCESS_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [8] out;
+  }
+
+  REGISTER {
+    r [8] = 8'b0;
+  }
+
+  MEM {
+    m [8] [4] = 8'h00 {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    out <= r;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    IF (0) {
+      r <= m.rd[0]; // unreachable MEM access
+    }
+  }
+@endmod

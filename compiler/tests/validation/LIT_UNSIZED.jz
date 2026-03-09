@@ -1,0 +1,22 @@
+// LIT_UNSIZED: unsized literal like 'hFF is illegal.
+// Verified
+
+@project LIT_UNSIZED_EXAMPLE
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top M_UNSIZED {
+        OUT [1] data = _;
+    }
+@endproj
+
+@module M_UNSIZED
+    CONST {
+        X = 'hFF;
+    }
+
+    PORT {
+        OUT [1] data;
+    }
+@endmod

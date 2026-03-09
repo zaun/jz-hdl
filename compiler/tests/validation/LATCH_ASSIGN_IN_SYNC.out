@@ -1,0 +1,2 @@
+File: LATCH_ASSIGN_IN_SYNC.jz
+      32:5    error LATCH_ASSIGN_IN_SYNC S4.8/S4.11 LATCH may not be written in SYNCHRONOUS blocks; use REGISTER for edge-triggered storage

@@ -1,0 +1,138 @@
+// jz_idx_test.jz
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") idx_verification
+    CONFIG {
+        DATA_WIDTH = 8;
+    }
+
+    IN_PINS {
+        SCLK = { standard=LVCMOS33 };
+        DONE = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=8 };
+        DATA[6] = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        // System Clock
+        // 27MHz
+        SCLK = 4;
+
+        // 2 BUttons
+        // High = Closed
+        // Low = Open
+        KEY[0] = 88;
+        KEY[1] = 87;
+
+        // 6 LEDs
+        // High = OFF
+        // Low = ON
+        LED[0] = 15;
+        LED[1] = 16;
+        LED[2] = 17;
+        LED[3] = 18;
+        LED[4] = 19;
+        LED[5] = 20;
+
+        DATA[0] = 27;
+        DATA[1] = 28;
+        DATA[2] = 25;
+        DATA[3] = 26;
+        DATA[4] = 29;
+        DATA[5] = 30;
+
+        // DONE can be used as a POR signal
+        // Low = programming ongoing
+        // High = programming successfully
+        DONE    = IOR32B;
+    }
+
+    @top top_module {
+        IN  [1] clk   = SCLK;
+        IN  [1] rst_n = ~KEY[0];
+        IN  [1] por   = DONE;
+        IN  [1] en    = KEY[1];
+        OUT [6] flags = LED;
+        OUT [6] data  = DATA;
+    }
+@endproj
+
+@module node_unit
+    PORT {
+        IN  [1] clk;
+        IN  [1] reset;
+
+        IN  [1] en;
+        OUT [1] node_ready;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        active  [1] = 1'b0;
+        storage [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        node_ready = active;
+        data = storage;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        IF (en) {
+            active <= 1'b1;
+            storage <= 8'hAA;
+        }
+    }
+@endmod
+
+@module top_module
+    CONST {
+        CNT_SIZE = clog2(6);
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [1] por;
+
+        IN  [1] en;
+        OUT [6] flags;
+        OUT [6] data;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        storage [48] = 48'b0;
+        view [CNT_SIZE] = CNT_SIZE'b0;
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+        data <= gslice(storage, umul(view, 8'd8), 6);
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        view <= view + CNT_SIZE'b1;
+    }
+
+    // Verify multi-module instantiation with IDX mapping
+    @new worker[6] node_unit {
+        // Broadcast: same signal to all instances
+        IN [1] clk = clk;
+        IN [1] reset = reset;
+        IN [1] en = en;
+
+        // Bit-slice mapping: each instance drives 1 bit of parent bus
+        OUT [1] node_ready = flags[IDX];
+
+        // Range-slice mapping: each instance drives 8 bits of parent bus
+        // Worker 0 -> [7:0], Worker 1 -> [15:8], etc.
+        OUT [8] data = storage[IDX * 8 + 7 : IDX * 8];
+    }
+@endmod

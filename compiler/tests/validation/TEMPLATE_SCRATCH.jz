@@ -1,0 +1,28 @@
+// TEMPLATE_SCRATCH: Template with @scratch wire.
+// No template errors expected. Verifies scratch wire materialization.
+
+@project TEMPLATE_SCRATCH_PROJECT
+  @top TEMPLATE_SCRATCH_MOD {
+    IN  [8] in_a = _;
+    IN  [8] in_b = _;
+    OUT [8] out_a = _;
+  }
+@endproj
+
+@template ADD_CLAMP(a, b, out)
+  @scratch tmp [8];
+  tmp <= a + b;
+  out <= tmp;
+@endtemplate
+
+@module TEMPLATE_SCRATCH_MOD
+  PORT {
+    IN  [8] in_a;
+    IN  [8] in_b;
+    OUT [8] out_a;
+  }
+
+  ASYNCHRONOUS {
+    @apply ADD_CLAMP(in_a, in_b, out_a);
+  }
+@endmod

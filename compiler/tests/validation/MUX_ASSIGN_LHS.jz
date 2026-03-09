@@ -1,0 +1,28 @@
+// MUX_ASSIGN_LHS: assignments to a MUX identifier (or its indexed form) are forbidden.
+// Verified
+
+@project MUX_ASSIGN_LHS_PROJECT
+  @top MUX_ASSIGN_LHS_EXAMPLE {
+    IN  [8] a = _;
+    IN  [8] b = _;
+    OUT [4] data = _;
+  }
+@endproj
+
+@module MUX_ASSIGN_LHS_EXAMPLE
+  PORT {
+    IN  [8] a;
+    IN  [8] b;
+    OUT [4] data;
+  }
+
+  MUX {
+    valid_mux = a, b;
+  }
+
+  ASYNCHRONOUS {
+    valid_mux = data;
+    valid_mux[1] = data;
+    data <= 4'b1;
+  }
+@endmod

@@ -1,0 +1,18 @@
+// LIT_WIDTH_NOT_POSITIVE: literal width must be a positive integer.
+// Verified
+
+@project LIT_WIDTH_NOT_POSITIVE_EXAMPLE
+  @top M_ZERO_WIDTH {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module M_ZERO_WIDTH
+  PORT {
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data = 0'h0;
+  }
+@endmod

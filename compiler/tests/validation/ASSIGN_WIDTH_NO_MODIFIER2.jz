@@ -1,0 +1,52 @@
+// ASSIGN_WIDTH_NO_MODIFIER: RHS slice or expression containing a
+// slice produces a different width than the LHS target.
+// Tests bare slices, unary-wrapped slices, and slices inside IF/ELSE.
+// Verified
+
+@project ASSIGN_RHS_SLICE_WIDTH_MISMATCH_PROJECT
+  @top ASSIGN_RHS_SLICE_WIDTH_MISMATCH_EXAMPLE {
+    IN  [1] clk = _;
+    IN  [8] data = _;
+    IN  [1] btn = _;
+    OUT [6] a = _;
+    OUT [6] b = _;
+    OUT [6] c = _;
+    OUT [6] d = _;
+  }
+@endproj
+
+@module ASSIGN_RHS_SLICE_WIDTH_MISMATCH_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    IN  [8] data;
+    IN  [1] btn;
+    OUT [6] a;
+    OUT [6] b;
+    OUT [6] c;
+    OUT [6] d;
+  }
+
+  REGISTER {
+    r [6] = 6'b0;
+  }
+
+  ASYNCHRONOUS {
+    // RHS slice [6:0] is 7 bits, LHS is 6 bits: error.
+    a <= data[6:0];
+
+    // RHS ~slice is 7 bits (bitwise NOT preserves width): error.
+    b <= ~data[6:0];
+
+    // Errors inside IF/ELSE conditionals.
+    IF (btn) {
+      c <= data[6:0];
+    } ELSE {
+      d <= ~r[6:0];
+    }
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    // RHS slice mismatch in SYNCHRONOUS context: error.
+    r <= data[6:0];
+  }
+@endmod

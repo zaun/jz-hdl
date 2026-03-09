@@ -1,0 +1,2 @@
+File: LIT_INVALID_CONTEXT.jz
+      12:5    error LIT_INVALID_CONTEXT S5.5.11 lit() used where a compile-time integer constant is required

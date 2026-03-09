@@ -1,0 +1,20 @@
+// UNARY_ARITH_MISSING_PARENS: unary '+'/'-' used without required parentheses.
+// Verified
+
+@project UNARY_ARITH_MISSING_PARENS_PROJECT
+  @top UNARY_ARITH_MISSING_PARENS_EXAMPLE {
+    IN  [1] flag = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module UNARY_ARITH_MISSING_PARENS_EXAMPLE
+  PORT {
+    IN  [1] flag;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = -flag;
+  }
+@endmod

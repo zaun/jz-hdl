@@ -1,0 +1,122 @@
+// Starfield warp effect
+// Stars accelerate radially from center, respawn via LFSR when offscreen.
+// Each star rendered as a 2x2 white pixel on black background.
+//
+// Tuning: SPEED controls frame divider (higher = slower overall).
+//         Acceleration curve is velocity = distance/32 + 1 per update.
+@module warp
+    CONST {
+        NUM_STARS = 30;
+        SPEED = 4;      // Update every Nth vsync (1=fastest)
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [11] x_pos;
+        IN  [10] y_pos;
+        IN  [1]  vsync;
+        OUT [8]  red;
+        OUT [8]  green;
+        OUT [8]  blue;
+    }
+
+    WIRE {
+        vsync_edge  [1];
+        update      [1];
+        star_dx     [NUM_STARS * 11];
+        star_dy     [NUM_STARS * 10];
+        hits        [NUM_STARS];
+        next_x      [NUM_STARS * 11];
+        next_y      [NUM_STARS * 10];
+    }
+
+    REGISTER {
+        vsync_r   [1]  = 1'b0;
+        lfsr      [32] = 32'hDEADBEEF;
+        frame_cnt [8]  = 8'd0;
+        star_x    [NUM_STARS * 11] = lit(NUM_STARS * 11, 0);
+        star_y    [NUM_STARS * 10] = lit(NUM_STARS * 10, 0);
+    }
+
+    // Absolute distance from screen center (640, 360)
+    @template STAR_DIST(dx, dy, sx, sy)
+        dx[IDX*11+10:IDX*11] <=
+            (sx[IDX*11+10:IDX*11] >= 11'd640)
+            ? (sx[IDX*11+10:IDX*11] - 11'd640)
+            : (11'd640 - sx[IDX*11+10:IDX*11]);
+        dy[IDX*10+9:IDX*10] <=
+            (sy[IDX*10+9:IDX*10] >= 10'd360)
+            ? (sy[IDX*10+9:IDX*10] - 10'd360)
+            : (10'd360 - sy[IDX*10+9:IDX*10]);
+    @endtemplate
+
+    // Pixel hit test — 2x2 dot
+    @template STAR_HIT(hits, sx, sy, xp, yp)
+        hits[IDX] <= (
+            xp >= sx[IDX*11+10:IDX*11] &&
+            xp <= sx[IDX*11+10:IDX*11] + 11'd1 &&
+            yp >= sy[IDX*10+9:IDX*10] &&
+            yp <= sy[IDX*10+9:IDX*10] + 10'd1
+        ) ? 1'b1 : 1'b0;
+    @endtemplate
+
+    // Compute next position: move radially or respawn if offscreen
+    @template STAR_NEXT(nx, ny, sx, sy, dx, dy, rng)
+        IF (sx[IDX*11+10:IDX*11] > 11'd1270 || sy[IDX*10+9:IDX*10] > 10'd710) {
+            nx[IDX*11+10:IDX*11] <= 11'd608 + {5'b00000, rng[IDX*2%26+5:IDX*2%26]};
+            ny[IDX*10+9:IDX*10]  <= 10'd328 + {4'b0000, rng[IDX*3%26+5:IDX*3%26]};
+        } ELSE {
+            IF (sx[IDX*11+10:IDX*11] >= 11'd640) {
+                nx[IDX*11+10:IDX*11] <= sx[IDX*11+10:IDX*11]
+                    + (dx[IDX*11+10:IDX*11] >> 5) + 11'd1;
+            } ELSE {
+                nx[IDX*11+10:IDX*11] <= sx[IDX*11+10:IDX*11]
+                    - (dx[IDX*11+10:IDX*11] >> 5) - 11'd1;
+            }
+            IF (sy[IDX*10+9:IDX*10] >= 10'd360) {
+                ny[IDX*10+9:IDX*10] <= sy[IDX*10+9:IDX*10]
+                    + (dy[IDX*10+9:IDX*10] >> 5) + 10'd1;
+            } ELSE {
+                ny[IDX*10+9:IDX*10] <= sy[IDX*10+9:IDX*10]
+                    - (dy[IDX*10+9:IDX*10] >> 5) - 10'd1;
+            }
+        }
+    @endtemplate
+
+    ASYNCHRONOUS {
+        vsync_edge <= vsync & ~vsync_r;
+        update <= (vsync_edge == 1'b1 && frame_cnt == lit(8, SPEED - 1))
+            ? 1'b1 : 1'b0;
+
+        @apply [NUM_STARS] STAR_DIST(star_dx, star_dy, star_x, star_y);
+        @apply [NUM_STARS] STAR_HIT(hits, star_x, star_y, x_pos, y_pos);
+        @apply [NUM_STARS] STAR_NEXT(next_x, next_y, star_x, star_y, star_dx, star_dy, lfsr);
+
+        IF (hits != lit(NUM_STARS, 0)) {
+            red <= 8'hFF; green <= 8'hFF; blue <= 8'hFF;
+        } ELSE {
+            red <= 8'h00; green <= 8'h00; blue <= 8'h00;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        vsync_r <= vsync;
+        lfsr <= {lfsr[30:0], lfsr[31] ^ lfsr[21] ^ lfsr[1] ^ lfsr[0]};
+
+        // Frame divider
+        IF (vsync_edge == 1'b1) {
+            IF (frame_cnt == lit(8, SPEED - 1)) {
+                frame_cnt <= 8'd0;
+            } ELSE {
+                frame_cnt <= frame_cnt + 8'd1;
+            }
+        }
+
+        // Latch next positions on update
+        IF (update == 1'b1) {
+            star_x <= next_x;
+            star_y <= next_y;
+        }
+    }
+@endmod

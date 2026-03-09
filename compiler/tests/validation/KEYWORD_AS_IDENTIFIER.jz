@@ -1,0 +1,67 @@
+// KEYWORD_AS_IDENTIFIER: reserved keywords used as identifiers.
+// Verified
+
+@project KEYWORD_AS_IDENTIFIER_EXAMPLES
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top M2 {
+        IN  [1] in = _;
+        OUT [1] out = _;
+    }
+@endproj
+
+// Module name is a keyword
+@module IF
+    CONST {
+        X = 1;
+    }
+
+    PORT {
+        IN  [1] in;
+        OUT [1] out;
+    }
+
+    ASYNCHRONOUS {
+        out = in;
+    }
+@endmod
+
+// CONST name is a keyword
+@module M2
+    CONST {
+        ELSE = 1;
+    }
+
+    PORT {
+        IN  [1] in;
+        OUT [1] out;
+    }
+
+    @new ma IF {
+        IN  [1] in = _;
+        OUT [1] out = _;
+    }
+
+    @new mb M3 {
+        IN  [1] SELECT = _;
+        OUT [1] out = _;
+    }
+
+    ASYNCHRONOUS {
+        out = in;
+    }
+@endmod
+
+// Port name is a keyword
+@module M3
+    PORT {
+        IN  [1] SELECT;
+        OUT [1] out;
+    }
+
+    ASYNCHRONOUS {
+        out = SELECT;
+    }
+@endmod

@@ -1,0 +1,100 @@
+// Simple UART Transmitter — 8N1, no FIFO
+// Asserts ready when idle. When valid is pulsed with data, transmits one byte.
+@module uart_tx
+    CONST {
+        // 74.25 MHz / 115200 baud - 1 = 643
+        BAUD_DIV = 643;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [8] data;
+        IN  [1] valid;
+        OUT [1] ready;
+        OUT [1] tx;
+    }
+
+    REGISTER {
+        // State machine (0=IDLE, 1=START, 2=DATA, 3=STOP)
+        state     [2] = 2'd0;
+        baud_cnt  [10] = 10'd0;
+        bit_cnt   [3] = 3'd0;
+        shift     [8] = 8'hFF;
+
+        // Outputs
+        tx_out    [1] = 1'b1;
+        ready_out [1] = 1'b1;
+    }
+
+    ASYNCHRONOUS {
+        tx    <= tx_out;
+        ready <= ready_out;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        SELECT (state) {
+            CASE (2'd0) {
+                // IDLE: line high, ready for data
+                tx_out <= 1'b1;
+                IF (valid == 1'b1) {
+                    shift     <= data;
+                    baud_cnt  <= lit(10, BAUD_DIV);
+                    state     <= 2'd1;
+                    ready_out <= 1'b0;
+                } ELSE {
+                    ready_out <= 1'b1;
+                }
+            }
+
+            CASE (2'd1) {
+                // START bit: hold TX low for one baud period
+                tx_out    <= 1'b0;
+                ready_out <= 1'b0;
+                IF (baud_cnt == 10'd0) {
+                    baud_cnt <= lit(10, BAUD_DIV);
+                    bit_cnt  <= 3'd0;
+                    state    <= 2'd2;
+                } ELSE {
+                    baud_cnt <= baud_cnt - 10'd1;
+                }
+            }
+
+            CASE (2'd2) {
+                // DATA: shift out 8 bits LSB first
+                tx_out    <= shift[0];
+                ready_out <= 1'b0;
+                IF (baud_cnt == 10'd0) {
+                    shift <= { 1'b1, shift[7:1] };
+                    IF (bit_cnt == 3'd7) {
+                        baud_cnt <= lit(10, BAUD_DIV);
+                        state    <= 2'd3;
+                    } ELSE {
+                        bit_cnt  <= bit_cnt + 3'd1;
+                        baud_cnt <= lit(10, BAUD_DIV);
+                    }
+                } ELSE {
+                    baud_cnt <= baud_cnt - 10'd1;
+                }
+            }
+
+            CASE (2'd3) {
+                // STOP bit: hold TX high for one baud period
+                tx_out <= 1'b1;
+                IF (baud_cnt == 10'd0) {
+                    state     <= 2'd0;
+                    ready_out <= 1'b1;
+                } ELSE {
+                    ready_out <= 1'b0;
+                    baud_cnt  <= baud_cnt - 10'd1;
+                }
+            }
+
+            DEFAULT {
+                tx_out    <= 1'b1;
+                ready_out <= 1'b1;
+                state     <= 2'd0;
+            }
+        }
+    }
+@endmod

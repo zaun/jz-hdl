@@ -1,0 +1,13 @@
+.vp-code-group pre {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.VPNavBarMenu .VPFlyout .VPMenu {
+  z-index: 100;
+}
+
+.VPNav {
+  z-index: 100 !important;
+  overflow: visible !important;
+}

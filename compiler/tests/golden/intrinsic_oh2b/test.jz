@@ -1,0 +1,89 @@
+// ============================================================================
+// TEST: INTRINSIC OH2B (ONE-HOT TO BINARY)
+// VERIFIES: Section 5.5.12 — oh2b() combinational one-hot encoder.
+//   - Result width = clog2(width(source))
+//   - 8-bit source → 3-bit result
+//   - 4-bit source → 2-bit result
+//   - Usage in both ASYNCHRONOUS and SYNCHRONOUS contexts
+// ============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") Oh2bTest
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK      = { standard=LVCMOS33 };
+        DONE      = { standard=LVCMOS33 };
+        onehot[8] = { standard=LVCMOS33 };
+        sel4[4]   = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        idx3[3]    = { standard=LVCMOS33, drive=8 };
+        idx2[2]    = { standard=LVCMOS33, drive=8 };
+        latched[3] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+        DONE = IOR32B;
+        onehot[0] = 10; onehot[1] = 11; onehot[2] = 12; onehot[3] = 13;
+        onehot[4] = 14; onehot[5] = 15; onehot[6] = 16; onehot[7] = 17;
+        sel4[0] = 20; sel4[1] = 21; sel4[2] = 22; sel4[3] = 23;
+        idx3[0] = 30; idx3[1] = 31; idx3[2] = 32;
+        idx2[0] = 33; idx2[1] = 34;
+        latched[0] = 35; latched[1] = 36; latched[2] = 37;
+    }
+
+    @top Oh2bCore {
+        IN  [1] clk       = SCLK;
+        IN  [1] rst_n     = DONE;
+        IN  [8] onehot_in = onehot;
+        IN  [4] sel4_in   = sel4;
+        OUT [3] index3    = idx3;
+        OUT [2] index2    = idx2;
+        OUT [3] latched   = latched;
+    }
+@endproj
+
+@module Oh2bCore
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [8] onehot_in;
+        IN  [4] sel4_in;
+        OUT [3] index3;
+        OUT [2] index2;
+        OUT [3] latched;
+    }
+
+    WIRE {
+        // Combinational results
+        idx8 [3];
+        idx4 [2];
+    }
+
+    REGISTER {
+        // Latched index for synchronous test
+        idx_reg [3] = 3'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Test 1: 8-bit one-hot → 3-bit binary (clog2(8) = 3)
+        idx8 <= oh2b(onehot_in);
+        index3 <= idx8;
+
+        // Test 2: 4-bit one-hot → 2-bit binary (clog2(4) = 2)
+        idx4 <= oh2b(sel4_in);
+        index2 <= idx4;
+
+        // Output latched register
+        latched <= idx_reg;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Test 3: oh2b in synchronous context, latched result
+        idx_reg <= oh2b(onehot_in);
+    }
+@endmod

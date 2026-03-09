@@ -1,0 +1,28 @@
+// TYPE_BINOP_WIDTH_MISMATCH: binary operator with mismatched operand widths.
+// Verified
+
+@project TYPE_BINOP_WIDTH_MISMATCH_PROJECT
+  @top TYPE_BINOP_WIDTH_MISMATCH_EXAMPLE {
+    IN  [8] a = _;
+    IN  [4] b = _;
+    OUT [8] c = _;
+    OUT [8] d = _;
+    OUT [8] e = _;
+  }
+@endproj
+
+@module TYPE_BINOP_WIDTH_MISMATCH_EXAMPLE
+  PORT {
+    IN  [8] a;
+    IN  [4] b;
+    OUT [8] c;
+    OUT [8] d;
+    OUT [8] e;
+  }
+
+  ASYNCHRONOUS {
+    c <= a + b;
+    d <= b + a;
+    e <= a + {b, 4'b0000};
+  }
+@endmod

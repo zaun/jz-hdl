@@ -1,0 +1,36 @@
+// TERC4 (Transition-minimized Error Reduction Coding, 4-bit)
+// DVI/HDMI 1.4 spec encoding for data island periods.
+// 4-bit input -> 10-bit TERC4 output, purely combinational.
+@module terc4_encoder
+    PORT {
+        IN  [4]  data_in;
+        OUT [10] terc4_out;
+    }
+
+    WIRE {
+        result [10];
+    }
+
+    ASYNCHRONOUS {
+        SELECT (data_in) {
+            CASE (4'b0000) { result <= 10'b1010011100; }
+            CASE (4'b0001) { result <= 10'b1001100011; }
+            CASE (4'b0010) { result <= 10'b1011100100; }
+            CASE (4'b0011) { result <= 10'b1011100010; }
+            CASE (4'b0100) { result <= 10'b0101110001; }
+            CASE (4'b0101) { result <= 10'b0100011110; }
+            CASE (4'b0110) { result <= 10'b0110001110; }
+            CASE (4'b0111) { result <= 10'b0100111100; }
+            CASE (4'b1000) { result <= 10'b1011001100; }
+            CASE (4'b1001) { result <= 10'b0100111001; }
+            CASE (4'b1010) { result <= 10'b0110011100; }
+            CASE (4'b1011) { result <= 10'b1011000110; }
+            CASE (4'b1100) { result <= 10'b1010001110; }
+            CASE (4'b1101) { result <= 10'b1001110001; }
+            CASE (4'b1110) { result <= 10'b0101100011; }
+            CASE (4'b1111) { result <= 10'b1011000011; }
+            DEFAULT        { result <= 10'b1010011100; }
+        }
+        terc4_out <= result;
+    }
+@endmod

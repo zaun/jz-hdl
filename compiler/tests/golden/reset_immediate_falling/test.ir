@@ -1,0 +1,227 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "reset_immediate_falling_test",
+    "modules": [
+      {
+        "id": 0,
+        "name": "reset_imm_fall",
+        "base_module_id": -1,
+        "source_line": 11,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 13,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "rst",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 14,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "en",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 15,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 3,
+          "name": "d_in",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 16,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 4,
+          "name": "q",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 17,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 5,
+          "name": "reg_a",
+          "kind": "register",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 21,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 8 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 6,
+          "name": "rst_sync_0",
+          "kind": "net",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "FALLING",
+            "register_ids": [5],
+            "reset_signal_id": 1,
+            "reset_sync_signal_id": 6,
+            "reset_active": "ACTIVE_HIGH",
+            "reset_type": "IMMEDIATE",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "FALLING" }, { "signal_id": 1, "edge": "RISING" }],
+            "statements": { "kind": "if", "source_line": 28, "condition": { "kind": "signal_ref", "width": 1, "source_line": 28, "signal_id": 6 }, "then": { "kind": "block", "source_line": 28, "statements": [{ "kind": "assignment", "id": 1, "source_line": 28, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 5, "is_sliced": false, "rhs": { "kind": "literal", "width": 8, "source_line": 28, "literal": { "value": 0, "width": 8 } } }] }, "else": { "kind": "block", "source_line": 28, "statements": [{ "kind": "if", "source_line": 35, "condition": { "kind": "signal_ref", "width": 1, "source_line": 35, "signal_id": 2 }, "then": { "kind": "block", "source_line": 35, "statements": [{ "kind": "assignment", "id": 0, "source_line": 36, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 5, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 8, "source_line": 36, "signal_id": 3 } }] } }] } }
+          }
+        ],
+        "instances": [
+          {
+            "id": 0,
+            "name": "u_rst_sync_0",
+            "child_module_id": 1,
+            "connections": [{ "parent_signal_id": 0, "child_port_id": 0 }, { "parent_signal_id": 1, "child_port_id": 1 }, { "parent_signal_id": 6, "child_port_id": 2 }]
+          }
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 24, "statements": [{ "kind": "assignment", "id": 0, "source_line": 25, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 8, "source_line": 25, "signal_id": 5 } }] }
+      },
+      {
+        "id": 1,
+        "name": "JZHDL_LIB_RESET_SYNC",
+        "base_module_id": -1,
+        "source_line": 0,
+        "source_file": "",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "rst_async_n",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "rst_sync_n",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 3,
+          "name": "sync_ff1",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 0 }
+        },
+        {
+          "id": 4,
+          "name": "sync_ff2",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 1,
+          "source_line": 0,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 0 }
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [3, 4],
+            "reset_signal_id": 1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "IMMEDIATE",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }, { "signal_id": 1, "edge": "FALLING" }],
+            "statements": { "kind": "if", "condition": { "kind": "logical_not", "width": 1, "operand": { "kind": "signal_ref", "width": 1, "signal_id": 1 } }, "then": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "literal", "width": 1, "literal": { "value": 0, "width": 1 } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "literal", "width": 1, "literal": { "value": 0, "width": 1 } } }] }, "else": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "literal", "width": 1, "literal": { "value": 1, "width": 1 } } }, { "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_DRIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "signal_id": 3 } }] } }
+          }
+        ],
+        "instances": [
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "statements": [{ "kind": "assignment", "id": 0, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 2, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "signal_id": 4 } }] }
+      }
+    ],
+    "project": {
+      "name": "reset_immediate_falling_test",
+      "clocks": [
+      ],
+      "clock_gens": [
+      ],
+      "pins": [
+      ],
+      "mappings": [
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 1, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 2, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 3, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 4, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 39 }
+    ]
+  }
+}

@@ -1,0 +1,142 @@
+// =============================================================================
+// TEST: Clock Domain Isolation and CDC Crossing
+// Purpose: Verify that registers are bound to home domains and that 
+//          cross-domain visibility is only achieved via CDC aliases.
+// =============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") cdc_verification_system
+
+    CLOCKS {
+        SCLK = { period=10.0 };
+        FAST_CLK;
+    }
+
+    IN_PINS {
+        SCLK = { standard=LVCMOS33 };
+        DONE = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[3] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock
+        // 27MHz
+        SCLK = 4;
+
+        // 2 BUttons
+        // High = Closed
+        // Low = Open
+        KEY[0] = 88;
+        KEY[1] = 87;
+
+        // 6 LEDs
+        // High = OFF
+        // Low = ON
+        LED[0] = 15;
+        LED[1] = 16;
+        LED[2] = 17;
+
+        // DONE can be used as a POR signal
+        // Low = programming ongoing
+        // High = programming successfully
+        DONE    = IOR32B; 
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK SCLK;     // 100MHz clock (period=10.0ns)
+            OUT BASE  FAST_CLK; // 225MHz
+
+            CONFIG {
+                IDIV  = 3;
+                FBDIV = 8;
+                ODIV  = 4;
+            };
+        };
+    }
+
+    @top cdc_top {
+        IN  [1] clk_fast = FAST_CLK;
+        IN  [1] clk_slow = SCLK;
+        IN  [1] rst_n   = ~KEY[0];
+        IN  [1] por     = DONE;
+        OUT [3] display = LED;
+    }
+
+@endproj
+
+@module cdc_top
+    PORT {
+        IN  [1] clk_fast;
+        IN  [1] clk_slow;
+        IN  [1] rst_n;
+        IN  [1] por;
+        OUT [3] display;
+    }
+
+    WIRE {
+        reset [1];
+
+        fast_is_even [1];
+        slow_is_set [1];
+    }
+
+    REGISTER {
+        // fast_counter is home-domain: clk_fast
+        fast_counter [30] = 30'h00;
+        
+        // slow_flag is home-domain: clk_slow
+        slow_flag [1] = 1'b0;
+        
+        // sync_out is home-domain: clk_fast
+        sync_out [1] = 1'b0;
+    }
+
+    CDC {
+        // Synchronize 8-bit bus from 100MHz to 25MHz
+        BUS fast_counter (clk_fast) => counter_slow_view (clk_slow);
+        
+        // Synchronize single bit feedback from 25MHz back to 100MHz
+        BIT[3] slow_flag (clk_slow) => flag_fast_view (clk_fast);
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+
+        // Combinational reads of registers are allowed.
+        // Spec Section 4.12: Reads in ASYNCHRONOUS are treated as 
+        // part of the signal's home domain.
+        fast_is_even <= (fast_counter[0] == 1'b0);
+        slow_is_set  <= (slow_flag == 1'b1);
+
+        display <= { fast_counter[29], fast_is_even, slow_is_set };
+    }
+
+    // Domain 1: 225MHz Logic
+    SYNCHRONOUS(CLK=clk_fast RESET=reset RESET_ACTIVE=Low RESET_TYPE=Immediate) {
+        // Increment the local fast counter
+        fast_counter <= fast_counter + 30'b1;;
+
+        // Read a bit that originated in the slow domain via its CDC alias
+        // flag_fast_view is valid here because its destination is clk_fast
+        IF (flag_fast_view == 1'b1) {
+            sync_out <= 1'b1;
+        } ELSE {
+            sync_out <= 1'b0;
+        }
+    }
+
+    // Domain 2: 27MHz Logic
+    SYNCHRONOUS(CLK=clk_slow RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        // Use the 8-bit alias from the fast domain
+        // counter_slow_view is valid here because its destination is clk_slow
+        IF (counter_slow_view > 8'h80) {
+            slow_flag <= 1'b1;
+        } ELSE {
+            slow_flag <= 1'b0;
+        }
+    }
+@endmod

@@ -1,0 +1,18 @@
+// CONCAT_EMPTY: empty concatenation '{}' is not allowed.
+// Verified
+
+@project CONCAT_EMPTY_PROJECT
+  @top CONCAT_EMPTY_EXAMPLE {
+    OUT [8] out = _;
+  }
+@endproj
+
+@module CONCAT_EMPTY_EXAMPLE
+  PORT {
+    OUT [8] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= {};
+  }
+@endmod

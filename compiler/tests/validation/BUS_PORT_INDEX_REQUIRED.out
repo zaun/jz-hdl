@@ -1,0 +1,2 @@
+File: BUS_PORT_INDEX_REQUIRED.jz
+      22:11   error BUS_PORT_INDEX_REQUIRED S4.4.1 Arrayed BUS access requires an explicit index or wildcard

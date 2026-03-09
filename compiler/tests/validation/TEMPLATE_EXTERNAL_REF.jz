@@ -1,0 +1,30 @@
+// TEMPLATE_EXTERNAL_REF: Template body references identifier not in parameter list.
+// Expect ERR> TEMPLATE_EXTERNAL_REF
+
+@project TEMPLATE_EXTERNAL_REF_PROJECT
+  @top TEMPLATE_EXTERNAL_REF_MOD {
+    IN  [8] in_a = _;
+    OUT [8] out_a = _;
+  }
+@endproj
+
+@module TEMPLATE_EXTERNAL_REF_MOD
+  PORT {
+    IN  [8] in_a;
+    OUT [8] out_a;
+  }
+
+  WIRE {
+    leak [8];
+  }
+
+  @template BAD(a)
+    // 'leak' is a module wire, not a param or scratch — should error
+    a <= leak;
+  @endtemplate
+
+  ASYNCHRONOUS {
+    leak <= in_a;
+    @apply BAD(out_a);
+  }
+@endmod

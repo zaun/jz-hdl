@@ -1,0 +1,28 @@
+// WARN_UNUSED_REGISTER: unused register/port/wire not read inside design.
+// Verified.
+
+@project WARN_UNUSED_REGISTER_PROJECT
+  @top WARN_UNUSED_REGISTER_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [8] data = _;
+  }
+@endproj
+
+@module WARN_UNUSED_REGISTER_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [8] data;
+  }
+
+  REGISTER {
+    r [8] = 8'h00; // never read or written
+  }
+  
+  ASYNCHRONOUS {
+    data <= 8'b1;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    // Empty body; 'r' is never referenced.
+  }
+@endmod

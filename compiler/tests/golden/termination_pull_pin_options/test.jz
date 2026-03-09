@@ -1,0 +1,88 @@
+// =============================================================================
+// TEST: Termination and Pull Pin Options
+// Purpose: Verify that term=ON/OFF and pull=UP/DOWN/NONE pin attributes are
+//          correctly parsed, validated, and represented in AST/IR/Verilog.
+//          Tests valid combinations:
+//          - term=ON on differential (LVDS25) input
+//          - term=ON on single-ended SSTL (SSTL15) input
+//          - term=OFF explicit on standard input
+//          - pull=UP on input pin
+//          - pull=DOWN on input pin
+//          - pull=NONE explicit on input pin
+//          - No term/pull on output (defaults)
+// =============================================================================
+
+@project(CHIP=GENERIC) termination_pull_test
+
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK = { standard=LVCMOS33 };
+        // Differential input with termination ON
+        diff_in = { mode=DIFFERENTIAL, standard=LVDS25, term=ON };
+        // Single-ended SSTL input with termination ON
+        mem_dq = { standard=SSTL15, term=ON };
+        // Explicit term=OFF
+        btn = { standard=LVCMOS33, term=OFF };
+        // Pull-up on input
+        i2c_sda = { standard=LVCMOS33, pull=UP };
+        // Pull-down on input
+        irq = { standard=LVCMOS33, pull=DOWN };
+        // Explicit pull=NONE
+        data_in = { standard=LVCMOS33, pull=NONE };
+    }
+
+    OUT_PINS {
+        led = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 4;
+        diff_in = { P=10, N=11 };
+        mem_dq = 20;
+        btn = 21;
+        i2c_sda = 22;
+        irq = 23;
+        data_in = 24;
+        led = 15;
+    }
+
+    @top term_pull_module {
+        IN  [1] clk      = SCLK;
+        IN  [1] din      = diff_in;
+        IN  [1] dq       = mem_dq;
+        IN  [1] button   = btn;
+        IN  [1] sda      = i2c_sda;
+        IN  [1] irq_in   = irq;
+        IN  [1] data     = data_in;
+        OUT [1] status   = led;
+    }
+
+@endproj
+
+@module term_pull_module
+    PORT {
+        IN  [1] clk;
+        IN  [1] din;
+        IN  [1] dq;
+        IN  [1] button;
+        IN  [1] sda;
+        IN  [1] irq_in;
+        IN  [1] data;
+        OUT [1] status;
+    }
+
+    REGISTER {
+        sampled [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        status = sampled;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        sampled <= din & dq & button & sda & irq_in & data;
+    }
+@endmod

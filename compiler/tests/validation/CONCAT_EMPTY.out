@@ -1,0 +1,2 @@
+File: CONCAT_EMPTY.jz
+      16:12   error CONCAT_EMPTY S3.2/S8.1 Empty concatenation `{}` is not allowed

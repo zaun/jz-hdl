@@ -1,0 +1,200 @@
+// Audio Level Display (VU Meter)
+// Shows two horizontal bars on the DVI output:
+//   1. Audio peak level (green -> yellow -> red gradient)
+//   2. Ring buffer fill level (blue -> cyan)
+// Background is near-black. Bars are centered on screen.
+@module level_display
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [11] x_pos;
+        IN  [10] y_pos;
+
+        // Audio level input
+        IN  [16] audio_sample;   // signed 16-bit PCM
+        IN  [1]  samp_valid;
+
+        // Buffer fill level (0-127)
+        IN  [7]  buf_fill;
+
+        // RGB output
+        OUT [8]  red;
+        OUT [8]  green;
+        OUT [8]  blue;
+    }
+
+    CONST {
+        // Bar geometry
+        BAR_LEFT   = 140;
+        BAR_RIGHT  = 1140;
+
+        // VU meter bar: y = 300..339
+        VU_TOP     = 300;
+        VU_BOT     = 339;
+
+        // Buffer level bar: y = 380..409
+        BUF_TOP    = 380;
+        BUF_BOT    = 409;
+
+        // Separator line: y = 350..355
+        SEP_TOP    = 350;
+        SEP_BOT    = 355;
+    }
+
+    WIRE {
+        // Absolute value of audio sample
+        abs_sample   [15];
+
+        // Bar positions (pixel offset from BAR_LEFT)
+        bar_x        [11];
+
+        // VU bar width (0-1000 pixels from peak level)
+        vu_width     [10];
+
+        // Buffer bar width (0-1000 pixels)
+        buf_width    [10];
+
+        // Pixel classification
+        in_vu_bar    [1];
+        in_buf_bar   [1];
+        in_vu_fill   [1];
+        in_buf_fill  [1];
+        in_sep       [1];
+
+        // Color outputs
+        r_out        [8];
+        g_out        [8];
+        b_out        [8];
+
+        // Peak decay amount
+        decay_amt    [15];
+    }
+
+    REGISTER {
+        // Peak level with decay
+        peak_level   [15] = 15'd0;
+
+        // Decay counter: decay peak slowly
+        decay_timer  [12] = 12'd0;
+
+        // Registered buffer fill for display
+        buf_fill_r   [7]  = 7'd0;
+    }
+
+    ASYNCHRONOUS {
+        // Absolute value of signed 16-bit sample
+        IF (audio_sample[15] == 1'b1) {
+            abs_sample <= ~audio_sample[14:0] + 15'd1;
+        } ELSE {
+            abs_sample <= audio_sample[14:0];
+        }
+
+        // Bar x position relative to left edge
+        bar_x <= x_pos - lit(11, BAR_LEFT);
+
+        // VU bar width: peak_level[14:5] gives 0-1023, cap at 1000
+        IF (peak_level[14:5] > 10'd1000) {
+            vu_width <= 10'd1000;
+        } ELSE {
+            vu_width <= peak_level[14:5];
+        }
+
+        // Buffer bar width: buf_fill_r is 0-127, scale to 0-1016
+        IF ({ buf_fill_r, 3'b000 } > 10'd1000) {
+            buf_width <= 10'd1000;
+        } ELSE {
+            buf_width <= { buf_fill_r, 3'b000 };
+        }
+
+        // Region detection
+        in_vu_bar  <= (y_pos >= lit(10, VU_TOP) && y_pos <= lit(10, VU_BOT) &&
+                       x_pos >= lit(11, BAR_LEFT) && x_pos <= lit(11, BAR_RIGHT)) ? 1'b1 : 1'b0;
+
+        in_buf_bar <= (y_pos >= lit(10, BUF_TOP) && y_pos <= lit(10, BUF_BOT) &&
+                       x_pos >= lit(11, BAR_LEFT) && x_pos <= lit(11, BAR_RIGHT)) ? 1'b1 : 1'b0;
+
+        in_vu_fill  <= (in_vu_bar == 1'b1 && bar_x[10:0] < { 1'b0, vu_width }) ? 1'b1 : 1'b0;
+        in_buf_fill <= (in_buf_bar == 1'b1 && bar_x[10:0] < { 1'b0, buf_width }) ? 1'b1 : 1'b0;
+
+        in_sep <= (y_pos >= lit(10, SEP_TOP) && y_pos <= lit(10, SEP_BOT) &&
+                   x_pos >= lit(11, BAR_LEFT) && x_pos <= lit(11, BAR_RIGHT)) ? 1'b1 : 1'b0;
+
+        // Decay amount: peak/64 + 1
+        decay_amt <= { 6'b000000, peak_level[14:6] } + 15'd1;
+
+        // Color generation
+        IF (in_vu_fill == 1'b1) {
+            // VU meter: green -> yellow -> red
+            IF (bar_x < 11'd600) {
+                r_out <= 8'd40;
+                g_out <= 8'd220;
+                b_out <= 8'd40;
+            } ELIF (bar_x < 11'd800) {
+                r_out <= 8'd220;
+                g_out <= 8'd220;
+                b_out <= 8'd20;
+            } ELSE {
+                r_out <= 8'd240;
+                g_out <= 8'd40;
+                b_out <= 8'd20;
+            }
+        } ELIF (in_vu_bar == 1'b1) {
+            // VU bar background (dark gray)
+            r_out <= 8'd30;
+            g_out <= 8'd30;
+            b_out <= 8'd30;
+        } ELIF (in_buf_fill == 1'b1) {
+            // Buffer level: blue -> cyan
+            IF (bar_x < 11'd500) {
+                r_out <= 8'd20;
+                g_out <= 8'd80;
+                b_out <= 8'd200;
+            } ELSE {
+                r_out <= 8'd20;
+                g_out <= 8'd180;
+                b_out <= 8'd220;
+            }
+        } ELIF (in_buf_bar == 1'b1) {
+            // Buffer bar background (dark gray)
+            r_out <= 8'd30;
+            g_out <= 8'd30;
+            b_out <= 8'd30;
+        } ELIF (in_sep == 1'b1) {
+            // Separator line (dim white)
+            r_out <= 8'd60;
+            g_out <= 8'd60;
+            b_out <= 8'd60;
+        } ELSE {
+            // Background (near-black)
+            r_out <= 8'd8;
+            g_out <= 8'd8;
+            b_out <= 8'd12;
+        }
+
+        red   <= r_out;
+        green <= g_out;
+        blue  <= b_out;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Register buffer fill level
+        buf_fill_r <= buf_fill;
+
+        // Peak level tracking and decay
+        IF (samp_valid == 1'b1 && abs_sample > peak_level) {
+            // New peak detected
+            peak_level  <= abs_sample;
+            decay_timer <= 12'd0;
+        } ELIF (decay_timer == 12'd4095) {
+            // Decay timer expired: reduce peak
+            decay_timer <= 12'd0;
+            IF (peak_level > decay_amt) {
+                peak_level <= peak_level - decay_amt;
+            } ELSE {
+                peak_level <= 15'd0;
+            }
+        } ELSE {
+            decay_timer <= decay_timer + 12'd1;
+        }
+    }
+@endmod

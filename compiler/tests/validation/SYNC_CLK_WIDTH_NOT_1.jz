@@ -1,0 +1,28 @@
+// SYNC_CLK_WIDTH_NOT_1: SYNCHRONOUS block CLK signal must have width [1].
+// Verified
+
+@project SYNC_CLK_WIDTH_NOT_1_PROJECT
+  @top SYNC_CLK_WIDTH_NOT_1_EXAMPLE {
+    IN  [4] clk4 = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module SYNC_CLK_WIDTH_NOT_1_EXAMPLE
+  PORT {
+    IN  [4] clk4;
+    OUT [8] out;
+  }
+
+  REGISTER {
+    r [8] = 8'h00;
+  }
+
+  ASYNCHRONOUS {
+    out <= r;
+  }
+
+  SYNCHRONOUS(CLK=clk4) {
+    r <= 8'h01;
+  }
+@endmod

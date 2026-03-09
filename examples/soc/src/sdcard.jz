@@ -1,0 +1,1339 @@
+// SD Card SPI Controller
+// SPI-mode SD card interface with sector read/write.
+// CPU accesses registers via SIMPLE_BUS TARGET.
+// 512-byte sector buffer with auto-incrementing DATA register.
+//
+// Register map (base + offset, 32-bit word aligned):
+//   0x00: COMMAND   [W]  bits[1:0] = 00=NONE, 01=READ, 10=WRITE
+//   0x04: STATUS    [R]  bits[4:0] = {DMA_ACTIVE, SDHC, READY, ERROR, BUSY}
+//   0x08: SECTOR_LO [RW] bits[15:0] = sector address low
+//   0x0C: SECTOR_HI [RW] bits[15:0] = sector address high
+//   0x10: (reserved)
+//   0x14: DATA      [RW] bits[15:0] = buffer auto-increment access
+//   0x18: IRQ_CTRL  [RW] bits[1:0] = {clear, enable}
+
+// SD card state machine states
+@global SDCST
+    POWER_UP    = 5'b00000;
+    SEND_CLKS   = 5'b00001;
+    CMD0        = 5'b00010;
+    CMD0_RESP   = 5'b00011;
+    CMD8        = 5'b00100;
+    CMD8_RESP   = 5'b00101;
+    CMD55       = 5'b00110;
+    CMD55_RESP  = 5'b00111;
+    ACMD41      = 5'b01000;
+    ACMD41_RESP = 5'b01001;
+    CMD58       = 5'b01010;
+    CMD58_RESP  = 5'b01011;
+    IDLE        = 5'b01100;
+    READ_CMD    = 5'b01101;
+    READ_RESP   = 5'b01110;
+    READ_TOKEN  = 5'b01111;
+    READ_DATA   = 5'b10000;
+    READ_CRC    = 5'b10001;
+    READ_DONE   = 5'b10011;
+    WRITE_CMD   = 5'b10100;
+    WRITE_RESP  = 5'b10101;
+    WRITE_TOKEN = 5'b10110;
+    WRITE_DATA  = 5'b10111;
+    WRITE_CRC   = 5'b11000;
+    WRITE_DRESP = 5'b11001;
+    WRITE_BUSY  = 5'b11010;
+    WRITE_DONE  = 5'b11011;
+    ERROR       = 5'b11100;
+    CS_GAP      = 5'b11101;
+@endglob
+
+// SD card register addresses
+@global SDREG
+    COMMAND     = 3'b000;
+    STATUS      = 3'b001;
+    SECTOR_LO   = 3'b010;
+    SECTOR_HI   = 3'b011;
+    DATA        = 3'b101;
+    IRQ_CTRL    = 3'b110;
+@endglob
+
+// SD card commands
+@global SDCMD
+    NONE         = 2'b00;
+    READ_SECTOR  = 2'b01;
+    WRITE_SECTOR = 2'b10;
+@endglob
+
+@module sdcard
+    CONST {
+        // SPI clock dividers: system_clk / (2 * (div+1))
+        // Slow: 74.25MHz / (2*186) = ~200 KHz (init)
+        // Fast: 74.25MHz / (2*5)   = ~7.4 MHz (data)
+        SPI_DIV_SLOW = 185;
+        SPI_DIV_FAST = 4;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        OUT [1] irq;
+        BUS SIMPLE_BUS TARGET pbus;
+
+        // SPI physical pins
+        OUT [1] sd_clk;
+        OUT [1] sd_mosi;
+        IN  [1] sd_miso;
+        OUT [1] sd_cs_n;
+    }
+
+    // 256-word (512-byte) sector buffer
+    MEM {
+        buffer [16] [256] = 16'h0000 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    WIRE {
+        read_data [32];
+
+        // Precomputed CMD17/CMD24 argument bytes
+        // SDHC: sector number directly; SDSC: byte address (sector << 9)
+        cmd_arg_b3 [8];
+        cmd_arg_b2 [8];
+        cmd_arg_b1 [8];
+        cmd_arg_b0 [8];
+    }
+
+    REGISTER {
+        // SD Card State Machine
+        state         [5] = 5'b00000;  // SDCST.POWER_UP
+
+        // SPI Engine
+        spi_div       [8] = 8'd185;
+        spi_div_cnt   [8] = 8'b0;
+        spi_clk_reg   [1] = 1'b0;
+        spi_shift_out [8] = 8'hFF;
+        spi_shift_in  [8] = 8'b0;
+        spi_bit_cnt   [4] = 4'b0;
+        spi_busy      [1] = 1'b0;
+        spi_rx_data   [8] = 8'b0;
+
+        // MISO synchronizer
+        miso_sync1    [1] = 1'b1;
+        miso_sync2    [1] = 1'b1;
+
+        // CS control
+        cs_n          [1] = 1'b1;
+
+        // SD Protocol
+        powerup_cnt   [20] = 20'b0;
+        gap_next_state [5] = 5'b0;
+        clock_cnt     [8]  = 8'b0;
+        send_cmd_phase [3] = 3'b0;
+        resp_wait_cnt  [16] = 16'b0;
+        resp_byte_cnt [4]  = 4'b0;
+        r1_response   [8]  = 8'b0;
+        retry_cnt     [16] = 16'b0;
+        sdhc_flag     [1]  = 1'b0;
+
+        // Sector Read/Write
+        sector_lo     [16] = 16'b0;
+        sector_hi     [16] = 16'b0;
+        byte_cnt      [10] = 10'b0;
+        byte_pair_lo  [8]  = 8'b0;
+        buf_wr_addr   [8]  = 8'b0;
+        buf_cpu_addr  [8]  = 8'b0;
+
+        // CPU Command/Status
+        command       [2]  = 2'b0;
+        busy          [1]  = 1'b0;
+        error         [1]  = 1'b0;
+        ready         [1]  = 1'b0;
+        irq_enable    [1]  = 1'b0;
+        irq_status    [1]  = 1'b0;
+        irq_clear_req [1]  = 1'b0;
+
+        // Buffer Write Pipeline (single write point, 1-cycle latency)
+        buf_wr_en     [1]  = 1'b0;
+        buf_wr_addr_r [8]  = 8'b0;
+        buf_wr_data_r [16] = 16'b0;
+
+        // Bus Interface Pipeline
+        pending_read  [1]  = 1'b0;
+        read_reg_sel  [3]  = 3'b0;
+        data_ready    [1]  = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // SPI Pin Outputs
+        sd_clk  <= spi_clk_reg;
+        sd_mosi <= spi_shift_out[7];
+        sd_cs_n <= cs_n;
+
+        // CPU Bus Read Data Mux
+        SELECT(read_reg_sel) {
+            CASE SDREG.COMMAND {
+                read_data <= {30'b0, command};
+            }
+            CASE SDREG.STATUS {
+                read_data <= {27'b0, 1'b0, sdhc_flag, ready, error, busy};
+            }
+            CASE SDREG.SECTOR_LO {
+                read_data <= {16'b0, sector_lo};
+            }
+            CASE SDREG.SECTOR_HI {
+                read_data <= {16'b0, sector_hi};
+            }
+            CASE SDREG.DATA {
+                read_data <= {16'b0, buffer.rd[buf_cpu_addr]};
+            }
+            CASE SDREG.IRQ_CTRL {
+                read_data <= {30'b0, irq_status, irq_enable};
+            }
+            DEFAULT {
+                read_data <= 32'b0;
+            }
+        }
+
+        // Drive bus data on read
+        pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+        // DONE signaling
+        IF (pbus.VALID) {
+            IF (pbus.CMD == CMD.WRITE || data_ready == 1'b1) {
+                pbus.DONE <= 1'b1;
+            } ELSE {
+                pbus.DONE <= 1'b0;
+            }
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+
+        // CMD argument bytes (SDHC=sector, SDSC=sector<<9)
+        IF (sdhc_flag == 1'b1) {
+            cmd_arg_b3 <= sector_hi[15:8];
+            cmd_arg_b2 <= sector_hi[7:0];
+            cmd_arg_b1 <= sector_lo[15:8];
+            cmd_arg_b0 <= sector_lo[7:0];
+        } ELSE {
+            cmd_arg_b3 <= {sector_hi[6:0], sector_lo[15]};
+            cmd_arg_b2 <= sector_lo[14:7];
+            cmd_arg_b1 <= {sector_lo[6:0], 1'b0};
+            cmd_arg_b0 <= 8'h00;
+        }
+
+        // IRQ output
+        IF (irq_enable == 1'b1 && irq_status == 1'b1) {
+            irq <= 1'b1;
+        } ELSE {
+            irq <= 1'b0;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // =====================
+        // MISO Synchronizer (always runs)
+        // =====================
+        miso_sync1 <= sd_miso;
+        miso_sync2 <= miso_sync1;
+
+        // =====================
+        // Bus Read Pipeline
+        // =====================
+        IF (data_ready == 1'b1) {
+            data_ready <= 1'b0;
+        } ELIF (pending_read == 1'b1) {
+            data_ready <= 1'b1;
+            pending_read <= 1'b0;
+        } ELIF (pbus.VALID && pbus.CMD == CMD.READ) {
+            pending_read <= 1'b1;
+            read_reg_sel <= pbus.ADDR[4:2];
+        }
+
+        // =====================
+        // Combined: Buffer Write + SPI Engine + Bus Writes + State Machine
+        // Priority: Buffer Write > SPI > Bus Write > State Machine
+        // =====================
+        IF (buf_wr_en == 1'b1) {
+            // --- Pending buffer write (1-cycle delayed) ---
+            buffer.wr[buf_wr_addr_r] <= buf_wr_data_r;
+            buf_wr_en <= 1'b0;
+
+        } ELIF (spi_busy == 1'b1) {
+            // --- SPI shift register ---
+            IF (spi_div_cnt == 8'b0) {
+                spi_div_cnt <= spi_div;
+                IF (spi_clk_reg == 1'b0) {
+                    // Rising edge: sample MISO
+                    spi_clk_reg <= 1'b1;
+                    spi_shift_in <= {spi_shift_in[6:0], miso_sync2};
+                } ELSE {
+                    // Falling edge
+                    spi_clk_reg <= 1'b0;
+                    IF (spi_bit_cnt == 4'd7) {
+                        // Transfer complete
+                        spi_busy <= 1'b0;
+                        spi_rx_data <= spi_shift_in;
+                        spi_bit_cnt <= 4'b0;
+                    } ELSE {
+                        spi_bit_cnt <= spi_bit_cnt + 4'b1;
+                        spi_shift_out <= {spi_shift_out[6:0], 1'b1};
+                    }
+                }
+            } ELSE {
+                spi_div_cnt <= spi_div_cnt - 8'b1;
+            }
+
+        } ELIF (pbus.VALID && pbus.CMD == CMD.WRITE) {
+            // --- CPU register writes (when SPI idle) ---
+            SELECT(pbus.ADDR[4:2]) {
+                CASE SDREG.COMMAND {
+                    command <= pbus.DATA[1:0];
+                }
+                CASE SDREG.SECTOR_LO {
+                    sector_lo <= pbus.DATA[15:0];
+                }
+                CASE SDREG.SECTOR_HI {
+                    sector_hi <= pbus.DATA[15:0];
+                }
+                CASE SDREG.DATA {
+                    buf_wr_en <= 1'b1;
+                    buf_wr_addr_r <= buf_cpu_addr;
+                    buf_wr_data_r <= pbus.DATA[15:0];
+                    buf_cpu_addr <= buf_cpu_addr + 8'b1;
+                }
+                CASE SDREG.IRQ_CTRL {
+                    irq_enable <= pbus.DATA[0];
+                    IF (pbus.DATA[1] == 1'b1) {
+                        irq_clear_req <= 1'b1;
+                    }
+                }
+                DEFAULT {
+                }
+            }
+
+        } ELSE {
+            // --- State Machine (SPI idle, no bus write) ---
+            SELECT(state) {
+                // ----- Power-Up Delay -----
+                CASE SDCST.POWER_UP {
+                    cs_n <= 1'b1;
+                    busy <= 1'b1;
+                    IF (powerup_cnt == 20'd742500) {
+                        powerup_cnt <= 20'b0;
+                        clock_cnt <= 8'b0;
+                        state <= SDCST.SEND_CLKS;
+                    } ELSE {
+                        powerup_cnt <= powerup_cnt + 20'b1;
+                    }
+                }
+
+                // ----- Send 80 clocks with CS high -----
+                CASE SDCST.SEND_CLKS {
+                    IF (clock_cnt == 8'd20) {
+                        state <= SDCST.CMD0;
+                        send_cmd_phase <= 3'b0;
+                        retry_cnt <= 16'b0;
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        clock_cnt <= clock_cnt + 8'b1;
+                    }
+                }
+
+                // ----- CMD0: GO_IDLE_STATE -----
+                CASE SDCST.CMD0 {
+                    SELECT(send_cmd_phase) {
+                        CASE 3'd0 {
+                            cs_n <= 1'b0;
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h40;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd1;
+                        }
+                        CASE 3'd1 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd2;
+                        }
+                        CASE 3'd2 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd3;
+                        }
+                        CASE 3'd3 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd4;
+                        }
+                        CASE 3'd4 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd5;
+                        }
+                        CASE 3'd5 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h95;  // CRC for CMD0
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd6;
+                        }
+                        CASE 3'd6 {
+                            resp_wait_cnt <= 16'b0;
+                            state <= SDCST.CMD0_RESP;
+                        }
+                        DEFAULT {
+                            send_cmd_phase <= 3'd0;
+                        }
+                    }
+                }
+
+                // ----- CMD0 Response -----
+                CASE SDCST.CMD0_RESP {
+                    IF (spi_rx_data[7] == 1'b0 && resp_wait_cnt != 16'b0) {
+                        r1_response <= spi_rx_data;
+                        cs_n <= 1'b1;
+                        IF (spi_rx_data == 8'h01) {
+                            gap_next_state <= SDCST.CMD8;
+                            state <= SDCST.CS_GAP;
+                        } ELSE {
+                            IF (retry_cnt == 16'd255) {
+                                state <= SDCST.ERROR;
+                            } ELSE {
+                                retry_cnt <= retry_cnt + 16'b1;
+                                gap_next_state <= SDCST.CMD0;
+                                state <= SDCST.CS_GAP;
+                            }
+                        }
+                    } ELIF (resp_wait_cnt == 16'd64) {
+                        cs_n <= 1'b1;
+                        IF (retry_cnt == 16'd255) {
+                            state <= SDCST.ERROR;
+                        } ELSE {
+                            retry_cnt <= retry_cnt + 16'b1;
+                            gap_next_state <= SDCST.CMD0;
+                            state <= SDCST.CS_GAP;
+                        }
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                    }
+                }
+
+                // ----- CMD8: SEND_IF_COND -----
+                CASE SDCST.CMD8 {
+                    SELECT(send_cmd_phase) {
+                        CASE 3'd0 {
+                            cs_n <= 1'b0;
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h48;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd1;
+                        }
+                        CASE 3'd1 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd2;
+                        }
+                        CASE 3'd2 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd3;
+                        }
+                        CASE 3'd3 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h01;  // VHS
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd4;
+                        }
+                        CASE 3'd4 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'hAA;  // Check pattern
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd5;
+                        }
+                        CASE 3'd5 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h87;  // CRC for CMD8
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd6;
+                        }
+                        CASE 3'd6 {
+                            resp_wait_cnt <= 16'b0;
+                            resp_byte_cnt <= 4'd0;
+                            state <= SDCST.CMD8_RESP;
+                        }
+                        DEFAULT {
+                            send_cmd_phase <= 3'd0;
+                        }
+                    }
+                }
+
+                // ----- CMD8 Response: R7 -----
+                CASE SDCST.CMD8_RESP {
+                    IF (resp_byte_cnt == 4'd0) {
+                        IF (spi_rx_data[7] == 1'b0 && resp_wait_cnt != 16'b0) {
+                            r1_response <= spi_rx_data;
+                            IF (spi_rx_data == 8'h01) {
+                                resp_byte_cnt <= 4'd1;
+                                spi_busy <= 1'b1;
+                                spi_shift_out <= 8'hFF;
+                                spi_shift_in <= 8'b0;
+                                spi_bit_cnt <= 4'b0;
+                                spi_clk_reg <= 1'b0;
+                                spi_div_cnt <= spi_div;
+                            } ELSE {
+                                cs_n <= 1'b1;
+                                state <= SDCST.ERROR;
+                            }
+                        } ELIF (resp_wait_cnt == 16'd64) {
+                            cs_n <= 1'b1;
+                            state <= SDCST.ERROR;
+                        } ELSE {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'hFF;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                        }
+                    } ELIF (resp_byte_cnt == 4'd4) {
+                        cs_n <= 1'b1;
+                        IF (spi_rx_data == 8'hAA) {
+                            retry_cnt <= 16'b0;
+                            gap_next_state <= SDCST.CMD55;
+                            state <= SDCST.CS_GAP;
+                        } ELSE {
+                            state <= SDCST.ERROR;
+                        }
+                    } ELSE {
+                        resp_byte_cnt <= resp_byte_cnt + 4'b1;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    }
+                }
+
+                // ----- CMD55: APP_CMD prefix -----
+                CASE SDCST.CMD55 {
+                    SELECT(send_cmd_phase) {
+                        CASE 3'd0 {
+                            cs_n <= 1'b0;
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h77;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd1;
+                        }
+                        CASE 3'd1 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd2;
+                        }
+                        CASE 3'd2 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd3;
+                        }
+                        CASE 3'd3 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd4;
+                        }
+                        CASE 3'd4 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd5;
+                        }
+                        CASE 3'd5 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h65;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd6;
+                        }
+                        CASE 3'd6 {
+                            resp_wait_cnt <= 16'b0;
+                            state <= SDCST.CMD55_RESP;
+                        }
+                        DEFAULT {
+                            send_cmd_phase <= 3'd0;
+                        }
+                    }
+                }
+
+                // ----- CMD55 Response -----
+                CASE SDCST.CMD55_RESP {
+                    IF (spi_rx_data[7] == 1'b0 && resp_wait_cnt != 16'b0) {
+                        r1_response <= spi_rx_data;
+                        cs_n <= 1'b1;
+                        gap_next_state <= SDCST.ACMD41;
+                        state <= SDCST.CS_GAP;
+                    } ELIF (resp_wait_cnt == 16'd64) {
+                        cs_n <= 1'b1;
+                        state <= SDCST.ERROR;
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                    }
+                }
+
+                // ----- ACMD41: SD_SEND_OP_COND -----
+                CASE SDCST.ACMD41 {
+                    SELECT(send_cmd_phase) {
+                        CASE 3'd0 {
+                            cs_n <= 1'b0;
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h69;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd1;
+                        }
+                        CASE 3'd1 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h40;  // HCS bit
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd2;
+                        }
+                        CASE 3'd2 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd3;
+                        }
+                        CASE 3'd3 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd4;
+                        }
+                        CASE 3'd4 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd5;
+                        }
+                        CASE 3'd5 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h77;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd6;
+                        }
+                        CASE 3'd6 {
+                            resp_wait_cnt <= 16'b0;
+                            state <= SDCST.ACMD41_RESP;
+                        }
+                        DEFAULT {
+                            send_cmd_phase <= 3'd0;
+                        }
+                    }
+                }
+
+                // ----- ACMD41 Response -----
+                CASE SDCST.ACMD41_RESP {
+                    IF (spi_rx_data[7] == 1'b0 && resp_wait_cnt != 16'b0) {
+                        r1_response <= spi_rx_data;
+                        cs_n <= 1'b1;
+                        IF (spi_rx_data == 8'h00) {
+                            gap_next_state <= SDCST.CMD58;
+                            state <= SDCST.CS_GAP;
+                        } ELSE {
+                            IF (retry_cnt == 16'd1000) {
+                                state <= SDCST.ERROR;
+                            } ELSE {
+                                retry_cnt <= retry_cnt + 16'b1;
+                                gap_next_state <= SDCST.CMD55;
+                                state <= SDCST.CS_GAP;
+                            }
+                        }
+                    } ELIF (resp_wait_cnt == 16'd64) {
+                        cs_n <= 1'b1;
+                        IF (retry_cnt == 16'd1000) {
+                            state <= SDCST.ERROR;
+                        } ELSE {
+                            retry_cnt <= retry_cnt + 16'b1;
+                            gap_next_state <= SDCST.CMD55;
+                            state <= SDCST.CS_GAP;
+                        }
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                    }
+                }
+
+                // ----- CMD58: READ_OCR -----
+                CASE SDCST.CMD58 {
+                    SELECT(send_cmd_phase) {
+                        CASE 3'd0 {
+                            cs_n <= 1'b0;
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h7A;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd1;
+                        }
+                        CASE 3'd1 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd2;
+                        }
+                        CASE 3'd2 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd3;
+                        }
+                        CASE 3'd3 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd4;
+                        }
+                        CASE 3'd4 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h00;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd5;
+                        }
+                        CASE 3'd5 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'hFD;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd6;
+                        }
+                        CASE 3'd6 {
+                            resp_wait_cnt <= 16'b0;
+                            resp_byte_cnt <= 4'd0;
+                            state <= SDCST.CMD58_RESP;
+                        }
+                        DEFAULT {
+                            send_cmd_phase <= 3'd0;
+                        }
+                    }
+                }
+
+                // ----- CMD58 Response: R3 -----
+                CASE SDCST.CMD58_RESP {
+                    IF (resp_byte_cnt == 4'd0) {
+                        IF (spi_rx_data[7] == 1'b0 && resp_wait_cnt != 16'b0) {
+                            r1_response <= spi_rx_data;
+                            IF (spi_rx_data == 8'h00) {
+                                resp_byte_cnt <= 4'd1;
+                                spi_busy <= 1'b1;
+                                spi_shift_out <= 8'hFF;
+                                spi_shift_in <= 8'b0;
+                                spi_bit_cnt <= 4'b0;
+                                spi_clk_reg <= 1'b0;
+                                spi_div_cnt <= spi_div;
+                            } ELSE {
+                                cs_n <= 1'b1;
+                                state <= SDCST.ERROR;
+                            }
+                        } ELIF (resp_wait_cnt == 16'd64) {
+                            cs_n <= 1'b1;
+                            state <= SDCST.ERROR;
+                        } ELSE {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'hFF;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                        }
+                    } ELIF (resp_byte_cnt == 4'd1) {
+                        sdhc_flag <= spi_rx_data[6];
+                        resp_byte_cnt <= 4'd2;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    } ELIF (resp_byte_cnt == 4'd4) {
+                        cs_n <= 1'b1;
+                        spi_div <= 8'd4;  // Switch to fast clock
+                        busy <= 1'b0;
+                        ready <= 1'b1;
+                        state <= SDCST.IDLE;
+                    } ELSE {
+                        resp_byte_cnt <= resp_byte_cnt + 4'b1;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    }
+                }
+
+                // ----- IDLE -----
+                CASE SDCST.IDLE {
+                    // IRQ clear handshake
+                    IF (irq_clear_req == 1'b1) {
+                        irq_status <= 1'b0;
+                        irq_clear_req <= 1'b0;
+                    }
+                    // Command dispatch
+                    IF (command == SDCMD.READ_SECTOR) {
+                        command <= SDCMD.NONE;
+                        error <= 1'b0;
+                        busy <= 1'b1;
+                        buf_wr_addr <= 8'b0;
+                        byte_cnt <= 10'b0;
+                        gap_next_state <= SDCST.READ_CMD;
+                        state <= SDCST.CS_GAP;
+                    } ELIF (command == SDCMD.WRITE_SECTOR) {
+                        command <= SDCMD.NONE;
+                        error <= 1'b0;
+                        busy <= 1'b1;
+                        byte_cnt <= 10'b0;
+                        buf_cpu_addr <= 8'b0;
+                        gap_next_state <= SDCST.WRITE_CMD;
+                        state <= SDCST.CS_GAP;
+                    } ELSE {
+                        // Auto-increment buffer pointer after DATA read
+                        IF (data_ready == 1'b1 && read_reg_sel == SDREG.DATA) {
+                            buf_cpu_addr <= buf_cpu_addr + 8'b1;
+                        }
+                    }
+                }
+
+                // ----- READ_CMD: CMD17 -----
+                CASE SDCST.READ_CMD {
+                    SELECT(send_cmd_phase) {
+                        CASE 3'd0 {
+                            cs_n <= 1'b0;
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h51;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd1;
+                        }
+                        CASE 3'd1 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= cmd_arg_b3;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd2;
+                        }
+                        CASE 3'd2 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= cmd_arg_b2;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd3;
+                        }
+                        CASE 3'd3 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= cmd_arg_b1;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd4;
+                        }
+                        CASE 3'd4 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= cmd_arg_b0;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd5;
+                        }
+                        CASE 3'd5 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'hFF;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd6;
+                        }
+                        CASE 3'd6 {
+                            resp_wait_cnt <= 16'b0;
+                            state <= SDCST.READ_RESP;
+                        }
+                        DEFAULT {
+                            send_cmd_phase <= 3'd0;
+                        }
+                    }
+                }
+
+                // ----- READ_RESP -----
+                CASE SDCST.READ_RESP {
+                    IF (spi_rx_data[7] == 1'b0 && resp_wait_cnt != 16'b0) {
+                        r1_response <= spi_rx_data;
+                        IF (spi_rx_data == 8'h00) {
+                            resp_wait_cnt <= 16'b0;
+                            state <= SDCST.READ_TOKEN;
+                        } ELSE {
+                            cs_n <= 1'b1;
+                            error <= 1'b1;
+                            busy <= 1'b0;
+                            state <= SDCST.IDLE;
+                        }
+                    } ELIF (resp_wait_cnt == 16'd64) {
+                        cs_n <= 1'b1;
+                        error <= 1'b1;
+                        busy <= 1'b0;
+                        state <= SDCST.IDLE;
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                    }
+                }
+
+                // ----- READ_TOKEN -----
+                CASE SDCST.READ_TOKEN {
+                    IF (spi_rx_data == 8'hFE && resp_wait_cnt != 16'b0) {
+                        byte_cnt <= 10'b0;
+                        buf_wr_addr <= 8'b0;
+                        state <= SDCST.READ_DATA;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    } ELIF (resp_wait_cnt == 16'd4096) {
+                        cs_n <= 1'b1;
+                        error <= 1'b1;
+                        busy <= 1'b0;
+                        state <= SDCST.IDLE;
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                    }
+                }
+
+                // ----- READ_DATA -----
+                CASE SDCST.READ_DATA {
+                    IF (byte_cnt == 10'd512) {
+                        byte_cnt <= 10'b0;
+                        state <= SDCST.READ_CRC;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    } ELSE {
+                        IF (byte_cnt[0] == 1'b0) {
+                            byte_pair_lo <= spi_rx_data;
+                        } ELSE {
+                            buf_wr_en <= 1'b1;
+                            buf_wr_addr_r <= buf_wr_addr;
+                            buf_wr_data_r <= {spi_rx_data, byte_pair_lo};
+                            buf_wr_addr <= buf_wr_addr + 8'b1;
+                        }
+                        byte_cnt <= byte_cnt + 10'b1;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    }
+                }
+
+                // ----- READ_CRC -----
+                CASE SDCST.READ_CRC {
+                    IF (byte_cnt == 10'd2) {
+                        cs_n <= 1'b1;
+                        state <= SDCST.READ_DONE;
+                    } ELSE {
+                        byte_cnt <= byte_cnt + 10'b1;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    }
+                }
+
+                // ----- READ_DONE -----
+                CASE SDCST.READ_DONE {
+                    busy <= 1'b0;
+                    irq_status <= 1'b1;
+                    irq_clear_req <= 1'b0;
+                    buf_cpu_addr <= 8'b0;
+                    state <= SDCST.IDLE;
+                }
+
+                // ----- WRITE_CMD: CMD24 -----
+                CASE SDCST.WRITE_CMD {
+                    SELECT(send_cmd_phase) {
+                        CASE 3'd0 {
+                            cs_n <= 1'b0;
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'h58;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd1;
+                        }
+                        CASE 3'd1 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= cmd_arg_b3;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd2;
+                        }
+                        CASE 3'd2 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= cmd_arg_b2;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd3;
+                        }
+                        CASE 3'd3 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= cmd_arg_b1;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd4;
+                        }
+                        CASE 3'd4 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= cmd_arg_b0;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd5;
+                        }
+                        CASE 3'd5 {
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'hFF;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                            send_cmd_phase <= 3'd6;
+                        }
+                        CASE 3'd6 {
+                            resp_wait_cnt <= 16'b0;
+                            state <= SDCST.WRITE_RESP;
+                        }
+                        DEFAULT {
+                            send_cmd_phase <= 3'd0;
+                        }
+                    }
+                }
+
+                // ----- WRITE_RESP -----
+                CASE SDCST.WRITE_RESP {
+                    IF (spi_rx_data[7] == 1'b0 && resp_wait_cnt != 16'b0) {
+                        r1_response <= spi_rx_data;
+                        IF (spi_rx_data == 8'h00) {
+                            state <= SDCST.WRITE_TOKEN;
+                        } ELSE {
+                            cs_n <= 1'b1;
+                            error <= 1'b1;
+                            busy <= 1'b0;
+                            state <= SDCST.IDLE;
+                        }
+                    } ELIF (resp_wait_cnt == 16'd64) {
+                        cs_n <= 1'b1;
+                        error <= 1'b1;
+                        busy <= 1'b0;
+                        state <= SDCST.IDLE;
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                    }
+                }
+
+                // ----- WRITE_TOKEN -----
+                CASE SDCST.WRITE_TOKEN {
+                    spi_busy <= 1'b1;
+                    spi_shift_out <= 8'hFE;
+                    spi_shift_in <= 8'b0;
+                    spi_bit_cnt <= 4'b0;
+                    spi_clk_reg <= 1'b0;
+                    spi_div_cnt <= spi_div;
+                    byte_cnt <= 10'b0;
+                    buf_cpu_addr <= 8'b0;
+                    state <= SDCST.WRITE_DATA;
+                }
+
+                // ----- WRITE_DATA -----
+                CASE SDCST.WRITE_DATA {
+                    IF (byte_cnt == 10'd512) {
+                        byte_cnt <= 10'b0;
+                        state <= SDCST.WRITE_CRC;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    } ELSE {
+                        IF (byte_cnt[0] == 1'b0) {
+                            spi_shift_out <= buffer.rd[buf_cpu_addr][7:0];
+                        } ELSE {
+                            spi_shift_out <= buffer.rd[buf_cpu_addr][15:8];
+                            buf_cpu_addr <= buf_cpu_addr + 8'b1;
+                        }
+                        spi_busy <= 1'b1;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        byte_cnt <= byte_cnt + 10'b1;
+                    }
+                }
+
+                // ----- WRITE_CRC -----
+                CASE SDCST.WRITE_CRC {
+                    IF (byte_cnt == 10'd2) {
+                        resp_wait_cnt <= 16'b0;
+                        state <= SDCST.WRITE_DRESP;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    } ELSE {
+                        byte_cnt <= byte_cnt + 10'b1;
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    }
+                }
+
+                // ----- WRITE_DRESP -----
+                CASE SDCST.WRITE_DRESP {
+                    IF (spi_rx_data != 8'hFF && resp_wait_cnt != 16'b0) {
+                        IF (spi_rx_data[3:1] == 3'b010) {
+                            state <= SDCST.WRITE_BUSY;
+                            spi_busy <= 1'b1;
+                            spi_shift_out <= 8'hFF;
+                            spi_shift_in <= 8'b0;
+                            spi_bit_cnt <= 4'b0;
+                            spi_clk_reg <= 1'b0;
+                            spi_div_cnt <= spi_div;
+                        } ELSE {
+                            cs_n <= 1'b1;
+                            error <= 1'b1;
+                            busy <= 1'b0;
+                            state <= SDCST.IDLE;
+                        }
+                    } ELIF (resp_wait_cnt == 16'd64) {
+                        cs_n <= 1'b1;
+                        error <= 1'b1;
+                        busy <= 1'b0;
+                        state <= SDCST.IDLE;
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                        resp_wait_cnt <= resp_wait_cnt + 16'b1;
+                    }
+                }
+
+                // ----- WRITE_BUSY -----
+                CASE SDCST.WRITE_BUSY {
+                    IF (spi_rx_data != 8'h00) {
+                        cs_n <= 1'b1;
+                        state <= SDCST.WRITE_DONE;
+                    } ELSE {
+                        spi_busy <= 1'b1;
+                        spi_shift_out <= 8'hFF;
+                        spi_shift_in <= 8'b0;
+                        spi_bit_cnt <= 4'b0;
+                        spi_clk_reg <= 1'b0;
+                        spi_div_cnt <= spi_div;
+                    }
+                }
+
+                // ----- WRITE_DONE -----
+                CASE SDCST.WRITE_DONE {
+                    busy <= 1'b0;
+                    irq_status <= 1'b1;
+                    irq_clear_req <= 1'b0;
+                    state <= SDCST.IDLE;
+                }
+
+                // ----- CS_GAP: send 8 clocks with CS HIGH between commands -----
+                CASE SDCST.CS_GAP {
+                    spi_busy <= 1'b1;
+                    spi_shift_out <= 8'hFF;
+                    spi_shift_in <= 8'b0;
+                    spi_bit_cnt <= 4'b0;
+                    spi_clk_reg <= 1'b0;
+                    spi_div_cnt <= spi_div;
+                    state <= gap_next_state;
+                    send_cmd_phase <= 3'd0;
+                }
+
+                // ----- ERROR -----
+                CASE SDCST.ERROR {
+                    busy <= 1'b0;
+                    error <= 1'b1;
+                    cs_n <= 1'b1;
+                }
+
+                DEFAULT {
+                    state <= SDCST.ERROR;
+                }
+            }
+        }
+    }
+@endmod

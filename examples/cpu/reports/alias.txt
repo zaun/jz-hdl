@@ -1,0 +1,714 @@
+Input file: src/tang_nano_20k.jz
+Module: CPU
+
+User-visible identifiers:  22
+Internal elaboration nodes:156
+Total identifiers:        178
+Total alias statements:   0
+Resolved physical nets:   16
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@35
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk) at line 86
+
+PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@36
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@78: reset <= rst_n & por_n;
+
+Top-level binding:
+    PORT binding: IN rst_n -> ~ KEY [ 0 ]
+
+PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@37
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@61: @new por0 por {
+
+Top-level binding:
+    PORT binding: IN por -> DONE (IN_PINS)
+
+PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@38
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@79: IF (btn == 1'b0) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@159: A <= { 7'b0000000, btn };
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@160: zero <= (btn == 1'b0);
+
+Top-level binding:
+    PORT binding: IN btn -> KEY [ 1 ]
+
+PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@39
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@80: leds <= ~out_data[5:0];
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@82: leds <= ~PC[5:0];
+
+Top-level binding:
+    PORT binding: OUT leds -> LED (OUT_PINS)
+
+PHYSICAL NET: NET_0005    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@43
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@107: instr <= rom.read.data;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@116: SELECT (instr) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@135: SELECT(instr) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@184: SELECT(instr) {
+
+PHYSICAL NET: NET_0006    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@44
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@125: operand <= rom.read.data;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@140: A <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@141: zero <= (operand == 8'h00);
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@149: PC <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@154: PC <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@168: wait_counter <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@177: ram.read.addr <= operand;
+
+PHYSICAL NET: NET_0007    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@45
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@140: A <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@159: A <= { 7'b0000000, btn };
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@186: A <= ram.read.data;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@190: A <= A + ram.read.data; // no carry
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@194: A <= A - ram.read.data; // no borrow
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@145: ram.write[operand] <= A;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@164: out_data <= A;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@190: A <= A + ram.read.data; // no carry
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@191: zero <= (A + ram.read.data) == 8'h00;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@194: A <= A - ram.read.data; // no borrow
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@195: zero <= (A - ram.read.data) == 8'h00;
+
+PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@46
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@108: PC <= PC + 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@126: PC <= PC + 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@149: PC <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@154: PC <= operand;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@82: leds <= ~PC[5:0];
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@103: rom.read.addr <= PC;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@108: PC <= PC + 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@112: rom.read.addr <= PC;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@126: PC <= PC + 8'b1;
+
+PHYSICAL NET: NET_0009    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@47
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@164: out_data <= A;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@80: leds <= ~out_data[5:0];
+
+PHYSICAL NET: NET_0010    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@49
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@94: wait_counter <= wait_counter - 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@168: wait_counter <= operand;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@94: wait_counter <= wait_counter - 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@95: IF (wait_counter - 8'b1 == 8'b0) {
+
+PHYSICAL NET: NET_0011    Width: 15    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@50
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@93: ms_counter <= MILISEC_BITS'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@99: ms_counter <= ms_counter + MILISEC_BITS'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@92: IF (ms_counter == lit(MILISEC_BITS, MILISEC_COUNT)) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@99: ms_counter <= ms_counter + MILISEC_BITS'b1;
+
+PHYSICAL NET: NET_0012    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@52
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@96: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@104: state <= STATE.FETCH_INS_DATA;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@109: state <= STATE.FETCH_OP_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@113: state <= STATE.FETCH_OP_DATA;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@127: state <= STATE.EXEC;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@130: state <= STATE.EXEC;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@137: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@142: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@146: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@150: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@156: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@161: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@165: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@169: state <= STATE.WAIT;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@172: state <= STATE.HALT;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@178: state <= STATE.MEM_READ;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@199: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@202: state <= STATE.FETCH_INS_ADDR;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@87: SELECT(state) {
+
+PHYSICAL NET: NET_0013    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@53
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@141: zero <= (operand == 8'h00);
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@160: zero <= (btn == 1'b0);
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@187: zero <= (ram.read.data == 8'h00);
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@191: zero <= (A + ram.read.data) == 8'h00;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@195: zero <= (A - ram.read.data) == 8'h00;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@153: IF (zero) {
+
+PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@57
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@78: reset <= rst_n & por_n;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@86: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+
+PHYSICAL NET: NET_0015    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@58
+
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@61: @new por0 por {
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@78: reset <= rst_n & por_n;
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk  -> NET_0000
+rst_n  -> NET_0001
+por  -> NET_0002
+btn  -> NET_0003
+leds  -> NET_0004
+instr  -> NET_0005
+operand  -> NET_0006
+A  -> NET_0007
+PC  -> NET_0008
+out_data  -> NET_0009
+wait_counter  -> NET_0010
+ms_counter  -> NET_0011
+state  -> NET_0012
+zero  -> NET_0013
+reset  -> NET_0014
+por_n  -> NET_0015
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 1 clock domain
+- 9 registers
+- Alias net merges: none
+- Tri-state logic: none
+------------------------------------------------------------
+
+Input file: src/tang_nano_20k.jz
+Module: por
+
+User-visible identifiers:  6
+Internal elaboration nodes:20
+Total identifiers:        26
+Total alias statements:   0
+Resolved physical nets:   5
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@3
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk) at line 23
+
+PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@4
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@24: IF (done == 1'b0) {
+
+PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@5
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@20: por_n <= por_reg;
+
+PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@15
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@25: por_reg <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@28: por_reg <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@31: por_reg <= 1'b0;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@20: por_n <= por_reg;
+
+PHYSICAL NET: NET_0004    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@16
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@26: cnt <= POR_CNT_BITS'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@29: cnt <= cnt;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@32: cnt <= cnt + POR_CNT_BITS'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@27: } ELIF (cnt == lit(POR_CNT_BITS, POR_MAX)) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@29: cnt <= cnt;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@32: cnt <= cnt + POR_CNT_BITS'b1;
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk  -> NET_0000
+done  -> NET_0001
+por_n  -> NET_0002
+por_reg  -> NET_0003
+cnt  -> NET_0004
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 1 clock domain
+- 2 registers
+- Alias net merges: none
+- Tri-state logic: none
+------------------------------------------------------------
+
+============================================================
+CROSS-MODULE SUMMARY
+============================================================
+Total modules analyzed: 2
+
+Module                 Nets Clocks   Regs Tri-St  Alias
+-------------------- ------ ------ ------ ------ ------
+CPU                      16      1      9      0      0
+por                       5      1      2      0      0
+-------------------- ------ ------ ------ ------ ------
+TOTAL                    21      2     11      0      0
+============================================================
+Input file: src/tang_nano_20k.jz
+Module: CPU
+
+User-visible identifiers:  22
+Internal elaboration nodes:156
+Total identifiers:        178
+Total alias statements:   0
+Resolved physical nets:   16
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@35
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk) at line 86
+
+PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@36
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@78: reset <= rst_n & por_n;
+
+Top-level binding:
+    PORT binding: IN rst_n -> ~ KEY [ 0 ]
+
+PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@37
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@61: @new por0 por {
+
+Top-level binding:
+    PORT binding: IN por -> DONE (IN_PINS)
+
+PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@38
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@79: IF (btn == 1'b0) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@159: A <= { 7'b0000000, btn };
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@160: zero <= (btn == 1'b0);
+
+Top-level binding:
+    PORT binding: IN btn -> KEY [ 1 ]
+
+PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@39
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@80: leds <= ~out_data[5:0];
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@82: leds <= ~PC[5:0];
+
+Top-level binding:
+    PORT binding: OUT leds -> LED (OUT_PINS)
+
+PHYSICAL NET: NET_0005    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@43
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@107: instr <= rom.read.data;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@116: SELECT (instr) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@135: SELECT(instr) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@184: SELECT(instr) {
+
+PHYSICAL NET: NET_0006    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@44
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@125: operand <= rom.read.data;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@140: A <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@141: zero <= (operand == 8'h00);
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@149: PC <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@154: PC <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@168: wait_counter <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@177: ram.read.addr <= operand;
+
+PHYSICAL NET: NET_0007    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@45
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@140: A <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@159: A <= { 7'b0000000, btn };
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@186: A <= ram.read.data;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@190: A <= A + ram.read.data; // no carry
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@194: A <= A - ram.read.data; // no borrow
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@145: ram.write[operand] <= A;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@164: out_data <= A;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@190: A <= A + ram.read.data; // no carry
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@191: zero <= (A + ram.read.data) == 8'h00;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@194: A <= A - ram.read.data; // no borrow
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@195: zero <= (A - ram.read.data) == 8'h00;
+
+PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@46
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@108: PC <= PC + 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@126: PC <= PC + 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@149: PC <= operand;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@154: PC <= operand;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@82: leds <= ~PC[5:0];
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@103: rom.read.addr <= PC;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@108: PC <= PC + 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@112: rom.read.addr <= PC;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@126: PC <= PC + 8'b1;
+
+PHYSICAL NET: NET_0009    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@47
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@164: out_data <= A;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@80: leds <= ~out_data[5:0];
+
+PHYSICAL NET: NET_0010    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@49
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@94: wait_counter <= wait_counter - 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@168: wait_counter <= operand;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@94: wait_counter <= wait_counter - 8'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@95: IF (wait_counter - 8'b1 == 8'b0) {
+
+PHYSICAL NET: NET_0011    Width: 15    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@50
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@93: ms_counter <= MILISEC_BITS'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@99: ms_counter <= ms_counter + MILISEC_BITS'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@92: IF (ms_counter == lit(MILISEC_BITS, MILISEC_COUNT)) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@99: ms_counter <= ms_counter + MILISEC_BITS'b1;
+
+PHYSICAL NET: NET_0012    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@52
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@96: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@104: state <= STATE.FETCH_INS_DATA;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@109: state <= STATE.FETCH_OP_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@113: state <= STATE.FETCH_OP_DATA;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@127: state <= STATE.EXEC;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@130: state <= STATE.EXEC;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@137: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@142: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@146: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@150: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@156: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@161: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@165: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@169: state <= STATE.WAIT;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@172: state <= STATE.HALT;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@178: state <= STATE.MEM_READ;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@199: state <= STATE.FETCH_INS_ADDR;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@202: state <= STATE.FETCH_INS_ADDR;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@87: SELECT(state) {
+
+PHYSICAL NET: NET_0013    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@53
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@141: zero <= (operand == 8'h00);
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@160: zero <= (btn == 1'b0);
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@187: zero <= (ram.read.data == 8'h00);
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@191: zero <= (A + ram.read.data) == 8'h00;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@195: zero <= (A - ram.read.data) == 8'h00;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@153: IF (zero) {
+
+PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@57
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@78: reset <= rst_n & por_n;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@86: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+
+PHYSICAL NET: NET_0015    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@58
+
+Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@61: @new por0 por {
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/cpu.jz@78: reset <= rst_n & por_n;
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk  -> NET_0000
+rst_n  -> NET_0001
+por  -> NET_0002
+btn  -> NET_0003
+leds  -> NET_0004
+instr  -> NET_0005
+operand  -> NET_0006
+A  -> NET_0007
+PC  -> NET_0008
+out_data  -> NET_0009
+wait_counter  -> NET_0010
+ms_counter  -> NET_0011
+state  -> NET_0012
+zero  -> NET_0013
+reset  -> NET_0014
+por_n  -> NET_0015
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 1 clock domain
+- 9 registers
+- Alias net merges: none
+- Tri-state logic: none
+------------------------------------------------------------
+
+Input file: src/tang_nano_20k.jz
+Module: por
+
+User-visible identifiers:  6
+Internal elaboration nodes:20
+Total identifiers:        26
+Total alias statements:   0
+Resolved physical nets:   5
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@3
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk) at line 23
+
+PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@4
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@24: IF (done == 1'b0) {
+
+PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@5
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@20: por_n <= por_reg;
+
+PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@15
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@25: por_reg <= 1'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@28: por_reg <= 1'b1;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@31: por_reg <= 1'b0;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@20: por_n <= por_reg;
+
+PHYSICAL NET: NET_0004    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@16
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@26: cnt <= POR_CNT_BITS'b0;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@29: cnt <= cnt;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@32: cnt <= cnt + POR_CNT_BITS'b1;
+
+Sinks:
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@27: } ELIF (cnt == lit(POR_CNT_BITS, POR_MAX)) {
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@29: cnt <= cnt;
+    /Users/justinzaun/Development/JZ-HDL/examples/cpu/src/por.jz@32: cnt <= cnt + POR_CNT_BITS'b1;
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk  -> NET_0000
+done  -> NET_0001
+por_n  -> NET_0002
+por_reg  -> NET_0003
+cnt  -> NET_0004
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 1 clock domain
+- 2 registers
+- Alias net merges: none
+- Tri-state logic: none
+------------------------------------------------------------
+
+============================================================
+CROSS-MODULE SUMMARY
+============================================================
+Total modules analyzed: 2
+
+Module                 Nets Clocks   Regs Tri-St  Alias
+-------------------- ------ ------ ------ ------ ------
+CPU                      16      1      9      0      0
+por                       5      1      2      0      0
+-------------------- ------ ------ ------ ------ ------
+TOTAL                    21      2     11      0      0
+============================================================

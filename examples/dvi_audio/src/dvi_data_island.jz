@@ -1,0 +1,443 @@
+// DVI Data Island Controller with Audio
+// Injects 4 DVI data island packets during horizontal blanking periods:
+//   PKT0: AVI InfoFrame (video format descriptor)
+//   PKT1: ACR (Audio Clock Regeneration, N=6144, CTS=37125 for 48kHz @ 37.125MHz)
+//   PKT2: Audio Sample (L-PCM 2ch 16-bit, 2-3 samples per line)
+//   PKT3: Audio InfoFrame (audio format descriptor)
+//
+// Uses shadow registers to reduce bit-extraction SELECT tables from 4 sets to 1.
+// At each packet boundary, the next packet's data is copied into the shadow.
+//
+// Audio samples are provided externally via samp_lo/samp_hi/samp_valid ports.
+//
+// Data island timing within hblank (370 pixel clocks):
+//   Preamble:        8 clocks  (x=1449..1456)
+//   Leading guard:   2 clocks  (x=1457..1458)
+//   Packet 0 (AVI):  32 clocks (x=1459..1490)
+//   Packet 1 (ACR):  32 clocks (x=1491..1522)
+//   Packet 2 (Audio):32 clocks (x=1523..1554)
+//   Packet 3 (AIF):  32 clocks (x=1555..1586)
+//   Trailing guard:  2 clocks  (x=1587..1588)
+//   Control period:  51 clocks until video preamble at x=1640
+@module dvi_data_island
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+
+        // Video timing inputs
+        IN  [1]  hsync;
+        IN  [1]  vsync;
+        IN  [1]  display_enable;
+        IN  [11] x_pos;
+
+        // Audio sample inputs (from tone generator)
+        IN  [32] samp_lo;       // L+R subpacket low word
+        IN  [32] samp_hi;       // L+R subpacket high word
+        IN  [1]  samp_valid;    // pulses high for 1 cycle when a new sample is ready
+
+        // TERC4 data outputs (active during data island)
+        OUT [4]  terc4_ch0;      // {parity, hdr_bit, vsync, hsync}
+        OUT [4]  terc4_ch1;      // subpacket even bits
+        OUT [4]  terc4_ch2;      // subpacket odd bits
+
+        // Control signals
+        OUT [1]  data_island_active;  // HIGH during guard bands + packet data
+        OUT [1]  preamble_active;     // HIGH during data island preamble
+        OUT [1]  guard_active;        // HIGH during guard bands only
+    }
+
+    CONST {
+        H_ACTIVE = 1280;
+        H_TOTAL  = 1650;
+        V_ACTIVE = 720;
+
+        // Data island timing
+        DI_PREAMBLE_START = 1449;
+        DI_GUARD_START    = 1457;
+        DI_PKT0_START     = 1459;
+        DI_PKT1_START     = 1491;
+        DI_PKT2_START     = 1523;
+        DI_PKT3_START     = 1555;
+        DI_TRAIL_START    = 1587;
+        DI_TRAIL_END      = 1589;
+
+        // Shadow swap points (1 cycle before each packet start)
+        DI_SHD_SWAP1      = 1490;
+        DI_SHD_SWAP2      = 1522;
+        DI_SHD_SWAP3      = 1554;
+    }
+
+    WIRE {
+        in_hblank       [1];
+        in_preamble     [1];
+        in_guard_lead   [1];
+        in_packet       [1];
+        in_guard_trail  [1];
+        in_data_island  [1];
+        pkt_clock       [5];
+
+        // Shadow bit extraction outputs
+        shd_hdr_bit     [1];
+        shd_sub_even    [4];
+        shd_sub_odd     [4];
+    }
+
+    REGISTER {
+        // Shadow registers (loaded with current packet data before each packet)
+        shd_header  [32] = 32'd0;
+        shd_sp0_lo  [32] = 32'd0;
+        shd_sp0_hi  [32] = 32'd0;
+        shd_sp1_lo  [32] = 32'd0;
+        shd_sp1_hi  [32] = 32'd0;
+        shd_sp2_lo  [32] = 32'd0;
+        shd_sp2_hi  [32] = 32'd0;
+        shd_sp3_lo  [32] = 32'd0;
+        shd_sp3_hi  [32] = 32'd0;
+
+        // Audio sample packet (PKT2) - built at H_ACTIVE from sample buffer
+        p2_header   [32] = 32'd0;
+        p2_sp0_lo   [32] = 32'd0;
+        p2_sp0_hi   [32] = 32'd0;
+        p2_sp1_lo   [32] = 32'd0;
+        p2_sp1_hi   [32] = 32'd0;
+        p2_sp2_lo   [32] = 32'd0;
+        p2_sp2_hi   [32] = 32'd0;
+
+        // Sample buffer (filled by samp_valid between H_ACTIVE events)
+        // Up to 3 samples per line (48000/22500 = 2.133 samples/line)
+        samp_buf0_lo [32] = 32'd0;
+        samp_buf0_hi [32] = 32'd0;
+        samp_buf1_lo [32] = 32'd0;
+        samp_buf1_hi [32] = 32'd0;
+        samp_buf2_lo [32] = 32'd0;
+        samp_buf2_hi [32] = 32'd0;
+        samp_count   [2]  = 2'd0;
+    }
+
+    ASYNCHRONOUS {
+        // Blanking region detection
+        in_hblank <= (display_enable == 1'b0) ? 1'b1 : 1'b0;
+
+        // Data island sub-regions
+        in_preamble <= (in_hblank == 1'b1 &&
+                        x_pos >= lit(11, DI_PREAMBLE_START) && x_pos < lit(11, DI_GUARD_START)) ? 1'b1 : 1'b0;
+
+        in_guard_lead <= (in_hblank == 1'b1 &&
+                          x_pos >= lit(11, DI_GUARD_START) && x_pos < lit(11, DI_PKT0_START)) ? 1'b1 : 1'b0;
+
+        in_packet <= (in_hblank == 1'b1 &&
+                      x_pos >= lit(11, DI_PKT0_START) && x_pos < lit(11, DI_TRAIL_START)) ? 1'b1 : 1'b0;
+
+        in_guard_trail <= (in_hblank == 1'b1 &&
+                           x_pos >= lit(11, DI_TRAIL_START) && x_pos < lit(11, DI_TRAIL_END)) ? 1'b1 : 1'b0;
+
+        in_data_island <= (in_guard_lead == 1'b1 || in_packet == 1'b1 || in_guard_trail == 1'b1) ? 1'b1 : 1'b0;
+
+        data_island_active <= in_data_island;
+        preamble_active    <= in_preamble;
+        guard_active       <= (in_guard_lead == 1'b1 || in_guard_trail == 1'b1) ? 1'b1 : 1'b0;
+
+        // Packet clock (0-31 within each packet)
+        // All 4 packets start at x[4:0]=19, so this formula works for all
+        pkt_clock <= x_pos[4:0] - 5'd19;
+
+        // ---------------------------------------------------------------
+        // Shadow header bit extraction (1 bit per clock, 32 bits total)
+        // ---------------------------------------------------------------
+        SELECT (pkt_clock) {
+            CASE (5'd0)  { shd_hdr_bit <= shd_header[0]; }
+            CASE (5'd1)  { shd_hdr_bit <= shd_header[1]; }
+            CASE (5'd2)  { shd_hdr_bit <= shd_header[2]; }
+            CASE (5'd3)  { shd_hdr_bit <= shd_header[3]; }
+            CASE (5'd4)  { shd_hdr_bit <= shd_header[4]; }
+            CASE (5'd5)  { shd_hdr_bit <= shd_header[5]; }
+            CASE (5'd6)  { shd_hdr_bit <= shd_header[6]; }
+            CASE (5'd7)  { shd_hdr_bit <= shd_header[7]; }
+            CASE (5'd8)  { shd_hdr_bit <= shd_header[8]; }
+            CASE (5'd9)  { shd_hdr_bit <= shd_header[9]; }
+            CASE (5'd10) { shd_hdr_bit <= shd_header[10]; }
+            CASE (5'd11) { shd_hdr_bit <= shd_header[11]; }
+            CASE (5'd12) { shd_hdr_bit <= shd_header[12]; }
+            CASE (5'd13) { shd_hdr_bit <= shd_header[13]; }
+            CASE (5'd14) { shd_hdr_bit <= shd_header[14]; }
+            CASE (5'd15) { shd_hdr_bit <= shd_header[15]; }
+            CASE (5'd16) { shd_hdr_bit <= shd_header[16]; }
+            CASE (5'd17) { shd_hdr_bit <= shd_header[17]; }
+            CASE (5'd18) { shd_hdr_bit <= shd_header[18]; }
+            CASE (5'd19) { shd_hdr_bit <= shd_header[19]; }
+            CASE (5'd20) { shd_hdr_bit <= shd_header[20]; }
+            CASE (5'd21) { shd_hdr_bit <= shd_header[21]; }
+            CASE (5'd22) { shd_hdr_bit <= shd_header[22]; }
+            CASE (5'd23) { shd_hdr_bit <= shd_header[23]; }
+            CASE (5'd24) { shd_hdr_bit <= shd_header[24]; }
+            CASE (5'd25) { shd_hdr_bit <= shd_header[25]; }
+            CASE (5'd26) { shd_hdr_bit <= shd_header[26]; }
+            CASE (5'd27) { shd_hdr_bit <= shd_header[27]; }
+            CASE (5'd28) { shd_hdr_bit <= shd_header[28]; }
+            CASE (5'd29) { shd_hdr_bit <= shd_header[29]; }
+            CASE (5'd30) { shd_hdr_bit <= shd_header[30]; }
+            CASE (5'd31) { shd_hdr_bit <= shd_header[31]; }
+            DEFAULT      { shd_hdr_bit <= 1'b0; }
+        }
+
+        // ---------------------------------------------------------------
+        // Shadow subpacket bit extraction (interleaved across 4 subpackets)
+        // At clock T: ch1 = {sp3[2T], sp2[2T], sp1[2T], sp0[2T]}
+        //             ch2 = {sp3[2T+1], sp2[2T+1], sp1[2T+1], sp0[2T+1]}
+        // T=0..15 uses sp_lo registers, T=16..31 uses sp_hi registers
+        // ---------------------------------------------------------------
+        SELECT (pkt_clock) {
+            CASE (5'd0)  { shd_sub_even <= { shd_sp3_lo[0],  shd_sp2_lo[0],  shd_sp1_lo[0],  shd_sp0_lo[0] };
+                           shd_sub_odd  <= { shd_sp3_lo[1],  shd_sp2_lo[1],  shd_sp1_lo[1],  shd_sp0_lo[1] }; }
+            CASE (5'd1)  { shd_sub_even <= { shd_sp3_lo[2],  shd_sp2_lo[2],  shd_sp1_lo[2],  shd_sp0_lo[2] };
+                           shd_sub_odd  <= { shd_sp3_lo[3],  shd_sp2_lo[3],  shd_sp1_lo[3],  shd_sp0_lo[3] }; }
+            CASE (5'd2)  { shd_sub_even <= { shd_sp3_lo[4],  shd_sp2_lo[4],  shd_sp1_lo[4],  shd_sp0_lo[4] };
+                           shd_sub_odd  <= { shd_sp3_lo[5],  shd_sp2_lo[5],  shd_sp1_lo[5],  shd_sp0_lo[5] }; }
+            CASE (5'd3)  { shd_sub_even <= { shd_sp3_lo[6],  shd_sp2_lo[6],  shd_sp1_lo[6],  shd_sp0_lo[6] };
+                           shd_sub_odd  <= { shd_sp3_lo[7],  shd_sp2_lo[7],  shd_sp1_lo[7],  shd_sp0_lo[7] }; }
+            CASE (5'd4)  { shd_sub_even <= { shd_sp3_lo[8],  shd_sp2_lo[8],  shd_sp1_lo[8],  shd_sp0_lo[8] };
+                           shd_sub_odd  <= { shd_sp3_lo[9],  shd_sp2_lo[9],  shd_sp1_lo[9],  shd_sp0_lo[9] }; }
+            CASE (5'd5)  { shd_sub_even <= { shd_sp3_lo[10], shd_sp2_lo[10], shd_sp1_lo[10], shd_sp0_lo[10] };
+                           shd_sub_odd  <= { shd_sp3_lo[11], shd_sp2_lo[11], shd_sp1_lo[11], shd_sp0_lo[11] }; }
+            CASE (5'd6)  { shd_sub_even <= { shd_sp3_lo[12], shd_sp2_lo[12], shd_sp1_lo[12], shd_sp0_lo[12] };
+                           shd_sub_odd  <= { shd_sp3_lo[13], shd_sp2_lo[13], shd_sp1_lo[13], shd_sp0_lo[13] }; }
+            CASE (5'd7)  { shd_sub_even <= { shd_sp3_lo[14], shd_sp2_lo[14], shd_sp1_lo[14], shd_sp0_lo[14] };
+                           shd_sub_odd  <= { shd_sp3_lo[15], shd_sp2_lo[15], shd_sp1_lo[15], shd_sp0_lo[15] }; }
+            CASE (5'd8)  { shd_sub_even <= { shd_sp3_lo[16], shd_sp2_lo[16], shd_sp1_lo[16], shd_sp0_lo[16] };
+                           shd_sub_odd  <= { shd_sp3_lo[17], shd_sp2_lo[17], shd_sp1_lo[17], shd_sp0_lo[17] }; }
+            CASE (5'd9)  { shd_sub_even <= { shd_sp3_lo[18], shd_sp2_lo[18], shd_sp1_lo[18], shd_sp0_lo[18] };
+                           shd_sub_odd  <= { shd_sp3_lo[19], shd_sp2_lo[19], shd_sp1_lo[19], shd_sp0_lo[19] }; }
+            CASE (5'd10) { shd_sub_even <= { shd_sp3_lo[20], shd_sp2_lo[20], shd_sp1_lo[20], shd_sp0_lo[20] };
+                           shd_sub_odd  <= { shd_sp3_lo[21], shd_sp2_lo[21], shd_sp1_lo[21], shd_sp0_lo[21] }; }
+            CASE (5'd11) { shd_sub_even <= { shd_sp3_lo[22], shd_sp2_lo[22], shd_sp1_lo[22], shd_sp0_lo[22] };
+                           shd_sub_odd  <= { shd_sp3_lo[23], shd_sp2_lo[23], shd_sp1_lo[23], shd_sp0_lo[23] }; }
+            CASE (5'd12) { shd_sub_even <= { shd_sp3_lo[24], shd_sp2_lo[24], shd_sp1_lo[24], shd_sp0_lo[24] };
+                           shd_sub_odd  <= { shd_sp3_lo[25], shd_sp2_lo[25], shd_sp1_lo[25], shd_sp0_lo[25] }; }
+            CASE (5'd13) { shd_sub_even <= { shd_sp3_lo[26], shd_sp2_lo[26], shd_sp1_lo[26], shd_sp0_lo[26] };
+                           shd_sub_odd  <= { shd_sp3_lo[27], shd_sp2_lo[27], shd_sp1_lo[27], shd_sp0_lo[27] }; }
+            CASE (5'd14) { shd_sub_even <= { shd_sp3_lo[28], shd_sp2_lo[28], shd_sp1_lo[28], shd_sp0_lo[28] };
+                           shd_sub_odd  <= { shd_sp3_lo[29], shd_sp2_lo[29], shd_sp1_lo[29], shd_sp0_lo[29] }; }
+            CASE (5'd15) { shd_sub_even <= { shd_sp3_lo[30], shd_sp2_lo[30], shd_sp1_lo[30], shd_sp0_lo[30] };
+                           shd_sub_odd  <= { shd_sp3_lo[31], shd_sp2_lo[31], shd_sp1_lo[31], shd_sp0_lo[31] }; }
+            CASE (5'd16) { shd_sub_even <= { shd_sp3_hi[0],  shd_sp2_hi[0],  shd_sp1_hi[0],  shd_sp0_hi[0] };
+                           shd_sub_odd  <= { shd_sp3_hi[1],  shd_sp2_hi[1],  shd_sp1_hi[1],  shd_sp0_hi[1] }; }
+            CASE (5'd17) { shd_sub_even <= { shd_sp3_hi[2],  shd_sp2_hi[2],  shd_sp1_hi[2],  shd_sp0_hi[2] };
+                           shd_sub_odd  <= { shd_sp3_hi[3],  shd_sp2_hi[3],  shd_sp1_hi[3],  shd_sp0_hi[3] }; }
+            CASE (5'd18) { shd_sub_even <= { shd_sp3_hi[4],  shd_sp2_hi[4],  shd_sp1_hi[4],  shd_sp0_hi[4] };
+                           shd_sub_odd  <= { shd_sp3_hi[5],  shd_sp2_hi[5],  shd_sp1_hi[5],  shd_sp0_hi[5] }; }
+            CASE (5'd19) { shd_sub_even <= { shd_sp3_hi[6],  shd_sp2_hi[6],  shd_sp1_hi[6],  shd_sp0_hi[6] };
+                           shd_sub_odd  <= { shd_sp3_hi[7],  shd_sp2_hi[7],  shd_sp1_hi[7],  shd_sp0_hi[7] }; }
+            CASE (5'd20) { shd_sub_even <= { shd_sp3_hi[8],  shd_sp2_hi[8],  shd_sp1_hi[8],  shd_sp0_hi[8] };
+                           shd_sub_odd  <= { shd_sp3_hi[9],  shd_sp2_hi[9],  shd_sp1_hi[9],  shd_sp0_hi[9] }; }
+            CASE (5'd21) { shd_sub_even <= { shd_sp3_hi[10], shd_sp2_hi[10], shd_sp1_hi[10], shd_sp0_hi[10] };
+                           shd_sub_odd  <= { shd_sp3_hi[11], shd_sp2_hi[11], shd_sp1_hi[11], shd_sp0_hi[11] }; }
+            CASE (5'd22) { shd_sub_even <= { shd_sp3_hi[12], shd_sp2_hi[12], shd_sp1_hi[12], shd_sp0_hi[12] };
+                           shd_sub_odd  <= { shd_sp3_hi[13], shd_sp2_hi[13], shd_sp1_hi[13], shd_sp0_hi[13] }; }
+            CASE (5'd23) { shd_sub_even <= { shd_sp3_hi[14], shd_sp2_hi[14], shd_sp1_hi[14], shd_sp0_hi[14] };
+                           shd_sub_odd  <= { shd_sp3_hi[15], shd_sp2_hi[15], shd_sp1_hi[15], shd_sp0_hi[15] }; }
+            CASE (5'd24) { shd_sub_even <= { shd_sp3_hi[16], shd_sp2_hi[16], shd_sp1_hi[16], shd_sp0_hi[16] };
+                           shd_sub_odd  <= { shd_sp3_hi[17], shd_sp2_hi[17], shd_sp1_hi[17], shd_sp0_hi[17] }; }
+            CASE (5'd25) { shd_sub_even <= { shd_sp3_hi[18], shd_sp2_hi[18], shd_sp1_hi[18], shd_sp0_hi[18] };
+                           shd_sub_odd  <= { shd_sp3_hi[19], shd_sp2_hi[19], shd_sp1_hi[19], shd_sp0_hi[19] }; }
+            CASE (5'd26) { shd_sub_even <= { shd_sp3_hi[20], shd_sp2_hi[20], shd_sp1_hi[20], shd_sp0_hi[20] };
+                           shd_sub_odd  <= { shd_sp3_hi[21], shd_sp2_hi[21], shd_sp1_hi[21], shd_sp0_hi[21] }; }
+            CASE (5'd27) { shd_sub_even <= { shd_sp3_hi[22], shd_sp2_hi[22], shd_sp1_hi[22], shd_sp0_hi[22] };
+                           shd_sub_odd  <= { shd_sp3_hi[23], shd_sp2_hi[23], shd_sp1_hi[23], shd_sp0_hi[23] }; }
+            CASE (5'd28) { shd_sub_even <= { shd_sp3_hi[24], shd_sp2_hi[24], shd_sp1_hi[24], shd_sp0_hi[24] };
+                           shd_sub_odd  <= { shd_sp3_hi[25], shd_sp2_hi[25], shd_sp1_hi[25], shd_sp0_hi[25] }; }
+            CASE (5'd29) { shd_sub_even <= { shd_sp3_hi[26], shd_sp2_hi[26], shd_sp1_hi[26], shd_sp0_hi[26] };
+                           shd_sub_odd  <= { shd_sp3_hi[27], shd_sp2_hi[27], shd_sp1_hi[27], shd_sp0_hi[27] }; }
+            CASE (5'd30) { shd_sub_even <= { shd_sp3_hi[28], shd_sp2_hi[28], shd_sp1_hi[28], shd_sp0_hi[28] };
+                           shd_sub_odd  <= { shd_sp3_hi[29], shd_sp2_hi[29], shd_sp1_hi[29], shd_sp0_hi[29] }; }
+            CASE (5'd31) { shd_sub_even <= { shd_sp3_hi[30], shd_sp2_hi[30], shd_sp1_hi[30], shd_sp0_hi[30] };
+                           shd_sub_odd  <= { shd_sp3_hi[31], shd_sp2_hi[31], shd_sp1_hi[31], shd_sp0_hi[31] }; }
+            DEFAULT      { shd_sub_even <= 4'b0000; shd_sub_odd <= 4'b0000; }
+        }
+
+        // TERC4 channel outputs
+        IF (in_guard_lead == 1'b1 || in_guard_trail == 1'b1) {
+            terc4_ch0 <= { 2'b11, vsync, hsync };
+            terc4_ch1 <= 4'b0000;
+            terc4_ch2 <= 4'b0000;
+        } ELIF (in_packet == 1'b1) {
+            terc4_ch0 <= { 1'b1, shd_hdr_bit, vsync, hsync };
+            terc4_ch1 <= shd_sub_even;
+            terc4_ch2 <= shd_sub_odd;
+        } ELSE {
+            terc4_ch0 <= { 2'b11, vsync, hsync };
+            terc4_ch1 <= 4'b0000;
+            terc4_ch2 <= 4'b0000;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // ---- Packet loading and shadow management ----
+        // At H_ACTIVE: build audio sample packet from buffer, load shadow with PKT0
+        // At swap points: load shadow with next packet's data
+        // Sample buffering runs in all non-H_ACTIVE branches
+        IF (x_pos == lit(11, H_ACTIVE)) {
+            // Build audio sample packet (PKT2) from accumulated samples
+            IF (samp_count == 2'd3) {
+                // 3 samples collected
+                p2_header <= 32'h4D000702;
+                p2_sp0_lo <= samp_buf0_lo;
+                p2_sp0_hi <= samp_buf0_hi;
+                p2_sp1_lo <= samp_buf1_lo;
+                p2_sp1_hi <= samp_buf1_hi;
+                p2_sp2_lo <= samp_buf2_lo;
+                p2_sp2_hi <= samp_buf2_hi;
+            } ELIF (samp_count == 2'd2) {
+                // 2 samples collected
+                p2_header <= 32'h80000302;
+                p2_sp0_lo <= samp_buf0_lo;
+                p2_sp0_hi <= samp_buf0_hi;
+                p2_sp1_lo <= samp_buf1_lo;
+                p2_sp1_hi <= samp_buf1_hi;
+                p2_sp2_lo <= 32'd0;
+                p2_sp2_hi <= 32'd0;
+            } ELIF (samp_count == 2'd1) {
+                // 1 sample collected (first line after reset)
+                p2_header <= 32'h65000102;
+                p2_sp0_lo <= samp_buf0_lo;
+                p2_sp0_hi <= samp_buf0_hi;
+                p2_sp1_lo <= 32'd0;
+                p2_sp1_hi <= 32'd0;
+                p2_sp2_lo <= 32'd0;
+                p2_sp2_hi <= 32'd0;
+            } ELSE {
+                // No samples - send silence
+                p2_header <= 32'h65000102;
+                p2_sp0_lo <= 32'd0;
+                p2_sp0_hi <= 32'd0;
+                p2_sp1_lo <= 32'd0;
+                p2_sp1_hi <= 32'd0;
+                p2_sp2_lo <= 32'd0;
+                p2_sp2_hi <= 32'd0;
+            }
+
+            // Reset sample buffer for next line, capturing if samp_valid fires now
+            IF (samp_valid == 1'b1) {
+                samp_buf0_lo <= samp_lo;
+                samp_buf0_hi <= samp_hi;
+                samp_count   <= 2'd1;
+            } ELSE {
+                samp_count <= 2'd0;
+            }
+
+            // Load shadow with PKT0: AVI InfoFrame
+            // Header: {ECC=0xE4, Len=0x0D, Ver=0x02, Type=0x82}
+            shd_header <= 32'hE40D0282;
+            // SP0: {PB3=0, PB2=0, PB1=0, PB0=checksum=0x6F}
+            shd_sp0_lo <= 32'h0000006F;
+            shd_sp0_hi <= 32'h5F000000;
+            shd_sp1_lo <= 32'd0;
+            shd_sp1_hi <= 32'd0;
+            shd_sp2_lo <= 32'd0;
+            shd_sp2_hi <= 32'd0;
+            shd_sp3_lo <= 32'd0;
+            shd_sp3_hi <= 32'd0;
+
+        } ELIF (x_pos == lit(11, DI_SHD_SWAP1)) {
+            // Shadow <- PKT1: ACR (N=6144, CTS=37125=0x009105)
+            // Header: {ECC=0x4A, 0x00, 0x00, Type=0x01}
+            shd_header <= 32'h4A000001;
+            // SP0: {CTS[7:0]=0x05, CTS[15:8]=0x91, CTS[19:16]=0x00, 0x00}
+            shd_sp0_lo <= 32'h05910000;
+            // SP0 hi: {ECC=0x16, N[7:0]=0x00, N[15:8]=0x18, N[19:16]=0x00}
+            shd_sp0_hi <= 32'h16001800;
+            shd_sp1_lo <= 32'd0;
+            shd_sp1_hi <= 32'd0;
+            shd_sp2_lo <= 32'd0;
+            shd_sp2_hi <= 32'd0;
+            shd_sp3_lo <= 32'd0;
+            shd_sp3_hi <= 32'd0;
+
+            // Sample buffering (samp_valid may fire this cycle)
+            IF (samp_valid == 1'b1) {
+                IF (samp_count == 2'd0) {
+                    samp_buf0_lo <= samp_lo;
+                    samp_buf0_hi <= samp_hi;
+                    samp_count   <= 2'd1;
+                } ELIF (samp_count == 2'd1) {
+                    samp_buf1_lo <= samp_lo;
+                    samp_buf1_hi <= samp_hi;
+                    samp_count   <= 2'd2;
+                } ELIF (samp_count == 2'd2) {
+                    samp_buf2_lo <= samp_lo;
+                    samp_buf2_hi <= samp_hi;
+                    samp_count   <= 2'd3;
+                }
+            }
+
+        } ELIF (x_pos == lit(11, DI_SHD_SWAP2)) {
+            // Shadow <- PKT2: Audio Sample (from pre-built registers)
+            shd_header <= p2_header;
+            shd_sp0_lo <= p2_sp0_lo;
+            shd_sp0_hi <= p2_sp0_hi;
+            shd_sp1_lo <= p2_sp1_lo;
+            shd_sp1_hi <= p2_sp1_hi;
+            shd_sp2_lo <= p2_sp2_lo;
+            shd_sp2_hi <= p2_sp2_hi;
+            shd_sp3_lo <= 32'd0;
+            shd_sp3_hi <= 32'd0;
+
+            // Sample buffering
+            IF (samp_valid == 1'b1) {
+                IF (samp_count == 2'd0) {
+                    samp_buf0_lo <= samp_lo;
+                    samp_buf0_hi <= samp_hi;
+                    samp_count   <= 2'd1;
+                } ELIF (samp_count == 2'd1) {
+                    samp_buf1_lo <= samp_lo;
+                    samp_buf1_hi <= samp_hi;
+                    samp_count   <= 2'd2;
+                }
+            }
+
+        } ELIF (x_pos == lit(11, DI_SHD_SWAP3)) {
+            // Shadow <- PKT3: Audio InfoFrame (2ch L-PCM 48kHz 16-bit)
+            // Header: {ECC=0x4A, Len=0x0A, Ver=0x01, Type=0x84}
+            shd_header <= 32'h4A0A0184;
+            // SP0: {PB3=0, PB2=0x0D(48kHz/16bit), PB1=0x11(PCM/2ch), PB0=chksum=0x53}
+            shd_sp0_lo <= 32'h000D1153;
+            shd_sp0_hi <= 32'hB9000000;
+            shd_sp1_lo <= 32'd0;
+            shd_sp1_hi <= 32'd0;
+            shd_sp2_lo <= 32'd0;
+            shd_sp2_hi <= 32'd0;
+            shd_sp3_lo <= 32'd0;
+            shd_sp3_hi <= 32'd0;
+
+            // Sample buffering
+            IF (samp_valid == 1'b1) {
+                IF (samp_count == 2'd0) {
+                    samp_buf0_lo <= samp_lo;
+                    samp_buf0_hi <= samp_hi;
+                    samp_count   <= 2'd1;
+                } ELIF (samp_count == 2'd1) {
+                    samp_buf1_lo <= samp_lo;
+                    samp_buf1_hi <= samp_hi;
+                    samp_count   <= 2'd2;
+                }
+            }
+
+        } ELSE {
+            // Default cycle: sample buffering only
+            IF (samp_valid == 1'b1) {
+                IF (samp_count == 2'd0) {
+                    samp_buf0_lo <= samp_lo;
+                    samp_buf0_hi <= samp_hi;
+                    samp_count   <= 2'd1;
+                } ELIF (samp_count == 2'd1) {
+                    samp_buf1_lo <= samp_lo;
+                    samp_buf1_hi <= samp_hi;
+                    samp_count   <= 2'd2;
+                } ELIF (samp_count == 2'd2) {
+                    samp_buf2_lo <= samp_lo;
+                    samp_buf2_hi <= samp_hi;
+                    samp_count   <= 2'd3;
+                }
+            }
+        }
+    }
+@endmod

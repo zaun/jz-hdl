@@ -1,0 +1,2 @@
+File: DUPLICATE_BLOCK.jz
+      30:3    error DUPLICATE_BLOCK S4.11/S4.12 More than one SYNCHRONOUS block declared for the same clock signal in a module

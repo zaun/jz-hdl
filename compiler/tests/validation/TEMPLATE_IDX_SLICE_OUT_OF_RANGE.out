@@ -1,0 +1,3 @@
+File: TEMPLATE_IDX_SLICE_OUT_OF_RANGE.jz
+      14:3    error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width
+      14:3    error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width

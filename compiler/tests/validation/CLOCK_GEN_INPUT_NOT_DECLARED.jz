@@ -1,0 +1,47 @@
+// CLOCK_GEN_INPUT_NOT_DECLARED: CLOCK_GEN input clock not declared in CLOCKS block.
+// Verified
+
+@project CLOCK_GEN_INPUT_NOT_DECLARED_TEST
+  CLOCKS {
+    fast_clk;
+  }
+
+  CLOCK_GEN {
+    PLL {
+      IN REF_CLK undeclared_clk;
+      OUT BASE fast_clk;
+      CONFIG {
+        IDIV = 1;
+      };
+    };
+  }
+
+  IN_PINS {
+    btn = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    led = { standard=LVCMOS33, drive=8 };
+  }
+
+  MAP {
+    btn = 1;
+    led = 2;
+  }
+
+  @top top {
+    IN  [1] a = btn;
+    OUT [1] out = led;
+  }
+@endproj
+
+@module top
+  PORT {
+    IN  [1] a;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = a;
+  }
+@endmod

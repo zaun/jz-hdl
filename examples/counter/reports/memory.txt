@@ -1,0 +1,18 @@
+Memory Report
+-------------
+Project: src/tang_nano_20k.jz
+Chip: (unknown)
+
+Memory Summary
+--------------
+Block Memory:
+    Requested: 0 bytes
+    Max Available: Unknown
+    Used: 0 bytes
+
+Distributed Memory:
+    Requested: 0 bytes
+    Max Available: Unknown
+    Used: 0 bytes
+
+Errors: 0

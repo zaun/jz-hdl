@@ -1,0 +1,22 @@
+// MODULE_PORT_IN_ONLY: module whose PORT block has only IN ports.
+// Verified
+
+@project MODULE_PORT_IN_ONLY_PROJECT
+  @top MOD_PORT_IN_ONLY {
+    IN  [8] data_in = _;
+  }
+@endproj
+
+@module MOD_PORT_IN_ONLY
+  PORT {
+    IN [8]  data_in;
+  }
+
+  WIRE {
+    internal [8];
+  }
+
+  ASYNCHRONOUS {
+    internal = data_in;
+  }
+@endmod

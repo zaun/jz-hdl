@@ -1,0 +1,2 @@
+File: SBIT_SET_WIDTH_NOT_1.jz
+      18:23   error SBIT_SET_WIDTH_NOT_1 S5.5.7 sbit() third argument (set) must be a width-1 expression

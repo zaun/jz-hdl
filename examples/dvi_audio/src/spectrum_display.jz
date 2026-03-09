@@ -1,0 +1,216 @@
+// Spectrum Display — 80-Bar Renderer
+// Reads packed bar state from DISTRIBUTED RAM (smooth+peak amplitudes),
+// renders 80 narrow pill-shaped bar graphs with reflections and peak hold.
+//
+// Bar layout: 80 bars, 16px pitch (10px body + 6px gap) = 1280px total.
+// Bars grow upward from baseline at y=600. Max height: 25 segments (400px).
+// Segment: 12px body + 4px gap = 16px pitch.
+// Reflection: below baseline, up to 6 segments, 1/4 brightness.
+// Peak hold: single bright segment above bar (SHOW_PEAK=1 to enable).
+// Color: smooth gradient red(bar 0) -> yellow(bar 39) -> blue(bar 79).
+@module spectrum_display
+    CONST {
+        SHOW_PEAK = 0;    // 1=draw peak hold pill above bar, 0=disable
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [11] x_pos;
+        IN  [10] y_pos;
+        // RAM read interface
+        OUT [7]  rd_bar;          // bar index to read (0..79)
+        IN  [16] rd_amp;          // [7:0]=smooth_amp, [15:8]=peak_amp
+        // Pixel output
+        OUT [8]  red;
+        OUT [8]  green;
+        OUT [8]  blue;
+    }
+
+    WIRE {
+        // Bar detection from x_pos
+        bar_idx      [7];     // x_pos[10:4] = 0..79
+        bar_x        [4];     // x_pos[3:0] = 0..15
+        in_body      [1];     // bar_x < 10
+        in_bar       [1];     // valid bar and in body
+
+        // Vertical geometry
+        above_base   [1];
+        below_base   [1];
+        pix_above    [10];    // pixels above baseline (0..399)
+        pix_below    [10];    // pixels below baseline (0..99)
+
+        // Segment computation (above baseline)
+        seg_idx      [5];     // segment index (0..24)
+        y_in_seg     [4];     // pixel within segment (0..15)
+        in_pill      [1];     // y_in_seg < 12
+
+        // Reflection segment (below baseline)
+        ref_seg_idx  [5];
+        ref_y_in_seg [4];
+        in_ref_pill  [1];
+
+        // Bar state from RAM
+        smooth_amp   [8];
+        peak_amp     [8];
+
+        // Amplitude to segments
+        bar_segs_raw [5];
+        bar_segs     [5];
+        peak_segs_raw [5];
+        peak_segs    [5];
+        ref_segs     [5];
+
+        // Color gradient computation
+        // half_pos: position within current color half (0-39)
+        half_pos     [6];
+        // ramp = half_pos * 13 >> 1 (approximates half_pos * 255/39)
+        ramp_x13     [10];    // half_pos * 13, max 39*13=507
+        ramp         [8];     // ramp_x13 >> 1, capped at 255
+
+        // Color palette (computed from gradient)
+        base_r       [8];
+        base_g       [8];
+        base_b       [8];
+
+        // Pixel classification
+        is_bar_seg   [1];
+        is_peak_seg  [1];
+        is_ref_seg   [1];
+
+        // Combinational RGB
+        next_r       [8];
+        next_g       [8];
+        next_b       [8];
+    }
+
+    REGISTER {
+        red_r   [8] = 8'd0;
+        green_r [8] = 8'd0;
+        blue_r  [8] = 8'd0;
+    }
+
+    ASYNCHRONOUS {
+        // ---- Bar column detection ----
+        bar_idx <= x_pos[10:4];
+        bar_x   <= x_pos[3:0];
+        in_body <= (bar_x < 4'd10) ? 1'b1 : 1'b0;
+        in_bar  <= (bar_idx < 7'd80 && in_body == 1'b1) ? 1'b1 : 1'b0;
+
+        // Drive RAM read address
+        rd_bar <= bar_idx;
+
+        // Extract bar state from packed RAM value
+        smooth_amp <= rd_amp[7:0];
+        peak_amp   <= rd_amp[15:8];
+
+        // ---- Amplitude to segments ----
+        bar_segs_raw  <= smooth_amp[7:3];
+        IF (bar_segs_raw > 5'd25) {
+            bar_segs <= 5'd25;
+        } ELSE {
+            bar_segs <= bar_segs_raw;
+        }
+        peak_segs_raw <= peak_amp[7:3];
+        IF (peak_segs_raw > 5'd25) {
+            peak_segs <= 5'd25;
+        } ELSE {
+            peak_segs <= peak_segs_raw;
+        }
+        ref_segs <= { 2'b00, bar_segs[4:2] };
+
+        // ---- Vertical geometry ----
+        above_base <= (y_pos >= 10'd200 && y_pos < 10'd600) ? 1'b1 : 1'b0;
+        below_base <= (y_pos >= 10'd600 && y_pos < 10'd700) ? 1'b1 : 1'b0;
+
+        pix_above <= 10'd599 - y_pos;
+        pix_below <= y_pos - 10'd600;
+
+        seg_idx      <= pix_above[8:4];
+        y_in_seg     <= pix_above[3:0];
+        ref_seg_idx  <= pix_below[8:4];
+        ref_y_in_seg <= pix_below[3:0];
+
+        in_pill     <= (y_in_seg < 4'd12) ? 1'b1 : 1'b0;
+        in_ref_pill <= (ref_y_in_seg < 4'd12) ? 1'b1 : 1'b0;
+
+        // ---- Smooth color gradient: red(0) -> yellow(39) -> blue(79) ----
+        // half_pos = position within current half (0-39)
+        IF (bar_idx < 7'd40) {
+            half_pos <= bar_idx[5:0];
+        } ELSE {
+            half_pos <= bar_idx[5:0] - 6'd40;
+        }
+
+        // ramp = half_pos * 13 >> 1 ≈ half_pos * 6.5 (maps 0-39 to 0-253)
+        // half_pos * 13 = half_pos * 8 + half_pos * 4 + half_pos * 1
+        ramp_x13 <= { 4'b0000, half_pos } + { 3'b000, half_pos, 1'b0 } +
+                     { 2'b00, half_pos, 2'b00 } + { 1'b0, half_pos, 3'b000 };
+        IF (ramp_x13[9:1] > 9'd255) {
+            ramp <= 8'hFF;
+        } ELSE {
+            ramp <= ramp_x13[8:1];
+        }
+
+        // Bars 0-39: red -> yellow (R=FF, G ramps up, B=00)
+        // Bars 40-79: yellow -> blue (R ramps down, G ramps down, B ramps up)
+        IF (bar_idx < 7'd40) {
+            base_r <= 8'hFF;
+            base_g <= ramp;
+            base_b <= 8'h00;
+        } ELSE {
+            base_r <= 8'hFF - ramp;
+            base_g <= 8'hFF - ramp;
+            base_b <= ramp;
+        }
+
+        // ---- Pixel classification ----
+        is_bar_seg  <= (in_bar == 1'b1 && above_base == 1'b1 && in_pill == 1'b1 && seg_idx < bar_segs) ? 1'b1 : 1'b0;
+        is_peak_seg <= (in_bar == 1'b1 && above_base == 1'b1 && in_pill == 1'b1 && seg_idx == peak_segs && peak_segs > bar_segs) ? lit(1, SHOW_PEAK) : 1'b0;
+        is_ref_seg  <= (in_bar == 1'b1 && below_base == 1'b1 && in_ref_pill == 1'b1 && ref_seg_idx < ref_segs) ? 1'b1 : 1'b0;
+
+        // ---- Combinational pixel output ----
+        IF (is_bar_seg == 1'b1) {
+            next_r <= base_r;
+            next_g <= base_g;
+            next_b <= base_b;
+        } ELIF (is_peak_seg == 1'b1) {
+            // Peak: brighter version (+0x40, saturate at 0xFF)
+            IF (base_r > 8'hBF) {
+                next_r <= 8'hFF;
+            } ELSE {
+                next_r <= base_r + 8'h40;
+            }
+            IF (base_g > 8'hBF) {
+                next_g <= 8'hFF;
+            } ELSE {
+                next_g <= base_g + 8'h40;
+            }
+            IF (base_b > 8'hBF) {
+                next_b <= 8'hFF;
+            } ELSE {
+                next_b <= base_b + 8'h40;
+            }
+        } ELIF (is_ref_seg == 1'b1) {
+            // Reflection: 1/4 brightness
+            next_r <= { 2'b00, base_r[7:2] };
+            next_g <= { 2'b00, base_g[7:2] };
+            next_b <= { 2'b00, base_b[7:2] };
+        } ELSE {
+            next_r <= 8'h00;
+            next_g <= 8'h00;
+            next_b <= 8'h00;
+        }
+
+        // Registered output
+        red   <= red_r;
+        green <= green_r;
+        blue  <= blue_r;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        red_r   <= next_r;
+        green_r <= next_g;
+        blue_r  <= next_b;
+    }
+@endmod

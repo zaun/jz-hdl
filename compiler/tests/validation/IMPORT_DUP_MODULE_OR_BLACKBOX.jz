@@ -1,0 +1,16 @@
+// IMPORT_DUP_MODULE_OR_BLACKBOX: importing the same module definition twice.
+// Verified
+
+@project IMPORT_DUP_MODULE_OR_BLACKBOX_MAIN
+  @import "IMPORT_DUP_MODULE_OR_BLACKBOX_libA.jz";
+  @import "IMPORT_DUP_MODULE_OR_BLACKBOX_libB.jz";
+
+  CONFIG {
+    X = 1;
+  }
+
+  @top IMPORT_DUP_MOD {
+    IN  [1] a = _;
+    OUT [1] out = _;
+  }
+@endproj

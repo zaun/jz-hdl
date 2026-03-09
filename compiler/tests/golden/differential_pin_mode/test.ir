@@ -1,0 +1,125 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "differential_pin_test",
+    "modules": [
+      {
+        "id": 0,
+        "name": "diff_module",
+        "base_module_id": -1,
+        "source_line": 50,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 52,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "din",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 53,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "rx_data",
+          "kind": "port",
+          "width": 2,
+          "owner_module_id": 0,
+          "source_line": 54,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 3,
+          "name": "status",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 55,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 4,
+          "name": "sampled",
+          "kind": "register",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 59,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 1 }, "home_clock_domain_id": 0 }
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [4],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 67, "statements": [{ "kind": "assignment", "id": 0, "source_line": 68, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "binary_and", "width": 1, "source_line": 68, "left": { "kind": "binary_and", "width": 1, "source_line": 68, "left": { "kind": "signal_ref", "width": 1, "source_line": 68, "signal_id": 1 }, "right": { "kind": "slice", "width": 1, "source_line": 68, "signal_id": 2, "msb": 0, "lsb": 0 } }, "right": { "kind": "slice", "width": 1, "source_line": 68, "signal_id": 2, "msb": 1, "lsb": 1 } } }] }
+          }
+        ],
+        "instances": [
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 62, "statements": [{ "kind": "assignment", "id": 0, "source_line": 64, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 1, "source_line": 64, "signal_id": 4 } }] }
+      }
+    ],
+    "project": {
+      "name": "differential_pin_test",
+      "clocks": [
+        { "name": "SCLK", "period_ns": 10, "edge": "RISING" }
+      ],
+      "clock_gens": [
+      ],
+      "pins": [
+        { "id": 0, "name": "SCLK", "kind": "IN", "width": 1, "standard": "LVCMOS33", "drive_ma": -1, "drive": -1, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 1, "name": "diff_in", "kind": "IN", "width": 1, "standard": "LVDS25", "drive_ma": -1, "drive": -1, "mode": "DIFFERENTIAL", "term": false, "pull": "NONE" },
+        { "id": 2, "name": "lvds_rx", "kind": "IN", "width": 2, "standard": "LVDS25", "drive_ma": -1, "drive": -1, "mode": "DIFFERENTIAL", "term": false, "pull": "NONE" },
+        { "id": 3, "name": "led", "kind": "OUT", "width": 1, "standard": "LVCMOS33", "drive_ma": 8, "drive": 8, "mode": "SINGLE", "term": false, "pull": "NONE" }
+      ],
+      "mappings": [
+        { "logical_pin_name": "SCLK", "bit_index": -1, "board_pin_id": "4" },
+        { "logical_pin_name": "diff_in", "bit_index": -1, "board_pin_id": "10", "board_pin_n_id": "11" },
+        { "logical_pin_name": "lvds_rx", "bit_index": 0, "board_pin_id": "25", "board_pin_n_id": "26" },
+        { "logical_pin_name": "lvds_rx", "bit_index": 1, "board_pin_id": "27", "board_pin_n_id": "28" },
+        { "logical_pin_name": "led", "bit_index": -1, "board_pin_id": "15" }
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": -1, "pin_id": 0, "pin_bit_index": -1 },
+        { "top_port_signal_id": 1, "top_bit_index": -1, "pin_id": 1, "pin_bit_index": -1 },
+        { "top_port_signal_id": 2, "top_bit_index": 0, "pin_id": 2, "pin_bit_index": 0 },
+        { "top_port_signal_id": 2, "top_bit_index": 1, "pin_id": 2, "pin_bit_index": 1 },
+        { "top_port_signal_id": 3, "top_bit_index": -1, "pin_id": 3, "pin_bit_index": -1 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 70 }
+    ]
+  }
+}

@@ -1,0 +1,123 @@
+{"type": "Project", "name": "template_test_project", "loc": {"line": 9, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 10, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "in_a", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "4", "loc": {"line": 11, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 14, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "out_a", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 4", "width": "4", "loc": {"line": 15, "column": 5, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 18, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "in_a [ 0 ]", "text": "10", "loc": {"line": 19, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "in_a [ 1 ]", "text": "11", "loc": {"line": 19, "column": 19, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "in_a [ 2 ]", "text": "12", "loc": {"line": 19, "column": 33, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "in_a [ 3 ]", "text": "13", "loc": {"line": 19, "column": 47, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 0 ]", "text": "20", "loc": {"line": 20, "column": 5, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 1 ]", "text": "21", "loc": {"line": 20, "column": 20, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 2 ]", "text": "22", "loc": {"line": 20, "column": 35, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 3 ]", "text": "23", "loc": {"line": 20, "column": 50, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "template_demo", "loc": {"line": 23, "column": 3, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "data_in", "block_kind": "IN", "text": "in_a", "width": "4", "loc": {"line": 24, "column": 13, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "data_out", "block_kind": "OUT", "text": "out_a", "width": "4", "loc": {"line": 25, "column": 13, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "template_demo", "loc": {"line": 29, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "ConstBlock", "block_kind": "CONST", "loc": {"line": 30, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "ConstDecl", "name": "COUNT", "text": "2", "loc": {"line": 31, "column": 5, "file": "test.jz"}}
+    ]},
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 34, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "data_in", "block_kind": "IN", "width": "4", "loc": {"line": 35, "column": 13, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "data_out", "block_kind": "OUT", "width": "4", "loc": {"line": 36, "column": 13, "file": "test.jz"}}
+    ]},
+    {"type": "WireBlock", "block_kind": "WIRE", "loc": {"line": 39, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "WireDecl", "name": "pass", "width": "4", "loc": {"line": 40, "column": 5, "file": "test.jz"}},
+      {"type": "WireDecl", "name": "tap", "width": "COUNT", "loc": {"line": 41, "column": 5, "file": "test.jz"}},
+      {"type": "WireDecl", "name": "EXPAND__tmp__0_0", "width": "1", "loc": {"line": 45, "column": 5, "file": "test.jz"}},
+      {"type": "WireDecl", "name": "EXPAND__tmp__0_1", "width": "1", "loc": {"line": 45, "column": 5, "file": "test.jz"}}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 52, "column": 3, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 53, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "pass", "loc": {"line": 53, "column": 5, "file": "test.jz"}},
+        {"type": "Identifier", "name": "data_in", "loc": {"line": 53, "column": 13, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 47, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "EXPAND__tmp__0_0", "loc": {"line": 47, "column": 5, "file": "test.jz"}},
+        {"type": "Slice", "loc": {"line": 47, "column": 12, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "pass", "loc": {"line": 47, "column": 12, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 47, "column": 16, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 47, "column": 16, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 49, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Slice", "loc": {"line": 49, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "tap", "loc": {"line": 49, "column": 5, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 49, "column": 10, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 49, "column": 10, "file": "test.jz"}}
+        ]},
+        {"type": "Identifier", "name": "EXPAND__tmp__0_0", "loc": {"line": 49, "column": 17, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 47, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "EXPAND__tmp__0_1", "loc": {"line": 47, "column": 5, "file": "test.jz"}},
+        {"type": "Slice", "loc": {"line": 47, "column": 12, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "pass", "loc": {"line": 47, "column": 12, "file": "test.jz"}},
+          {"type": "Literal", "text": "1", "loc": {"line": 47, "column": 16, "file": "test.jz"}},
+          {"type": "Literal", "text": "1", "loc": {"line": 47, "column": 16, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 49, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Slice", "loc": {"line": 49, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "tap", "loc": {"line": 49, "column": 5, "file": "test.jz"}},
+          {"type": "Literal", "text": "1", "loc": {"line": 49, "column": 10, "file": "test.jz"}},
+          {"type": "Literal", "text": "1", "loc": {"line": 49, "column": 10, "file": "test.jz"}}
+        ]},
+        {"type": "Identifier", "name": "EXPAND__tmp__0_1", "loc": {"line": 49, "column": 17, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 57, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Slice", "loc": {"line": 57, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "data_out", "loc": {"line": 57, "column": 5, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 57, "column": 14, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 57, "column": 14, "file": "test.jz"}}
+        ]},
+        {"type": "Slice", "loc": {"line": 57, "column": 20, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "tap", "loc": {"line": 57, "column": 20, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 57, "column": 24, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 57, "column": 24, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 58, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Slice", "loc": {"line": 58, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "data_out", "loc": {"line": 58, "column": 5, "file": "test.jz"}},
+          {"type": "Literal", "text": "1", "loc": {"line": 58, "column": 14, "file": "test.jz"}},
+          {"type": "Literal", "text": "1", "loc": {"line": 58, "column": 14, "file": "test.jz"}}
+        ]},
+        {"type": "Slice", "loc": {"line": 58, "column": 20, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "tap", "loc": {"line": 58, "column": 20, "file": "test.jz"}},
+          {"type": "Literal", "text": "1", "loc": {"line": 58, "column": 24, "file": "test.jz"}},
+          {"type": "Literal", "text": "1", "loc": {"line": 58, "column": 24, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 59, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Slice", "loc": {"line": 59, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "data_out", "loc": {"line": 59, "column": 5, "file": "test.jz"}},
+          {"type": "Literal", "text": "2", "loc": {"line": 59, "column": 14, "file": "test.jz"}},
+          {"type": "Literal", "text": "2", "loc": {"line": 59, "column": 14, "file": "test.jz"}}
+        ]},
+        {"type": "Slice", "loc": {"line": 59, "column": 20, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "pass", "loc": {"line": 59, "column": 20, "file": "test.jz"}},
+          {"type": "Literal", "text": "2", "loc": {"line": 59, "column": 25, "file": "test.jz"}},
+          {"type": "Literal", "text": "2", "loc": {"line": 59, "column": 25, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 60, "column": 5, "file": "test.jz"}, "children": [
+        {"type": "Slice", "loc": {"line": 60, "column": 5, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "data_out", "loc": {"line": 60, "column": 5, "file": "test.jz"}},
+          {"type": "Literal", "text": "3", "loc": {"line": 60, "column": 14, "file": "test.jz"}},
+          {"type": "Literal", "text": "3", "loc": {"line": 60, "column": 14, "file": "test.jz"}}
+        ]},
+        {"type": "Slice", "loc": {"line": 60, "column": 20, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "pass", "loc": {"line": 60, "column": 20, "file": "test.jz"}},
+          {"type": "Literal", "text": "3", "loc": {"line": 60, "column": 25, "file": "test.jz"}},
+          {"type": "Literal", "text": "3", "loc": {"line": 60, "column": 25, "file": "test.jz"}}
+        ]}
+      ]}
+    ]}
+  ]}
+]}

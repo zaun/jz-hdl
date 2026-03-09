@@ -1,0 +1,488 @@
+// DVI 1280x720 @ 60Hz Text-Mode Terminal Display
+// 142x45 character grid with 9x16 pixel cells, TMDS encoding for DVI output.
+//
+// Architecture:
+//   Startup: BSRAM (compressed font) -> LZSS decompressor -> SDRAM
+//   Runtime: SDRAM -> font cache (scanline buffer) -> pixel generator
+//            SDRAM -> terminal buffer (line cache) -> pixel generator
+//   SDRAM arbiter multiplexes 3 clients: terminal buffer, font cache, decompressor
+@module dvi_top
+    PORT {
+        IN   [1]  clk;         // pixel_clk (74.25 MHz)
+        IN   [1]  por;         // POR input from DONE
+        IN   [1]  rst_n;       // Active-low reset from button
+        IN   [1]  uart_rx;     // UART receive pin
+        OUT  [6]  leds;        // Status LEDs
+        OUT  [10] tmds_clk;    // TMDS clock channel (serialized)
+        OUT  [10] tmds_d0;     // TMDS data channel 0 (blue)
+        OUT  [10] tmds_d1;     // TMDS data channel 1 (green)
+        OUT  [10] tmds_d2;     // TMDS data channel 2 (red)
+        OUT  [1]  uart_tx;     // UART transmit pin
+        INOUT [1] edid_sda;    // DDC data line (I2C)
+        OUT  [1]  edid_scl;    // DDC clock line (I2C)
+
+        // SDRAM physical interface (from arbiter)
+        OUT  [1]  sdram_cke;
+        OUT  [1]  sdram_cs_n;
+        OUT  [1]  sdram_ras_n;
+        OUT  [1]  sdram_cas_n;
+        OUT  [1]  sdram_wen_n;
+        OUT  [4]  sdram_dqm;
+        OUT  [11] sdram_addr;
+        OUT  [2]  sdram_ba;
+        INOUT [32] sdram_dq;
+        OUT  [1]  sdram_clk_out;
+    }
+
+    WIRE {
+        reset       [1];
+        por_n       [1];
+        hsync       [1];
+        vsync       [1];
+        de          [1];
+        x_pos       [11];
+        y_pos       [10];
+        red         [8];
+        green       [8];
+        blue        [8];
+        pg_de       [1];
+        pg_hsync    [1];
+        pg_vsync    [1];
+
+        // UART -> RX buffer (raw from uart_rx)
+        rx_raw_data  [8];
+        rx_raw_valid [1];
+
+        // RX buffer -> Terminal
+        rx_data     [8];
+        rx_valid    [1];
+        data_ack    [1];
+
+        // Terminal -> Terminal Buffer
+        wr_row      [6];
+        wr_col      [8];
+        wr_char     [16];
+        wr_attr     [16];
+        wr_en       [1];
+
+        // Terminal -> Terminal Buffer (read-back for insert mode)
+        tb_rd_row   [6];
+        tb_rd_col   [8];
+        tb_rd_char  [16];
+        tb_rd_attr  [16];
+        tb_rd_en    [1];
+
+        // Terminal ANSI command buffer (active but unprocessed for now)
+        cmd_ready   [1];
+        cmd_final   [8];
+        cmd_len     [7];
+        cmd_rd_data [8];
+
+        // Terminal -> Terminal Buffer (scroll)
+        scroll       [1];
+        scroll_down  [1];
+        scroll_reset [1];
+        buf_busy     [1];
+
+        // Terminal -> Terminal Buffer (alt screen)
+        use_alt      [1];
+
+        // UART TX
+        tx_data      [8];
+        tx_valid     [1];
+        tx_ready     [1];
+        uart_tx_pin  [1];
+
+        // Pixel Generator <-> Terminal Buffer
+        rd_row      [6];
+        rd_col      [8];
+        rd_row_next [6];
+        buf_char    [16];
+        buf_attr    [16];
+        buf_ready   [1];
+
+        // EDID reader interface
+        edid_field     [2];
+        edid_byte_idx  [4];
+        edid_byte      [8];
+        edid_ready     [1];
+        edid_error     [1];
+
+        // DVI TMDS encoder outputs (active during video)
+        dvi_tmds_d0 [10];
+        dvi_tmds_d1 [10];
+        dvi_tmds_d2 [10];
+
+        display_enabled [1];
+
+        // Terminal buffer <-> SDRAM arbiter (port 0)
+        tb_sd_addr   [21];
+        tb_sd_wdata  [32];
+        tb_sd_rd     [1];
+        tb_sd_wr     [1];
+        tb_sd_rdata  [32];
+        tb_sd_busy   [1];
+        tb_sd_done   [1];
+
+        // Font cache <-> SDRAM arbiter (port 1)
+        fc_sd_addr   [21];
+        fc_sd_rd     [1];
+        fc_sd_rdata  [32];
+        fc_sd_busy   [1];
+        fc_sd_done   [1];
+
+        // Decompressor <-> SDRAM arbiter (port 2)
+        dc_sd_addr   [21];
+        dc_sd_wdata  [32];
+        dc_sd_wr     [1];
+        dc_sd_busy   [1];
+        dc_sd_done   [1];
+
+        // Decompressor control
+        decomp_done  [1];
+        decomp_start [1];
+    }
+
+    REGISTER {
+        heartbeat_cnt [25] = 25'b0;
+        heartbeat_led [1]  = 1'b0;
+
+        // 16-byte RX FIFO (holds UART bytes until terminal consumes them)
+        fifo_wr_ptr [4] = 4'd0;
+        fifo_rd_ptr [4] = 4'd0;
+        fifo_count  [5] = 5'd0;
+
+        // LED activity stretch counters (make short pulses visible)
+        rx_led_cnt [20] = 20'd0;
+        tx_led_cnt [20] = 20'd0;
+
+        // Startup sequencing: pulse start to decompressor after reset
+        startup_cnt [2] = 2'd0;
+    }
+
+    MEM(TYPE=DISTRIBUTED) {
+        rx_fifo [8] [16] = 8'd0 { OUT rd ASYNC; IN wr; };
+    }
+
+    @new por0 por {
+        IN  [1] clk   = clk;
+        IN  [1] done  = por;
+        OUT [1] por_n = por_n;
+    }
+
+    @new vt0 video_timing {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        OUT [1]  hsync          = hsync;
+        OUT [1]  vsync          = vsync;
+        OUT [1]  display_enable = de;
+        OUT [11] x_pos          = x_pos;
+        OUT [10] y_pos          = y_pos;
+    }
+
+    @new urx0 uart_rx {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = reset;
+        IN  [1] rx    = uart_rx;
+        OUT [8] data  = rx_raw_data;
+        OUT [1] valid = rx_raw_valid;
+    }
+
+    @new term0 terminal {
+        IN  [1]  clk         = clk;
+        IN  [1]  rst_n       = reset;
+        IN  [8]  data        = rx_data;
+        IN  [1]  valid       = rx_valid;
+        OUT [1]  data_ack    = data_ack;
+        OUT [6]  wr_row      = wr_row;
+        OUT [8]  wr_col      = wr_col;
+        OUT [16] wr_char     = wr_char;
+        OUT [16] wr_attr     = wr_attr;
+        OUT [1]  wr_en       = wr_en;
+        OUT [6]  tb_rd_row   = tb_rd_row;
+        OUT [8]  tb_rd_col   = tb_rd_col;
+        IN  [16] tb_rd_char  = tb_rd_char;
+        IN  [16] tb_rd_attr  = tb_rd_attr;
+        OUT [1]  tb_rd_en    = tb_rd_en;
+        OUT [1]  cmd_ready   = cmd_ready;
+        OUT [8]  cmd_final   = cmd_final;
+        OUT [7]  cmd_len     = cmd_len;
+        IN  [7]  cmd_rd_addr = 7'd0;
+        OUT [8]  cmd_rd_data = cmd_rd_data;
+        OUT [1]  scroll       = scroll;
+        OUT [1]  scroll_down  = scroll_down;
+        OUT [1]  scroll_reset = scroll_reset;
+        IN  [1]  busy         = buf_busy;
+        OUT [8]  tx_data      = tx_data;
+        OUT [1]  tx_valid     = tx_valid;
+        IN  [1]  tx_ready     = tx_ready;
+        OUT [2]  edid_field    = edid_field;
+        OUT [4]  edid_byte_idx = edid_byte_idx;
+        IN  [8]  edid_byte     = edid_byte;
+        IN  [1]  edid_ready    = edid_ready;
+        IN  [1]  edid_error    = edid_error;
+        OUT [1]  use_alt       = use_alt;
+    }
+
+    @new tbuf0 terminal_buffer {
+        IN  [1]  clk      = clk;
+        IN  [1]  rst_n    = reset;
+        IN  [6]  rd_row   = rd_row;
+        IN  [8]  rd_col   = rd_col;
+        OUT [16] char_code = buf_char;
+        OUT [16] attr_out  = buf_attr;
+        IN  [6]  wr_row   = wr_row;
+        IN  [8]  wr_col   = wr_col;
+        IN  [16] wr_char  = wr_char;
+        IN  [16] wr_attr  = wr_attr;
+        IN  [1]  wr_en    = wr_en;
+        IN  [6]  tb_rd_row  = tb_rd_row;
+        IN  [8]  tb_rd_col  = tb_rd_col;
+        OUT [16] tb_rd_char = tb_rd_char;
+        OUT [16] tb_rd_attr = tb_rd_attr;
+        IN  [1]  tb_rd_en   = tb_rd_en;
+        IN  [1]  scroll       = scroll;
+        IN  [1]  scroll_down  = scroll_down;
+        IN  [1]  scroll_reset = scroll_reset;
+        IN  [1]  use_alt      = use_alt;
+        OUT [1]  busy         = buf_busy;
+        IN  [6]  rd_row_next  = rd_row_next;
+        IN  [1]  display_active = de;
+        OUT [1]  buf_ready    = buf_ready;
+        OUT [21] sd_addr      = tb_sd_addr;
+        OUT [32] sd_wdata     = tb_sd_wdata;
+        OUT [1]  sd_rd        = tb_sd_rd;
+        OUT [1]  sd_wr        = tb_sd_wr;
+        IN  [32] sd_rdata     = tb_sd_rdata;
+        IN  [1]  sd_busy      = tb_sd_busy;
+        IN  [1]  sd_done      = tb_sd_done;
+    }
+
+    @new pg0 pixel_generator {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [11] x_pos          = x_pos;
+        IN  [10] y_pos          = y_pos;
+        IN  [1]  display_enable = de;
+        IN  [1]  hsync          = hsync;
+        IN  [1]  vsync          = vsync;
+        OUT [6]  rd_row         = rd_row;
+        OUT [8]  rd_col         = rd_col;
+        IN  [16] buf_char       = buf_char;
+        IN  [16] buf_attr       = buf_attr;
+        IN  [1]  buf_ready      = buf_ready;
+        OUT [6]  rd_row_next    = rd_row_next;
+        OUT [8]  red            = red;
+        OUT [8]  green          = green;
+        OUT [8]  blue           = blue;
+        OUT [1]  de_out         = pg_de;
+        OUT [1]  hsync_out      = pg_hsync;
+        OUT [1]  vsync_out      = pg_vsync;
+        OUT [21] font_sd_addr   = fc_sd_addr;
+        OUT [1]  font_sd_rd     = fc_sd_rd;
+        IN  [32] font_sd_rdata  = fc_sd_rdata;
+        IN  [1]  font_sd_busy   = fc_sd_busy;
+        IN  [1]  font_sd_done   = fc_sd_done;
+        IN  [1]  font_ready     = decomp_done;
+    }
+
+    // LZSS Decompressor: reads compressed font from BSRAM, writes to SDRAM at startup
+    @new decomp0 lzss_decomp {
+        IN  [1]  clk     = clk;
+        IN  [1]  rst_n   = reset;
+        IN  [1]  start   = decomp_start;
+        OUT [1]  done    = decomp_done;
+        OUT [21] sd_addr = dc_sd_addr;
+        OUT [32] sd_wdata = dc_sd_wdata;
+        OUT [1]  sd_wr    = dc_sd_wr;
+        IN  [1]  sd_busy  = dc_sd_busy;
+        IN  [1]  sd_done  = dc_sd_done;
+    }
+
+    // SDRAM Arbiter: 3-port mux with fixed priority
+    @new arb0 sdram_arb {
+        IN  [1]  clk     = clk;
+        IN  [1]  rst_n   = reset;
+        // Port 0: Terminal buffer
+        IN  [21] p0_addr  = tb_sd_addr;
+        IN  [32] p0_wdata = tb_sd_wdata;
+        IN  [1]  p0_rd    = tb_sd_rd;
+        IN  [1]  p0_wr    = tb_sd_wr;
+        OUT [32] p0_rdata = tb_sd_rdata;
+        OUT [1]  p0_busy  = tb_sd_busy;
+        OUT [1]  p0_done  = tb_sd_done;
+        // Port 1: Font cache
+        IN  [21] p1_addr  = fc_sd_addr;
+        IN  [1]  p1_rd    = fc_sd_rd;
+        OUT [32] p1_rdata = fc_sd_rdata;
+        OUT [1]  p1_busy  = fc_sd_busy;
+        OUT [1]  p1_done  = fc_sd_done;
+        // Port 2: Decompressor
+        IN  [21] p2_addr  = dc_sd_addr;
+        IN  [32] p2_wdata = dc_sd_wdata;
+        IN  [1]  p2_wr    = dc_sd_wr;
+        OUT [1]  p2_busy  = dc_sd_busy;
+        OUT [1]  p2_done  = dc_sd_done;
+        // SDRAM physical pins
+        OUT   [1]  sdram_cke   = sdram_cke;
+        OUT   [1]  sdram_cs_n  = sdram_cs_n;
+        OUT   [1]  sdram_ras_n = sdram_ras_n;
+        OUT   [1]  sdram_cas_n = sdram_cas_n;
+        OUT   [1]  sdram_wen_n = sdram_wen_n;
+        OUT   [4]  sdram_dqm   = sdram_dqm;
+        OUT   [11] sdram_addr  = sdram_addr;
+        OUT   [2]  sdram_ba    = sdram_ba;
+        INOUT [32] sdram_dq    = sdram_dq;
+    }
+
+    // Blue channel (data channel 0) - carries sync signals
+    // During preamble: ch0 gets normal hsync/vsync, ch1 gets CTL(1,0), ch2 gets CTL(1,0)
+    @new enc0 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = blue;
+        IN  [1]  c0             = pg_hsync;
+        IN  [1]  c1             = pg_vsync;
+        IN  [1]  display_enable = display_enabled;
+        OUT [10] tmds_out       = dvi_tmds_d0;
+    }
+
+    // Green channel (data channel 1)
+    @new enc1 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = green;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = display_enabled;
+        OUT [10] tmds_out       = dvi_tmds_d1;
+    }
+
+    // Red channel (data channel 2)
+    @new enc2 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = red;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = display_enabled;
+        OUT [10] tmds_out       = dvi_tmds_d2;
+    }
+
+    @new utx0 uart_tx {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = reset;
+        IN  [8] data  = tx_data;
+        IN  [1] valid = tx_valid;
+        OUT [1] ready = tx_ready;
+        OUT [1] tx    = uart_tx_pin;
+    }
+
+    @new edid0 edid_reader {
+        IN    [1]  clk      = clk;
+        IN    [1]  rst_n    = reset;
+        INOUT [1]  sda      = edid_sda;
+        OUT   [1]  scl      = edid_scl;
+        IN    [2]  field    = edid_field;
+        IN    [4]  byte_idx = edid_byte_idx;
+        OUT   [8]  byte_out = edid_byte;
+        OUT   [1]  ready    = edid_ready;
+        OUT   [1]  error    = edid_error;
+    }
+
+    ASYNCHRONOUS {
+        reset <= rst_n & por_n;
+        uart_tx <= uart_tx_pin;
+
+        display_enabled = pg_de;
+
+        // Startup: pulse decomp_start a few cycles after reset
+        IF (startup_cnt == 2'd2 && decomp_done == 1'b0) {
+            decomp_start <= 1'b1;
+        } ELSE {
+            decomp_start <= 1'b0;
+        }
+
+        // RX FIFO -> terminal
+        rx_data  <= rx_fifo.rd[fifo_rd_ptr];
+        IF (fifo_count != 5'd0) {
+            rx_valid <= 1'b1;
+        } ELSE {
+            rx_valid <= 1'b0;
+        }
+
+        // DVI TMDS output (direct from encoders)
+        tmds_d0 <= dvi_tmds_d0;
+        tmds_d1 <= dvi_tmds_d1;
+        tmds_d2 <= dvi_tmds_d2;
+
+        // TMDS clock channel: fixed pattern for pixel clock recovery
+        tmds_clk <= 10'b1111100000;
+
+        // SDRAM clock: drive from pixel clock (active high)
+        sdram_clk_out <= ~clk;
+
+        // LED status: heartbeat, RX activity, TX activity
+        IF (rx_led_cnt != 20'd0) {
+            leds[0] <= 1'b0;
+        } ELSE {
+            leds[0] <= 1'b1;
+        }
+        IF (tx_led_cnt != 20'd0) {
+            leds[1] <= 1'b0;
+        } ELSE {
+            leds[1] <= 1'b1;
+        }
+        leds[2] <= ~heartbeat_led;
+        leds[3] <= 1'b1;
+        leds[4] <= 1'b1;
+        leds[5] <= 1'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        // Heartbeat blinker
+        IF (heartbeat_cnt == 25'd33_554_431) {
+            heartbeat_cnt <= 25'b0;
+            heartbeat_led <= ~heartbeat_led;
+        } ELSE {
+            heartbeat_cnt <= heartbeat_cnt + 25'b1;
+        }
+
+        // RX/TX LED stretch: reload on activity, count down to zero
+        IF (rx_raw_valid == 1'b1) {
+            rx_led_cnt <= 20'hFFFFF;
+        } ELIF (rx_led_cnt != 20'd0) {
+            rx_led_cnt <= rx_led_cnt - 20'd1;
+        }
+
+        IF (tx_valid == 1'b1) {
+            tx_led_cnt <= 20'hFFFFF;
+        } ELIF (tx_led_cnt != 20'd0) {
+            tx_led_cnt <= tx_led_cnt - 20'd1;
+        }
+
+        // Startup counter: count up to 2 then hold
+        IF (startup_cnt != 2'd3) {
+            startup_cnt <= startup_cnt + 2'd1;
+        }
+
+        // 16-byte RX FIFO: enqueue from UART, dequeue on terminal ack
+        IF (rx_raw_valid == 1'b1 && fifo_count != 5'd16) {
+            rx_fifo.wr[fifo_wr_ptr] <= rx_raw_data;
+            fifo_wr_ptr <= fifo_wr_ptr + 4'd1;
+        }
+
+        IF (data_ack == 1'b1 && fifo_count != 5'd0) {
+            fifo_rd_ptr <= fifo_rd_ptr + 4'd1;
+        }
+
+        // Update count: simultaneous enqueue+dequeue keeps count unchanged
+        IF (rx_raw_valid == 1'b1 && fifo_count != 5'd16 && data_ack == 1'b1 && fifo_count != 5'd0) {
+            fifo_count <= fifo_count;
+        } ELIF (rx_raw_valid == 1'b1 && fifo_count != 5'd16) {
+            fifo_count <= fifo_count + 5'd1;
+        } ELIF (data_ack == 1'b1 && fifo_count != 5'd0) {
+            fifo_count <= fifo_count - 5'd1;
+        }
+    }
+@endmod

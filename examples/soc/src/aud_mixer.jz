@@ -1,0 +1,189 @@
+// Audio mixer - sums 8 channels into stereo output
+// Accumulates signed 16-bit inputs with headroom, applies master volume,
+// and clamps to signed 16-bit output range.
+// Pan per channel: 0=full left, 128=center, 255=full right
+
+@module aud_mixer
+    CONST {
+        NUM_CHANNELS = 8;
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [1]  sample_tick;
+        IN  [8]  master_vol;     // Master volume 0-255
+        // Channel inputs: concatenated [NUM_CHANNELS * 16] wide
+        IN  [128] ch_samples;    // 8 channels x 16-bit signed
+        IN  [64]  ch_pans;       // 8 channels x 8-bit pan (0=L, 128=center, 255=R)
+        OUT [16] out_left;       // Mixed left channel
+        OUT [16] out_right;      // Mixed right channel
+        OUT [1]  out_valid;      // Pulse when outputs are ready
+    }
+
+    WIRE {
+        // Individual channel extraction
+        s0 [16]; s1 [16]; s2 [16]; s3 [16];
+        s4 [16]; s5 [16]; s6 [16]; s7 [16];
+        p0 [8]; p1 [8]; p2 [8]; p3 [8];
+        p4 [8]; p5 [8]; p6 [8]; p7 [8];
+
+        // Left gain = 255 - pan
+        l0 [8]; l1 [8]; l2 [8]; l3 [8];
+        l4 [8]; l5 [8]; l6 [8]; l7 [8];
+
+        // Scaled samples left (smul 16x16 -> 32, take [23:8] for 16-bit)
+        sl0 [32]; sl1 [32]; sl2 [32]; sl3 [32];
+        sl4 [32]; sl5 [32]; sl6 [32]; sl7 [32];
+        // Scaled samples right
+        sr0 [32]; sr1 [32]; sr2 [32]; sr3 [32];
+        sr4 [32]; sr5 [32]; sr6 [32]; sr7 [32];
+
+        // Pan-extended to 16 bits for smul
+        pe0 [16]; pe1 [16]; pe2 [16]; pe3 [16];
+        pe4 [16]; pe5 [16]; pe6 [16]; pe7 [16];
+        le0 [16]; le1 [16]; le2 [16]; le3 [16];
+        le4 [16]; le5 [16]; le6 [16]; le7 [16];
+
+        // Sign-extended to 20-bit for accumulation
+        xl0 [20]; xl1 [20]; xl2 [20]; xl3 [20];
+        xl4 [20]; xl5 [20]; xl6 [20]; xl7 [20];
+        xr0 [20]; xr1 [20]; xr2 [20]; xr3 [20];
+        xr4 [20]; xr5 [20]; xr6 [20]; xr7 [20];
+
+        // Partial sums (pairwise to manage width)
+        lsum01 [20]; lsum23 [20]; lsum45 [20]; lsum67 [20];
+        rsum01 [20]; rsum23 [20]; rsum45 [20]; rsum67 [20];
+        lsum03 [20]; lsum47 [20];
+        rsum03 [20]; rsum47 [20];
+        sum_left  [20];
+        sum_right [20];
+
+        // Master volume scaling
+        mvol_ext     [20];
+        left_scaled  [40];
+        right_scaled [40];
+        left_clamped  [16];
+        right_clamped [16];
+    }
+
+    REGISTER {
+        out_l_reg  [16] = 16'd0;
+        out_r_reg  [16] = 16'd0;
+        valid_reg  [1]  = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Extract individual 16-bit samples
+        s0 <= ch_samples[15:0];
+        s1 <= ch_samples[31:16];
+        s2 <= ch_samples[47:32];
+        s3 <= ch_samples[63:48];
+        s4 <= ch_samples[79:64];
+        s5 <= ch_samples[95:80];
+        s6 <= ch_samples[111:96];
+        s7 <= ch_samples[127:112];
+
+        // Extract pan values
+        p0 <= ch_pans[7:0];     p1 <= ch_pans[15:8];
+        p2 <= ch_pans[23:16];   p3 <= ch_pans[31:24];
+        p4 <= ch_pans[39:32];   p5 <= ch_pans[47:40];
+        p6 <= ch_pans[55:48];   p7 <= ch_pans[63:56];
+
+        // Left gain = 255 - pan
+        l0 <= 8'hFF - p0; l1 <= 8'hFF - p1;
+        l2 <= 8'hFF - p2; l3 <= 8'hFF - p3;
+        l4 <= 8'hFF - p4; l5 <= 8'hFF - p5;
+        l6 <= 8'hFF - p6; l7 <= 8'hFF - p7;
+
+        // Zero-extend pan/gain to 16-bit for smul
+        pe0 <= {8'd0, p0}; pe1 <= {8'd0, p1};
+        pe2 <= {8'd0, p2}; pe3 <= {8'd0, p3};
+        pe4 <= {8'd0, p4}; pe5 <= {8'd0, p5};
+        pe6 <= {8'd0, p6}; pe7 <= {8'd0, p7};
+        le0 <= {8'd0, l0}; le1 <= {8'd0, l1};
+        le2 <= {8'd0, l2}; le3 <= {8'd0, l3};
+        le4 <= {8'd0, l4}; le5 <= {8'd0, l5};
+        le6 <= {8'd0, l6}; le7 <= {8'd0, l7};
+
+        // Scale each channel by left/right gain
+        sl0 <= smul(s0, le0); sl1 <= smul(s1, le1);
+        sl2 <= smul(s2, le2); sl3 <= smul(s3, le3);
+        sl4 <= smul(s4, le4); sl5 <= smul(s5, le5);
+        sl6 <= smul(s6, le6); sl7 <= smul(s7, le7);
+
+        sr0 <= smul(s0, pe0); sr1 <= smul(s1, pe1);
+        sr2 <= smul(s2, pe2); sr3 <= smul(s3, pe3);
+        sr4 <= smul(s4, pe4); sr5 <= smul(s5, pe5);
+        sr6 <= smul(s6, pe6); sr7 <= smul(s7, pe7);
+
+        // Sign-extend 16-bit pan-scaled results to 20-bit
+        xl0 <= {sl0[23], sl0[23], sl0[23], sl0[23], sl0[23:8]};
+        xl1 <= {sl1[23], sl1[23], sl1[23], sl1[23], sl1[23:8]};
+        xl2 <= {sl2[23], sl2[23], sl2[23], sl2[23], sl2[23:8]};
+        xl3 <= {sl3[23], sl3[23], sl3[23], sl3[23], sl3[23:8]};
+        xl4 <= {sl4[23], sl4[23], sl4[23], sl4[23], sl4[23:8]};
+        xl5 <= {sl5[23], sl5[23], sl5[23], sl5[23], sl5[23:8]};
+        xl6 <= {sl6[23], sl6[23], sl6[23], sl6[23], sl6[23:8]};
+        xl7 <= {sl7[23], sl7[23], sl7[23], sl7[23], sl7[23:8]};
+
+        xr0 <= {sr0[23], sr0[23], sr0[23], sr0[23], sr0[23:8]};
+        xr1 <= {sr1[23], sr1[23], sr1[23], sr1[23], sr1[23:8]};
+        xr2 <= {sr2[23], sr2[23], sr2[23], sr2[23], sr2[23:8]};
+        xr3 <= {sr3[23], sr3[23], sr3[23], sr3[23], sr3[23:8]};
+        xr4 <= {sr4[23], sr4[23], sr4[23], sr4[23], sr4[23:8]};
+        xr5 <= {sr5[23], sr5[23], sr5[23], sr5[23], sr5[23:8]};
+        xr6 <= {sr6[23], sr6[23], sr6[23], sr6[23], sr6[23:8]};
+        xr7 <= {sr7[23], sr7[23], sr7[23], sr7[23], sr7[23:8]};
+
+        // Pairwise sum to accumulate
+        lsum01 <= xl0 + xl1; lsum23 <= xl2 + xl3;
+        lsum45 <= xl4 + xl5; lsum67 <= xl6 + xl7;
+        rsum01 <= xr0 + xr1; rsum23 <= xr2 + xr3;
+        rsum45 <= xr4 + xr5; rsum67 <= xr6 + xr7;
+
+        lsum03 <= lsum01 + lsum23;
+        lsum47 <= lsum45 + lsum67;
+        rsum03 <= rsum01 + rsum23;
+        rsum47 <= rsum45 + rsum67;
+
+        sum_left  <= lsum03 + lsum47;
+        sum_right <= rsum03 + rsum47;
+
+        // Apply master volume (zero-extend to 20 for smul)
+        mvol_ext <= {12'd0, master_vol};
+        left_scaled  <= smul(sum_left, mvol_ext);
+        right_scaled <= smul(sum_right, mvol_ext);
+
+        // Clamp to signed 16-bit range after >>8
+        IF (left_scaled[27] == 1'b0 && left_scaled[27:23] != 5'b00000) {
+            left_clamped <= 16'h7FFF;
+        } ELIF (left_scaled[27] == 1'b1 && left_scaled[27:23] != 5'b11111) {
+            left_clamped <= 16'h8001;
+        } ELSE {
+            left_clamped <= left_scaled[23:8];
+        }
+
+        IF (right_scaled[27] == 1'b0 && right_scaled[27:23] != 5'b00000) {
+            right_clamped <= 16'h7FFF;
+        } ELIF (right_scaled[27] == 1'b1 && right_scaled[27:23] != 5'b11111) {
+            right_clamped <= 16'h8001;
+        } ELSE {
+            right_clamped <= right_scaled[23:8];
+        }
+
+        out_left  <= out_l_reg;
+        out_right <= out_r_reg;
+        out_valid <= valid_reg;
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        IF (sample_tick == 1'b1) {
+            out_l_reg <= left_clamped;
+            out_r_reg <= right_clamped;
+            valid_reg <= 1'b1;
+        } ELSE {
+            valid_reg <= 1'b0;
+        }
+    }
+@endmod

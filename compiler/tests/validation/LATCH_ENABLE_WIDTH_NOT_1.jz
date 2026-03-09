@@ -1,0 +1,28 @@
+// LATCH_ENABLE_WIDTH_NOT_1: D-latch enable must have width 1.
+// Verified
+
+@project LATCH_ENABLE_WIDTH_NOT_1_PROJECT
+  @top LATCH_ENABLE_WIDTH_NOT_1_EXAMPLE {
+    IN  [2] en = _;
+    IN  [1] d  = _;
+    OUT [1] q  = _;
+  }
+@endproj
+
+@module LATCH_ENABLE_WIDTH_NOT_1_EXAMPLE
+  PORT {
+    IN  [2] en;
+    IN  [1] d;
+    OUT [1] q;
+  }
+
+  LATCH {
+    q_latch [1] D;
+  }
+
+  ASYNCHRONOUS {
+    // Illegal: enable expression en is width-2, not width-1.
+    q_latch <= en : d;
+    q <= q_latch;
+  }
+@endmod

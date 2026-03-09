@@ -1,0 +1,48 @@
+// RV32I ALU
+// Pure combinational arithmetic/logic unit
+// Supports ADD/SUB, SLL, SLT, SLTU, XOR, SRL/SRA, OR, AND
+
+@module rv_alu
+    PORT {
+        IN  [32] a;
+        IN  [32] b;
+        IN  [3]  funct3;
+        IN  [1]  alt;
+        OUT [32] result;
+    }
+
+    ASYNCHRONOUS {
+        IF (funct3 == F3.ADD) {
+            IF (alt == 1'b1) {
+                // SUB
+                result <= a - b;
+            } ELSE {
+                // ADD
+                result <= a + b;
+            }
+        } ELIF (funct3 == F3.SLL) {
+            result <= a << b[4:0];
+        } ELIF (funct3 == F3.SLT) {
+            // Signed less than: ssub gives 33-bit signed difference, bit[32] is sign
+            result <= {31'd0, ssub(a, b)[32]};
+        } ELIF (funct3 == F3.SLTU) {
+            result <= (a < b) ? 32'h00000001 : 32'h00000000;
+        } ELIF (funct3 == F3.XOR) {
+            result <= a ^ b;
+        } ELIF (funct3 == F3.SRL) {
+            IF (alt == 1'b1) {
+                // SRA
+                result <= a >>> b[4:0];
+            } ELSE {
+                // SRL
+                result <= a >> b[4:0];
+            }
+        } ELIF (funct3 == F3.OR) {
+            result <= a | b;
+        } ELIF (funct3 == F3.AND) {
+            result <= a & b;
+        } ELSE {
+            result <= 32'h00000000;
+        }
+    }
+@endmod

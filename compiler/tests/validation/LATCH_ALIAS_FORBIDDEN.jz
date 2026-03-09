@@ -1,0 +1,29 @@
+// LATCH_ALIAS_FORBIDDEN: latch may not be aliased with '=' in ASYNCHRONOUS.
+// Verified
+
+@project LATCH_ALIAS_FORBIDDEN_PROJECT
+  @top LATCH_ALIAS_FORBIDDEN_EXAMPLE {
+    IN  [1] en = _;
+    IN  [1] d  = _;
+    OUT [1] q  = _;
+  }
+@endproj
+
+@module LATCH_ALIAS_FORBIDDEN_EXAMPLE
+  PORT {
+    IN  [1] en;
+    IN  [1] d;
+    OUT [1] q;
+  }
+
+  LATCH {
+    q_latch [1] D;
+  }
+
+  ASYNCHRONOUS {
+    q_latch <= en : d;
+
+    // Illegal: alias involving a latch on RHS.
+    q = q_latch;
+  }
+@endmod

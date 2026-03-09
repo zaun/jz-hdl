@@ -1,0 +1,221 @@
+// Golden test: Tristate proof with constants and MUX-sourced registers
+//
+// This test verifies two semantic analysis improvements:
+// 1. Registers used as MUX sources should NOT trigger WARN_UNSINKED_REGISTER
+// 2. Tristate drivers guarded by different constants (global or module CONST)
+//    should NOT trigger NET_MULTIPLE_ACTIVE_DRIVERS
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") TRISTATE_CONST_TEST
+
+    CLOCKS {
+        MCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        MCLK = { standard=LVCMOS33 };
+        SEL[2] = { standard=LVCMOS33 };
+        WR_EN = { standard=LVCMOS33 };
+        WR_DATA[8] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LEDS[8] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        MCLK = 4;
+        SEL[0] = 87;
+        SEL[1] = 88;
+        WR_EN = 86;
+        WR_DATA[0] = 73;
+        WR_DATA[1] = 74;
+        WR_DATA[2] = 75;
+        WR_DATA[3] = 76;
+        WR_DATA[4] = 77;
+        WR_DATA[5] = 79;
+        WR_DATA[6] = 80;
+        WR_DATA[7] = 81;
+        LEDS[0] = 15;
+        LEDS[1] = 16;
+        LEDS[2] = 17;
+        LEDS[3] = 18;
+        LEDS[4] = 19;
+        LEDS[5] = 20;
+        LEDS[6] = 21;
+        LEDS[7] = 22;
+    }
+
+    @top top_mod {
+        IN  [1] clk = MCLK;
+        IN  [2] sel = SEL;
+        IN  [1] wr_en = WR_EN;
+        IN  [8] wr_data = WR_DATA;
+        OUT [8] leds = LEDS;
+    }
+@endproj
+
+// Global constants for device selection
+@global DEV
+    A = 2'b00;
+    B = 2'b01;
+    C = 2'b10;
+@endglob
+
+// Top module demonstrating both fixes
+@module top_mod
+    // Module-level CONST for device selection
+    CONST {
+        LOCAL_DEV_A = 2'b00;
+        LOCAL_DEV_B = 2'b01;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [2] sel;
+        IN  [1] wr_en;
+        IN  [8] wr_data;
+        OUT [8] leds;
+    }
+
+    WIRE {
+        // Shared tristate bus for global-const guarded devices
+        global_data [8];
+        // Shared tristate bus for module-const guarded devices
+        local_data [8];
+        // Output from register file
+        rf_out [8];
+    }
+
+    // =========================================================================
+    // Part 1: Tristate drivers guarded by GLOBAL constants (DEV.A, DEV.B, DEV.C)
+    // These should NOT trigger NET_MULTIPLE_ACTIVE_DRIVERS because the
+    // constants are distinct and mutually exclusive.
+    // =========================================================================
+    @new dev_global_a tristate_device {
+        IN  [1] clk = clk;
+        IN  [2] bus_sel = sel;
+        IN  [2] my_sel = DEV.A;
+        OUT [8] data = global_data;
+    }
+
+    @new dev_global_b tristate_device {
+        IN  [1] clk = clk;
+        IN  [2] bus_sel = sel;
+        IN  [2] my_sel = DEV.B;
+        OUT [8] data = global_data;
+    }
+
+    @new dev_global_c tristate_device {
+        IN  [1] clk = clk;
+        IN  [2] bus_sel = sel;
+        IN  [2] my_sel = DEV.C;
+        OUT [8] data = global_data;
+    }
+
+    // =========================================================================
+    // Part 2: Tristate drivers guarded by module CONST values
+    // These should NOT trigger NET_MULTIPLE_ACTIVE_DRIVERS because the
+    // module CONST values are distinct and mutually exclusive.
+    // =========================================================================
+    @new dev_local_a tristate_device {
+        IN  [1] clk = clk;
+        IN  [2] bus_sel = sel;
+        IN  [2] my_sel = LOCAL_DEV_A;
+        OUT [8] data = local_data;
+    }
+
+    @new dev_local_b tristate_device {
+        IN  [1] clk = clk;
+        IN  [2] bus_sel = sel;
+        IN  [2] my_sel = LOCAL_DEV_B;
+        OUT [8] data = local_data;
+    }
+
+    // =========================================================================
+    // Part 3: Register file with MUX-sourced registers
+    // Registers r1-r3 should NOT trigger WARN_UNSINKED_REGISTER because they
+    // are used as MUX sources (read via the MUX).
+    // =========================================================================
+    @new regfile register_file {
+        IN  [1]  clk = clk;
+        IN  [2]  rd_sel = sel;
+        OUT [8]  rd_data = rf_out;
+        IN  [1]  wr_en = wr_en;
+        IN  [2]  wr_sel = sel;
+        IN  [8]  wr_data = wr_data;
+    }
+
+    ASYNCHRONOUS {
+        // Combine outputs: use register file output XOR'd with tristate buses
+        leds = rf_out ^ global_data ^ local_data;
+    }
+@endmod
+
+// Tristate device: drives data only when bus_sel matches my_sel
+@module tristate_device
+    PORT {
+        IN  [1] clk;
+        IN  [2] bus_sel;
+        IN  [2] my_sel;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        counter [8] = 8'hA5;
+    }
+
+    ASYNCHRONOUS {
+        // Tristate: drive data only when selected, else high-Z
+        data <= (bus_sel == my_sel) ? counter : 8'bz;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        counter <= counter + 8'b1;
+    }
+@endmod
+
+// Register file with MUX-sourced registers
+@module register_file
+    PORT {
+        IN  [1]  clk;
+        IN  [2]  rd_sel;
+        OUT [8]  rd_data;
+        IN  [1]  wr_en;
+        IN  [2]  wr_sel;
+        IN  [8]  wr_data;
+    }
+
+    WIRE {
+        zero_val [8];
+    }
+
+    // These registers are written via SELECT and read via MUX.
+    // They should NOT trigger WARN_UNSINKED_REGISTER because they are
+    // used as MUX sources (the MUX read counts as a "sink").
+    REGISTER {
+        r1 [8] = 8'h11;
+        r2 [8] = 8'h22;
+        r3 [8] = 8'h33;
+    }
+
+    MUX {
+        // Registers used as MUX sources
+        read_mux = zero_val, r1, r2, r3;
+    }
+
+    ASYNCHRONOUS {
+        zero_val <= 8'b0;
+        rd_data <= read_mux[rd_sel];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (wr_en == 1'b1) {
+            SELECT(wr_sel) {
+                CASE 2'b01 { r1 <= wr_data; }
+                CASE 2'b10 { r2 <= wr_data; }
+                CASE 2'b11 { r3 <= wr_data; }
+                DEFAULT { }
+            }
+        }
+    }
+@endmod

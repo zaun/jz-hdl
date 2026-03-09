@@ -1,0 +1,18 @@
+// LIT_WIDTH_INVALID: lit() width must be positive.
+// Verified
+
+@project LIT_WIDTH_INVALID_PROJECT
+  @top LIT_WIDTH_INVALID_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module LIT_WIDTH_INVALID_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= lit(0, 1);
+  }
+@endmod

@@ -1,0 +1,142 @@
+// ============================================================================
+// TEST: INTRINSIC ARITHMETIC AND CARRY CAPTURE
+// VERIFIES: uadd/umul size logic and LHS concatenation distribution.
+// ============================================================================
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") MathVerify
+    CLOCKS {
+        SCLK = { period=10.0 };
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+        DONE   = { standard=LVCMOS33 };
+        A[3]   = { standard=LVCMOS33 };
+        B[3]   = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock
+        // 27MHz
+        SCLK = 4;
+
+        // 2 BUttons
+        // High = Closed
+        // Low = Open
+        KEY[0] = 88;
+        KEY[1] = 87;
+
+        A[0] = 73;
+        A[1] = 74;
+        A[2] = 75;
+
+        B[0] = 71;
+        B[1] = 53;
+        B[2] = 52;
+
+        // 6 LEDs
+        // High = OFF
+        // Low = ON
+        LED[0] = 15;
+        LED[1] = 16;
+        LED[2] = 17;
+        LED[3] = 18;
+        LED[4] = 19;
+        LED[5] = 20;
+
+        // DONE can be used as a POR signal
+        // Low = programming ongoing
+        // High = programming successfully
+        DONE    = IOR32B; 
+    }
+
+    @top ArithmeticCore {
+        IN  [1] clk     = SCLK;
+        IN  [1] rst_n   = ~KEY[0];
+        IN  [1] por     = DONE;
+        IN  [1] btn     = KEY[1];
+        IN  [3] val_a   = A;
+        IN  [3] val_b   = B;
+        OUT [6] display = LED
+    }
+@endproj
+
+@module ArithmeticCore
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [1] por;
+        IN  [1] btn;
+        IN  [3] val_a;
+        IN  [3] val_b;
+        OUT [6] display;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        func [3] = 3'b0;
+        func_done [1] = 1'b0;
+
+        sum   [3] = 3'b0;
+        carry [1] = 1'b0;
+
+        data [6] = 6'b0;
+        blink [25] = 25'h0000000;
+    }
+
+    ASYNCHRONOUS {
+        display = data;
+        reset = por & rst_n;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        // cycle through display
+        IF (btn == 1'b1 && func_done == 1'b0) {
+            func <= func + 3'b1;
+            func_done <= 1'b1;
+        } ELIF (btn == 1'b0) {
+            func_done <= 1'b0;
+        }
+
+        blink <= blink + 25'b1;
+
+        SELECT(func) {
+            CASE 3'b000 {
+                // 3 on 3 off blink
+                data[5:3] <= blink[24] ? VCC : GND;
+                data[2:0] <= blink[24] ? GND : VCC;
+            }
+            CASE 3'b001 {
+                // Verifies Section 5.5.1: uadd(3, 3) result is 4 bits.
+                // Verifies Section 3.2: LHS concat {1, 3} matches 9-bit result.
+                {carry, sum} <= uadd(val_a, val_b);
+                data <= {carry, 2'b0, sum};
+            }
+            CASE 3'b010 {
+                // Verifies Section 5.5.1: sadd(3, 3) result is 4 bits.
+                // Verifies Section 3.2: LHS concat {1, 3} matches 9-bit result.
+                {carry, sum} <= sadd(val_a, val_b);
+                data <= {carry, 2'b0, sum};
+            }
+            CASE 3'b011 {
+                // Verifies Section 5.5.3: umul(3, 3) result is 6 bits.
+                data <= umul(val_a, val_b);
+            }
+            CASE 3'b100 {
+                // Verifies Section 5.5.3: smul(3, 3) result is 6 bits.
+                data <= smul(val_a, val_b);
+            }
+            DEFAULT {
+                data <= GND;
+            }
+        }
+    }
+@endmod

@@ -1,0 +1,2 @@
+File: SELECT_DUP_CASE_VALUE.jz
+      22:12   error SELECT_DUP_CASE_VALUE S5.4/S8.1 Multiple CASE labels with same value in SELECT

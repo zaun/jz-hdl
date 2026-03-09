@@ -1,0 +1,70 @@
+@project(CHIP="GW1NR-9-QN88-C6-I5") DVI_AUDIO_TEST
+    @import "blinkers.jz"
+
+    CLOCKS {
+        SCLK = { period=37.04 }; // 27MHz clock
+        CLK_A;
+        CLK_B;
+        CLK_C;
+        CLK_D;
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+        DONE   = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock 27MHz
+        SCLK = 52;
+
+        // Buttons (active high)
+        KEY[0] = 3;
+        KEY[1] = 4;
+
+        // LEDs (active low)
+        LED[0] = 10;
+        LED[1] = 11;
+        LED[2] = 13;
+        LED[3] = 14;
+        LED[4] = 15;
+        LED[5] = 16;
+
+        // DONE (POR)
+        DONE = IOL14A;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK SCLK;  // 27 MHz input
+            OUT BASE  CLK_A; // 225 MHz
+            OUT PHASE CLK_B; // 225 MHz phase shifted
+            OUT DIV   CLK_C; // 56.25 MHz
+            OUT DIV3  CLK_D; // 75 MHz
+
+            CONFIG {
+                IDIV = 2;
+                FBDIV = 24;
+                ODIV = 4;
+                PHASESEL = 1;
+                CLKOUTD_DIV = 4;
+            };
+        };
+    }
+
+    @top blinkers {
+        IN  [1] clk1 = SCLK;
+        IN  [1] clk2 = CLK_A;
+        IN  [1] clk3 = CLK_B;
+        IN  [1] clk4 = CLK_C;
+        IN  [1] clk5 = CLK_D;
+        IN  [1] por = DONE;
+        IN  [1] rst_n = ~KEY[0];
+        OUT [5] leds = LED[4:0];
+    }
+@endproj

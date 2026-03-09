@@ -1,0 +1,2 @@
+File: ASYNC_UNDEFINED_PATH_NO_DRIVER.jz
+      20:5    error ASYNC_UNDEFINED_PATH_NO_DRIVER S1.5/S4.10/S5.1/S8.1 ASYNCHRONOUS path leaves WIRE/PORT without any driver (e.g. IF without ELSE)

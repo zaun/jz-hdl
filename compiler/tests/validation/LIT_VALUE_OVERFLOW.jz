@@ -1,0 +1,18 @@
+// LIT_VALUE_OVERFLOW: lit() value must fit within width.
+// Verified
+
+@project LIT_VALUE_OVERFLOW_PROJECT
+  @top LIT_VALUE_OVERFLOW_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module LIT_VALUE_OVERFLOW_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= lit(4, 16);
+  }
+@endmod

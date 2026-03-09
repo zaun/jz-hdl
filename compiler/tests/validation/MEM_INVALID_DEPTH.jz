@@ -1,0 +1,25 @@
+// MEM_INVALID_DEPTH: MEM depth <= 0 or non-integer (simple decimal form).
+// Verfied
+
+@project MEM_INVALID_DEPTH_PROJECT
+  @top MEM_INVALID_DEPTH_EXAMPLE {
+    OUT [8] data = _;
+  }
+@endproj
+
+@module MEM_INVALID_DEPTH_EXAMPLE
+  PORT {
+    OUT [8] data;
+  }
+
+  MEM {
+    // Depth 0 is invalid (word width is fine here).
+    bad_depth_mem [8] [0] = 8'h00 {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    data <= bad_depth_mem.rd[1];
+  }
+@endmod

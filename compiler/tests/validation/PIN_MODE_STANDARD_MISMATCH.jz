@@ -1,0 +1,30 @@
+// PIN_MODE_STANDARD_MISMATCH: mode conflicts with I/O standard.
+// Verified
+
+@project PIN_MODE_STANDARD_MISMATCH_PROJECT
+  OUT_PINS {
+    a = { mode=DIFFERENTIAL, standard=LVCMOS33, drive=8 };
+    b = { mode=SINGLE, standard=LVDS25, drive=4 };
+  }
+
+  MAP {
+    a = { P=10, N=11 };
+    b = 12;
+  }
+
+  @top PIN_MODE_STANDARD_MISMATCH_EXAMPLE {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module PIN_MODE_STANDARD_MISMATCH_EXAMPLE
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = in;
+  }
+@endmod

@@ -1,0 +1,26 @@
+// GLOBAL_NAMESPACE_DUPLICATE: duplicate @global namespace name in compilation root.
+// Verified
+
+@global OPCODES
+  ADD = 1'b0;
+@endglob
+
+@global OPCODES
+  SUB = 1'b1;
+@endglob
+
+@project GLOBAL_NAMESPACE_DUPLICATE_EXAMPLE
+  @top top {
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= 1'b1;
+  }
+@endmod

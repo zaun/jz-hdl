@@ -1,0 +1,23 @@
+// PORT_DIRECTION_MISMATCH_OUT: reading from OUT port inside module is illegal.
+// Verified
+
+@project PORT_DIRECTION_MISMATCH_OUT_PROJECT
+  @top PORT_DIRECTION_MISMATCH_OUT_EXAMPLE {
+    OUT [1] out_sig = _;
+  }
+@endproj
+
+@module PORT_DIRECTION_MISMATCH_OUT_EXAMPLE
+  PORT {
+    OUT [1] out_sig;
+  }
+
+  WIRE {
+    internal [1];
+  }
+
+  ASYNCHRONOUS {
+    out_sig  <= 1'b0;      // legal drive of OUT
+    internal <= out_sig;   // illegal read from OUT
+  }
+@endmod

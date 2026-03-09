@@ -1,0 +1,455 @@
+// LZSS + ZeroGlyph Decompressor: reads compressed font data from banked BSRAM, writes to SDRAM
+//
+// Two-layer compressed format:
+//   Layer 1 (outer): ZeroGlyph encoding
+//     0x00 + count N (1-255) = N consecutive all-zero 16-byte glyphs
+//     0x00 + 0x00 = escape, next 16 bytes are a literal glyph starting with 0x00
+//     Any byte 0x01-0xFF = start of a literal 16-byte glyph (read 15 more bytes)
+//   Layer 2 (inner): LZSS with lazy matching
+//     Flag byte: 8 bits, MSB first. 1=literal, 0=reference.
+//     Literal: 1 raw byte.
+//     Reference: 2 bytes {offset[11:4], offset[3:0] | (length-3)[3:0]}
+//     Sliding window: 4096 bytes, match length 3-18.
+//
+// Compressed ROM: 8 banks x 2048 x 8-bit = 16384 bytes (8 BSRAM blocks)
+// Window buffer: 2 banks x 2048 x 8-bit = 4096 bytes (2 BSRAM blocks)
+//
+// Output: font data written to SDRAM starting at FONT_BASE (0x010000).
+// Each decompressed byte is stored in the low 8 bits of a 32-bit SDRAM word.
+//
+// Decompressed: 61440 bytes (30 banks x 128 x 16).
+@module lzss_decomp
+    CONST {
+        FONT_BASE    = 65536;  // 0x010000
+        DECOMP_SIZE  = 61440;  // Total decompressed bytes (30 banks x 128 x 16)
+        WINDOW_MASK  = 4095;   // 0xFFF
+
+        // States
+        ST_IDLE      = 0;
+        ST_RD_WAIT   = 1;   // Wait for BSRAM read (1 cycle latency)
+        ST_PROCESS   = 2;   // Process read data (literal, flag, ref bytes)
+        ST_WIN_WAIT  = 3;   // Wait for window BSRAM read
+        ST_WIN_PROC  = 4;   // Process window read data (copy byte)
+        ST_WR_SDRAM  = 5;   // Write byte to SDRAM
+        ST_DONE      = 6;
+        ST_ZG_DECODE = 7;   // ZeroGlyph decode an LZSS-produced byte
+        ST_ZG_ZERO_WR = 8;  // ZeroGlyph zero-fill loop (write 0x00 to SDRAM)
+    }
+
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [1]  start;
+        OUT [1]  done;
+
+        // SDRAM write interface (directly to arbiter port)
+        OUT [21] sd_addr;
+        OUT [32] sd_wdata;
+        OUT [1]  sd_wr;
+        IN  [1]  sd_busy;
+        IN  [1]  sd_done;
+    }
+
+    WIRE {
+        // ROM address decomposition
+        rom_bank      [4];
+        rom_bank_addr [11];
+
+        // Window address decomposition
+        win_rd_bank  [1];
+        win_rd_baddr [11];
+        win_wr_bank  [1];
+        win_wr_baddr [11];
+    }
+
+    REGISTER {
+        state       [4] = 4'd0;   // ST_IDLE (expanded to 4 bits for 9 states)
+        rom_addr    [14] = 14'd0;  // Read pointer into compressed ROM (14 bits for 8 banks)
+        out_addr    [16] = 16'd0;  // Output byte counter
+        win_wptr    [12] = 12'd0;  // Window write pointer
+
+        // Flag byte processing
+        flag_byte   [8] = 8'd0;
+        flag_bit    [3] = 3'd0;   // Current bit within flag byte (0-7)
+        need_flag   [1] = 1'b1;   // Next read is a flag byte
+
+        // Reference decoding
+        ref_b0      [8] = 8'd0;
+        ref_have_b0 [1] = 1'b0;   // Have first reference byte
+        ref_length  [5] = 5'd0;   // Remaining bytes to copy
+        ref_rptr    [12] = 12'd0; // Window read pointer
+
+        // ROM bank select registered (for mux after read)
+        rom_bank_r  [4] = 4'd0;
+
+        // ROM data mux output (registered from SYNC block)
+        rom_data_r  [8] = 8'h00;
+
+        // Control
+        done_r      [1] = 1'b0;
+        sd_wr_r     [1] = 1'b0;
+        sd_addr_r   [21] = 21'd0;
+        sd_wdata_r  [32] = 32'd0;
+
+        // Window write staging
+        win_wr_pending [1]  = 1'b0;
+        win_wr_ptr_s   [12] = 12'd0;
+        win_wr_data_s  [8]  = 8'h00;
+
+        // After SDRAM write: what to do next
+        // 0 = advance flag (via ZG decode), 1 = more copy bytes
+        after_wr    [1]  = 1'b0;
+
+        // Extra wait cycle for BSRAM pipeline (2 cycles needed: read + bank mux)
+        wait_extra  [1]  = 1'b0;
+
+        // ZeroGlyph decoder state
+        // zg_mode: 0 = expect marker-or-literal-start byte
+        //          1 = expect count byte (after seeing 0x00 marker)
+        //          2 = pass-through remaining glyph bytes (literal glyph)
+        zg_mode     [2]  = 2'd0;
+        zg_remain   [4]  = 4'd0;   // Bytes remaining in current literal glyph (0-15)
+        zg_zero_rem [12] = 12'd0;  // Zero bytes remaining to emit (count * 16, max 4080)
+
+        // Saved LZSS return state for after ZG decode produces an SDRAM write
+        zg_lzss_after [1] = 1'b0;  // 0 = advance flag, 1 = more copy
+    }
+
+    MEM(TYPE=BLOCK) {
+        // Compressed font ROM: 8 banks of 2048 x 8-bit
+        rom0 [8] [2048] = @file("../out/font_rom0.mem") { OUT rd SYNC; };
+        rom1 [8] [2048] = @file("../out/font_rom1.mem") { OUT rd SYNC; };
+        rom2 [8] [2048] = @file("../out/font_rom2.mem") { OUT rd SYNC; };
+        rom3 [8] [2048] = @file("../out/font_rom3.mem") { OUT rd SYNC; };
+        rom4 [8] [2048] = @file("../out/font_rom4.mem") { OUT rd SYNC; };
+        rom5 [8] [2048] = @file("../out/font_rom5.mem") { OUT rd SYNC; };
+        rom6 [8] [2048] = @file("../out/font_rom6.mem") { OUT rd SYNC; };
+        rom7 [8] [2048] = @file("../out/font_rom7.mem") { OUT rd SYNC; };
+
+        // Sliding window: 2 banks of 2048 x 8-bit
+        win0 [8] [2048] = 8'h00 { OUT rd SYNC; IN wr; };
+        win1 [8] [2048] = 8'h00 { OUT rd SYNC; IN wr; };
+    }
+
+    ASYNCHRONOUS {
+        done     <= done_r;
+        sd_addr  <= sd_addr_r;
+        sd_wdata <= sd_wdata_r;
+        sd_wr    <= sd_wr_r & ~sd_done;
+
+        // ROM address decomposition (14-bit addr: 3 bits bank, 11 bits offset)
+        rom_bank      <= { 1'b0, rom_addr[13:11] };
+        rom_bank_addr <= rom_addr[10:0];
+
+        // Window address decomposition
+        win_rd_bank  <= ref_rptr[11];
+        win_rd_baddr <= ref_rptr[10:0];
+        win_wr_bank  <= win_wr_ptr_s[11];
+        win_wr_baddr <= win_wr_ptr_s[10:0];
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Drive ROM read address to all banks every cycle
+        rom0.rd.addr <= rom_bank_addr;
+        rom1.rd.addr <= rom_bank_addr;
+        rom2.rd.addr <= rom_bank_addr;
+        rom3.rd.addr <= rom_bank_addr;
+        rom4.rd.addr <= rom_bank_addr;
+        rom5.rd.addr <= rom_bank_addr;
+        rom6.rd.addr <= rom_bank_addr;
+        rom7.rd.addr <= rom_bank_addr;
+
+        // Register bank select for mux
+        rom_bank_r <= rom_bank;
+
+        // ROM data mux (registered, 1 cycle after address)
+        SELECT (rom_bank_r) {
+            CASE (4'd0) { rom_data_r <= rom0.rd.data; }
+            CASE (4'd1) { rom_data_r <= rom1.rd.data; }
+            CASE (4'd2) { rom_data_r <= rom2.rd.data; }
+            CASE (4'd3) { rom_data_r <= rom3.rd.data; }
+            CASE (4'd4) { rom_data_r <= rom4.rd.data; }
+            CASE (4'd5) { rom_data_r <= rom5.rd.data; }
+            CASE (4'd6) { rom_data_r <= rom6.rd.data; }
+            CASE (4'd7) { rom_data_r <= rom7.rd.data; }
+            DEFAULT     { rom_data_r <= 8'h00; }
+        }
+
+        // Drive window read address to both banks
+        win0.rd.addr <= win_rd_baddr;
+        win1.rd.addr <= win_rd_baddr;
+
+        // Window write (from staging registers, then clear pending)
+        IF (win_wr_pending == 1'b1 && win_wr_bank == 1'b0) {
+            win0.wr[win_wr_baddr] <= win_wr_data_s;
+        } ELIF (win_wr_pending == 1'b1 && win_wr_bank == 1'b1) {
+            win1.wr[win_wr_baddr] <= win_wr_data_s;
+        }
+
+        SELECT (state) {
+            CASE (lit(4, ST_IDLE)) {
+                sd_wr_r        <= 1'b0;
+                win_wr_pending <= 1'b0;
+                IF (start == 1'b1) {
+                    rom_addr    <= 14'd0;
+                    out_addr    <= 16'd0;
+                    win_wptr    <= 12'd0;
+                    flag_bit    <= 3'd0;
+                    need_flag   <= 1'b1;
+                    ref_have_b0 <= 1'b0;
+                    done_r      <= 1'b0;
+                    zg_mode     <= 2'd0;
+                    zg_remain   <= 4'd0;
+                    zg_zero_rem <= 12'd0;
+                    // ROM read issued by always-driven address; wait 2 cycles
+                    // (1 for BSRAM latency, 1 for bank mux register)
+                    state       <= lit(4, ST_RD_WAIT);
+                }
+            }
+
+            CASE (lit(4, ST_RD_WAIT)) {
+                // Wait for BSRAM read latency + bank mux register (2 cycles)
+                sd_wr_r        <= 1'b0;
+                win_wr_pending <= 1'b0;
+                IF (wait_extra == 1'b0) {
+                    wait_extra <= 1'b1;
+                } ELSE {
+                    wait_extra <= 1'b0;
+                    state      <= lit(4, ST_PROCESS);
+                }
+            }
+
+            CASE (lit(4, ST_PROCESS)) {
+                sd_wr_r        <= 1'b0;
+                win_wr_pending <= 1'b0;
+
+                // Check completion
+                IF (out_addr >= lit(16, DECOMP_SIZE)) {
+                    done_r <= 1'b1;
+                    state  <= lit(4, ST_DONE);
+                } ELIF (need_flag == 1'b1) {
+                    // This read was a flag byte
+                    flag_byte  <= rom_data_r;
+                    flag_bit   <= 3'd0;
+                    need_flag  <= 1'b0;
+                    rom_addr   <= rom_addr + 14'd1;
+                    // Wait for next token read
+                    state      <= lit(4, ST_RD_WAIT);
+                } ELIF (ref_have_b0 == 1'b1) {
+                    // Reference byte 1
+                    ref_have_b0 <= 1'b0;
+                    ref_length  <= { 1'b0, rom_data_r[3:0] } + 5'd3;
+                    ref_rptr    <= (win_wptr - ({ ref_b0, rom_data_r[7:4] }) - 12'd1) & lit(12, WINDOW_MASK);
+                    rom_addr    <= rom_addr + 14'd1;
+                    // Start window read
+                    state       <= lit(4, ST_WIN_WAIT);
+                } ELIF (flag_byte[7] == 1'b1) {
+                    // Literal byte — route through ZeroGlyph decoder
+                    win_wr_pending <= 1'b1;
+                    win_wr_ptr_s   <= win_wptr;
+                    win_wr_data_s  <= rom_data_r;
+                    win_wptr       <= (win_wptr + 12'd1) & lit(12, WINDOW_MASK);
+                    rom_addr       <= rom_addr + 14'd1;
+                    zg_lzss_after  <= 1'b0;
+                    state          <= lit(4, ST_ZG_DECODE);
+                } ELSE {
+                    // Reference byte 0
+                    ref_b0      <= rom_data_r;
+                    ref_have_b0 <= 1'b1;
+                    rom_addr    <= rom_addr + 14'd1;
+                    state       <= lit(4, ST_RD_WAIT);
+                }
+            }
+
+            CASE (lit(4, ST_WIN_WAIT)) {
+                // Wait for window BSRAM read latency (2 cycles)
+                sd_wr_r        <= 1'b0;
+                win_wr_pending <= 1'b0;
+                IF (wait_extra == 1'b0) {
+                    wait_extra <= 1'b1;
+                } ELSE {
+                    wait_extra <= 1'b0;
+                    state      <= lit(4, ST_WIN_PROC);
+                }
+            }
+
+            CASE (lit(4, ST_WIN_PROC)) {
+                // Read window data (mux based on bank)
+                IF (ref_rptr[11] == 1'b0) {
+                    win_wr_data_s <= win0.rd.data;
+                } ELSE {
+                    win_wr_data_s <= win1.rd.data;
+                }
+
+                // Write to window
+                win_wr_pending <= 1'b1;
+                win_wr_ptr_s   <= win_wptr;
+                win_wptr       <= (win_wptr + 12'd1) & lit(12, WINDOW_MASK);
+
+                ref_length <= ref_length - 5'd1;
+                ref_rptr   <= (ref_rptr + 12'd1) & lit(12, WINDOW_MASK);
+
+                IF (ref_length == 5'd1) {
+                    zg_lzss_after <= 1'b0;
+                } ELSE {
+                    zg_lzss_after <= 1'b1;
+                }
+                state <= lit(4, ST_ZG_DECODE);
+            }
+
+            CASE (lit(4, ST_ZG_DECODE)) {
+                // ZeroGlyph decoder: interpret the LZSS-produced byte (win_wr_data_s)
+                // The byte has already been written to the LZSS sliding window.
+                win_wr_pending <= 1'b0;
+
+                IF (zg_mode == 2'd0) {
+                    // Mode 0: expect marker-or-literal-start byte
+                    IF (win_wr_data_s == 8'h00) {
+                        // 0x00 marker — next LZSS byte is the count
+                        sd_wr_r <= 1'b0;
+                        zg_mode <= 2'd1;
+                        // Return to LZSS to get next byte
+                        IF (zg_lzss_after == 1'b1) {
+                            state <= lit(4, ST_WIN_WAIT);
+                        } ELSE {
+                            flag_byte <= { flag_byte[6:0], 1'b0 };
+                            IF (flag_bit == 3'd7) {
+                                need_flag <= 1'b1;
+                                state     <= lit(4, ST_RD_WAIT);
+                            } ELSE {
+                                flag_bit <= flag_bit + 3'd1;
+                                state    <= lit(4, ST_RD_WAIT);
+                            }
+                        }
+                    } ELSE {
+                        // Non-zero first byte: literal glyph, write this byte to SDRAM
+                        // then pass through remaining 15 bytes (mode 2 counts 14→0)
+                        zg_remain  <= 4'd14;
+                        zg_mode    <= 2'd2;
+                        sd_addr_r  <= lit(21, FONT_BASE) + { 5'b00000, out_addr };
+                        sd_wdata_r <= { 24'd0, win_wr_data_s };
+                        sd_wr_r    <= 1'b1;
+                        after_wr   <= zg_lzss_after;
+                        state      <= lit(4, ST_WR_SDRAM);
+                    }
+                } ELIF (zg_mode == 2'd1) {
+                    // Mode 1: count byte (after 0x00 marker)
+                    IF (win_wr_data_s == 8'h00) {
+                        // Escape: next 16 bytes are a literal glyph starting with 0x00
+                        sd_wr_r   <= 1'b0;
+                        zg_remain <= 4'd15;
+                        zg_mode   <= 2'd2;
+                        // Return to LZSS to get first byte of escaped glyph
+                        IF (zg_lzss_after == 1'b1) {
+                            state <= lit(4, ST_WIN_WAIT);
+                        } ELSE {
+                            flag_byte <= { flag_byte[6:0], 1'b0 };
+                            IF (flag_bit == 3'd7) {
+                                need_flag <= 1'b1;
+                                state     <= lit(4, ST_RD_WAIT);
+                            } ELSE {
+                                flag_bit <= flag_bit + 3'd1;
+                                state    <= lit(4, ST_RD_WAIT);
+                            }
+                        }
+                    } ELSE {
+                        // N zero glyphs: emit N*16 zero bytes to SDRAM
+                        zg_zero_rem <= { win_wr_data_s, 4'd0 };  // count * 16
+                        zg_mode     <= 2'd0;
+                        // Start zero-fill loop (writes 0x00 to SDRAM without LZSS involvement)
+                        sd_addr_r  <= lit(21, FONT_BASE) + { 5'b00000, out_addr };
+                        sd_wdata_r <= 32'd0;
+                        sd_wr_r    <= 1'b1;
+                        state      <= lit(4, ST_ZG_ZERO_WR);
+                    }
+                } ELIF (zg_mode == 2'd2) {
+                    // Mode 2: pass-through glyph bytes
+                    sd_addr_r  <= lit(21, FONT_BASE) + { 5'b00000, out_addr };
+                    sd_wdata_r <= { 24'd0, win_wr_data_s };
+                    sd_wr_r    <= 1'b1;
+                    after_wr   <= zg_lzss_after;
+
+                    IF (zg_remain == 4'd0) {
+                        // Last byte of this glyph — back to mode 0 after SDRAM write
+                        zg_mode <= 2'd0;
+                    } ELSE {
+                        zg_remain <= zg_remain - 4'd1;
+                    }
+                    state <= lit(4, ST_WR_SDRAM);
+                }
+            }
+
+            CASE (lit(4, ST_ZG_ZERO_WR)) {
+                // Zero-fill loop: write 0x00 bytes to SDRAM
+                win_wr_pending <= 1'b0;
+                IF (sd_done == 1'b1) {
+                    out_addr    <= out_addr + 16'd1;
+                    zg_zero_rem <= zg_zero_rem - 12'd1;
+
+                    IF (out_addr + 16'd1 >= lit(16, DECOMP_SIZE)) {
+                        sd_wr_r <= 1'b0;
+                        done_r  <= 1'b1;
+                        state   <= lit(4, ST_DONE);
+                    } ELIF (zg_zero_rem == 12'd1) {
+                        // Done with zero-fill, return to LZSS for next byte
+                        sd_wr_r <= 1'b0;
+                        IF (zg_lzss_after == 1'b1) {
+                            state <= lit(4, ST_WIN_WAIT);
+                        } ELSE {
+                            flag_byte <= { flag_byte[6:0], 1'b0 };
+                            IF (flag_bit == 3'd7) {
+                                need_flag <= 1'b1;
+                                state     <= lit(4, ST_RD_WAIT);
+                            } ELSE {
+                                flag_bit <= flag_bit + 3'd1;
+                                state    <= lit(4, ST_RD_WAIT);
+                            }
+                        }
+                    } ELSE {
+                        // More zeros to write
+                        sd_addr_r  <= lit(21, FONT_BASE) + { 5'b00000, out_addr + 16'd1 };
+                        sd_wdata_r <= 32'd0;
+                        sd_wr_r    <= 1'b1;
+                    }
+                }
+            }
+
+            CASE (lit(4, ST_WR_SDRAM)) {
+                win_wr_pending <= 1'b0;
+                // Wait for SDRAM write to complete
+                IF (sd_done == 1'b1) {
+                    sd_wr_r  <= 1'b0;
+                    out_addr <= out_addr + 16'd1;
+
+                    IF (out_addr + 16'd1 >= lit(16, DECOMP_SIZE)) {
+                        done_r <= 1'b1;
+                        state  <= lit(4, ST_DONE);
+                    } ELIF (after_wr == 1'b1) {
+                        state <= lit(4, ST_WIN_WAIT);
+                    } ELSE {
+                        flag_byte <= { flag_byte[6:0], 1'b0 };
+                        IF (flag_bit == 3'd7) {
+                            need_flag <= 1'b1;
+                            state     <= lit(4, ST_RD_WAIT);
+                        } ELSE {
+                            flag_bit <= flag_bit + 3'd1;
+                            state    <= lit(4, ST_RD_WAIT);
+                        }
+                    }
+                }
+            }
+
+            CASE (lit(4, ST_DONE)) {
+                done_r         <= 1'b1;
+                sd_wr_r        <= 1'b0;
+                win_wr_pending <= 1'b0;
+            }
+
+            DEFAULT {
+                sd_wr_r        <= 1'b0;
+                win_wr_pending <= 1'b0;
+                state          <= lit(4, ST_IDLE);
+            }
+        }
+    }
+@endmod

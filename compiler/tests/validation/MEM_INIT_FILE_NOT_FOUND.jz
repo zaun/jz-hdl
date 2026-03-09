@@ -1,0 +1,25 @@
+// MEM_INIT_FILE_NOT_FOUND: @file path does not resolve to a readable file.
+// Verfied
+
+@project MEM_INIT_FILE_NOT_FOUND_PROJECT
+  @top MEM_INIT_FILE_NOT_FOUND_EXAMPLE {
+    OUT [8] data = _;
+  }
+@endproj
+
+@module MEM_INIT_FILE_NOT_FOUND_EXAMPLE
+  PORT {
+    OUT [8] data;
+  }
+
+  MEM {
+    // Refer to a file that does not exist.
+    rom_missing [8] [16] = @file("this_file_should_not_exist.bin") {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    data <= rom_missing.rd[1];
+  }
+@endmod

@@ -1,0 +1,2 @@
+File: MUX_SLICE_WIDTH_NOT_DIVISOR.jz
+      19:5    error MUX_SLICE_WIDTH_NOT_DIVISOR S4.6 Auto-slicing form requires wide_source width to be exact multiple of element_width

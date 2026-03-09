@@ -1,0 +1,37 @@
+// DIV_GUARD_EQ_NONZERO: IF (b == N) where N != 0 proves b nonzero in THEN.
+// IF (b != N) where N != 0 proves b nonzero in ELSE.
+// Verified
+
+@project DIV_GUARD_EQ_NONZERO_PROJECT
+  @top DIV_GUARD_EQ_NONZERO_EXAMPLE {
+    IN  [8] a = _;
+    IN  [8] b = _;
+    OUT [8] out_a = _;
+    OUT [8] out_b = _;
+  }
+@endproj
+
+@module DIV_GUARD_EQ_NONZERO_EXAMPLE
+  PORT {
+    IN  [8] a;
+    IN  [8] b;
+    OUT [8] out_a;
+    OUT [8] out_b;
+  }
+
+  ASYNCHRONOUS {
+    // IF (b == 5) THEN: b == 5 → nonzero — should NOT warn
+    IF (b == 8'd5) {
+      out_a <= a / b;
+    } ELSE {
+      out_a <= 8'd0;
+    }
+
+    // IF (b != 3) ELSE: b == 3 → nonzero — should NOT warn
+    IF (b != 8'd3) {
+      out_b <= 8'd0;
+    } ELSE {
+      out_b <= a % b;
+    }
+  }
+@endmod

@@ -1,0 +1,201 @@
+@global OPS
+    NOP  = 8'h00;
+    LDI  = 8'h01;
+    LDA  = 8'h02;
+    STA  = 8'h03;
+    ADD  = 8'h04;
+    SUB  = 8'h05;
+    JMP  = 8'h06;
+    JZ   = 8'h07;
+    LDIN = 8'h08;
+    STOU = 8'h09;
+    WAI  = 8'h0A;
+    HLT  = 8'hFF;
+@endglob
+
+@global STATE
+    FETCH_INS_ADDR = 3'b000;
+    FETCH_INS_DATA = 3'b001;
+    EXEC           = 3'b010;
+    MEM_READ       = 3'b011;
+    WAIT           = 3'b100;
+    HALT           = 3'b101;
+@endglob
+
+@module CPU
+    CONST {
+        CLOCK_MHZ = 27;
+        MILISEC_COUNT = CLOCK_MHZ * 1000;
+        MILISEC_BITS = clog2(MILISEC_COUNT);
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [1] por;
+        IN  [1] btn;
+        OUT [6] leds;
+    }
+
+    REGISTER {
+        instr         [8] = 8'b0;
+        A             [8] = 8'b0;
+        PC            [8] = 8'b0;
+        out_data      [8] = 8'b0;
+
+        wait_counter  [8] = 8'b0;
+        ms_counter    [MILISEC_BITS] = MILISEC_BITS'b0;
+
+        state         [3] = 3'b0;
+        zero          [1] = 1'b0;
+    }
+
+    WIRE {
+        reset [1];
+        por_n [1];
+    }
+
+    @new por0 por {
+        IN  [1] clk = clk;
+        IN  [1] done = por;
+        OUT [1] por_n = por_n;
+    }
+
+    MEM(TYPE=BLOCK) {
+        rom [8] [256] = @file("program.hex") {
+            OUT read SYNC;
+        };
+        ram [8] [256] = 8'h00 {
+            IN  write;
+            OUT read SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        reset <= rst_n & por_n;
+        IF (btn == 1'b0) {
+            leds <= ~out_data[5:0];
+        } ELSE {
+            leds <= ~PC[5:0];
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        SELECT(state) {
+            CASE STATE.HALT {
+                // tight loop
+            }
+            CASE STATE.WAIT {
+                IF (ms_counter == lit(MILISEC_BITS, MILISEC_COUNT)) {
+                    ms_counter <= MILISEC_BITS'b0;
+                    wait_counter <= wait_counter - 8'b1;
+                    IF (wait_counter - 8'b1 == 8'b0) {
+                        state <= STATE.FETCH_INS_ADDR;
+                    }
+                } ELSE {
+                    ms_counter <= ms_counter + MILISEC_BITS'b1;
+                }
+            }
+            CASE STATE.FETCH_INS_ADDR {
+                rom.read.addr <= PC;
+                state <= STATE.FETCH_INS_DATA;
+            }
+            CASE STATE.FETCH_INS_DATA {
+                instr <= rom.read.data;
+                PC <= PC + 8'b1;
+                SELECT (rom.read.data) {
+                    CASE OPS.LDI
+                    CASE OPS.LDA
+                    CASE OPS.STA
+                    CASE OPS.ADD
+                    CASE OPS.SUB
+                    CASE OPS.JMP
+                    CASE OPS.JZ
+                    CASE OPS.WAI {
+                        rom.read.addr <= PC + 8'b1;
+                        state <= STATE.EXEC;
+                    }
+                    DEFAULT {
+                        state <= STATE.EXEC;
+                    }
+                }
+            }
+            CASE STATE.EXEC {
+                SELECT(instr) {
+                    CASE OPS.NOP {
+                        state <= STATE.FETCH_INS_ADDR;
+                    }
+                    CASE OPS.LDI {
+                        A <= rom.read.data;
+                        zero <= (rom.read.data == 8'h00);
+                        state <= STATE.FETCH_INS_ADDR;
+                        PC <= PC + 8'b1;
+                    }
+                    CASE OPS.STA {
+                        ram.write[rom.read.data] <= A;
+                        state <= STATE.FETCH_INS_ADDR;
+                        PC <= PC + 8'b1;
+                    }
+                    CASE OPS.JMP {
+                        PC <= rom.read.data;
+                        state <= STATE.FETCH_INS_ADDR;
+                    }
+                    CASE OPS.JZ {
+                        IF (zero) {
+                            PC <= rom.read.data;
+                        } ELSE {
+                            PC <= PC + 8'b1;
+                        }
+                        state <= STATE.FETCH_INS_ADDR;
+                    }
+                    CASE OPS.LDIN {
+                        A <= { 7'b0000000, btn };
+                        zero <= (btn == 1'b0);
+                        state <= STATE.FETCH_INS_ADDR;
+                    }
+                    CASE OPS.STOU {
+                        out_data <= A;
+                        state <= STATE.FETCH_INS_ADDR;
+                    }
+                    CASE OPS.WAI {
+                        wait_counter <= rom.read.data;
+                        state <= STATE.WAIT;
+                        PC <= PC + 8'b1;
+                    }
+                    CASE OPS.HLT {
+                        state <= STATE.HALT;
+                    }
+                    CASE OPS.LDA
+                    CASE OPS.ADD
+                    CASE OPS.SUB {
+                        ram.read.addr <= rom.read.data;
+                        state <= STATE.MEM_READ;
+                        PC <= PC + 8'b1;
+                    }
+                    DEFAULT { }
+                }
+            }
+            CASE STATE.MEM_READ {
+                SELECT(instr) {
+                    CASE OPS.LDA {
+                        A <= ram.read.data;
+                        zero <= (ram.read.data == 8'h00);
+                    }
+                    CASE OPS.ADD {
+                        A <= A + ram.read.data; // no carry
+                        zero <= (A + ram.read.data) == 8'h00;
+                    }
+                    CASE OPS.SUB {
+                        A <= A - ram.read.data; // no borrow
+                        zero <= (A - ram.read.data) == 8'h00;
+                    }
+                    DEFAULT { }
+                }
+                state <= STATE.FETCH_INS_ADDR;
+            }
+            DEFAULT {
+                state <= STATE.FETCH_INS_ADDR;
+            }
+        }
+    }
+@endmod

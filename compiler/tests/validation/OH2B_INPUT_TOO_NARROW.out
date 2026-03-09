@@ -1,0 +1,2 @@
+File: OH2B_INPUT_TOO_NARROW.jz
+      18:12   error OH2B_INPUT_TOO_NARROW S5.5.12 oh2b() source must be at least 2 bits wide

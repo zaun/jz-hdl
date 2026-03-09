@@ -1,0 +1,145 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "tristate_resolution_test",
+    "modules": [
+      {
+        "id": 0,
+        "name": "tri_state_manager",
+        "base_module_id": -1,
+        "source_line": 38,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 40,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "drive_en",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 41,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 2,
+          "name": "internal_val",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 42,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 3,
+          "name": "shared_bus",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 43,
+          "can_be_z": true,
+          "iob": false,
+          "port": { "direction": "INOUT" }
+        },
+        {
+          "id": 4,
+          "name": "monitor",
+          "kind": "port",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 44,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 5,
+          "name": "bus_capture",
+          "kind": "register",
+          "width": 8,
+          "owner_module_id": 0,
+          "source_line": 48,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 8 }, "home_clock_domain_id": 0 }
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [5],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 64, "statements": [{ "kind": "if", "source_line": 70, "condition": { "kind": "logical_not", "width": 1, "source_line": 70, "operand": { "kind": "signal_ref", "width": 1, "source_line": 70, "signal_id": 1 } }, "then": { "kind": "block", "source_line": 70, "statements": [{ "kind": "assignment", "id": 0, "source_line": 71, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 5, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 8, "source_line": 71, "signal_id": 3 } }] } }] }
+          }
+        ],
+        "instances": [
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 51, "statements": [{ "kind": "assignment", "id": 0, "source_line": 58, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "ternary", "width": 8, "source_line": 58, "condition": { "kind": "signal_ref", "width": 1, "source_line": 58, "signal_id": 1 }, "true": { "kind": "signal_ref", "width": 8, "source_line": 58, "signal_id": 2 }, "false": { "kind": "literal", "width": 8, "source_line": 58, "literal": { "value": 0, "width": 8, "is_z": true } } } }, { "kind": "assignment", "id": 1, "source_line": 61, "assignment_kind": "ASSIGN_ALIAS", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "signal_ref", "width": 8, "source_line": 61, "signal_id": 5 } }] }
+      }
+    ],
+    "project": {
+      "name": "tristate_resolution_test",
+      "clocks": [
+        { "name": "sys_clk", "period_ns": 10, "edge": "RISING" }
+      ],
+      "clock_gens": [
+      ],
+      "pins": [
+        { "id": 0, "name": "sys_clk", "kind": "IN", "width": 1, "standard": "LVCMOS33", "drive_ma": 8, "drive": 8, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 1, "name": "ext_data_bus", "kind": "INOUT", "width": 8, "standard": "LVCMOS33", "drive_ma": 8, "drive": 8, "mode": "SINGLE", "term": false, "pull": "NONE" }
+      ],
+      "mappings": [
+        { "logical_pin_name": "sys_clk", "bit_index": -1, "board_pin_id": "5" },
+        { "logical_pin_name": "ext_data_bus", "bit_index": 0, "board_pin_id": "10" },
+        { "logical_pin_name": "ext_data_bus", "bit_index": 1, "board_pin_id": "11" },
+        { "logical_pin_name": "ext_data_bus", "bit_index": 2, "board_pin_id": "12" },
+        { "logical_pin_name": "ext_data_bus", "bit_index": 3, "board_pin_id": "13" },
+        { "logical_pin_name": "ext_data_bus", "bit_index": 4, "board_pin_id": "14" },
+        { "logical_pin_name": "ext_data_bus", "bit_index": 5, "board_pin_id": "15" },
+        { "logical_pin_name": "ext_data_bus", "bit_index": 6, "board_pin_id": "16" },
+        { "logical_pin_name": "ext_data_bus", "bit_index": 7, "board_pin_id": "17" }
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": -1, "pin_id": 0, "pin_bit_index": -1 },
+        { "top_port_signal_id": 1, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 2, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 3, "top_bit_index": 0, "pin_id": 1, "pin_bit_index": 0 },
+        { "top_port_signal_id": 3, "top_bit_index": 1, "pin_id": 1, "pin_bit_index": 1 },
+        { "top_port_signal_id": 3, "top_bit_index": 2, "pin_id": 1, "pin_bit_index": 2 },
+        { "top_port_signal_id": 3, "top_bit_index": 3, "pin_id": 1, "pin_bit_index": 3 },
+        { "top_port_signal_id": 3, "top_bit_index": 4, "pin_id": 1, "pin_bit_index": 4 },
+        { "top_port_signal_id": 3, "top_bit_index": 5, "pin_id": 1, "pin_bit_index": 5 },
+        { "top_port_signal_id": 3, "top_bit_index": 6, "pin_id": 1, "pin_bit_index": 6 },
+        { "top_port_signal_id": 3, "top_bit_index": 7, "pin_id": 1, "pin_bit_index": 7 },
+        { "top_port_signal_id": 4, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 74 }
+    ]
+  }
+}

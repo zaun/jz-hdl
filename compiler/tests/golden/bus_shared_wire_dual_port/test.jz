@@ -1,0 +1,83 @@
+// Golden test: Two INOUT ports from the same instance connected to the same parent wire
+// Tests:
+//   - Two separate can_be_z ports from one instance driving the same parent signal
+//   - Each port is a separate driver in the priority mux (no same-instance dedup)
+
+@project bus_shared_wire_test
+  IN_PINS {
+    clk_pin [1] = { standard=LVCMOS33 };
+    sel_pin [1] = { standard=LVCMOS33 };
+  }
+
+  INOUT_PINS {
+    data_pin [8] = { standard=LVCMOS33, drive=4 };
+  }
+
+  MAP {
+    clk_pin = 4;
+    sel_pin = 5;
+    data_pin[0] = 10; data_pin[1] = 11; data_pin[2] = 12; data_pin[3] = 13;
+    data_pin[4] = 14; data_pin[5] = 15; data_pin[6] = 16; data_pin[7] = 17;
+  }
+
+  @top top_mod {
+    IN    [1] clk = clk_pin;
+    IN    [1] sel = sel_pin;
+    INOUT [8] data = data_pin;
+  }
+@endproj
+
+// Module with two separate INOUT ports, each conditionally driving Z
+@module dual_driver
+  PORT {
+    IN    [1] sel;
+    INOUT [8] port_a;
+    INOUT [8] port_b;
+  }
+
+  ASYNCHRONOUS {
+    port_a <= (sel == 1'b1) ? 8'hAA : 8'bz;
+    port_b <= (sel == 1'b0) ? 8'hBB : 8'bz;
+  }
+@endmod
+
+// Another module that also drives the shared wire
+@module other_driver
+  PORT {
+    IN    [1] sel;
+    INOUT [8] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= (sel == 1'b1) ? 8'hCC : 8'bz;
+  }
+@endmod
+
+@module top_mod
+  PORT {
+    IN    [1] clk;
+    IN    [1] sel;
+    INOUT [8] data;
+  }
+
+  WIRE {
+    shared [8];
+  }
+
+  // Both port_a and port_b connect to the same wire
+  @new drv0 dual_driver {
+    IN    [1] sel = sel;
+    INOUT [8] port_a = shared;
+    INOUT [8] port_b = shared;
+  }
+
+  // Another driver on the same wire
+  @new drv1 other_driver {
+    IN    [1] sel = sel;
+    INOUT [8] data = shared;
+  }
+
+  ASYNCHRONOUS {
+    data = shared;
+  }
+@endmod

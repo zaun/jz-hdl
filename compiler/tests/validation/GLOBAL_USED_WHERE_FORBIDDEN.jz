@@ -1,0 +1,40 @@
+// GLOBAL_USED_WHERE_FORBIDDEN: GLOBAL.<name> used in a context where global constants are forbidden.
+// This test uses module CONST initializers, which must not reference GLOBAL.<name>.
+// Verified
+
+@global GLB
+  NOP = 1'b0;
+  LOAD = 1'b1;
+  WIDTH = 2'b11;
+@endglob
+
+@project GLOBAL_USED_WHERE_FORBIDDEN_EXAMPLE
+  @top top {
+    IN  [1] clk = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  CONST {
+    // Illegal: GLOBAL constant used in module CONST initializer.
+    BAD = GLB.LOAD;
+  }
+
+  PORT {
+    IN  [1] clk;
+    OUT [1] out;
+  }
+
+  REGISTER {
+    r [GLB.WIDTH] = 4'b0;
+  }
+
+  ASYNCHRONOUS {
+    out <= r;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    r <=z 1'b1;
+  }
+@endmod

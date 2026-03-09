@@ -1,0 +1,20 @@
+// GBIT_INDEX_OUT_OF_RANGE: gbit() index exceeds source width.
+// Verified
+
+@project GBIT_INDEX_OUT_OF_RANGE_PROJECT
+  @top GBIT_INDEX_OUT_OF_RANGE_EXAMPLE {
+    IN  [4] a = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module GBIT_INDEX_OUT_OF_RANGE_EXAMPLE
+  PORT {
+    IN  [4] a;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= gbit(a, 8);
+  }
+@endmod

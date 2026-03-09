@@ -1,0 +1,25 @@
+// LOGICAL_WIDTH_NOT_1: logical '&&'/'||' used with operands wider than 1 bit.
+// Verified
+
+@project LOGICAL_WIDTH_NOT_1_PROJECT
+  @top LOGICAL_WIDTH_NOT_1_EXAMPLE {
+    IN  [8] a = _;
+    IN  [8] b = _;
+    OUT [1] c = _;
+    OUT [1] d = _;
+  }
+@endproj
+
+@module LOGICAL_WIDTH_NOT_1_EXAMPLE
+  PORT {
+    IN  [8] a;
+    IN  [8] b;
+    OUT [1] c;
+    OUT [1] d;
+  }
+
+  ASYNCHRONOUS {
+    c = a && b;
+    d = a || b;
+  }
+@endmod

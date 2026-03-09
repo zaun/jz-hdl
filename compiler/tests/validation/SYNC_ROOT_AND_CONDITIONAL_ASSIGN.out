@@ -1,0 +1,2 @@
+File: SYNC_ROOT_AND_CONDITIONAL_ASSIGN.jz
+      29:7    error SYNC_ROOT_AND_CONDITIONAL_ASSIGN S5.2/S1.5/S8.1 Root-level register assignment combined with nested conditional assignment to same bits

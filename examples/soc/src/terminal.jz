@@ -1,0 +1,306 @@
+// Terminal Framebuffer with Command Register Interface
+// Dual BSRAM banks: cpu-side (sys_clk r/w) + video-side (pixel_clk read)
+// CPU writes are mirrored to both banks. Hardware scroll/clear operate internally.
+//
+// Register map (base 0x5000_0000, ADDR[5:2] selects register):
+//   +0x00  CELL_ADDR   [R/W]  12-bit cell index for read/write
+//   +0x04  CELL_CHAR   [R/W]  8-bit character at CELL_ADDR
+//   +0x08  CELL_ATTR   [R/W]  32-bit {BG[15:0], FG[15:0]} at CELL_ADDR
+//   +0x0C  FILL_CHAR   [R/W]  8-bit character for clear/scroll fill
+//   +0x10  FILL_ATTR   [R/W]  32-bit attribute for clear/scroll fill
+//   +0x14  TERM_COLS   [R/W]  8-bit terminal columns (80 or 120)
+//   +0x18  TERM_CELLS  [R/W]  12-bit total cells (cols * rows)
+//   +0x1C  COMMAND     [W]    1=CLEAR, 2=SCROLL_UP
+//   +0x20  STATUS      [R]    bit 0 = BUSY
+//   +0x24  CURSOR      [R/W]  bits[14:3]=cell position, bits[2:0]=style
+//
+// Cursor styles: 0=none 1=line 2=block 3=line-blink 4=block-blink
+//
+// Write CELL_ADDR first, then read/write CELL_CHAR/CELL_ATTR.
+// BSRAM read result is latched; reads return latched value immediately.
+@module terminal_fb
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [1]  pixel_clk;
+        BUS SIMPLE_BUS TARGET pbus;
+
+        // Video read interface (pixel_clk domain)
+        IN  [12] vram_addr;
+        OUT [8]  vram_char;
+        OUT [32] vram_attr;
+
+        // Cursor info for video pipeline
+        OUT [12] cursor_pos;
+        OUT [3]  cursor_style;
+    }
+
+    // CPU-side memories (both ports in sys_clk domain)
+    MEM(TYPE=BLOCK) {
+        char_cpu [8] [4096] = 8'h00 {
+            OUT cpu_char_rd SYNC;
+            IN  cpu_char_wr;
+        };
+    }
+
+    MEM(TYPE=BLOCK) {
+        attr_cpu [32] [4096] = 32'h00000000 {
+            OUT cpu_attr_rd SYNC;
+            IN  cpu_attr_wr;
+        };
+    }
+
+    // Video-side memories (read on pixel_clk, write on sys_clk)
+    MEM(TYPE=BLOCK) {
+        char_vid [8] [4096] = 8'h00 {
+            OUT vid_char_rd SYNC;
+            IN  vid_char_wr;
+        };
+    }
+
+    MEM(TYPE=BLOCK) {
+        attr_vid [32] [4096] = 32'h00000000 {
+            OUT vid_attr_rd SYNC;
+            IN  vid_attr_wr;
+        };
+    }
+
+    WIRE {
+        // Combinational memory operation signals
+        char_wr_en  [1];
+        attr_wr_en  [1];
+        mem_wr_addr [12];
+        mem_wr_char [8];
+        mem_wr_attr [32];
+        mem_rd_addr [12];
+
+        // FSM next-state signals
+        next_state   [3];
+        next_counter [12];
+        next_src     [12];
+
+        // Bus decode helpers
+        bus_reg      [4];
+        is_bus_wr    [1];
+        is_bus_rd    [1];
+
+        // FSM state decode
+        is_idle      [1];
+        is_clear     [1];
+        is_scr_rd    [1];
+        is_scr_wr    [1];
+        is_scr_fill  [1];
+        at_last_cell [1];
+        at_last_src  [1];
+
+        // Bus read data mux
+        read_data    [32];
+        read_reg_sel [4];
+    }
+
+    REGISTER {
+        // Register file
+        cell_addr_reg  [12] = 12'b0;
+        fill_char_reg  [8]  = 8'h20;
+        fill_attr_reg  [32] = 32'h0000FFFF;
+        term_cols_reg  [8]  = 8'd80;
+        term_cells_reg [12] = 12'd1760;
+        cursor_reg     [15] = 15'b0;
+
+        // Latched BSRAM read results
+        char_latch     [8]  = 8'h00;
+        attr_latch     [32] = 32'h00000000;
+
+        // Latched video read results (pixel_clk domain)
+        vid_char_latch [8]  = 8'h00;
+        vid_attr_latch [32] = 32'h00000000;
+
+        // FSM: 0=IDLE, 1=CLEAR, 2=SCROLL_READ, 3=SCROLL_WRITE, 4=SCROLL_FILL, 5=SCROLL_LATCH
+        fsm_state      [3]  = 3'b0;
+        fsm_counter    [12] = 12'b0;
+        fsm_src        [12] = 12'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Video read outputs
+        vram_char <= vid_char_latch;
+        vram_attr <= vid_attr_latch;
+
+        // Cursor outputs
+        cursor_pos   <= cursor_reg[14:3];
+        cursor_style <= cursor_reg[2:0];
+
+        // FSM state decode
+        is_idle     <= (fsm_state == 3'd0) ? 1'b1 : 1'b0;
+        is_clear    <= (fsm_state == 3'd1) ? 1'b1 : 1'b0;
+        is_scr_rd   <= (fsm_state == 3'd2) ? 1'b1 : 1'b0;
+        is_scr_wr   <= (fsm_state == 3'd3) ? 1'b1 : 1'b0;
+        is_scr_fill <= (fsm_state == 3'd4) ? 1'b1 : 1'b0;
+        // State 5: SCROLL_LATCH — wait cycle for BSRAM read data to arrive
+        at_last_cell <= (fsm_counter == term_cells_reg - 12'd1) ? 1'b1 : 1'b0;
+        at_last_src  <= (fsm_src == term_cells_reg - 12'd1) ? 1'b1 : 1'b0;
+
+        // Bus decode
+        bus_reg   <= pbus.ADDR[5:2];
+        is_bus_wr <= (fsm_state == 3'd0 && pbus.VALID == 1'b1 && pbus.CMD == CMD.WRITE) ? 1'b1 : 1'b0;
+        is_bus_rd <= (fsm_state == 3'd0 && pbus.VALID == 1'b1 && pbus.CMD == CMD.READ) ? 1'b1 : 1'b0;
+
+        // ---- Separate char/attr write enables ----
+        // FSM ops write both; bus CELL_CHAR writes char only; bus CELL_ATTR writes attr only
+        char_wr_en <= (is_clear == 1'b1 || is_scr_wr == 1'b1 || is_scr_fill == 1'b1 ||
+                       (is_bus_wr == 1'b1 && bus_reg == 4'd1))
+                      ? 1'b1 : 1'b0;
+        attr_wr_en <= (is_clear == 1'b1 || is_scr_wr == 1'b1 || is_scr_fill == 1'b1 ||
+                       (is_bus_wr == 1'b1 && bus_reg == 4'd2))
+                      ? 1'b1 : 1'b0;
+
+        // ---- Memory write address ----
+        mem_wr_addr <= (is_clear == 1'b1 || is_scr_wr == 1'b1 || is_scr_fill == 1'b1)
+                       ? fsm_counter : cell_addr_reg;
+
+        // ---- Memory write character ----
+        mem_wr_char <= (is_clear == 1'b1 || is_scr_fill == 1'b1) ? fill_char_reg :
+                       (is_scr_wr == 1'b1) ? char_latch :
+                       (is_bus_wr == 1'b1 && bus_reg == 4'd1) ? pbus.DATA[7:0] :
+                       char_latch;
+
+        // ---- Memory write attribute ----
+        mem_wr_attr <= (is_clear == 1'b1 || is_scr_fill == 1'b1) ? fill_attr_reg :
+                       (is_scr_wr == 1'b1) ? attr_latch :
+                       (is_bus_wr == 1'b1 && bus_reg == 4'd2) ? pbus.DATA :
+                       attr_latch;
+
+        // ---- Memory read address ----
+        mem_rd_addr <= (is_scr_rd == 1'b1) ? fsm_src :
+                       (is_bus_wr == 1'b1 && bus_reg == 4'd0) ? pbus.DATA[11:0] :
+                       cell_addr_reg;
+
+        // ---- FSM next state ----
+        // State flow: SCROLL_READ(2) → SCROLL_LATCH(5) → SCROLL_WRITE(3) → loop or SCROLL_FILL(4)
+        next_state <= (is_clear == 1'b1 && at_last_cell == 1'b1) ? 3'd0 :
+                      (is_clear == 1'b1) ? 3'd1 :
+                      (is_scr_rd == 1'b1) ? 3'd5 :
+                      (fsm_state == 3'd5) ? 3'd3 :
+                      (is_scr_wr == 1'b1 && at_last_src == 1'b1) ? 3'd4 :
+                      (is_scr_wr == 1'b1) ? 3'd2 :
+                      (is_scr_fill == 1'b1 && at_last_cell == 1'b1) ? 3'd0 :
+                      (is_scr_fill == 1'b1) ? 3'd4 :
+                      (is_bus_wr == 1'b1 && bus_reg == 4'd7 && pbus.DATA[1:0] == 2'd1) ? 3'd1 :
+                      (is_bus_wr == 1'b1 && bus_reg == 4'd7 && pbus.DATA[1:0] == 2'd2) ? 3'd2 :
+                      fsm_state;
+
+        // ---- FSM next counter ----
+        next_counter <= (is_clear == 1'b1 && at_last_cell == 1'b1) ? 12'd0 :
+                        (is_clear == 1'b1) ? fsm_counter + 12'd1 :
+                        (is_scr_wr == 1'b1) ? fsm_counter + 12'd1 :
+                        (is_scr_fill == 1'b1 && at_last_cell == 1'b1) ? 12'd0 :
+                        (is_scr_fill == 1'b1) ? fsm_counter + 12'd1 :
+                        (is_bus_wr == 1'b1 && bus_reg == 4'd7) ? 12'd0 :
+                        fsm_counter;
+
+        // ---- FSM next source ----
+        next_src <= (is_scr_wr == 1'b1) ? fsm_src + 12'd1 :
+                    (is_bus_wr == 1'b1 && bus_reg == 4'd7 && pbus.DATA[1:0] == 2'd2)
+                        ? {4'b0, term_cols_reg} :
+                    fsm_src;
+
+        // ---- Bus read data mux ----
+        read_reg_sel <= pbus.ADDR[5:2];
+
+        SELECT(read_reg_sel) {
+            CASE 4'd0 {
+                read_data <= {20'b0, cell_addr_reg};
+            }
+            CASE 4'd1 {
+                read_data <= {24'b0, char_latch};
+            }
+            CASE 4'd2 {
+                read_data <= attr_latch;
+            }
+            CASE 4'd3 {
+                read_data <= {24'b0, fill_char_reg};
+            }
+            CASE 4'd4 {
+                read_data <= fill_attr_reg;
+            }
+            CASE 4'd5 {
+                read_data <= {24'b0, term_cols_reg};
+            }
+            CASE 4'd6 {
+                read_data <= {20'b0, term_cells_reg};
+            }
+            CASE 4'd8 {
+                read_data <= {31'b0, is_idle == 1'b0};
+            }
+            CASE 4'd9 {
+                read_data <= {17'b0, cursor_reg};
+            }
+            DEFAULT {
+                read_data <= 32'b0;
+            }
+        }
+
+        // ---- Bus response ----
+        pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ) ? read_data : 32'bz;
+
+        IF (pbus.VALID) {
+            pbus.DONE <= 1'b1;
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+    }
+
+    // CPU port (sys_clk domain)
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        // FSM state update
+        fsm_state   <= next_state;
+        fsm_counter <= next_counter;
+        fsm_src     <= next_src;
+
+        // Always latch BSRAM read data
+        char_latch <= char_cpu.cpu_char_rd.data;
+        attr_latch <= attr_cpu.cpu_attr_rd.data;
+
+        // Single memory read address
+        char_cpu.cpu_char_rd.addr <= mem_rd_addr;
+        attr_cpu.cpu_attr_rd.addr <= mem_rd_addr;
+
+        // Separate char/attr writes to avoid stale latch cross-contamination
+        IF (char_wr_en == 1'b1) {
+            char_cpu.cpu_char_wr[mem_wr_addr] <= mem_wr_char;
+            char_vid.vid_char_wr[mem_wr_addr] <= mem_wr_char;
+        }
+        IF (attr_wr_en == 1'b1) {
+            attr_cpu.cpu_attr_wr[mem_wr_addr] <= mem_wr_attr;
+            attr_vid.vid_attr_wr[mem_wr_addr] <= mem_wr_attr;
+        }
+
+        // Register writes (from bus)
+        IF (is_bus_wr == 1'b1 && bus_reg == 4'd0) {
+            cell_addr_reg <= pbus.DATA[11:0];
+        }
+        IF (is_bus_wr == 1'b1 && bus_reg == 4'd3) {
+            fill_char_reg <= pbus.DATA[7:0];
+        }
+        IF (is_bus_wr == 1'b1 && bus_reg == 4'd4) {
+            fill_attr_reg <= pbus.DATA;
+        }
+        IF (is_bus_wr == 1'b1 && bus_reg == 4'd5) {
+            term_cols_reg <= pbus.DATA[7:0];
+        }
+        IF (is_bus_wr == 1'b1 && bus_reg == 4'd6) {
+            term_cells_reg <= pbus.DATA[11:0];
+        }
+        IF (is_bus_wr == 1'b1 && bus_reg == 4'd9) {
+            cursor_reg <= pbus.DATA[14:0];
+        }
+    }
+
+    // Video read port (pixel_clk domain)
+    SYNCHRONOUS(CLK = pixel_clk RESET = rst_n RESET_ACTIVE = Low) {
+        char_vid.vid_char_rd.addr <= vram_addr;
+        attr_vid.vid_attr_rd.addr <= vram_addr;
+        vid_char_latch <= char_vid.vid_char_rd.data;
+        vid_attr_latch <= attr_vid.vid_attr_rd.data;
+    }
+@endmod

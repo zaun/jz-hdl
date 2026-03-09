@@ -1,0 +1,22 @@
+// SSLICE_VALUE_WIDTH_MISMATCH: sslice() value width does not match width parameter.
+// Verified
+
+@project SSLICE_VALUE_WIDTH_MISMATCH_PROJECT
+  @top SSLICE_VALUE_WIDTH_MISMATCH_EXAMPLE {
+    IN  [8] a = _;
+    IN  [4] v = _;
+    OUT [8] out = _;
+  }
+@endproj
+
+@module SSLICE_VALUE_WIDTH_MISMATCH_EXAMPLE
+  PORT {
+    IN  [8] a;
+    IN  [4] v;
+    OUT [8] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= sslice(a, 0, 2, v);
+  }
+@endmod

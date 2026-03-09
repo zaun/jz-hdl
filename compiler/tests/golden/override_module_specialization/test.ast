@@ -1,0 +1,157 @@
+{"type": "Project", "name": "override_specialization_test", "text": "GENERIC", "loc": {"line": 9, "column": 1, "file": "test.jz"}, "children": [
+  {"type": "ConfigBlock", "block_kind": "CONFIG", "loc": {"line": 11, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "DATA_WIDTH", "text": "12", "loc": {"line": 12, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "MEM_DEPTH", "text": "6", "loc": {"line": 13, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 16, "column": 5, "file": "test.jz"}},
+  {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 19, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "d_in", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "width": "16", "loc": {"line": 20, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "OutPinsBlock", "block_kind": "OUT_PINS", "loc": {"line": 23, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "out_a", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "16", "loc": {"line": 24, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "out_b", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "10", "loc": {"line": 25, "column": 9, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "out_c", "block_kind": "OUT_PINS", "text": "standard = LVCMOS33 , drive = 8", "width": "CONFIG . DATA_WIDTH", "loc": {"line": 26, "column": 9, "file": "test.jz"}}
+  ]},
+  {"type": "MapBlock", "block_kind": "MAP", "loc": {"line": 29, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "ConstDecl", "name": "d_in [ 0 ]", "text": "2", "loc": {"line": 30, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 1 ]", "text": "3", "loc": {"line": 30, "column": 22, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 2 ]", "text": "4", "loc": {"line": 30, "column": 35, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 3 ]", "text": "5", "loc": {"line": 30, "column": 48, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 4 ]", "text": "6", "loc": {"line": 31, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 5 ]", "text": "7", "loc": {"line": 31, "column": 22, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 6 ]", "text": "8", "loc": {"line": 31, "column": 35, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 7 ]", "text": "9", "loc": {"line": 31, "column": 48, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 8 ]", "text": "10", "loc": {"line": 32, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 9 ]", "text": "11", "loc": {"line": 32, "column": 23, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 10 ]", "text": "12", "loc": {"line": 32, "column": 37, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 11 ]", "text": "13", "loc": {"line": 32, "column": 52, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 12 ]", "text": "14", "loc": {"line": 33, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 13 ]", "text": "15", "loc": {"line": 33, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 14 ]", "text": "16", "loc": {"line": 33, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "d_in [ 15 ]", "text": "17", "loc": {"line": 33, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 0 ]", "text": "20", "loc": {"line": 35, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 1 ]", "text": "21", "loc": {"line": 35, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 2 ]", "text": "22", "loc": {"line": 35, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 3 ]", "text": "23", "loc": {"line": 35, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 4 ]", "text": "24", "loc": {"line": 36, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 5 ]", "text": "25", "loc": {"line": 36, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 6 ]", "text": "26", "loc": {"line": 36, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 7 ]", "text": "27", "loc": {"line": 36, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 8 ]", "text": "28", "loc": {"line": 37, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 9 ]", "text": "29", "loc": {"line": 37, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 10 ]", "text": "30", "loc": {"line": 37, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 11 ]", "text": "31", "loc": {"line": 37, "column": 55, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 12 ]", "text": "32", "loc": {"line": 38, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 13 ]", "text": "33", "loc": {"line": 38, "column": 25, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 14 ]", "text": "34", "loc": {"line": 38, "column": 41, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_a [ 15 ]", "text": "35", "loc": {"line": 38, "column": 57, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 0 ]", "text": "40", "loc": {"line": 40, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 1 ]", "text": "41", "loc": {"line": 40, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 2 ]", "text": "42", "loc": {"line": 40, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 3 ]", "text": "43", "loc": {"line": 40, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 4 ]", "text": "44", "loc": {"line": 41, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 5 ]", "text": "45", "loc": {"line": 41, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 6 ]", "text": "46", "loc": {"line": 41, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 7 ]", "text": "47", "loc": {"line": 41, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 8 ]", "text": "48", "loc": {"line": 42, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_b [ 9 ]", "text": "49", "loc": {"line": 42, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 0 ]", "text": "60", "loc": {"line": 44, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 1 ]", "text": "61", "loc": {"line": 44, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 2 ]", "text": "62", "loc": {"line": 44, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 3 ]", "text": "63", "loc": {"line": 44, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 4 ]", "text": "64", "loc": {"line": 45, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 5 ]", "text": "65", "loc": {"line": 45, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 6 ]", "text": "66", "loc": {"line": 45, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 7 ]", "text": "67", "loc": {"line": 45, "column": 54, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 8 ]", "text": "68", "loc": {"line": 46, "column": 9, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 9 ]", "text": "69", "loc": {"line": 46, "column": 24, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 10 ]", "text": "70", "loc": {"line": 46, "column": 39, "file": "test.jz"}},
+    {"type": "ConstDecl", "name": "out_c [ 11 ]", "text": "71", "loc": {"line": 46, "column": 55, "file": "test.jz"}}
+  ]},
+  {"type": "ProjectTopInstance", "name": "override_test", "loc": {"line": 49, "column": 5, "file": "test.jz"}, "children": [
+    {"type": "PortDecl", "name": "d_in", "block_kind": "IN", "text": "d_in", "width": "16", "loc": {"line": 50, "column": 18, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "out_a", "block_kind": "OUT", "text": "out_a", "width": "16", "loc": {"line": 51, "column": 18, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "out_b", "block_kind": "OUT", "text": "out_b", "width": "10", "loc": {"line": 52, "column": 18, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "out_c", "block_kind": "OUT", "text": "out_c", "width": "12", "loc": {"line": 53, "column": 18, "file": "test.jz"}}
+  ]},
+  {"type": "Module", "name": "configurable_unit", "loc": {"line": 62, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "ConstBlock", "block_kind": "CONST", "loc": {"line": 63, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "ConstDecl", "name": "WIDTH", "text": "8", "loc": {"line": 64, "column": 9, "file": "test.jz"}},
+      {"type": "ConstDecl", "name": "DEPTH", "text": "4", "loc": {"line": 65, "column": 9, "file": "test.jz"}}
+    ]},
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 68, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "data_in", "block_kind": "IN", "width": "WIDTH", "loc": {"line": 69, "column": 21, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "data_out", "block_kind": "OUT", "width": "WIDTH", "loc": {"line": 70, "column": 21, "file": "test.jz"}}
+    ]},
+    {"type": "WireBlock", "block_kind": "WIRE", "loc": {"line": 73, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "WireDecl", "name": "masked", "width": "WIDTH", "loc": {"line": 74, "column": 9, "file": "test.jz"}}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 77, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 78, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "masked", "loc": {"line": 78, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "data_in", "loc": {"line": 78, "column": 19, "file": "test.jz"}}
+      ]},
+      {"type": "Assign", "block_kind": "ALIAS", "loc": {"line": 79, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "data_out", "loc": {"line": 79, "column": 9, "file": "test.jz"}},
+        {"type": "Identifier", "name": "masked", "loc": {"line": 79, "column": 20, "file": "test.jz"}}
+      ]}
+    ]}
+  ]},
+  {"type": "Module", "name": "override_test", "loc": {"line": 88, "column": 1, "file": "test.jz"}, "children": [
+    {"type": "ConstBlock", "block_kind": "CONST", "loc": {"line": 89, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "ConstDecl", "name": "MY_WIDTH", "text": "10", "loc": {"line": 90, "column": 9, "file": "test.jz"}},
+      {"type": "ConstDecl", "name": "MY_DEPTH", "text": "5", "loc": {"line": 91, "column": 9, "file": "test.jz"}}
+    ]},
+    {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 94, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "PortDecl", "name": "d_in", "block_kind": "IN", "width": "16", "loc": {"line": 95, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "out_a", "block_kind": "OUT", "width": "16", "loc": {"line": 96, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "out_b", "block_kind": "OUT", "width": "10", "loc": {"line": 97, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "out_c", "block_kind": "OUT", "width": "12", "loc": {"line": 98, "column": 18, "file": "test.jz"}}
+    ]},
+    {"type": "ModuleInstance", "name": "inst_literal", "text": "configurable_unit", "loc": {"line": 102, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "ConstBlock", "block_kind": "OVERRIDE", "loc": {"line": 103, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "ConstDecl", "name": "WIDTH", "text": "16", "loc": {"line": 104, "column": 13, "file": "test.jz"}},
+        {"type": "ConstDecl", "name": "DEPTH", "text": "8", "loc": {"line": 105, "column": 13, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "data_in", "block_kind": "IN", "width": "16", "loc": {"line": 107, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "d_in", "loc": {"line": 107, "column": 29, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "data_out", "block_kind": "OUT", "width": "16", "loc": {"line": 108, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "out_a", "loc": {"line": 108, "column": 29, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "ModuleInstance", "name": "inst_const", "text": "configurable_unit", "loc": {"line": 112, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "ConstBlock", "block_kind": "OVERRIDE", "loc": {"line": 113, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "ConstDecl", "name": "WIDTH", "text": "MY_WIDTH", "loc": {"line": 114, "column": 13, "file": "test.jz"}},
+        {"type": "ConstDecl", "name": "DEPTH", "text": "MY_DEPTH", "loc": {"line": 115, "column": 13, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "data_in", "block_kind": "IN", "width": "10", "loc": {"line": 117, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Slice", "loc": {"line": 117, "column": 29, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "d_in", "loc": {"line": 117, "column": 29, "file": "test.jz"}},
+          {"type": "Literal", "text": "9", "loc": {"line": 117, "column": 34, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 117, "column": 36, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "PortDecl", "name": "data_out", "block_kind": "OUT", "width": "10", "loc": {"line": 118, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "out_b", "loc": {"line": 118, "column": 29, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "ModuleInstance", "name": "inst_config", "text": "configurable_unit", "loc": {"line": 122, "column": 5, "file": "test.jz"}, "children": [
+      {"type": "ConstBlock", "block_kind": "OVERRIDE", "loc": {"line": 123, "column": 9, "file": "test.jz"}, "children": [
+        {"type": "ConstDecl", "name": "WIDTH", "text": "CONFIG . DATA_WIDTH", "loc": {"line": 124, "column": 13, "file": "test.jz"}},
+        {"type": "ConstDecl", "name": "DEPTH", "text": "CONFIG . MEM_DEPTH", "loc": {"line": 125, "column": 13, "file": "test.jz"}}
+      ]},
+      {"type": "PortDecl", "name": "data_in", "block_kind": "IN", "width": "12", "loc": {"line": 127, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Slice", "loc": {"line": 127, "column": 29, "file": "test.jz"}, "children": [
+          {"type": "Identifier", "name": "d_in", "loc": {"line": 127, "column": 29, "file": "test.jz"}},
+          {"type": "Literal", "text": "11", "loc": {"line": 127, "column": 34, "file": "test.jz"}},
+          {"type": "Literal", "text": "0", "loc": {"line": 127, "column": 37, "file": "test.jz"}}
+        ]}
+      ]},
+      {"type": "PortDecl", "name": "data_out", "block_kind": "OUT", "width": "12", "loc": {"line": 128, "column": 18, "file": "test.jz"}, "children": [
+        {"type": "Identifier", "name": "out_c", "loc": {"line": 128, "column": 29, "file": "test.jz"}}
+      ]}
+    ]},
+    {"type": "Block", "block_kind": "ASYNCHRONOUS", "loc": {"line": 131, "column": 5, "file": "test.jz"}}
+  ]}
+]}

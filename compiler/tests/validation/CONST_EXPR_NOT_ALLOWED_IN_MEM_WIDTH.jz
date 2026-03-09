@@ -1,0 +1,35 @@
+// CONST_EXPR_NOT_ALLOWED_IN_MEM_WIDTH: Rule removed — CONST expressions
+// are now allowed in MEM width/depth per S7.10.
+// This test verifies that CONST expressions in MEM width/depth compile cleanly.
+// Verified
+
+@project CONST_EXPR_NOT_ALLOWED_IN_MEM_WIDTH_PROJECT
+  @top CONST_EXPR_NOT_ALLOWED_IN_MEM_WIDTH_EXAMPLE {
+    IN  [8] addr = _;
+    OUT [8] data = _;
+  }
+@endproj
+
+@module CONST_EXPR_NOT_ALLOWED_IN_MEM_WIDTH_EXAMPLE
+  CONST {
+    DEPTH = 256;
+    WORD_WIDTH = 8;
+    DBL_DEPTH = DEPTH * 2;
+  }
+
+  PORT {
+    IN  [8] addr;
+    OUT [WORD_WIDTH] data;
+  }
+
+  MEM {
+    // CONST expressions in MEM depth are now allowed (S7.10)
+    rom [WORD_WIDTH] [DEPTH * 2] = 8'h00 {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    data = rom.rd[addr];
+  }
+@endmod

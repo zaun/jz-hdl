@@ -1,0 +1,28 @@
+// REG_INIT_CONTAINS_Z: register initialization literal must not contain z bits.
+// Verified
+
+@project REG_INIT_CONTAINS_Z_PROJECT
+  @top REG_INIT_CONTAINS_Z_EXAMPLE {
+    IN  [1] clk = _;
+    OUT [4] out = _;
+  }
+@endproj
+
+@module REG_INIT_CONTAINS_Z_EXAMPLE
+  PORT {
+    IN  [1] clk;
+    OUT [4] out;
+  }
+
+  REGISTER {
+    r [4] = 4'bzzz0;
+  }
+
+  ASYNCHRONOUS {
+    out <= r;
+  }
+
+  SYNCHRONOUS(CLK=clk) {
+    r <= 4'b0000;
+  }
+@endmod

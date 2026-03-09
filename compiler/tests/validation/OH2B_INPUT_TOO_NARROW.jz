@@ -1,0 +1,20 @@
+// OH2B_INPUT_TOO_NARROW: oh2b() source must be at least 2 bits wide.
+// Verified
+
+@project OH2B_INPUT_TOO_NARROW_PROJECT
+  @top OH2B_INPUT_TOO_NARROW_EXAMPLE {
+    IN  [1] a = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module OH2B_INPUT_TOO_NARROW_EXAMPLE
+  PORT {
+    IN  [1] a;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out <= oh2b(a);
+  }
+@endmod

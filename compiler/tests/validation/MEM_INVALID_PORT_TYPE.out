@@ -1,0 +1,2 @@
+File: MEM_INVALID_PORT_TYPE.jz
+      23:14   error MEM_INVALID_PORT_TYPE S7.1/S7.7.1 Invalid port type or qualifier (e.g. OUT ASYNC, unknown keyword)

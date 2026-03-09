@@ -1,0 +1,23 @@
+@module top {
+  PORT {
+    OUT [7] data;
+  }
+
+  MEM(TYPE=BLOCK) {
+    big [32] [3072] = 32'h00000000 {
+      IN wr;
+      OUT rd;
+    };
+  }
+
+  ASYNCHRONOUS {
+    data <= big.rd[0][6:0];
+  }
+}
+@endmod
+
+@project(CHIP="GW2AR-18-QN88-C8-I7") demo
+  @top top {
+    OUT [7] data = _;
+  }
+@endproj

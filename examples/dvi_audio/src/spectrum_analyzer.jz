@@ -1,0 +1,512 @@
+// 80-Bar Spectrum Analyzer
+// Maps 4 audio channels' frequencies to 80 log-spaced bins (65 Hz - 5 kHz),
+// adds simulated odd harmonics (3rd, 5th) with spectral spread for visual fullness.
+// Smooths amplitudes per frame, stores in DISTRIBUTED RAM.
+// Exposes combinational read port for the display module.
+@module spectrum_analyzer
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [16] ch0_half_period;  IN  [8] ch0_volume;  IN  [1] ch0_in_gap;
+        IN  [16] ch1_half_period;  IN  [8] ch1_volume;  IN  [1] ch1_in_gap;
+        IN  [16] ch2_half_period;  IN  [8] ch2_volume;  IN  [1] ch2_in_gap;
+        IN  [16] ch3_half_period;  IN  [8] ch3_volume;  IN  [1] ch3_in_gap;
+        IN  [1]  frame_pulse;
+        IN  [7]  rd_bar;
+        OUT [16] rd_amp;
+    }
+
+    WIRE {
+        // Per-channel bar indices (combinational from half_period)
+        ch0_fund [7];  ch0_h3 [7];  ch0_h5 [7];
+        ch1_fund [7];  ch1_h3 [7];  ch1_h5 [7];
+        ch2_fund [7];  ch2_h3 [7];  ch2_h5 [7];
+        ch3_fund [7];  ch3_h3 [7];  ch3_h5 [7];
+
+        // Per-channel effective volume (0 during gap)
+        ch0_vol_eff [8];  ch1_vol_eff [8];
+        ch2_vol_eff [8];  ch3_vol_eff [8];
+
+        // Signed distance from sweep_idx to each source bar
+        d0f [8];  d0h3 [8];  d0h5 [8];
+        d1f [8];  d1h3 [8];  d1h5 [8];
+        d2f [8];  d2h3 [8];  d2h5 [8];
+        d3f [8];  d3h3 [8];  d3h5 [8];
+
+        // Absolute distances
+        a0f [7];  a0h3 [7];  a0h5 [7];
+        a1f [7];  a1h3 [7];  a1h5 [7];
+        a2f [7];  a2h3 [7];  a2h5 [7];
+        a3f [7];  a3h3 [7];  a3h5 [7];
+
+        // 12 separate contribution values (no accumulation)
+        c0f [8];  c0h3 [8];  c0h5 [8];
+        c1f [8];  c1h3 [8];  c1h5 [8];
+        c2f [8];  c2h3 [8];  c2h5 [8];
+        c3f [8];  c3h3 [8];  c3h5 [8];
+
+        // Sum tree
+        sum_01f  [9];   sum_23f  [9];
+        sum_01h3 [9];   sum_23h3 [9];
+        sum_01h5 [9];   sum_23h5 [9];
+        sum_fund [10];  sum_h3   [10];  sum_h5 [10];
+        target_acc [11];
+        target_amp [8];
+
+        // Smoothing
+        smooth_cur    [8];
+        smooth_delta  [9];
+        smooth_step   [9];
+        smooth_next   [9];
+        smooth_result [8];
+
+        // Peak (from sweep_ram: [15:12]=peak_top4, [11:8]=timer)
+        peak_approx   [8];    // reconstructed: {sweep[15:12], 4'b0}
+        timer_cur     [4];
+
+        // Pre-computed write values for MEM (single write point)
+        new_peak_amp   [8];
+        new_peak_timer [4];
+        display_wr_val [16];
+        sweep_wr_val   [16];
+    }
+
+    REGISTER {
+        // Latched channel state (updated each frame)
+        lat_vol0   [8]  = 8'd0;   lat_vol1   [8]  = 8'd0;
+        lat_vol2   [8]  = 8'd0;   lat_vol3   [8]  = 8'd0;
+        lat_fund0  [7]  = 7'd127; lat_fund1  [7]  = 7'd127;
+        lat_fund2  [7]  = 7'd127; lat_fund3  [7]  = 7'd127;
+        lat_h3_0   [7]  = 7'd127; lat_h3_1   [7]  = 7'd127;
+        lat_h3_2   [7]  = 7'd127; lat_h3_3   [7]  = 7'd127;
+        lat_h5_0   [7]  = 7'd127; lat_h5_1   [7]  = 7'd127;
+        lat_h5_2   [7]  = 7'd127; lat_h5_3   [7]  = 7'd127;
+
+        // Sweep state machine
+        sweep_idx  [7]  = 7'd0;
+        sweeping   [1]  = 1'b0;
+    }
+
+    MEM(TYPE=DISTRIBUTED) {
+        // Display: [7:0]=smooth_amp, [15:8]=peak_amp — read by display module
+        display_ram [16] [128] = 16'd0 { OUT rd ASYNC; IN wr; };
+        // Sweep: [7:0]=smooth, [11:8]=timer, [15:12]=peak_top4 — read by sweep
+        sweep_ram   [16] [128] = 16'd0 { OUT rd ASYNC; IN wr; };
+    }
+
+    ASYNCHRONOUS {
+        // ---- Read port for display ----
+        rd_amp <= display_ram.rd[rd_bar];
+
+        // ---- Effective volume ----
+        ch0_vol_eff <= (ch0_in_gap == 1'b0) ? ch0_volume : 8'd0;
+        ch1_vol_eff <= (ch1_in_gap == 1'b0) ? ch1_volume : 8'd0;
+        ch2_vol_eff <= (ch2_in_gap == 1'b0) ? ch2_volume : 8'd0;
+        ch3_vol_eff <= (ch3_in_gap == 1'b0) ? ch3_volume : 8'd0;
+
+        // ---- Half-period to bar index mapping (ch0) ----
+        IF (ch0_half_period == 16'd0 || ch0_half_period == 16'hFFFF) {
+            ch0_fund <= 7'd127;  ch0_h3 <= 7'd127;  ch0_h5 <= 7'd127;
+        } ELIF (ch0_half_period > 16'd231) {
+            ch0_fund <= 7'd7;   ch0_h3 <= 7'd27;  ch0_h5 <= 7'd42;
+        } ELIF (ch0_half_period > 16'd206) {
+            ch0_fund <= 7'd9;   ch0_h3 <= 7'd29;  ch0_h5 <= 7'd44;
+        } ELIF (ch0_half_period > 16'd189) {
+            ch0_fund <= 7'd11;  ch0_h3 <= 7'd31;  ch0_h5 <= 7'd47;
+        } ELIF (ch0_half_period > 16'd174) {
+            ch0_fund <= 7'd12;  ch0_h3 <= 7'd32;  ch0_h5 <= 7'd48;
+        } ELIF (ch0_half_period > 16'd155) {
+            ch0_fund <= 7'd14;  ch0_h3 <= 7'd34;  ch0_h5 <= 7'd50;
+        } ELIF (ch0_half_period > 16'd141) {
+            ch0_fund <= 7'd17;  ch0_h3 <= 7'd37;  ch0_h5 <= 7'd52;
+        } ELIF (ch0_half_period > 16'd129) {
+            ch0_fund <= 7'd18;  ch0_h3 <= 7'd38;  ch0_h5 <= 7'd54;
+        } ELIF (ch0_half_period > 16'd115) {
+            ch0_fund <= 7'd20;  ch0_h3 <= 7'd40;  ch0_h5 <= 7'd56;
+        } ELIF (ch0_half_period > 16'd103) {
+            ch0_fund <= 7'd22;  ch0_h3 <= 7'd42;  ch0_h5 <= 7'd58;
+        } ELIF (ch0_half_period > 16'd94) {
+            ch0_fund <= 7'd24;  ch0_h3 <= 7'd44;  ch0_h5 <= 7'd60;
+        } ELIF (ch0_half_period > 16'd87) {
+            ch0_fund <= 7'd25;  ch0_h3 <= 7'd45;  ch0_h5 <= 7'd61;
+        } ELIF (ch0_half_period > 16'd77) {
+            ch0_fund <= 7'd27;  ch0_h3 <= 7'd47;  ch0_h5 <= 7'd63;
+        } ELIF (ch0_half_period > 16'd71) {
+            ch0_fund <= 7'd29;  ch0_h3 <= 7'd49;  ch0_h5 <= 7'd65;
+        } ELIF (ch0_half_period > 16'd65) {
+            ch0_fund <= 7'd30;  ch0_h3 <= 7'd50;  ch0_h5 <= 7'd66;
+        } ELIF (ch0_half_period > 16'd58) {
+            ch0_fund <= 7'd33;  ch0_h3 <= 7'd53;  ch0_h5 <= 7'd68;
+        } ELIF (ch0_half_period > 16'd52) {
+            ch0_fund <= 7'd35;  ch0_h3 <= 7'd55;  ch0_h5 <= 7'd70;
+        } ELIF (ch0_half_period > 16'd47) {
+            ch0_fund <= 7'd37;  ch0_h3 <= 7'd57;  ch0_h5 <= 7'd72;
+        } ELIF (ch0_half_period > 16'd43) {
+            ch0_fund <= 7'd38;  ch0_h3 <= 7'd58;  ch0_h5 <= 7'd74;
+        } ELIF (ch0_half_period > 16'd39) {
+            ch0_fund <= 7'd40;  ch0_h3 <= 7'd60;  ch0_h5 <= 7'd76;
+        } ELIF (ch0_half_period > 16'd35) {
+            ch0_fund <= 7'd42;  ch0_h3 <= 7'd62;  ch0_h5 <= 7'd78;
+        } ELSE {
+            ch0_fund <= 7'd127;  ch0_h3 <= 7'd127;  ch0_h5 <= 7'd127;
+        }
+
+        // ---- Half-period to bar index mapping (ch1) ----
+        IF (ch1_half_period == 16'd0 || ch1_half_period == 16'hFFFF) {
+            ch1_fund <= 7'd127;  ch1_h3 <= 7'd127;  ch1_h5 <= 7'd127;
+        } ELIF (ch1_half_period > 16'd231) {
+            ch1_fund <= 7'd7;   ch1_h3 <= 7'd27;  ch1_h5 <= 7'd42;
+        } ELIF (ch1_half_period > 16'd206) {
+            ch1_fund <= 7'd9;   ch1_h3 <= 7'd29;  ch1_h5 <= 7'd44;
+        } ELIF (ch1_half_period > 16'd189) {
+            ch1_fund <= 7'd11;  ch1_h3 <= 7'd31;  ch1_h5 <= 7'd47;
+        } ELIF (ch1_half_period > 16'd174) {
+            ch1_fund <= 7'd12;  ch1_h3 <= 7'd32;  ch1_h5 <= 7'd48;
+        } ELIF (ch1_half_period > 16'd155) {
+            ch1_fund <= 7'd14;  ch1_h3 <= 7'd34;  ch1_h5 <= 7'd50;
+        } ELIF (ch1_half_period > 16'd141) {
+            ch1_fund <= 7'd17;  ch1_h3 <= 7'd37;  ch1_h5 <= 7'd52;
+        } ELIF (ch1_half_period > 16'd129) {
+            ch1_fund <= 7'd18;  ch1_h3 <= 7'd38;  ch1_h5 <= 7'd54;
+        } ELIF (ch1_half_period > 16'd115) {
+            ch1_fund <= 7'd20;  ch1_h3 <= 7'd40;  ch1_h5 <= 7'd56;
+        } ELIF (ch1_half_period > 16'd103) {
+            ch1_fund <= 7'd22;  ch1_h3 <= 7'd42;  ch1_h5 <= 7'd58;
+        } ELIF (ch1_half_period > 16'd94) {
+            ch1_fund <= 7'd24;  ch1_h3 <= 7'd44;  ch1_h5 <= 7'd60;
+        } ELIF (ch1_half_period > 16'd87) {
+            ch1_fund <= 7'd25;  ch1_h3 <= 7'd45;  ch1_h5 <= 7'd61;
+        } ELIF (ch1_half_period > 16'd77) {
+            ch1_fund <= 7'd27;  ch1_h3 <= 7'd47;  ch1_h5 <= 7'd63;
+        } ELIF (ch1_half_period > 16'd71) {
+            ch1_fund <= 7'd29;  ch1_h3 <= 7'd49;  ch1_h5 <= 7'd65;
+        } ELIF (ch1_half_period > 16'd65) {
+            ch1_fund <= 7'd30;  ch1_h3 <= 7'd50;  ch1_h5 <= 7'd66;
+        } ELIF (ch1_half_period > 16'd58) {
+            ch1_fund <= 7'd33;  ch1_h3 <= 7'd53;  ch1_h5 <= 7'd68;
+        } ELIF (ch1_half_period > 16'd52) {
+            ch1_fund <= 7'd35;  ch1_h3 <= 7'd55;  ch1_h5 <= 7'd70;
+        } ELIF (ch1_half_period > 16'd47) {
+            ch1_fund <= 7'd37;  ch1_h3 <= 7'd57;  ch1_h5 <= 7'd72;
+        } ELIF (ch1_half_period > 16'd43) {
+            ch1_fund <= 7'd38;  ch1_h3 <= 7'd58;  ch1_h5 <= 7'd74;
+        } ELIF (ch1_half_period > 16'd39) {
+            ch1_fund <= 7'd40;  ch1_h3 <= 7'd60;  ch1_h5 <= 7'd76;
+        } ELIF (ch1_half_period > 16'd35) {
+            ch1_fund <= 7'd42;  ch1_h3 <= 7'd62;  ch1_h5 <= 7'd78;
+        } ELSE {
+            ch1_fund <= 7'd127;  ch1_h3 <= 7'd127;  ch1_h5 <= 7'd127;
+        }
+
+        // ---- Half-period to bar index mapping (ch2) ----
+        IF (ch2_half_period == 16'd0 || ch2_half_period == 16'hFFFF) {
+            ch2_fund <= 7'd127;  ch2_h3 <= 7'd127;  ch2_h5 <= 7'd127;
+        } ELIF (ch2_half_period > 16'd231) {
+            ch2_fund <= 7'd7;   ch2_h3 <= 7'd27;  ch2_h5 <= 7'd42;
+        } ELIF (ch2_half_period > 16'd206) {
+            ch2_fund <= 7'd9;   ch2_h3 <= 7'd29;  ch2_h5 <= 7'd44;
+        } ELIF (ch2_half_period > 16'd189) {
+            ch2_fund <= 7'd11;  ch2_h3 <= 7'd31;  ch2_h5 <= 7'd47;
+        } ELIF (ch2_half_period > 16'd174) {
+            ch2_fund <= 7'd12;  ch2_h3 <= 7'd32;  ch2_h5 <= 7'd48;
+        } ELIF (ch2_half_period > 16'd155) {
+            ch2_fund <= 7'd14;  ch2_h3 <= 7'd34;  ch2_h5 <= 7'd50;
+        } ELIF (ch2_half_period > 16'd141) {
+            ch2_fund <= 7'd17;  ch2_h3 <= 7'd37;  ch2_h5 <= 7'd52;
+        } ELIF (ch2_half_period > 16'd129) {
+            ch2_fund <= 7'd18;  ch2_h3 <= 7'd38;  ch2_h5 <= 7'd54;
+        } ELIF (ch2_half_period > 16'd115) {
+            ch2_fund <= 7'd20;  ch2_h3 <= 7'd40;  ch2_h5 <= 7'd56;
+        } ELIF (ch2_half_period > 16'd103) {
+            ch2_fund <= 7'd22;  ch2_h3 <= 7'd42;  ch2_h5 <= 7'd58;
+        } ELIF (ch2_half_period > 16'd94) {
+            ch2_fund <= 7'd24;  ch2_h3 <= 7'd44;  ch2_h5 <= 7'd60;
+        } ELIF (ch2_half_period > 16'd87) {
+            ch2_fund <= 7'd25;  ch2_h3 <= 7'd45;  ch2_h5 <= 7'd61;
+        } ELIF (ch2_half_period > 16'd77) {
+            ch2_fund <= 7'd27;  ch2_h3 <= 7'd47;  ch2_h5 <= 7'd63;
+        } ELIF (ch2_half_period > 16'd71) {
+            ch2_fund <= 7'd29;  ch2_h3 <= 7'd49;  ch2_h5 <= 7'd65;
+        } ELIF (ch2_half_period > 16'd65) {
+            ch2_fund <= 7'd30;  ch2_h3 <= 7'd50;  ch2_h5 <= 7'd66;
+        } ELIF (ch2_half_period > 16'd58) {
+            ch2_fund <= 7'd33;  ch2_h3 <= 7'd53;  ch2_h5 <= 7'd68;
+        } ELIF (ch2_half_period > 16'd52) {
+            ch2_fund <= 7'd35;  ch2_h3 <= 7'd55;  ch2_h5 <= 7'd70;
+        } ELIF (ch2_half_period > 16'd47) {
+            ch2_fund <= 7'd37;  ch2_h3 <= 7'd57;  ch2_h5 <= 7'd72;
+        } ELIF (ch2_half_period > 16'd43) {
+            ch2_fund <= 7'd38;  ch2_h3 <= 7'd58;  ch2_h5 <= 7'd74;
+        } ELIF (ch2_half_period > 16'd39) {
+            ch2_fund <= 7'd40;  ch2_h3 <= 7'd60;  ch2_h5 <= 7'd76;
+        } ELIF (ch2_half_period > 16'd35) {
+            ch2_fund <= 7'd42;  ch2_h3 <= 7'd62;  ch2_h5 <= 7'd78;
+        } ELSE {
+            ch2_fund <= 7'd127;  ch2_h3 <= 7'd127;  ch2_h5 <= 7'd127;
+        }
+
+        // ---- Half-period to bar index mapping (ch3) ----
+        IF (ch3_half_period == 16'd0 || ch3_half_period == 16'hFFFF) {
+            ch3_fund <= 7'd127;  ch3_h3 <= 7'd127;  ch3_h5 <= 7'd127;
+        } ELIF (ch3_half_period > 16'd231) {
+            ch3_fund <= 7'd7;   ch3_h3 <= 7'd27;  ch3_h5 <= 7'd42;
+        } ELIF (ch3_half_period > 16'd206) {
+            ch3_fund <= 7'd9;   ch3_h3 <= 7'd29;  ch3_h5 <= 7'd44;
+        } ELIF (ch3_half_period > 16'd189) {
+            ch3_fund <= 7'd11;  ch3_h3 <= 7'd31;  ch3_h5 <= 7'd47;
+        } ELIF (ch3_half_period > 16'd174) {
+            ch3_fund <= 7'd12;  ch3_h3 <= 7'd32;  ch3_h5 <= 7'd48;
+        } ELIF (ch3_half_period > 16'd155) {
+            ch3_fund <= 7'd14;  ch3_h3 <= 7'd34;  ch3_h5 <= 7'd50;
+        } ELIF (ch3_half_period > 16'd141) {
+            ch3_fund <= 7'd17;  ch3_h3 <= 7'd37;  ch3_h5 <= 7'd52;
+        } ELIF (ch3_half_period > 16'd129) {
+            ch3_fund <= 7'd18;  ch3_h3 <= 7'd38;  ch3_h5 <= 7'd54;
+        } ELIF (ch3_half_period > 16'd115) {
+            ch3_fund <= 7'd20;  ch3_h3 <= 7'd40;  ch3_h5 <= 7'd56;
+        } ELIF (ch3_half_period > 16'd103) {
+            ch3_fund <= 7'd22;  ch3_h3 <= 7'd42;  ch3_h5 <= 7'd58;
+        } ELIF (ch3_half_period > 16'd94) {
+            ch3_fund <= 7'd24;  ch3_h3 <= 7'd44;  ch3_h5 <= 7'd60;
+        } ELIF (ch3_half_period > 16'd87) {
+            ch3_fund <= 7'd25;  ch3_h3 <= 7'd45;  ch3_h5 <= 7'd61;
+        } ELIF (ch3_half_period > 16'd77) {
+            ch3_fund <= 7'd27;  ch3_h3 <= 7'd47;  ch3_h5 <= 7'd63;
+        } ELIF (ch3_half_period > 16'd71) {
+            ch3_fund <= 7'd29;  ch3_h3 <= 7'd49;  ch3_h5 <= 7'd65;
+        } ELIF (ch3_half_period > 16'd65) {
+            ch3_fund <= 7'd30;  ch3_h3 <= 7'd50;  ch3_h5 <= 7'd66;
+        } ELIF (ch3_half_period > 16'd58) {
+            ch3_fund <= 7'd33;  ch3_h3 <= 7'd53;  ch3_h5 <= 7'd68;
+        } ELIF (ch3_half_period > 16'd52) {
+            ch3_fund <= 7'd35;  ch3_h3 <= 7'd55;  ch3_h5 <= 7'd70;
+        } ELIF (ch3_half_period > 16'd47) {
+            ch3_fund <= 7'd37;  ch3_h3 <= 7'd57;  ch3_h5 <= 7'd72;
+        } ELIF (ch3_half_period > 16'd43) {
+            ch3_fund <= 7'd38;  ch3_h3 <= 7'd58;  ch3_h5 <= 7'd74;
+        } ELIF (ch3_half_period > 16'd39) {
+            ch3_fund <= 7'd40;  ch3_h3 <= 7'd60;  ch3_h5 <= 7'd76;
+        } ELIF (ch3_half_period > 16'd35) {
+            ch3_fund <= 7'd42;  ch3_h3 <= 7'd62;  ch3_h5 <= 7'd78;
+        } ELSE {
+            ch3_fund <= 7'd127;  ch3_h3 <= 7'd127;  ch3_h5 <= 7'd127;
+        }
+
+        // ---- Signed distances from sweep_idx to each source bar ----
+        d0f  <= { 1'b0, sweep_idx } - { 1'b0, lat_fund0 };
+        d0h3 <= { 1'b0, sweep_idx } - { 1'b0, lat_h3_0 };
+        d0h5 <= { 1'b0, sweep_idx } - { 1'b0, lat_h5_0 };
+        d1f  <= { 1'b0, sweep_idx } - { 1'b0, lat_fund1 };
+        d1h3 <= { 1'b0, sweep_idx } - { 1'b0, lat_h3_1 };
+        d1h5 <= { 1'b0, sweep_idx } - { 1'b0, lat_h5_1 };
+        d2f  <= { 1'b0, sweep_idx } - { 1'b0, lat_fund2 };
+        d2h3 <= { 1'b0, sweep_idx } - { 1'b0, lat_h3_2 };
+        d2h5 <= { 1'b0, sweep_idx } - { 1'b0, lat_h5_2 };
+        d3f  <= { 1'b0, sweep_idx } - { 1'b0, lat_fund3 };
+        d3h3 <= { 1'b0, sweep_idx } - { 1'b0, lat_h3_3 };
+        d3h5 <= { 1'b0, sweep_idx } - { 1'b0, lat_h5_3 };
+
+        // Absolute values
+        a0f  <= (d0f[7]  == 1'b1) ? (7'd0 - d0f[6:0])  : d0f[6:0];
+        a0h3 <= (d0h3[7] == 1'b1) ? (7'd0 - d0h3[6:0]) : d0h3[6:0];
+        a0h5 <= (d0h5[7] == 1'b1) ? (7'd0 - d0h5[6:0]) : d0h5[6:0];
+        a1f  <= (d1f[7]  == 1'b1) ? (7'd0 - d1f[6:0])  : d1f[6:0];
+        a1h3 <= (d1h3[7] == 1'b1) ? (7'd0 - d1h3[6:0]) : d1h3[6:0];
+        a1h5 <= (d1h5[7] == 1'b1) ? (7'd0 - d1h5[6:0]) : d1h5[6:0];
+        a2f  <= (d2f[7]  == 1'b1) ? (7'd0 - d2f[6:0])  : d2f[6:0];
+        a2h3 <= (d2h3[7] == 1'b1) ? (7'd0 - d2h3[6:0]) : d2h3[6:0];
+        a2h5 <= (d2h5[7] == 1'b1) ? (7'd0 - d2h5[6:0]) : d2h5[6:0];
+        a3f  <= (d3f[7]  == 1'b1) ? (7'd0 - d3f[6:0])  : d3f[6:0];
+        a3h3 <= (d3h3[7] == 1'b1) ? (7'd0 - d3h3[6:0]) : d3h3[6:0];
+        a3h5 <= (d3h5[7] == 1'b1) ? (7'd0 - d3h5[6:0]) : d3h5[6:0];
+
+        // ---- Per-source contributions (no self-reference) ----
+        // Ch0 fundamental: full volume center, half +-1, quarter +-2
+        IF (a0f == 7'd0) {
+            c0f <= lat_vol0;
+        } ELIF (a0f == 7'd1) {
+            c0f <= { 1'b0, lat_vol0[7:1] };
+        } ELIF (a0f == 7'd2) {
+            c0f <= { 2'b00, lat_vol0[7:2] };
+        } ELSE {
+            c0f <= 8'd0;
+        }
+        // Ch0 3rd harmonic: 1/4 center, 1/8 +-1, 1/16 +-2
+        IF (a0h3 == 7'd0) {
+            c0h3 <= { 2'b00, lat_vol0[7:2] };
+        } ELIF (a0h3 == 7'd1) {
+            c0h3 <= { 3'b000, lat_vol0[7:3] };
+        } ELIF (a0h3 == 7'd2) {
+            c0h3 <= { 4'b0000, lat_vol0[7:4] };
+        } ELSE {
+            c0h3 <= 8'd0;
+        }
+        // Ch0 5th harmonic: 1/8 center, 1/16 +-1
+        IF (a0h5 == 7'd0) {
+            c0h5 <= { 3'b000, lat_vol0[7:3] };
+        } ELIF (a0h5 == 7'd1) {
+            c0h5 <= { 4'b0000, lat_vol0[7:4] };
+        } ELSE {
+            c0h5 <= 8'd0;
+        }
+
+        // Ch1 fundamental
+        IF (a1f == 7'd0) {
+            c1f <= lat_vol1;
+        } ELIF (a1f == 7'd1) {
+            c1f <= { 1'b0, lat_vol1[7:1] };
+        } ELIF (a1f == 7'd2) {
+            c1f <= { 2'b00, lat_vol1[7:2] };
+        } ELSE {
+            c1f <= 8'd0;
+        }
+        IF (a1h3 == 7'd0) {
+            c1h3 <= { 2'b00, lat_vol1[7:2] };
+        } ELIF (a1h3 == 7'd1) {
+            c1h3 <= { 3'b000, lat_vol1[7:3] };
+        } ELIF (a1h3 == 7'd2) {
+            c1h3 <= { 4'b0000, lat_vol1[7:4] };
+        } ELSE {
+            c1h3 <= 8'd0;
+        }
+        IF (a1h5 == 7'd0) {
+            c1h5 <= { 3'b000, lat_vol1[7:3] };
+        } ELIF (a1h5 == 7'd1) {
+            c1h5 <= { 4'b0000, lat_vol1[7:4] };
+        } ELSE {
+            c1h5 <= 8'd0;
+        }
+
+        // Ch2 fundamental
+        IF (a2f == 7'd0) {
+            c2f <= lat_vol2;
+        } ELIF (a2f == 7'd1) {
+            c2f <= { 1'b0, lat_vol2[7:1] };
+        } ELIF (a2f == 7'd2) {
+            c2f <= { 2'b00, lat_vol2[7:2] };
+        } ELSE {
+            c2f <= 8'd0;
+        }
+        IF (a2h3 == 7'd0) {
+            c2h3 <= { 2'b00, lat_vol2[7:2] };
+        } ELIF (a2h3 == 7'd1) {
+            c2h3 <= { 3'b000, lat_vol2[7:3] };
+        } ELIF (a2h3 == 7'd2) {
+            c2h3 <= { 4'b0000, lat_vol2[7:4] };
+        } ELSE {
+            c2h3 <= 8'd0;
+        }
+        IF (a2h5 == 7'd0) {
+            c2h5 <= { 3'b000, lat_vol2[7:3] };
+        } ELIF (a2h5 == 7'd1) {
+            c2h5 <= { 4'b0000, lat_vol2[7:4] };
+        } ELSE {
+            c2h5 <= 8'd0;
+        }
+
+        // Ch3 fundamental
+        IF (a3f == 7'd0) {
+            c3f <= lat_vol3;
+        } ELIF (a3f == 7'd1) {
+            c3f <= { 1'b0, lat_vol3[7:1] };
+        } ELIF (a3f == 7'd2) {
+            c3f <= { 2'b00, lat_vol3[7:2] };
+        } ELSE {
+            c3f <= 8'd0;
+        }
+        IF (a3h3 == 7'd0) {
+            c3h3 <= { 2'b00, lat_vol3[7:2] };
+        } ELIF (a3h3 == 7'd1) {
+            c3h3 <= { 3'b000, lat_vol3[7:3] };
+        } ELIF (a3h3 == 7'd2) {
+            c3h3 <= { 4'b0000, lat_vol3[7:4] };
+        } ELSE {
+            c3h3 <= 8'd0;
+        }
+        IF (a3h5 == 7'd0) {
+            c3h5 <= { 3'b000, lat_vol3[7:3] };
+        } ELIF (a3h5 == 7'd1) {
+            c3h5 <= { 4'b0000, lat_vol3[7:4] };
+        } ELSE {
+            c3h5 <= 8'd0;
+        }
+
+        // ---- Sum tree (no self-reference) ----
+        sum_01f  <= { 1'b0, c0f }  + { 1'b0, c1f };
+        sum_23f  <= { 1'b0, c2f }  + { 1'b0, c3f };
+        sum_01h3 <= { 1'b0, c0h3 } + { 1'b0, c1h3 };
+        sum_23h3 <= { 1'b0, c2h3 } + { 1'b0, c3h3 };
+        sum_01h5 <= { 1'b0, c0h5 } + { 1'b0, c1h5 };
+        sum_23h5 <= { 1'b0, c2h5 } + { 1'b0, c3h5 };
+
+        sum_fund <= { 1'b0, sum_01f }  + { 1'b0, sum_23f };
+        sum_h3   <= { 1'b0, sum_01h3 } + { 1'b0, sum_23h3 };
+        sum_h5   <= { 1'b0, sum_01h5 } + { 1'b0, sum_23h5 };
+
+        target_acc <= { 1'b0, sum_fund } + { 1'b0, sum_h3 } + { 1'b0, sum_h5 };
+        IF (target_acc > 11'd255) {
+            target_amp <= 8'hFF;
+        } ELSE {
+            target_amp <= target_acc[7:0];
+        }
+
+        // ---- Smoothing (read smooth from sweep_ram[7:0]) ----
+        smooth_cur <= sweep_ram.rd[sweep_idx][7:0];
+        smooth_delta <= { 1'b0, target_amp } - { 1'b0, smooth_cur };
+        smooth_step  <= { smooth_delta[8], smooth_delta[8], smooth_delta[8:2] };
+        smooth_next  <= { 1'b0, smooth_cur } + smooth_step;
+        IF (smooth_next[8] == 1'b1) {
+            smooth_result <= 8'd0;
+        } ELSE {
+            smooth_result <= smooth_next[7:0];
+        }
+
+        // ---- Peak read (from sweep_ram: [15:12]=peak_top4, [11:8]=timer) ----
+        peak_approx <= { sweep_ram.rd[sweep_idx][15:12], 4'b0000 };
+        timer_cur   <= sweep_ram.rd[sweep_idx][11:8];
+
+        // ---- Pre-compute write values ----
+        IF (smooth_result > peak_approx) {
+            new_peak_amp   <= smooth_result;
+            new_peak_timer <= 4'd15;
+            display_wr_val <= { smooth_result, smooth_result };
+        } ELIF (timer_cur == 4'd0) {
+            new_peak_amp   <= smooth_result;
+            new_peak_timer <= 4'd0;
+            display_wr_val <= { smooth_result, smooth_result };
+        } ELSE {
+            new_peak_amp   <= peak_approx;
+            new_peak_timer <= timer_cur - 4'd1;
+            display_wr_val <= { peak_approx, smooth_result };
+        }
+        sweep_wr_val <= { new_peak_amp[7:4], new_peak_timer, smooth_result };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        IF (frame_pulse == 1'b1 && sweeping == 1'b0) {
+            // Latch volumes and bar indices
+            lat_vol0  <= ch0_vol_eff;
+            lat_vol1  <= ch1_vol_eff;
+            lat_vol2  <= ch2_vol_eff;
+            lat_vol3  <= ch3_vol_eff;
+            lat_fund0 <= ch0_fund;  lat_fund1 <= ch1_fund;
+            lat_fund2 <= ch2_fund;  lat_fund3 <= ch3_fund;
+            lat_h3_0  <= ch0_h3;    lat_h3_1  <= ch1_h3;
+            lat_h3_2  <= ch2_h3;    lat_h3_3  <= ch3_h3;
+            lat_h5_0  <= ch0_h5;    lat_h5_1  <= ch1_h5;
+            lat_h5_2  <= ch2_h5;    lat_h5_3  <= ch3_h5;
+            sweeping  <= 1'b1;
+            sweep_idx <= 7'd0;
+        } ELIF (sweeping == 1'b1) {
+            // Write both RAMs (single write per cycle)
+            sweep_ram.wr[sweep_idx]   <= sweep_wr_val;
+            display_ram.wr[sweep_idx] <= display_wr_val;
+
+            IF (sweep_idx == 7'd79) {
+                sweeping <= 1'b0;
+            } ELSE {
+                sweep_idx <= sweep_idx + 7'd1;
+            }
+        }
+    }
+@endmod

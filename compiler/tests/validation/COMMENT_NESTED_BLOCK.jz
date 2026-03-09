@@ -1,0 +1,32 @@
+// COMMENT_NESTED_BLOCK: nested and unterminated block comments.
+// NOTE: The lexer stops on the first error, so only the first failing
+// Verified
+
+@project COMMENT_IN_TOKEN_EXAMPLES
+  CONFIG {
+    WIDTH = 8;
+  }
+
+  @top M {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module M
+  /*
+   * block comment
+   *
+   * /* nested comment */
+   *
+   */
+
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    in <= out;
+  }
+@endmod

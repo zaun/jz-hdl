@@ -1,0 +1,2 @@
+File: PIN_DECLARED_MULTIPLE_BLOCKS.jz
+      12:5    error PIN_DECLARED_MULTIPLE_BLOCKS S6.5/S6.9 Same pin name appears in more than one of IN_PINS/OUT_PINS/INOUT_PINS

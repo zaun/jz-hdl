@@ -1,0 +1,2 @@
+File: INSTANCE_PORT_WIDTH_MISMATCH.jz
+      27:13   error INSTANCE_PORT_WIDTH_MISMATCH S4.13/S6.9/S8.1 Instantiated port width does not match child module effective port width

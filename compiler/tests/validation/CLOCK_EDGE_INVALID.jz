@@ -1,0 +1,41 @@
+// CLOCK_EDGE_INVALID: invalid edge specifier in CLOCKS block.
+// Verified
+
+@project CLOCK_DUPLICATE_NAME_EXAMPLES
+  CLOCKS {
+    clk_a = { period=10, edge=wierd };
+    clk_b = { period=10, edge=Rising };
+    clk_c = { period=10, edge=Falling };
+    clk_d = { period=10, edge=FaLLinG };
+  }
+
+  IN_PINS {
+    clk_a = { standard=LVCMOS33 };
+    clk_b = { standard=LVCMOS33 };
+    clk_c = { standard=LVCMOS33 };
+    clk_d = { standard=LVCMOS33 };
+  }
+
+  MAP {
+    clk_a = 4;
+    clk_b = 5;
+    clk_c = 6;
+    clk_d = 7;
+  }
+
+  @top top {
+    IN  [1] clk = clk_a;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module top
+  PORT {
+    IN  [1] clk;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = clk;
+  }
+@endmod

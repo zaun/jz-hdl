@@ -1,0 +1,2 @@
+File: COMB_LOOP_CONDITIONAL_SAFE.jz
+      25:3    warn  COMB_LOOP_CONDITIONAL_SAFE S5.3/S8.2 Cycles only within mutually exclusive branches considered safe (no error)

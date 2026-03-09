@@ -1,0 +1,27 @@
+// MAP_PIN_MAPPED_NOT_DECLARED: MAP entry references a pin that is not declared.
+// Verified
+
+@project MAP_PIN_MAPPED_NOT_DECLARED_PROJECT
+  IN_PINS {
+    pin = { standard=LVCMOS33 };
+  }
+
+  MAP {
+    pin = 1;
+    other = 10; // 'other' is not declared as a pin
+  }
+
+  @top MAP_PIN_MAPPED_NOT_DECLARED_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module MAP_PIN_MAPPED_NOT_DECLARED_EXAMPLE
+  PORT {
+    OUT [1] data;
+  }
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

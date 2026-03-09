@@ -1,0 +1,28 @@
+// PIN_PULL_ON_OUTPUT: pull resistor on output-only pin.
+// Verified
+
+@project PIN_PULL_ON_OUTPUT_PROJECT
+  OUT_PINS {
+    led = { standard=LVCMOS33, drive=8, pull=UP };
+  }
+
+  MAP {
+    led = 10;
+  }
+
+  @top PIN_PULL_ON_OUTPUT_EXAMPLE {
+    IN  [1] in = _;
+    OUT [1] out = _;
+  }
+@endproj
+
+@module PIN_PULL_ON_OUTPUT_EXAMPLE
+  PORT {
+    IN  [1] in;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = in;
+  }
+@endmod

@@ -1,0 +1,33 @@
+// CLOG2_NONPOSITIVE_ARG: clog2() argument must be positive.
+// Verified
+
+@project CLOG2_NONPOSITIVE_ARGPROJECT
+  @top CLOG2_NONPOSITIVE_ARG_EXAMPLE {
+    IN  [1] in = _;
+    OUT [4] out = _;
+  }
+@endproj
+
+@module CLOG2_NONPOSITIVE_ARG_EXAMPLE
+  CONST {
+    DEPTH = 8;
+    VALID = clog2(DEPTH - 5); // 3
+    INVALID_A = clog2(DEPTH - 8); // 0
+    INVALID_B = clog2(DEPTH - 9); // -1
+  }
+
+  PORT {
+    IN  [1] in;
+    OUT [4] out;
+  }
+
+  WIRE {
+    w [VALID];
+  }
+
+  ASYNCHRONOUS {
+    out <= 4'h0;
+    w <=z in;
+  }
+
+@endmod

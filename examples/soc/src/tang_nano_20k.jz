@@ -1,0 +1,248 @@
+@project(CHIP="GW2AR-18-QN88-C8-I7") SIMPLE_SOC
+    @import "global.jz"
+    @import "soc.jz"
+    @import "rv_cpu.jz"
+    @import "rv_regfile.jz"
+    @import "rv_alu.jz"
+    @import "rv_csr.jz"
+    @import "rv_muldiv.jz"
+    @import "por.jz"
+    @import "rom.jz"
+    @import "block_ram.jz"
+    @import "led_out.jz"
+    @import "arbiter.jz"
+    @import "uart_tx.jz"
+    @import "uart.jz"
+    @import "uart_rx.jz"
+    @import "sdram.jz"
+    @import "sdram_bus.jz"
+    @import "terminal.jz"
+    @import "video.jz"
+    @import "video_timing.jz"
+    @import "tmds_encoder.jz"
+    @import "sdcard.jz"
+    @import "aud_gen.jz"
+    @import "aud_mixer.jz"
+    @import "audio.jz"
+
+    CONFIG {
+        DATA_WIDTH = 32;
+        ADDR_WIDTH = 32;
+        CLK_FREQ_MHZ = 74;
+        SDRAM_SIZE_BYTES = 8388608;
+    }
+
+    CLOCKS {
+        SCLK = { period=37.037 };   // 27MHz crystal
+        sys_clk;                    // 74.25MHz system (from CLKDIV)
+        serial_clk;                 // 371.25MHz (5x pixel clock, from PLL)
+        pixel_clk;                  // 74.25MHz pixel clock (from CLKDIV)
+    }
+
+    IN_PINS {
+        SCLK = { standard=LVCMOS33 };
+        DONE = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+        UART_RX = { standard=LVCMOS33 };
+        SDIO_D0 = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=8 };
+        UART_TX = { standard=LVCMOS33, drive=8 };
+        SDIO_CLK = { standard=LVCMOS33, drive=8 };
+        SDIO_CMD = { standard=LVCMOS33, drive=8 };
+        SDIO_D3  = { standard=LVCMOS33, drive=8 };
+        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk = serial_clk, pclk = pixel_clk };
+        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk = serial_clk, pclk = pixel_clk };
+        O_sdram_clk      = { standard=LVCMOS33, drive=8 };
+        O_sdram_cke      = { standard=LVCMOS33, drive=8 };
+        O_sdram_cs_n     = { standard=LVCMOS33, drive=8 };
+        O_sdram_cas_n    = { standard=LVCMOS33, drive=8 };
+        O_sdram_ras_n    = { standard=LVCMOS33, drive=8 };
+        O_sdram_wen_n    = { standard=LVCMOS33, drive=8 };
+        O_sdram_dqm[4]   = { standard=LVCMOS33, drive=8 };
+        O_sdram_addr[11] = { standard=LVCMOS33, drive=8 };
+        O_sdram_ba[2]    = { standard=LVCMOS33, drive=8 };
+    }
+
+    INOUT_PINS {
+        IO_sdram_dq[32] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock (27MHz)
+        SCLK = 4;
+
+        // 2 Buttons (active low)
+        KEY[0] = 88;
+        KEY[1] = 87;
+
+        // 6 LEDs (active low)
+        LED[0] = 15;
+        LED[1] = 16;
+        LED[2] = 17;
+        LED[3] = 18;
+        LED[4] = 19;
+        LED[5] = 20;
+
+        // UART
+        UART_TX = 69;
+        UART_RX = 70;
+
+        // SDCard
+        SDIO_D3  = 81;
+        SDIO_D0  = 84;
+        SDIO_CLK = 83;
+        SDIO_CMD = 82;
+
+        // DVI TMDS differential pairs
+        TMDS_CLK     = { P=33, N=34 };
+        TMDS_DATA[0] = { P=35, N=36 };
+        TMDS_DATA[1] = { P=37, N=38 };
+        TMDS_DATA[2] = { P=39, N=40 };
+
+        // DONE (POR signal)
+        DONE = IOR32B;
+
+        // SDRAM
+        O_sdram_clk      = IOR11B;
+        O_sdram_cke      = IOL13A;
+        O_sdram_cs_n     = IOL14B;
+        O_sdram_cas_n    = IOL14A;
+        O_sdram_ras_n    = IOL13B;
+        O_sdram_wen_n    = IOL12B;
+        O_sdram_dqm[0]   = IOL12A;
+        O_sdram_dqm[1]   = IOR11A;
+        O_sdram_dqm[2]   = IOL18A;
+        O_sdram_dqm[3]   = IOR15B;
+        O_sdram_addr[0]  = IOR14A;
+        O_sdram_addr[1]  = IOR13B;
+        O_sdram_addr[2]  = IOR14B;
+        O_sdram_addr[3]  = IOR15A;
+        O_sdram_addr[4]  = IOL16B;
+        O_sdram_addr[5]  = IOL17B;
+        O_sdram_addr[6]  = IOL16A;
+        O_sdram_addr[7]  = IOL17A;
+        O_sdram_addr[8]  = IOL15B;
+        O_sdram_addr[9]  = IOL15A;
+        O_sdram_addr[10] = IOR12B;
+        O_sdram_ba[0]    = IOR13A;
+        O_sdram_ba[1]    = IOR12A;
+        IO_sdram_dq[0]   = IOL3A;
+        IO_sdram_dq[1]   = IOL3B;
+        IO_sdram_dq[2]   = IOL8A;
+        IO_sdram_dq[3]   = IOL8B;
+        IO_sdram_dq[4]   = IOL9A;
+        IO_sdram_dq[5]   = IOL9B;
+        IO_sdram_dq[6]   = IOL11A;
+        IO_sdram_dq[7]   = IOL11B;
+        IO_sdram_dq[8]   = IOR9B;
+        IO_sdram_dq[9]   = IOR9A;
+        IO_sdram_dq[10]  = IOR5B;
+        IO_sdram_dq[11]  = IOR6A;
+        IO_sdram_dq[12]  = IOR5A;
+        IO_sdram_dq[13]  = IOR4B;
+        IO_sdram_dq[14]  = IOR3B;
+        IO_sdram_dq[15]  = IOR3A;
+        IO_sdram_dq[16]  = IOL39B;
+        IO_sdram_dq[17]  = IOL39A;
+        IO_sdram_dq[18]  = IOL35B;
+        IO_sdram_dq[19]  = IOL35A;
+        IO_sdram_dq[20]  = IOL30B;
+        IO_sdram_dq[21]  = IOL30A;
+        IO_sdram_dq[22]  = IOL20A;
+        IO_sdram_dq[23]  = IOL18B;
+        IO_sdram_dq[24]  = IOR17A;
+        IO_sdram_dq[25]  = IOR16A;
+        IO_sdram_dq[26]  = IOR16B;
+        IO_sdram_dq[27]  = IOR17B;
+        IO_sdram_dq[28]  = IOR18A;
+        IO_sdram_dq[29]  = IOR18B;
+        IO_sdram_dq[30]  = IOR44A;
+        IO_sdram_dq[31]  = IOR44B;
+    }
+
+    BUS SIMPLE_BUS {
+        OUT   [32]    ADDR;
+        OUT   [1]     CMD;
+        OUT   [1]     VALID;
+        INOUT [32]    DATA;
+        IN    [1]     DONE;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK SCLK;          // 27MHz crystal
+            OUT BASE  serial_clk;    // 371.25 MHz (5x pixel clock)
+
+            CONFIG {
+                IDIV = 3;            // divider = 4
+                FBDIV = 54;          // multiplier = 55
+                ODIV = 2;            // VCO = 371.25 * 2 = 742.5 MHz
+            };
+        };
+
+        // ┌────────────┬───────────┐
+        // │ Resolution │  Refresh  │
+        // ├────────────┼───────────┤
+        // │ 1080p      │ 30Hz      │
+        // │  720p      │ 60Hz      │
+        // └────────────┴───────────┘
+        CLKDIV {
+            IN REF_CLK serial_clk;
+            OUT BASE  pixel_clk;     // 371.25 / 5 = 74.25 MHz
+
+            CONFIG {
+                DIV_MODE = 5;
+            };
+        };
+
+        // ┌──────────┬───────────────┐
+        // │ DIV_MODE │    sys_clk    │
+        // ├──────────┼───────────────┤
+        // │ 2        │ 185.625 MHz   │
+        // │ 3.5      │ 106.07 MHz    │
+        // │ 4        │ 92.8125 MHz   │
+        // │ 5        │ 74.25 MHz     │
+        // │ 8        │ 46.41 MHz     │
+        // └──────────┴───────────────┘
+        // Note: dont forget to set CLK_FREQ_MHZ above
+        CLKDIV {
+            IN REF_CLK serial_clk;
+            OUT BASE  sys_clk;
+
+            CONFIG {
+                DIV_MODE = 5;
+            };
+        };
+    }
+
+    @top SOC {
+        IN  [1] sclk  = sys_clk;
+        IN  [1] rst_n = ~KEY[0];
+        IN  [1] done  = DONE;
+        IN  [1] pixel_clk = pixel_clk;
+        OUT [6] leds  = LED;
+        OUT [1] tx    = UART_TX;
+        IN  [1] rx    = UART_RX;
+        OUT  [10] tmds_clk   = TMDS_CLK;
+        OUT  [10] tmds_d0    = TMDS_DATA[0];
+        OUT  [10] tmds_d1    = TMDS_DATA[1];
+        OUT  [10] tmds_d2    = TMDS_DATA[2];
+        OUT  [1]  sd_clk_pin   = SDIO_CLK;
+        OUT  [1]  sd_mosi_pin  = SDIO_CMD;
+        IN   [1]  sd_miso_pin  = SDIO_D0;
+        OUT  [1]  sd_cs_n_pin  = SDIO_D3;
+        OUT  [1]  sdram_cke    = O_sdram_cke;
+        OUT  [1]  sdram_cs_n   = O_sdram_cs_n;
+        OUT  [1]  sdram_ras_n  = O_sdram_ras_n;
+        OUT  [1]  sdram_cas_n  = O_sdram_cas_n;
+        OUT  [1]  sdram_wen_n  = O_sdram_wen_n;
+        OUT  [4]  sdram_dqm    = O_sdram_dqm;
+        OUT  [11] sdram_addr   = O_sdram_addr;
+        OUT  [2]  sdram_ba     = O_sdram_ba;
+        INOUT [32] sdram_dq    = IO_sdram_dq;
+        OUT  [1]  sdram_clk_out = O_sdram_clk;
+    }
+@endproj

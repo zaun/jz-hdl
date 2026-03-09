@@ -1,0 +1,202 @@
+// Golden test: All slice operations
+// Tests every known slicing method including expression slicing.
+//
+// NOTE: Test 12 (expression slicing) currently FAILS due to compiler bug.
+// Bug location: ir_build_expr.c:1053-1054 returns NULL for non-identifier bases.
+// The compiler generates 1'b0 instead of (expr)[msb:lsb].
+// This test documents the CORRECT expected output - it will pass when fixed.
+
+@project slice_test_project
+  IN_PINS {
+    sel     [2] = { standard=LVCMOS33 };
+    data_in [8] = { standard=LVCMOS33 };
+    addr    [4] = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    result   [8] = { standard=LVCMOS33, drive=4 };
+    single   [1] = { standard=LVCMOS33, drive=4 };
+    mem_data [8] = { standard=LVCMOS33, drive=4 };
+    mux_out  [8] = { standard=LVCMOS33, drive=4 };
+  }
+
+  MAP {
+    sel[0] = 1; sel[1] = 2;
+    data_in[0] = 10; data_in[1] = 11; data_in[2] = 12; data_in[3] = 13;
+    data_in[4] = 14; data_in[5] = 15; data_in[6] = 16; data_in[7] = 17;
+    addr[0] = 20; addr[1] = 21; addr[2] = 22; addr[3] = 23;
+    result[0] = 30; result[1] = 31; result[2] = 32; result[3] = 33;
+    result[4] = 34; result[5] = 35; result[6] = 36; result[7] = 37;
+    single = 40;
+    mem_data[0] = 50; mem_data[1] = 51; mem_data[2] = 52; mem_data[3] = 53;
+    mem_data[4] = 54; mem_data[5] = 55; mem_data[6] = 56; mem_data[7] = 57;
+    mux_out[0] = 60; mux_out[1] = 61; mux_out[2] = 62; mux_out[3] = 63;
+    mux_out[4] = 64; mux_out[5] = 65; mux_out[6] = 66; mux_out[7] = 67;
+  }
+
+  @top slice_demo {
+    IN  [2] select   = sel;
+    IN  [8] input    = data_in;
+    IN  [4] mem_addr = addr;
+    OUT [8] out      = result;
+    OUT [1] bit_out  = single;
+    OUT [8] mem_out  = mem_data;
+    OUT [8] mux_data = mux_out;
+  }
+@endproj
+
+@module slice_demo
+  PORT {
+    IN  [2] select;
+    IN  [8] input;
+    IN  [4] mem_addr;
+    OUT [8] out;
+    OUT [1] bit_out;
+    OUT [8] mem_out;
+    OUT [8] mux_data;
+  }
+
+  WIRE {
+    // Intermediate wires for various slice tests
+    bus      [16];
+    slice_a  [4];
+    slice_b  [4];
+    slice_c  [8];
+    single_a [1];
+    single_b [1];
+
+    // MUX sources (aggregation form)
+    ch_a [8];
+    ch_b [8];
+    ch_c [8];
+    ch_d [8];
+
+    // Wide signal for auto-slicing
+    wide_reg [32];
+
+    // Intrinsic test signals
+    gbit_result   [1];
+    gslice_result [4];
+    sbit_result   [8];
+    sslice_result [16];
+
+    // LHS slice test wires
+    lhs_target [16];
+
+    // Expression slice test wires (Test 12)
+    expr_slice_hi [4];
+    expr_slice_lo [4];
+  }
+
+  MUX {
+    // Form 1: Aggregation - selects one of four 8-bit signals
+    agg_mux = ch_a, ch_b, ch_c, ch_d;
+
+    // Form 2: Auto-slice - extracts 8-bit chunks from 32-bit signal
+    slice_mux [8] = wide_reg;
+  }
+
+  MEM {
+    // Memory with async read port for slice testing
+    test_mem [8] [16] = 8'h00 {
+      OUT rd ASYNC;
+    };
+  }
+
+  ASYNCHRONOUS {
+    // =========================================
+    // Test 1: Simple bit-range slice [msb:lsb]
+    // =========================================
+    bus <= {input, input};   // 16-bit from two 8-bit inputs
+    slice_a <= bus[15:12];   // upper nibble of high byte
+    slice_b <= bus[7:4];     // upper nibble of low byte
+
+    // =========================================
+    // Test 2: Single-bit access [idx]
+    // =========================================
+    single_a <= input[0];    // LSB
+    single_b <= input[7];    // MSB
+
+    // =========================================
+    // Test 3: Slice with literal indices
+    // =========================================
+    slice_c <= bus[7:0];     // lower byte
+
+    // =========================================
+    // Test 4: LHS slice assignment
+    // =========================================
+    lhs_target[7:0] <= input;          // assign to lower half
+    lhs_target[15:8] <= 8'hFF;         // assign to upper half
+
+    // =========================================
+    // Test 5: MUX aggregation selection
+    // =========================================
+    ch_a <= 8'h11;
+    ch_b <= 8'h22;
+    ch_c <= 8'h33;
+    ch_d <= 8'h44;
+
+    // =========================================
+    // Test 6: MUX auto-slicing
+    // =========================================
+    wide_reg <= 32'hDDCCBBAA;
+
+    // =========================================
+    // Test 7: Memory port read with address
+    // =========================================
+    mem_out <= test_mem.rd[mem_addr];
+
+    // =========================================
+    // Test 8: Intrinsic gbit - dynamic bit extraction
+    // =========================================
+    gbit_result <= gbit(input, select[0]);
+
+    // =========================================
+    // Test 9: Intrinsic gslice - dynamic slice extraction
+    // =========================================
+    gslice_result <= gslice(input, select, 4);
+
+    // =========================================
+    // Test 10: Intrinsic sbit - set single bit (literal index)
+    // =========================================
+    sbit_result <= sbit(input, 3, 1'b1);
+
+    // =========================================
+    // Test 11: Intrinsic sslice - set bit slice (literal params)
+    // =========================================
+    sslice_result <= sslice(lhs_target, 4, 4, 4'hF);
+
+    // =========================================
+    // Test 12: Expression slicing (CURRENTLY BROKEN)
+    // Slicing an arithmetic expression directly.
+    // BUG: Compiler generates 1'b0 instead of proper slice.
+    // =========================================
+    expr_slice_hi <= (input + 8'h10)[7:4];  // Should be (input + 8'h10)[7:4]
+    expr_slice_lo <= (input + 8'h10)[3:0];  // Should be (input + 8'h10)[3:0]
+
+    // =========================================
+    // Output selection based on mode
+    // =========================================
+    IF (select == 2'b00) {
+      // Output basic slices
+      out <= {slice_a, slice_b};
+      bit_out <= single_a;
+      mux_data <= 8'h00;
+    } ELIF (select == 2'b01) {
+      // Output MUX aggregation
+      out <= agg_mux[select];
+      bit_out <= single_b;
+      mux_data <= agg_mux[select];
+    } ELIF (select == 2'b10) {
+      // Output MUX auto-slice
+      out <= slice_mux[select];
+      bit_out <= gbit_result;
+      mux_data <= slice_mux[select];
+    } ELSE {
+      // Output expression slice results
+      out <= {expr_slice_hi, expr_slice_lo};
+      bit_out <= gbit_result;
+      mux_data <= {gslice_result, gslice_result};
+    }
+  }
+@endmod

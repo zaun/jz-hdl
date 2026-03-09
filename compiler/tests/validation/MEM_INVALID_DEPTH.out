@@ -1,0 +1,2 @@
+File: MEM_INVALID_DEPTH.jz
+      17:5    error MEM_INVALID_DEPTH S7.1/S7.7.1 Depth <= 0 or non-integer

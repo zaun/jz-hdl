@@ -1,0 +1,132 @@
+// Golden test: BUS port-to-port alias pass-through
+// Tests:
+//   - BUS definition with OUT, INOUT, and IN signals
+//   - Pass-through module with BUS TARGET + BUS SOURCE ports
+//   - = (ALIAS) to wire bus signals between ports (port-to-port)
+//   - Verifies assign statements are emitted for all aliased port pairs
+//   - Tests that the backend union-find doesn't merge port signals
+
+@project bus_passthrough_test
+  IN_PINS {
+    addr_in [8] = { standard=LVCMOS33 };
+    cmd_in  [1] = { standard=LVCMOS33 };
+    valid_in [1] = { standard=LVCMOS33 };
+  }
+
+  INOUT_PINS {
+    data_io [8] = { standard=LVCMOS33, drive=4 };
+  }
+
+  OUT_PINS {
+    done_out [1] = { standard=LVCMOS33, drive=4 };
+  }
+
+  MAP {
+    addr_in[0] = 10; addr_in[1] = 11; addr_in[2] = 12; addr_in[3] = 13;
+    addr_in[4] = 14; addr_in[5] = 15; addr_in[6] = 16; addr_in[7] = 17;
+    cmd_in = 20;
+    valid_in = 21;
+    data_io[0] = 30; data_io[1] = 31; data_io[2] = 32; data_io[3] = 33;
+    data_io[4] = 34; data_io[5] = 35; data_io[6] = 36; data_io[7] = 37;
+    done_out = 40;
+  }
+
+  BUS SIMPLE_BUS {
+    OUT   [8] ADDR;
+    OUT   [1] CMD;
+    OUT   [1] VALID;
+    INOUT [8] DATA;
+    IN    [1] DONE;
+  }
+
+  @top bus_test_top {
+    IN    [8] addr = addr_in;
+    IN    [1] cmd = cmd_in;
+    IN    [1] valid = valid_in;
+    INOUT [8] data = data_io;
+    OUT   [1] done = done_out;
+  }
+@endproj
+
+// Top module that wires up a bus source and sink through a passthrough
+@module bus_test_top
+  PORT {
+    IN    [8] addr;
+    IN    [1] cmd;
+    IN    [1] valid;
+    INOUT [8] data;
+    OUT   [1] done;
+  }
+
+  WIRE {
+    src_bus [widthof(SIMPLE_BUS)];
+    dst_bus [widthof(SIMPLE_BUS)];
+  }
+
+  @new pass0 bus_passthrough {
+    BUS SIMPLE_BUS TARGET src = src_bus;
+    BUS SIMPLE_BUS SOURCE dst = dst_bus;
+  }
+
+  @new sink0 bus_sink {
+    BUS SIMPLE_BUS TARGET pbus = dst_bus;
+    OUT [1] done_flag = done;
+  }
+
+  @new source0 bus_source {
+    IN  [8] addr = addr;
+    IN  [1] cmd = cmd;
+    IN  [1] valid = valid;
+    INOUT [8] data = data;
+    BUS SIMPLE_BUS SOURCE pbus = src_bus;
+  }
+@endmod
+
+// A module that drives a bus (acts as a bus source/master)
+@module bus_source
+  PORT {
+    IN    [8] addr;
+    IN    [1] cmd;
+    IN    [1] valid;
+    INOUT [8] data;
+    BUS SIMPLE_BUS SOURCE pbus;
+  }
+
+  ASYNCHRONOUS {
+    pbus.ADDR  <= addr;
+    pbus.CMD   <= cmd;
+    pbus.VALID <= valid;
+    pbus.DATA  <= data;
+  }
+@endmod
+
+// A pass-through module: aliases TARGET port signals to SOURCE port signals
+@module bus_passthrough
+  PORT {
+    BUS SIMPLE_BUS TARGET src;
+    BUS SIMPLE_BUS SOURCE dst;
+  }
+
+  ASYNCHRONOUS {
+    // Port-to-port alias assignments (=)
+    dst.ADDR  = src.ADDR;
+    dst.CMD   = src.CMD;
+    dst.VALID = src.VALID;
+    dst.DATA  = src.DATA;
+    dst.DONE  = src.DONE;
+  }
+@endmod
+
+// A module that reads from a bus (acts as a bus target/slave)
+@module bus_sink
+  PORT {
+    BUS SIMPLE_BUS TARGET pbus;
+    OUT [1] done_flag;
+  }
+
+  ASYNCHRONOUS {
+    pbus.DATA <= (pbus.VALID == 1'b1 && pbus.CMD == 1'b1) ? 8'hAA : 8'bz;
+    done_flag <= pbus.VALID;
+    pbus.DONE <= 1'b1;
+  }
+@endmod

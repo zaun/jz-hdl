@@ -1,0 +1,39 @@
+@project reset_clocked_active_low_test
+  @top reset_clk_lo {
+    IN  [1] clk = _;
+    IN  [1] rst = _;
+    IN  [1] en = _;
+    IN  [8] d_in = _;
+    OUT [8] q = _;
+  }
+@endproj
+
+@module reset_clk_lo
+  PORT {
+    IN  [1] clk;
+    IN  [1] rst;
+    IN  [1] en;
+    IN  [8] d_in;
+    OUT [8] q;
+  }
+
+  REGISTER {
+    reg_a [8] = 8'h00;
+  }
+
+  ASYNCHRONOUS {
+    q = reg_a;
+  }
+
+  SYNCHRONOUS(
+    CLK=clk
+    EDGE=Rising
+    RESET=rst
+    RESET_ACTIVE=Low
+    RESET_TYPE=Clocked
+  ) {
+    IF (en) {
+      reg_a <= d_in;
+    }
+  }
+@endmod

@@ -1,0 +1,24 @@
+// CHECK_FAILED: @check condition evaluates to 0 in module scope.
+// Verified
+
+@project CHECK_FAILED_MODULE_PROJECT
+  @top CHECK_FAILED_MODULE_EXAMPLE {
+    OUT [1] data = _;
+  }
+@endproj
+
+@module CHECK_FAILED_MODULE_EXAMPLE
+  CONST {
+    WIDTH = 8;
+  }
+
+  PORT {
+    OUT [1] data;
+  }
+
+  @check (0, "zero is not allowed");
+
+  ASYNCHRONOUS {
+    data <= 1'b1;
+  }
+@endmod

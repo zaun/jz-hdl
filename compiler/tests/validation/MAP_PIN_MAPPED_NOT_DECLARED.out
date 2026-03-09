@@ -1,0 +1,2 @@
+File: MAP_PIN_MAPPED_NOT_DECLARED.jz
+      11:5    error MAP_PIN_MAPPED_NOT_DECLARED S6.6/S6.9 MAP entry references undeclared pin

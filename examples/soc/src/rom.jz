@@ -1,0 +1,56 @@
+@module rom
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        BUS SIMPLE_BUS TARGET pbus;
+    }
+
+    // Single 4096-word bank, 32-bit wide (BSRAM)
+    MEM(TYPE=BLOCK) {
+        rom_mem [32] [4096] = @file("../out/bios.hex") {
+            OUT read SYNC;
+        };
+    }
+
+    REGISTER {
+        pending_read [1] = 1'b0;
+        data_ready   [1] = 1'b0;
+        read_data    [32] = 32'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Drive data only when data_ready (after BSRAM pipeline)
+        pbus.DATA <= (pbus.VALID && pbus.CMD == CMD.READ && data_ready == 1'b1) ? read_data : 32'bz;
+
+        // DONE: on reads once data_ready is set, writes are ignored (ROM)
+        IF (pbus.VALID) {
+            IF (data_ready == 1'b1) {
+                pbus.DONE <= 1'b1;
+            } ELSE {
+                pbus.DONE <= 1'b0;
+            }
+        } ELSE {
+            pbus.DONE <= 1'bz;
+        }
+    }
+
+    SYNCHRONOUS(CLK = clk RESET = rst_n RESET_ACTIVE = Low) {
+        // 2-stage pipeline for SYNC memory read:
+        // Stage 1: pending_read=1 - address sent to BSRAM
+        // Stage 2: data_ready=1 - data latched into read_data
+
+        IF (data_ready == 1'b1) {
+            // Clear data_ready after CPU has seen DONE
+            data_ready <= 1'b0;
+        } ELIF (pending_read == 1'b1) {
+            // Stage 2: Memory output is now valid, latch
+            read_data <= rom_mem.read.data;
+            data_ready <= 1'b1;
+            pending_read <= 1'b0;
+        } ELIF (pbus.VALID && pbus.CMD == CMD.READ) {
+            // Stage 1: New read request, send address
+            rom_mem.read.addr <= pbus.ADDR[13:2];
+            pending_read <= 1'b1;
+        }
+    }
+@endmod
