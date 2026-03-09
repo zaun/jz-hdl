@@ -380,6 +380,20 @@ void sem_check_project_clock_gen(JZASTNode *project,
 {
     if (!project || project->type != JZ_AST_PROJECT) return;
 
+    /* If no chip data is available, emit an info diagnostic for each CLOCK_GEN block */
+    if (!chip) {
+        for (size_t i = 0; i < project->child_count; ++i) {
+            JZASTNode *cgen = project->children[i];
+            if (cgen && cgen->type == JZ_AST_CLOCK_GEN_BLOCK) {
+                sem_report_rule(diagnostics,
+                                cgen->loc,
+                                "CLOCK_GEN_NO_CHIP_DATA",
+                                NULL);
+                break;  /* one diagnostic is sufficient */
+            }
+        }
+    }
+
     /* Find the CLOCKS block for clock validation */
     JZASTNode *clocks = NULL;
     for (size_t i = 0; i < project->child_count; ++i) {

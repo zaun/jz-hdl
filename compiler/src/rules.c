@@ -321,6 +321,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "CLOCK_GEN_RULES", "CLOCK_SOURCE_AMBIGUOUS",                 0, JZ_RULE_MODE_ERR, "S6.4 Clock declared as both IN_PINS and CLOCK_GEN output" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_PARAM_OUT_OF_RANGE",          0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN CONFIG parameter value outside valid chip-defined range" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_DERIVED_OUT_OF_RANGE",        0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN derived value (frequency/VCO) outside valid chip-defined range" },
+    { "CLOCK_GEN_RULES", "CLOCK_GEN_NO_CHIP_DATA",               0, JZ_RULE_MODE_INF, "S6.4.1 No chip specified; CLOCK_GEN parameters and constraints cannot be validated" },
 
     /* [BLACKBOX_RULES] */
     { "BLACKBOX_RULES", "BLACKBOX_BODY_DISALLOWED",                 0, JZ_RULE_MODE_ERR, "S6.7 Blackbox contains forbidden blocks (ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM)" },

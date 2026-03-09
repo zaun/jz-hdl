@@ -1193,7 +1193,6 @@ void emit_project_wrapper(FILE *out, const IR_Design *design)
                             out_clk->clock_name ? out_clk->clock_name : "(unnamed)");
                 }
 
-                fprintf(out, "    // TODO: Vendor-specific %s instantiation\n", unit_type_upper);
                 fprintf(out, "    // jz_%s_%d_u%d u_%s_%d (\n", unit_type_upper, cg, u, unit_type_upper, cg);
                 for (int ii2 = 0; ii2 < unit->num_inputs; ++ii2) {
                     if (unit->inputs[ii2].selector && strcmp(unit->inputs[ii2].selector, "REF_CLK") == 0 &&
