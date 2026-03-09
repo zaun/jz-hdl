@@ -23,7 +23,7 @@ jobs:
 
       - name: Build and install yosys v0.63
         run: |
-          git clone --depth 1 --branch v0.63 https://github.com/YosysHQ/yosys.git /tmp/yosys
+          git clone --depth 1 --recursive --branch v0.63 https://github.com/YosysHQ/yosys.git /tmp/yosys
           cd /tmp/yosys
           make -j$(nproc) PREFIX=/usr/local
           sudo make install PREFIX=/usr/local
