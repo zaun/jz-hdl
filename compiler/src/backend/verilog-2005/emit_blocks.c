@@ -135,6 +135,10 @@ static int s_bsram_read_mapping_count = 0;
 
 void bsram_mappings_clear(void)
 {
+    for (int i = 0; i < s_bsram_read_mapping_count; ++i) {
+        free((void *)s_bsram_read_mappings[i].mem_name);
+        s_bsram_read_mappings[i].mem_name = NULL;
+    }
     s_bsram_read_mapping_count = 0;
 }
 
@@ -143,7 +147,7 @@ static void bsram_mappings_add(const char *mem_name)
     if (s_bsram_read_mapping_count >= MAX_BSRAM_READ_MAPPINGS) {
         return;
     }
-    s_bsram_read_mappings[s_bsram_read_mapping_count++].mem_name = mem_name;
+    s_bsram_read_mappings[s_bsram_read_mapping_count++].mem_name = strdup(mem_name);
 }
 
 int has_bsram_read_intermediate(const char *mem_name)
