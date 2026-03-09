@@ -39,15 +39,15 @@ const JZRuleInfo jz_rule_table[] = {
 
     /* [WIDTHS_AND_SLICING] */
     { "WIDTHS_AND_SLICING", "WIDTH_NONPOSITIVE_OR_NONINT",          1, JZ_RULE_MODE_ERR, "S2.2/S8.1 Declared width <= 0 or not an integer" },
-    { "WIDTHS_AND_SLICING", "WIDTH_ASSIGN_MISMATCH_NO_EXT",         0, JZ_RULE_MODE_ERR, "S4.10/S5.0/S5.1/S8.1 Assignment with `=`, `=>`, `<=` uses operands of different widths without z/s modifier" },
+    { "WIDTHS_AND_SLICING", "WIDTH_ASSIGN_MISMATCH_NO_EXT",         0, JZ_RULE_MODE_ERR, "S4.10/S5.0/S5.1 Width mismatch in assignment; add `=z` (zero-extend), `=s` (sign-extend), or use a slice" },
     { "WIDTHS_AND_SLICING", "SLICE_MSB_LESS_THAN_LSB",              0, JZ_RULE_MODE_ERR, "S1.3/S8.1 Slice uses MSB < LSB" },
     { "WIDTHS_AND_SLICING", "SLICE_INDEX_OUT_OF_RANGE",             0, JZ_RULE_MODE_ERR, "S1.3/S8.1 Slice indices are < 0 or >= signal width" },
     { "WIDTHS_AND_SLICING", "SLICE_INDEX_INVALID",                  0, JZ_RULE_MODE_ERR, "S1.3/S8.1 Slice index is not an integer/CONST or CONST is undefined/negative" },
 
     /* [OPERATORS_AND_EXPRESSIONS] */
     { "OPERATORS_AND_EXPRESSIONS", "UNARY_ARITH_MISSING_PARENS",    0, JZ_RULE_MODE_ERR, "S3.2/S8.1 Unary arithmetic `-flag`/`+flag` used without required parentheses" },
-    { "OPERATORS_AND_EXPRESSIONS", "LOGICAL_WIDTH_NOT_1",           0, JZ_RULE_MODE_ERR, "S3.2/S8.1 Logical ops `&& || !` used on width > 1" },
-    { "OPERATORS_AND_EXPRESSIONS", "TERNARY_COND_WIDTH_NOT_1",      0, JZ_RULE_MODE_ERR, "S3.2/S8.1 Ternary condition width  1" },
+    { "OPERATORS_AND_EXPRESSIONS", "LOGICAL_WIDTH_NOT_1",           0, JZ_RULE_MODE_ERR, "S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?" },
+    { "OPERATORS_AND_EXPRESSIONS", "TERNARY_COND_WIDTH_NOT_1",      0, JZ_RULE_MODE_ERR, "S3.2/S8.1 Ternary `?:` condition must be 1 bit wide; use a comparison or reduction operator" },
     { "OPERATORS_AND_EXPRESSIONS", "TERNARY_BRANCH_WIDTH_MISMATCH", 0, JZ_RULE_MODE_ERR, "S3.2/S8.1 Ternary true/false branches have mismatched widths" },
     { "OPERATORS_AND_EXPRESSIONS", "CONCAT_EMPTY",                  0, JZ_RULE_MODE_ERR, "S3.2/S8.1 Empty concatenation `{}` is not allowed" },
     { "OPERATORS_AND_EXPRESSIONS", "DIV_CONST_ZERO",                0, JZ_RULE_MODE_ERR, "S3.2 Division/modulus by compile-time constant zero divisor" },
@@ -85,7 +85,7 @@ const JZRuleInfo jz_rule_table[] = {
 
     /* [PORT_WIRE_REGISTER_DECLS] */
     { "PORT_WIRE_REGISTER_DECLS", "PORT_MISSING_WIDTH",             0, JZ_RULE_MODE_ERR, "S4.4/S8.1 Port declaration without mandatory `[N]` width" },
-    { "PORT_WIRE_REGISTER_DECLS", "PORT_DIRECTION_MISMATCH_IN",     0, JZ_RULE_MODE_ERR, "S4.4/S5.1/S5.2/S8.1 Assigning to IN port outside INOUT tri-state pattern" },
+    { "PORT_WIRE_REGISTER_DECLS", "PORT_DIRECTION_MISMATCH_IN",     0, JZ_RULE_MODE_ERR, "S4.4/S5.1 Cannot assign to IN port; IN ports are read-only inside the module" },
     { "PORT_WIRE_REGISTER_DECLS", "PORT_DIRECTION_MISMATCH_OUT",    0, JZ_RULE_MODE_ERR, "S4.4/S5.1/S5.2/S8.1 Reading from OUT port inside module (outputs are write-only)" },
     { "PORT_WIRE_REGISTER_DECLS", "PORT_TRISTATE_MISMATCH",         0, JZ_RULE_MODE_ERR, "S4.4/S4.10/S8.1 Only INOUT ports may use `z` for tri-state; IN/OUT ports must drive 0/1/x" },
     { "PORT_WIRE_REGISTER_DECLS", "WIRE_MULTI_DIMENSIONAL",         0, JZ_RULE_MODE_ERR, "S4.5 WIRE declared with multi-dimensional syntax" },
@@ -94,8 +94,8 @@ const JZRuleInfo jz_rule_table[] = {
     { "PORT_WIRE_REGISTER_DECLS", "REG_INIT_CONTAINS_X",            0, JZ_RULE_MODE_ERR, "S2.1/S4.7 Register initialization literal must not contain `x` bits" },
     { "PORT_WIRE_REGISTER_DECLS", "REG_INIT_CONTAINS_Z",            0, JZ_RULE_MODE_ERR, "S2.1/S4.7 Register initialization literal must not contain `z` bits" },
     { "PORT_WIRE_REGISTER_DECLS", "REG_INIT_WIDTH_MISMATCH",       0, JZ_RULE_MODE_ERR, "S4.7 Register initialization literal width does not match declared register width" },
-    { "PORT_WIRE_REGISTER_DECLS", "WRITE_WIRE_IN_SYNC",             2, JZ_RULE_MODE_ERR, "S4.5/S5.2 Assigning to WIRE in SYNCHRONOUS block (wires are combinational only)" },
-    { "PORT_WIRE_REGISTER_DECLS", "ASSIGN_TO_NON_REGISTER_IN_SYNC", 1, JZ_RULE_MODE_ERR, "S5.2/S8.1 LHS of SYNCHRONOUS assignment is not a REGISTER or register slice/concat" },
+    { "PORT_WIRE_REGISTER_DECLS", "WRITE_WIRE_IN_SYNC",             2, JZ_RULE_MODE_ERR, "S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS" },
+    { "PORT_WIRE_REGISTER_DECLS", "ASSIGN_TO_NON_REGISTER_IN_SYNC", 1, JZ_RULE_MODE_ERR, "S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS" },
     { "PORT_WIRE_REGISTER_DECLS", "MODULE_MISSING_PORT",            0, JZ_RULE_MODE_ERR, "S4.2/S4.4/S8.1 Module missing required PORT block or PORT block is empty (no ports declared)" },
     { "PORT_WIRE_REGISTER_DECLS", "MODULE_PORT_IN_ONLY",            0, JZ_RULE_MODE_WRN, "S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)" },
 
@@ -135,20 +135,20 @@ const JZRuleInfo jz_rule_table[] = {
     { "MUX_RULES", "MUX_NAME_DUPLICATE",                            0, JZ_RULE_MODE_ERR, "S4.6 MUX identifier duplicates another identifier in module" },
 
     /* [ASSIGNMENTS_AND_EXCLUSIVE] */
-    { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_WIDTH_NO_MODIFIER",          1, JZ_RULE_MODE_ERR, "S4.10/S5.0 Bare `=`, `=>`, `<=` used when widths differ (modifier required)" },
-    { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_TRUNCATES",              1, JZ_RULE_MODE_ERR, "S4.10/S5.0/S5.1/S5.2 Assignment would truncate RHS bits into smaller LHS" },
+    { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_WIDTH_NO_MODIFIER",          1, JZ_RULE_MODE_ERR, "S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly" },
+    { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_TRUNCATES",              1, JZ_RULE_MODE_ERR, "S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier" },
     { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_SLICE_WIDTH_MISMATCH",       2, JZ_RULE_MODE_ERR, "S4.10/S5.1/S5.2 Slice assignment where source and destination slice widths differ" },
     { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_CONCAT_WIDTH_MISMATCH",      2, JZ_RULE_MODE_ERR, "S4.10/S5.1/S5.2 Concatenation on either side of assignment has width sum that does not match paired expression width" },
-    { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_MULTIPLE_SAME_BITS",         0, JZ_RULE_MODE_ERR, "S1.5/S5.2/S8.1 Exclusive Assignment Rule violation: more than one assignment to same bits along any path" },
+    { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_MULTIPLE_SAME_BITS",         0, JZ_RULE_MODE_ERR, "S1.5/S5.2 Same bits assigned more than once on a single execution path (exclusive assignment violation)" },
     { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_INDEPENDENT_IF_SELECT",      1, JZ_RULE_MODE_ERR, "S1.5/S5.3/S5.4/S8.1 Same identifier assigned in multiple independent IF/SELECT chains at same nesting level" },
     { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_SHADOWING",                  0, JZ_RULE_MODE_ERR, "S1.5/S5.2/S8.1 Assignment at higher nesting level followed by nested assignment to same bits (sequential shadowing)" },
     { "ASSIGNMENTS_AND_EXCLUSIVE", "ASSIGN_SLICE_OVERLAP",              0, JZ_RULE_MODE_ERR, "S5.2/S8.1 Overlapping part-select assignments to same identifier bits in any single execution path" },
-    { "ASSIGNMENTS_AND_EXCLUSIVE", "ASYNC_UNDEFINED_PATH_NO_DRIVER",    0, JZ_RULE_MODE_ERR, "S1.5/S4.10/S5.1/S8.1 ASYNCHRONOUS path leaves WIRE/PORT without any driver (e.g. IF without ELSE)" },
+    { "ASSIGNMENTS_AND_EXCLUSIVE", "ASYNC_UNDEFINED_PATH_NO_DRIVER",    0, JZ_RULE_MODE_ERR, "S1.5/S4.10/S5.1 Signal undriven on some ASYNCHRONOUS paths; add an ELSE branch or DEFAULT case" },
 
     /* [ASYNC_BLOCK_RULES] */
     { "ASYNC_BLOCK_RULES", "ASYNC_INVALID_STATEMENT_TARGET",        1, JZ_RULE_MODE_ERR, "S4.10/S5.1/S8.1 LHS in ASYNCHRONOUS assignment is not assignable (e.g. CONST, function call)" },
-    { "ASYNC_BLOCK_RULES", "ASYNC_ASSIGN_REGISTER",                 0, JZ_RULE_MODE_ERR, "S4.7/S5.1/S8.1 Attempt to write REGISTER in ASYNCHRONOUS block" },
-    { "ASYNC_BLOCK_RULES", "ASYNC_ALIAS_LITERAL_RHS",               0, JZ_RULE_MODE_ERR, "S4.10/S5.1 ASYNCHRONOUS blocks may not use literals anywhere on the RHS of alias operators (=, =z, =s); use '<=' or '=>' to drive constants" },
+    { "ASYNC_BLOCK_RULES", "ASYNC_ASSIGN_REGISTER",                 0, JZ_RULE_MODE_ERR, "S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block" },
+    { "ASYNC_BLOCK_RULES", "ASYNC_ALIAS_LITERAL_RHS",               0, JZ_RULE_MODE_ERR, "S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?" },
     { "ASYNC_BLOCK_RULES", "ASYNC_FLOATING_Z_READ",                 0, JZ_RULE_MODE_ERR, "S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)" },
 
     /* [SYNC_BLOCK_RULES] */
@@ -156,7 +156,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "SYNC_BLOCK_RULES", "SYNC_ROOT_AND_CONDITIONAL_ASSIGN",       0, JZ_RULE_MODE_ERR, "S5.2/S1.5/S8.1 Root-level register assignment combined with nested conditional assignment to same bits" },
     { "SYNC_BLOCK_RULES", "SYNC_SLICE_WIDTH_MISMATCH",              0, JZ_RULE_MODE_ERR, "S5.2 Register slice assignment expression width not equal to slice width" },
     { "SYNC_BLOCK_RULES", "SYNC_CONCAT_DUP_REG",                    1, JZ_RULE_MODE_ERR, "S5.2 Concatenation LHS includes same register more than once" },
-    { "SYNC_BLOCK_RULES", "SYNC_NO_ALIAS",                          0, JZ_RULE_MODE_ERR, "S5.2 In SYNCHRONOUS blocks, aliasing assignments (`=`, `=z`, `=s`) are forbidden; only directional operators (<=, => and variants) are allowed" },
+    { "SYNC_BLOCK_RULES", "SYNC_NO_ALIAS",                          0, JZ_RULE_MODE_ERR, "S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?" },
     { "SYNC_BLOCK_RULES", "DOMAIN_CONFLICT",                        0, JZ_RULE_MODE_ERR, "S4.11/S4.12 Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock" },
     { "SYNC_BLOCK_RULES", "DUPLICATE_BLOCK",                        0, JZ_RULE_MODE_ERR, "S4.11/S4.12 More than one SYNCHRONOUS block declared for the same clock signal in a module" },
     { "SYNC_BLOCK_RULES", "MULTI_CLK_ASSIGN",                       0, JZ_RULE_MODE_ERR, "S4.11/S4.12 Same register assigned in SYNCHRONOUS blocks driven by different clocks or conflicting CDC home domains" },
@@ -179,10 +179,10 @@ const JZRuleInfo jz_rule_table[] = {
     { "SYNC_BLOCK_RULES", "SYNC_EDGE_BOTH_WARNING",                0, JZ_RULE_MODE_WRN, "S4.11 EDGE=Both (dual-edge clocking) may not be supported by all FPGA architectures" },
 
     /* [CONTROL_FLOW_IF_SELECT] */
-    { "CONTROL_FLOW_IF_SELECT", "IF_COND_WIDTH_NOT_1",              0, JZ_RULE_MODE_ERR, "S5.3 IF/ELIF condition expression width != 1" },
+    { "CONTROL_FLOW_IF_SELECT", "IF_COND_WIDTH_NOT_1",              0, JZ_RULE_MODE_ERR, "S5.3 IF/ELIF condition must be 1 bit wide; use a comparison or reduction operator" },
     { "CONTROL_FLOW_IF_SELECT", "CONTROL_FLOW_OUTSIDE_BLOCK",       0, JZ_RULE_MODE_ERR, "S5.3/S5.4/S8.1 Control-flow statements (IF/SELECT) used outside ASYNCHRONOUS or SYNCHRONOUS block" },
     { "CONTROL_FLOW_IF_SELECT", "SELECT_DUP_CASE_VALUE",            0, JZ_RULE_MODE_ERR, "S5.4/S8.1 Multiple CASE labels with same value in SELECT" },
-    { "CONTROL_FLOW_IF_SELECT", "ASYNC_ALIAS_IN_CONDITIONAL",       0, JZ_RULE_MODE_ERR, "S4.10/S5.3 Alias operators (=, =z, =s) may not appear inside IF/ELIF/ELSE/SELECT/CASE; they are reserved for unconditional net aliasing only" },
+    { "CONTROL_FLOW_IF_SELECT", "ASYNC_ALIAS_IN_CONDITIONAL",       0, JZ_RULE_MODE_ERR, "S4.10/S5.3 Alias `=` inside IF/SELECT is forbidden; did you mean `<=` or `=>`?" },
     { "CONTROL_FLOW_IF_SELECT", "SELECT_DEFAULT_RECOMMENDED_ASYNC", 0, JZ_RULE_MODE_WRN, "S5.4/S8.3 ASYNCHRONOUS SELECT without DEFAULT (may cause floating nets)" },
     { "CONTROL_FLOW_IF_SELECT", "SELECT_NO_MATCH_SYNC_OK",          0, JZ_RULE_MODE_WRN, "S5.4 In SYNCHRONOUS, missing DEFAULT simply holds registers (no error)" },
     { "CONTROL_FLOW_IF_SELECT", "SELECT_CASE_WIDTH_MISMATCH",      0, JZ_RULE_MODE_ERR, "S5.4 SELECT CASE value width does not match selector expression width" },
@@ -207,16 +207,16 @@ const JZRuleInfo jz_rule_table[] = {
     { "FUNCTIONS_AND_CLOG2", "WIDTHOF_WIDTH_NOT_RESOLVABLE",       0, JZ_RULE_MODE_ERR, "S5.5.10 widthof() target found but its width cannot be resolved" },
 
     /* [NET_DRIVERS_AND_TRI_STATE] */
-    { "NET_DRIVERS_AND_TRI_STATE", "NET_FLOATING_WITH_SINK",        0, JZ_RULE_MODE_ERR, "S1.2/S4.10/S8.1 Net has zero active drivers but at least one sink (floating net)" },
-    { "NET_DRIVERS_AND_TRI_STATE", "NET_TRI_STATE_ALL_Z_READ",      0, JZ_RULE_MODE_ERR, "S4.10/S8.1 All drivers assign `z` while net is read, producing undefined value" },
-    { "NET_DRIVERS_AND_TRI_STATE", "NET_MULTIPLE_ACTIVE_DRIVERS",   1, JZ_RULE_MODE_ERR, "S1.2/S1.5/S4.10 Net has multiple active (non-z) drivers; tri-state requires all but one driver to assign z" },
-    { "NET_DRIVERS_AND_TRI_STATE", "NET_DANGLING_UNUSED",           1, JZ_RULE_MODE_WRN, "S5.1/S8.3 Net has no drivers and no sinks (unused/dangling)" },
+    { "NET_DRIVERS_AND_TRI_STATE", "NET_FLOATING_WITH_SINK",        0, JZ_RULE_MODE_ERR, "S1.2/S4.10 Signal is read but never driven (floating net); add a driver or remove the read" },
+    { "NET_DRIVERS_AND_TRI_STATE", "NET_TRI_STATE_ALL_Z_READ",      0, JZ_RULE_MODE_ERR, "S4.10 All drivers assign `z` (tri-state) but signal is read; at least one driver must provide a value" },
+    { "NET_DRIVERS_AND_TRI_STATE", "NET_MULTIPLE_ACTIVE_DRIVERS",   1, JZ_RULE_MODE_ERR, "S1.2/S1.5/S4.10 Multiple active drivers on same signal; for tri-state, all but one must assign `z`" },
+    { "NET_DRIVERS_AND_TRI_STATE", "NET_DANGLING_UNUSED",           1, JZ_RULE_MODE_WRN, "S5.1/S8.3 Signal is neither driven nor read; remove it or connect it" },
 
     /* [OBSERVABILITY_X] */
-    { "OBSERVABILITY_X", "OBS_X_TO_OBSERVABLE_SINK",                0, JZ_RULE_MODE_ERR, "S1.2/S2.1/S3.2 x-dependent expression drives observable sink (REGISTER, MEM, or OUT/INOUT); x bits must be structurally masked before observable sinks" },
+    { "OBSERVABILITY_X", "OBS_X_TO_OBSERVABLE_SINK",                0, JZ_RULE_MODE_ERR, "S1.2/S2.1/S3.2 Expression containing `x` bits drives REGISTER, MEM, or output; mask `x` bits before use" },
 
     /* [COMBINATIONAL_LOOPS] */
-    { "COMBINATIONAL_LOOPS", "COMB_LOOP_UNCONDITIONAL",             0, JZ_RULE_MODE_ERR, "S5.3/S8.2 Flow-sensitive combinational loop detected across ASYNCHRONOUS assignments" },
+    { "COMBINATIONAL_LOOPS", "COMB_LOOP_UNCONDITIONAL",             0, JZ_RULE_MODE_ERR, "S5.3/S8.2 Combinational loop: signal feeds back to itself through ASYNCHRONOUS assignments" },
     { "COMBINATIONAL_LOOPS", "COMB_LOOP_CONDITIONAL_SAFE",          0, JZ_RULE_MODE_WRN, "S5.3/S8.2 Cycles only within mutually exclusive branches considered safe (no error)" },
 
     /* [BUS_RULES] */
@@ -371,12 +371,12 @@ const JZRuleInfo jz_rule_table[] = {
     { "MEM_ACCESS", "MEM_SYNC_ADDR_INVALID_PORT",                   0, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2/S7.7.2 mem.port.addr is only valid for SYNC OUT ports" },
     { "MEM_ACCESS", "MEM_SYNC_ADDR_IN_ASYNC_BLOCK",                 0, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2/S7.7.2 SYNC read addresses must be assigned in SYNCHRONOUS blocks" },
     { "MEM_ACCESS", "MEM_SYNC_DATA_IN_ASYNC_BLOCK",                 0, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2/S7.7.2 SYNC MEM read data (mem.port.data) may not be read in ASYNCHRONOUS blocks" },
-    { "MEM_ACCESS", "MEM_SYNC_ADDR_WITHOUT_RECEIVE",                0, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2/S7.7.2 SYNC read address assignment must use `<=` in SYNCHRONOUS block" },
-    { "MEM_ACCESS", "MEM_READ_SYNC_WITH_EQUALS",                    0, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2/S7.7.2 Synchronous read used with `=` instead of `<=` in SYNCHRONOUS block" },
+    { "MEM_ACCESS", "MEM_SYNC_ADDR_WITHOUT_RECEIVE",                0, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2 MEM read address must use `<=` in SYNCHRONOUS block; did you mean `<=` instead of `=`?" },
+    { "MEM_ACCESS", "MEM_READ_SYNC_WITH_EQUALS",                    0, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2 Synchronous MEM read used `=` in SYNCHRONOUS block; did you mean `<=`?" },
     { "MEM_ACCESS", "MEM_IN_PORT_FIELD_ACCESS",                      0, JZ_RULE_MODE_ERR, "S7.2.2/S7.3.3 IN (write) port requires bracket syntax mem.port[addr] <= data; .addr/.data fields are not valid" },
-    { "MEM_ACCESS", "MEM_WRITE_IN_ASYNC_BLOCK",                     2, JZ_RULE_MODE_ERR, "S7.2.2/S7.3.3/S7.7.2 OUT write port used in ASYNCHRONOUS block" },
-    { "MEM_ACCESS", "MEM_WRITE_TO_READ_PORT",                       1, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2/S7.7.2 Assignment writes to MEM IN (read) port; only OUT ports are writable" },
-    { "MEM_ACCESS", "MEM_READ_FROM_WRITE_PORT",                     1, JZ_RULE_MODE_ERR, "S7.2.2/S7.3.3/S7.7.2 Expression reads from MEM OUT (write) port; only IN ports are readable" },
+    { "MEM_ACCESS", "MEM_WRITE_IN_ASYNC_BLOCK",                     2, JZ_RULE_MODE_ERR, "S7.2.2/S7.3.3 MEM writes must be in SYNCHRONOUS blocks; move this assignment out of ASYNCHRONOUS" },
+    { "MEM_ACCESS", "MEM_WRITE_TO_READ_PORT",                       1, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2 Writing to MEM read port (IN); did you mean to use an OUT port?" },
+    { "MEM_ACCESS", "MEM_READ_FROM_WRITE_PORT",                     1, JZ_RULE_MODE_ERR, "S7.2.2/S7.3.3 Reading from MEM write port (OUT); did you mean to use an IN port?" },
     { "MEM_ACCESS", "MEM_ADDR_WIDTH_TOO_WIDE",                      0, JZ_RULE_MODE_ERR, "S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way" },
     { "MEM_ACCESS", "MEM_MULTIPLE_WRITES_SAME_IN",                  0, JZ_RULE_MODE_ERR, "S7.2.2/S7.3.3/S7.7.2 Multiple writes to same IN port within single SYNCHRONOUS block" },
     { "MEM_ACCESS", "MEM_MULTIPLE_ASSIGN_SYNC_READ_OUT",            0, JZ_RULE_MODE_ERR, "S7.2.1/S7.3.2/S7.7.2 Synchronous read address sampled from multiple addresses in one execution path" },
@@ -439,16 +439,16 @@ const JZRuleInfo jz_rule_table[] = {
     { "SIMULATION", "SIM_PROJECT_MIXED",          0, JZ_RULE_MODE_ERR, "SIM-020 A file may not contain both @project and @simulation" },
 
     /* [GENERAL_WARNINGS] */
-    { "GENERAL_WARNINGS", "WARN_UNUSED_REGISTER",                   0, JZ_RULE_MODE_WRN, "S8.3 Unused register not read or written" },
+    { "GENERAL_WARNINGS", "WARN_UNUSED_REGISTER",                   0, JZ_RULE_MODE_WRN, "S8.3 Register is never read or written; remove it if unused" },
     { "GENERAL_WARNINGS", "WARN_UNSINKED_REGISTER",                0, JZ_RULE_MODE_WRN, "S8.3 Register is written but its value is never read" },
     { "GENERAL_WARNINGS", "WARN_UNDRIVEN_REGISTER",                0, JZ_RULE_MODE_WRN, "S8.3 Register is read but never written" },
-    { "GENERAL_WARNINGS", "WARN_UNCONNECTED_OUTPUT",                2, JZ_RULE_MODE_WRN, "S8.3 Unconnected output (no driver or no sink, depending on intent)" },
+    { "GENERAL_WARNINGS", "WARN_UNCONNECTED_OUTPUT",                2, JZ_RULE_MODE_WRN, "S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect" },
     { "GENERAL_WARNINGS", "WARN_INCOMPLETE_SELECT_ASYNC",           0, JZ_RULE_MODE_WRN, "S5.4/S8.3 Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block" },
     { "GENERAL_WARNINGS", "WARN_DEAD_CODE_UNREACHABLE",             0, JZ_RULE_MODE_WRN, "S7.7.3/S8.3 Dead code (unreachable statements detected by analysis)" },
-    { "GENERAL_WARNINGS", "WARN_UNUSED_MODULE",                     0, JZ_RULE_MODE_WRN, "S8.3 Module declared but never instantiated or used as top-level @new" },
-    { "GENERAL_WARNINGS", "WARN_UNUSED_WIRE",                      0, JZ_RULE_MODE_WRN, "S12.3 WIRE declared but never driven or read" },
-    { "GENERAL_WARNINGS", "WARN_UNUSED_PORT",                      0, JZ_RULE_MODE_WRN, "S12.3 PORT declared but never used in any expression or assignment" },
-    { "GENERAL_WARNINGS", "WARN_INTERNAL_TRISTATE",                0, JZ_RULE_MODE_WRN, "Internal tri-state logic is not FPGA-compatible; use --tristate-default to enable automatic tri-state elimination" },
+    { "GENERAL_WARNINGS", "WARN_UNUSED_MODULE",                     0, JZ_RULE_MODE_WRN, "S8.3 Module declared but never instantiated; remove it or add a @new" },
+    { "GENERAL_WARNINGS", "WARN_UNUSED_WIRE",                      0, JZ_RULE_MODE_WRN, "S12.3 WIRE declared but never driven or read; remove it if unused" },
+    { "GENERAL_WARNINGS", "WARN_UNUSED_PORT",                      0, JZ_RULE_MODE_WRN, "S12.3 PORT declared but never used; remove it if unused" },
+    { "GENERAL_WARNINGS", "WARN_INTERNAL_TRISTATE",                0, JZ_RULE_MODE_WRN, "S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC" },
 
     /* [IO] */
     { "IO", "IO_BACKEND",                                          0, JZ_RULE_MODE_ERR, "Failed to open or write backend output file" },

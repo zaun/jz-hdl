@@ -1,2 +1,2 @@
 File: TERNARY_COND_WIDTH_NOT_1.jz
-      24:13   error TERNARY_COND_WIDTH_NOT_1 S3.2/S8.1 Ternary condition width  1
+      24:13   error TERNARY_COND_WIDTH_NOT_1 S3.2/S8.1 Ternary `?:` condition must be 1 bit wide; use a comparison or reduction operator

@@ -1,5 +1,5 @@
 File: INSTANCE_ARRAY_OK.jz
-      13:14   warn  NET_DANGLING_UNUSED S5.1/S8.3 Net has no drivers and no sinks (unused/dangling)
-      19:5    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 ASYNCHRONOUS blocks may not use literals anywhere on the RHS of alias operators (=, =z, =s); use '<=' or '=>' to drive constants
-      30:5    warn  NET_DANGLING_UNUSED S5.1/S8.3 Net has no drivers and no sinks (unused/dangling)
+      13:14   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      19:5    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?
+      30:5    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
       37:13   error INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH S4.13/S8.1 Bound parent signal width does not match instantiation port width

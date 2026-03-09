@@ -318,8 +318,8 @@ static void sem_check_async_alias_literal_rhs_recursive(JZASTNode *node,
             sem_report_rule(diagnostics,
                             node->loc,
                             "ASYNC_ALIAS_LITERAL_RHS",
-                            "alias '=' with literal values on RHS is forbidden in ASYNCHRONOUS blocks\n"
-                            "use '<=' (receive) or '=>' (drive) to assign constants");
+                            "alias '=' with literal on RHS is forbidden; did you mean '<=' or '=>'?\n"
+                            "use '<=' (receive) or '=>' (drive) to assign constant values");
         }
     }
 
@@ -608,8 +608,9 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
                 {
                     char msg[512];
                     snprintf(msg, sizeof(msg),
-                             "'%s' is not a REGISTER; only registers may be assigned in SYNCHRONOUS blocks",
-                             node->name);
+                             "'%s' is not a REGISTER; only registers may be assigned in SYNCHRONOUS blocks\n"
+                             "declare '%s' as REGISTER, or move this assignment to an ASYNCHRONOUS block",
+                             node->name, node->name);
                     sem_report_rule(diagnostics,
                                     node->loc,
                                     "ASSIGN_TO_NON_REGISTER_IN_SYNC",
@@ -1352,8 +1353,8 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
         sem_report_rule(diagnostics,
                         stmt->loc,
                         "SYNC_NO_ALIAS",
-                        "SYNCHRONOUS blocks do not allow '=' aliasing\n"
-                        "use '<=' (receive) or '=>' (drive) for directional assignments");
+                        "SYNCHRONOUS blocks do not allow '=' (alias); did you mean '<='?\n"
+                        "use '<=' (receive) or '=>' (drive) for register assignments");
         return;
     }
 

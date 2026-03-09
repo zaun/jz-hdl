@@ -212,9 +212,9 @@ static void sem_check_control_flow_stmt(JZASTNode *stmt,
         if (is_alias && is_async) {
             char explain[256];
             snprintf(explain, sizeof(explain),
-                     "alias operator '%s' used inside a conditional branch.\n"
+                     "alias operator '%s' inside a conditional branch; did you mean '<='?\n"
                      "Aliases (=, =z, =s) create permanent wire connections and cannot\n"
-                     "be conditional. Use a driven assignment (<= or <z) instead.",
+                     "be conditional. Use '<=' (receive) or '=>' (drive) instead.",
                      op);
             sem_report_rule(diagnostics,
                             stmt->loc,

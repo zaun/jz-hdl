@@ -1,2 +1,2 @@
 File: PORT_DIRECTION_MISMATCH_IN.jz
-      22:5    error PORT_DIRECTION_MISMATCH_IN S4.4/S5.1/S5.2/S8.1 Assigning to IN port outside INOUT tri-state pattern
+      22:5    error PORT_DIRECTION_MISMATCH_IN S4.4/S5.1 Cannot assign to IN port; IN ports are read-only inside the module

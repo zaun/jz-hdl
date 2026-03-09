@@ -1,3 +1,3 @@
 File: INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE.jz
-      13:13   warn  NET_DANGLING_UNUSED S5.1/S8.3 Net has no drivers and no sinks (unused/dangling)
+      13:13   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
       36:13   error INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE S4.13.1 Instance array IDX-dependent slice evaluates to indices outside the parent signal width for some instance index

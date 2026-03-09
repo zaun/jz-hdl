@@ -1,4 +1,4 @@
 File: NET_MULTIPLE_ACTIVE_DRIVERS5.jz
-      14:13   error NET_MULTIPLE_ACTIVE_DRIVERS S1.2/S1.5/S4.10 Net has multiple active (non-z) drivers; tri-state requires all but one driver to assign z
-      35:13   warn  WARN_INTERNAL_TRISTATE Internal tri-state logic is not FPGA-compatible; use --tristate-default to enable automatic tri-state elimination
-      55:13   warn  WARN_INTERNAL_TRISTATE Internal tri-state logic is not FPGA-compatible; use --tristate-default to enable automatic tri-state elimination
+      14:13   error NET_MULTIPLE_ACTIVE_DRIVERS S1.2/S1.5/S4.10 Multiple active drivers on same signal; for tri-state, all but one must assign `z`
+      35:13   warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      55:13   warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC

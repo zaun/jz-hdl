@@ -1,2 +1,2 @@
 File: WARN_UNUSED_REGISTER.jz
-      18:5    warn  WARN_UNUSED_REGISTER S8.3 Unused register not read or written
+      18:5    warn  WARN_UNUSED_REGISTER S8.3 Register is never read or written; remove it if unused

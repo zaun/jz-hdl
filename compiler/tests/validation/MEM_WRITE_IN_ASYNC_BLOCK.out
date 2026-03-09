@@ -1,2 +1,2 @@
 File: MEM_WRITE_IN_ASYNC_BLOCK.jz
-      33:5    error MEM_WRITE_IN_ASYNC_BLOCK S7.2.2/S7.3.3/S7.7.2 OUT write port used in ASYNCHRONOUS block
+      33:5    error MEM_WRITE_IN_ASYNC_BLOCK S7.2.2/S7.3.3 MEM writes must be in SYNCHRONOUS blocks; move this assignment out of ASYNCHRONOUS

@@ -388,7 +388,8 @@ void sem_check_project_clock_gen(JZASTNode *project,
                 sem_report_rule(diagnostics,
                                 cgen->loc,
                                 "CLOCK_GEN_NO_CHIP_DATA",
-                                NULL);
+                                "add CHIP=\"<device>\" to @project to enable "
+                                "CLOCK_GEN parameter and frequency validation");
                 break;  /* one diagnostic is sufficient */
             }
         }

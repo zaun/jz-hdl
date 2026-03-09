@@ -1,5 +1,5 @@
 File: INSTANCE_ARRAY_IDX_INVALID_CONTEXT.jz
-      15:13   warn  NET_DANGLING_UNUSED S5.1/S8.3 Net has no drivers and no sinks (unused/dangling)
-      20:5    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 ASYNCHRONOUS blocks may not use literals anywhere on the RHS of alias operators (=, =z, =s); use '<=' or '=>' to drive constants
+      15:13   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      20:5    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?
       34:19   error INSTANCE_ARRAY_IDX_INVALID_CONTEXT S4.13.1 IDX may be used only in parent-signal bindings of instance arrays, not in scalar @new or OVERRIDE expressions
       40:7    error INSTANCE_ARRAY_IDX_INVALID_CONTEXT S4.13.1 IDX may be used only in parent-signal bindings of instance arrays, not in scalar @new or OVERRIDE expressions

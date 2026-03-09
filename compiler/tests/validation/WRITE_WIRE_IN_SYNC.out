@@ -1,2 +1,2 @@
 File: WRITE_WIRE_IN_SYNC.jz
-      30:5    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Assigning to WIRE in SYNCHRONOUS block (wires are combinational only)
+      30:5    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS

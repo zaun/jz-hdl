@@ -1,2 +1,2 @@
 File: ASYNC_ALIAS_LITERAL_RHS.jz
-      17:5    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 ASYNCHRONOUS blocks may not use literals anywhere on the RHS of alias operators (=, =z, =s); use '<=' or '=>' to drive constants
+      17:5    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?

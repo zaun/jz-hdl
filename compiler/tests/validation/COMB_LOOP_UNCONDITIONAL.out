@@ -1,2 +1,2 @@
 File: COMB_LOOP_UNCONDITIONAL.jz
-      21:3    error COMB_LOOP_UNCONDITIONAL S5.3/S8.2 Flow-sensitive combinational loop detected across ASYNCHRONOUS assignments
+      21:3    error COMB_LOOP_UNCONDITIONAL S5.3/S8.2 Combinational loop: signal feeds back to itself through ASYNCHRONOUS assignments

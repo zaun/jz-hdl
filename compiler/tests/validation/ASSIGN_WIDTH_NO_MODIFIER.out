@@ -1,4 +1,4 @@
 File: ASSIGN_WIDTH_NO_MODIFIER.jz
-      24:5    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Bare `=`, `=>`, `<=` used when widths differ (modifier required)
-      25:5    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Bare `=`, `=>`, `<=` used when widths differ (modifier required)
-      26:5    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Bare `=`, `=>`, `<=` used when widths differ (modifier required)
+      24:5    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly
+      25:5    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly
+      26:5    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly
