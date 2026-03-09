@@ -1599,7 +1599,7 @@ static int validate_no_multidriver(const IR_Design *design,
                 JZLocation loc;
                 memset(&loc, 0, sizeof(loc));
                 if (psig) loc.line = psig->source_line;
-                char msg[256];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "post-transform: signal '%s'[%d:%d] has %d always-active "
                          "instance drivers (tri-state elimination created multi-driver conflict)",
@@ -1825,7 +1825,7 @@ static int transform_shared_nets(IR_Design *design,
                     JZLocation loc;
                     memset(&loc, 0, sizeof(loc));
                     if (child_port) loc.line = child_port->source_line;
-                    char msg[256];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "could not extract output-enable condition from port '%s' "
                              "in module '%s'; _oe driven high as fallback "
@@ -2558,7 +2558,7 @@ int jz_ir_tristate_transform(IR_Design *design,
             memset(&loc, 0, sizeof(loc));
             loc.filename = module_source_file(design, mod);
             loc.line = mod->source_line;
-            char msg[256];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "replaced %d tri-state (z) literal(s) with %s in module '%s'",
                      r,

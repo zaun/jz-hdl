@@ -280,7 +280,7 @@ static void sem_check_sync_mem_data_in_expr_recursive(JZASTNode *expr,
             strcmp(ref.port->block_kind, "OUT") == 0 &&
             ref.field == MEM_PORT_FIELD_DATA &&
             ref.port->text && strcmp(ref.port->text, "SYNC") == 0) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s.data is a SYNC read output and may not be read in ASYNCHRONOUS blocks\n"
                      "move the read into a SYNCHRONOUS block",
@@ -356,7 +356,7 @@ static void sem_check_special_driver_usage(const JZASTNode *expr,
         /* Check if either operand is a special driver */
         if (expr->child_count >= 2) {
             if (sem_expr_is_special_driver(expr->children[0])) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s may not appear in arithmetic/logical expressions\n"
                          "special drivers can only be used as standalone RHS values",
@@ -367,7 +367,7 @@ static void sem_check_special_driver_usage(const JZASTNode *expr,
                                 msg);
             }
             if (sem_expr_is_special_driver(expr->children[1])) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s may not appear in arithmetic/logical expressions\n"
                          "special drivers can only be used as standalone RHS values",
@@ -387,7 +387,7 @@ static void sem_check_special_driver_usage(const JZASTNode *expr,
         /* Check if operand is a special driver */
         if (expr->child_count >= 1) {
             if (sem_expr_is_special_driver(expr->children[0])) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s may not appear in unary expressions\n"
                          "special drivers can only be used as standalone RHS values",
@@ -405,7 +405,7 @@ static void sem_check_special_driver_usage(const JZASTNode *expr,
         /* Check if any element is a special driver */
         for (size_t i = 0; i < expr->child_count; ++i) {
             if (sem_expr_is_special_driver(expr->children[i])) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s may not appear inside concatenation {}\n"
                          "use a sized literal instead (e.g. 1'b0 or 1'b1)",
@@ -422,7 +422,7 @@ static void sem_check_special_driver_usage(const JZASTNode *expr,
     case JZ_AST_EXPR_SLICE:
         /* Check if base is a special driver (slicing GND/VCC is forbidden) */
         if (expr->child_count >= 1 && sem_expr_is_special_driver(expr->children[0])) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s may not be sliced or indexed\n"
                      "special drivers have no bit structure",
@@ -435,7 +435,7 @@ static void sem_check_special_driver_usage(const JZASTNode *expr,
         /* Check if indices contain special drivers */
         for (size_t i = 1; i < expr->child_count; ++i) {
             if (expr->children[i] && sem_expr_is_special_driver(expr->children[i])) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s may not be used as a slice/index value",
                          expr->children[i]->name ? expr->children[i]->name : "GND/VCC");
@@ -456,7 +456,7 @@ static void sem_check_special_driver_usage(const JZASTNode *expr,
         /* Special drivers are allowed in ternary branches, but check the
          * condition is not a special driver (width-1 requirement) */
         if (expr->child_count >= 1 && sem_expr_is_special_driver(expr->children[0])) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s may not be used as a ternary condition\n"
                      "condition must be a 1-bit expression",
@@ -476,7 +476,7 @@ static void sem_check_special_driver_usage(const JZASTNode *expr,
         /* Check if any argument is a special driver */
         for (size_t i = 0; i < expr->child_count; ++i) {
             if (sem_expr_is_special_driver(expr->children[i])) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s may not be used as a function argument\n"
                          "use a sized literal instead",
@@ -545,7 +545,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
         if (!sym) return; /* undeclared already reported by name resolution */
 
         if (sym->kind == JZ_SYM_MUX) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is a MUX and cannot be assigned to\n"
                      "MUX values are read-only aggregations; assign to the underlying source signals",
@@ -562,7 +562,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
         if (sym->kind == JZ_SYM_PORT &&
             sym->node && sym->node->block_kind &&
             strcmp(sym->node->block_kind, "IN") == 0) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is an IN port and cannot be driven from inside the module\n"
                      "IN ports are read-only; use OUT or INOUT for outputs",
@@ -576,7 +576,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
         if (!is_sync) {
             /* ASYNCHRONOUS: registers are read-only; writes forbidden. */
             if (sym->kind == JZ_SYM_REGISTER) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "'%s' is a REGISTER and cannot be written in an ASYNCHRONOUS block\n"
                          "registers may only be assigned in SYNCHRONOUS blocks",
@@ -593,7 +593,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
             if (sym->kind != JZ_SYM_REGISTER) {
                 /* More specific WIRE case. */
                 if (sym->kind == JZ_SYM_WIRE) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "'%s' is a WIRE and cannot be written in a SYNCHRONOUS block\n"
                              "wires are combinational; assign them in ASYNCHRONOUS blocks",
@@ -606,7 +606,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
 
                 /* Generic non-register assignment in sync block. */
                 {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "'%s' is not a REGISTER; only registers may be assigned in SYNCHRONOUS blocks",
                              node->name);
@@ -641,7 +641,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
                         }
                     }
                     if (is_global) {
-                        char msg[320];
+                        char msg[512];
                         snprintf(msg, sizeof(msg),
                                  "'%s' is a GLOBAL constant and cannot be assigned\n"
                                  "GLOBAL values are read-only compile-time constants",
@@ -664,7 +664,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
             mem_ref.port->text && strcmp(mem_ref.port->text, "SYNC") == 0 &&
             mem_ref.field == MEM_PORT_FIELD_ADDR) {
             if (!is_sync) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "'%s' is not a valid assignment target in ASYNCHRONOUS blocks",
                          node->name ? node->name : "(expression)");
@@ -690,7 +690,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
             if (sem_resolve_bus_access(node, mod_scope, project_symbols, &info, NULL) &&
                 info.signal_decl) {
                 if (!info.writable && !is_alias) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "'%s' is read-only for this BUS role; write access is not permitted",
                              node->name ? node->name : "(bus signal)");
@@ -700,7 +700,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
                                     msg);
                 }
                 if (is_sync) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "'%s' is a BUS signal (not a REGISTER); only registers may be assigned in SYNCHRONOUS blocks",
                              node->name ? node->name : "(bus signal)");
@@ -713,7 +713,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
             }
         }
         if (!is_sync && diagnostics) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is not a valid assignment target in ASYNCHRONOUS blocks",
                      node->name ? node->name : "(expression)");
@@ -731,7 +731,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
             if (sem_resolve_bus_access(node, mod_scope, project_symbols, &info, NULL) &&
                 info.signal_decl) {
                 if (!info.writable && !is_alias) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "%s.%s is read-only for this BUS role; write access is not permitted",
                              node->name ? node->name : "bus",
@@ -742,7 +742,7 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
                                     msg);
                 }
                 if (is_sync) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "%s.%s is a BUS signal (not a REGISTER); only registers may be assigned in SYNCHRONOUS blocks",
                              node->name ? node->name : "bus",
@@ -808,7 +808,7 @@ static void sem_check_sync_concat_dup_reg(JZASTNode *lhs,
             }
         }
         if (dup) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "register '%s' appears more than once in concatenation LHS\n"
                      "each register may only be assigned once per statement",
@@ -992,7 +992,7 @@ static int sem_try_handle_bus_bulk_assignment(JZASTNode *stmt,
     /* Compatibility: BUS ids must match. */
     if (strcmp(bus_a, bus_b) != 0) {
         if (diagnostics) {
-            char msg[384];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s uses BUS '%s' but %s.%s uses BUS '%s'\n"
                      "bulk BUS assignment requires both ports to reference the same BUS type",
@@ -1013,7 +1013,7 @@ static int sem_try_handle_bus_bulk_assignment(JZASTNode *stmt,
 
     if ((is_src_a && is_src_b) || (is_tgt_a && is_tgt_b)) {
         if (diagnostics) {
-            char msg[384];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s and %s.%s are both %s\n"
                      "bulk BUS assignment requires complementary roles (SOURCE/TARGET)",
@@ -1116,7 +1116,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                     /* Latches are level-sensitive storage; they must not be
                      * written from SYNCHRONOUS blocks.
                      */
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "LATCH '%s' may not be written in SYNCHRONOUS blocks\n"
                              "latches are level-sensitive; use REGISTER for edge-triggered storage",
@@ -1132,7 +1132,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                      * LATCH is illegal.
                      */
                     if (!is_latch_guard) {
-                        char msg[320];
+                        char msg[512];
                         snprintf(msg, sizeof(msg),
                                  "LATCH '%s' must use guarded assignment syntax: %s <= data : enable;\n"
                                  "unguarded assignments to latches are forbidden",
@@ -1158,7 +1158,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                             diagnostics,
                                             &en_t);
                             if (en_t.width != 1) {
-                                char msg[320];
+                                char msg[512];
                                 snprintf(msg, sizeof(msg),
                                          "D-latch '%s' enable expression has width %u, but must be exactly 1 bit",
                                          lhs_base->name, en_t.width);
@@ -1199,7 +1199,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
     if (lhs_is_bus && lhs_bus.is_wildcard) {
         if (lhs_bus.count > 0 && rhs_w > 0 &&
             rhs_w != 1 && rhs_w != lhs_bus.count) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "BUS wildcard [*] has %u elements but RHS width is %u\n"
                      "RHS must be width 1 (broadcast) or %u (one bit per element)",
@@ -1254,7 +1254,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
             if (sym && sym->node && sym->node->block_kind) {
                 const char *dir = sym->node->block_kind;
                 if (strcmp(dir, "IN") == 0 || strcmp(dir, "OUT") == 0) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "'%s' is a PORT %s and cannot be assigned 'z'\n"
                              "only INOUT ports may be tri-stated",
@@ -1268,7 +1268,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
         }
 
         if (lhs_is_bus && lhs_bus.signal_decl && !lhs_bus.writable) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "BUS signal '%s' is read-only for this role and cannot be assigned 'z'\n"
                      "only writable BUS signals (INOUT or OUT from this role) may be tri-stated",
@@ -1360,7 +1360,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
     if (!skip_width_checks && lhs_w > 0 && rhs_w > 0) {
         /* Bare operators require equal widths. */
         if (!has_ext && lhs_w != rhs_w) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "LHS width is %u but RHS width is %u\n"
                      "bare operator requires equal widths; add 'z' or 's' suffix to extend",
@@ -1386,7 +1386,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
          */
         if (!is_alias && has_ext) {
             if (is_drive && lhs_w > rhs_w) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "drive '=>' source is %u bits but sink is %u bits\n"
                          "the wider source will be truncated; slice or widen the destination",
@@ -1396,7 +1396,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 "ASSIGN_TRUNCATES",
                                 msg);
             } else if (is_receive && rhs_w > lhs_w) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "receive '<=' source is %u bits but destination is %u bits\n"
                          "the wider source will be truncated; slice or widen the destination",
@@ -1430,7 +1430,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
 
         /* If the slice is of a MUX, rely solely on MUX_ASSIGN_LHS. */
         if (!is_mux_lhs) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "slice width is %u bits but RHS is %u bits",
                      lhs_w, rhs_w);
@@ -1448,7 +1448,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
             if (base && base->type == JZ_AST_EXPR_IDENTIFIER && base->name) {
                 const JZSymbol *sym = module_scope_lookup_kind(mod_scope, base->name, JZ_SYM_REGISTER);
                 if (sym) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "register '%s' slice is %u bits but RHS expression is %u bits",
                              base->name, lhs_w, rhs_w);
@@ -1463,7 +1463,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
 
         if ((lhs->type == JZ_AST_EXPR_CONCAT || rhs->type == JZ_AST_EXPR_CONCAT) &&
             lhs_w != rhs_w) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "concatenation total width is %u bits but paired expression is %u bits",
                      lhs->type == JZ_AST_EXPR_CONCAT ? lhs_w : rhs_w,
@@ -1483,7 +1483,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
             rhs->name &&
             (!strcmp(rhs->name, "uadd") || !strcmp(rhs->name, "sadd") ||
              !strcmp(rhs->name, "umul") || !strcmp(rhs->name, "smul"))) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s() result is %u bits but destination is only %u bits\n"
                      "use an explicit slice or widen the destination to avoid silent truncation",
@@ -1539,7 +1539,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
     if (lhs_is_mem_q && lhs_qref.port && lhs_qref.port->block_kind &&
         strcmp(lhs_qref.port->block_kind, "OUT") == 0) {
         if (lhs_qref.field == MEM_PORT_FIELD_DATA) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s is an OUT (read) port and cannot be written\n"
                      "use an IN port for write access",
@@ -1551,7 +1551,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                             msg);
         } else if (lhs_qref.field == MEM_PORT_FIELD_ADDR) {
             if (!lhs_qref.port->text || strcmp(lhs_qref.port->text, "SYNC") != 0) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s.%s.addr is only valid for SYNC OUT ports\n"
                          "this port is %s, not SYNC",
@@ -1563,7 +1563,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 "MEM_SYNC_ADDR_INVALID_PORT",
                                 msg);
             } else if (!is_sync) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s.%s.addr may only be assigned in SYNCHRONOUS blocks",
                          lhs_qref.mem_decl && lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
@@ -1574,7 +1574,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 msg);
             } else {
                 if (!is_receive) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "%s.%s.addr must use '<=' (receive) operator in SYNCHRONOUS blocks",
                              lhs_qref.mem_decl && lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
@@ -1608,7 +1608,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 }
                             }
                             if (!same_addr) {
-                                char msg[320];
+                                char msg[512];
                                 snprintf(msg, sizeof(msg),
                                          "%s.%s.addr is assigned different addresses in the same SYNCHRONOUS block\n"
                                          "a SYNC read port may only sample one address per clock cycle",
@@ -1632,7 +1632,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                 }
             }
         } else {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s cannot be used directly as a signal\n"
                      "use %s.%s.addr to set the address or %s.%s.data to read data",
@@ -1657,7 +1657,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
         strcmp(lhs_qref.port->block_kind, "INOUT") == 0) {
         if (lhs_qref.field == MEM_PORT_FIELD_DATA) {
             /* .data is read-only on INOUT ports */
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s.data is read-only on INOUT ports; use .wdata to write",
                      lhs_qref.mem_decl && lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
@@ -1668,7 +1668,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                             msg);
         } else if (lhs_qref.field == MEM_PORT_FIELD_ADDR) {
             if (!is_sync) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s.%s.addr may only be assigned in SYNCHRONOUS blocks",
                          lhs_qref.mem_decl && lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
@@ -1678,7 +1678,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 "MEM_INOUT_ADDR_IN_ASYNC",
                                 msg);
             } else if (!is_receive) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s.%s.addr must use '<=' (receive) operator",
                          lhs_qref.mem_decl && lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
@@ -1692,7 +1692,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
             }
         } else if (lhs_qref.field == MEM_PORT_FIELD_WDATA) {
             if (!is_sync) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s.%s.wdata may only be assigned in SYNCHRONOUS blocks",
                          lhs_qref.mem_decl && lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
@@ -1702,7 +1702,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 "MEM_INOUT_WDATA_IN_ASYNC",
                                 msg);
             } else if (!is_receive) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s.%s.wdata must use '<=' (receive) operator",
                          lhs_qref.mem_decl && lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
@@ -1713,7 +1713,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 msg);
             }
         } else if (lhs_qref.field == MEM_PORT_FIELD_NONE) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s cannot be used directly as a signal\n"
                      "use .addr, .data, or .wdata pseudo-fields",
@@ -1734,7 +1734,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
         const char *mem_name = lhs_qref.mem_decl && lhs_qref.mem_decl->name
                                ? lhs_qref.mem_decl->name : "mem";
         const char *port_name = lhs_qref.port->name ? lhs_qref.port->name : "port";
-        char msg[320];
+        char msg[512];
         snprintf(msg, sizeof(msg),
                  "%s.%s is an IN (write) port; use bracket syntax: %s.%s[addr] <= data",
                  mem_name, port_name, mem_name, port_name);
@@ -1747,7 +1747,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
     if (sem_match_mem_port_slice(lhs, mod_scope, diagnostics, &mem_ref) &&
         mem_ref.port && mem_ref.port->block_kind) {
         if (strcmp(mem_ref.port->block_kind, "OUT") == 0) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s is an OUT (read) port and cannot be written\n"
                      "use an IN port for write access",
@@ -1759,7 +1759,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                             msg);
         } else if (strcmp(mem_ref.port->block_kind, "IN") == 0) {
             if (!is_sync) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "%s.%s is an IN (write) port and may only be written in SYNCHRONOUS blocks",
                          mem_ref.mem_decl && mem_ref.mem_decl->name ? mem_ref.mem_decl->name : "mem",
@@ -1773,7 +1773,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
             }
         } else if (strcmp(mem_ref.port->block_kind, "INOUT") == 0) {
             /* INOUT ports may not be indexed; must use .addr/.data/.wdata */
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s is an INOUT port and may not be indexed directly\n"
                      "use .addr, .data, or .wdata pseudo-fields instead",
@@ -1793,7 +1793,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
     if (sem_match_mem_port_slice(rhs, mod_scope, diagnostics, &mem_ref) &&
         mem_ref.port && mem_ref.port->block_kind) {
         if (strcmp(mem_ref.port->block_kind, "IN") == 0) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s is an IN (write) port and cannot be read\n"
                      "use an OUT port for read access",
@@ -1805,7 +1805,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                             msg);
         } else if (strcmp(mem_ref.port->block_kind, "INOUT") == 0) {
             /* INOUT ports may not be indexed; must use .addr/.data/.wdata */
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s is an INOUT port and may not be indexed directly\n"
                      "use .addr, .data, or .wdata pseudo-fields instead",
@@ -1820,7 +1820,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
 
     if (rhs_is_mem_q && rhs_qref.port && rhs_qref.port->block_kind &&
         strcmp(rhs_qref.port->block_kind, "IN") == 0) {
-        char msg[320];
+        char msg[512];
         snprintf(msg, sizeof(msg),
                  "%s.%s is an IN (write) port and cannot be read\n"
                  "use an OUT port for read access",
@@ -1835,7 +1835,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
     if (rhs_is_mem_q && rhs_qref.port && rhs_qref.port->block_kind &&
         strcmp(rhs_qref.port->block_kind, "OUT") == 0) {
         if (rhs_qref.field == MEM_PORT_FIELD_NONE) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s cannot be used directly as a signal\n"
                      "use %s.%s.data to read or %s.%s.addr to set address",
@@ -1850,7 +1850,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                             "MEM_PORT_USED_AS_SIGNAL",
                             msg);
         } else if (rhs_qref.field == MEM_PORT_FIELD_ADDR) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s.addr is a write-only input and cannot be read\n"
                      "use %s.%s.data to read memory output",
@@ -1864,7 +1864,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                             msg);
         } else if (rhs_qref.field == MEM_PORT_FIELD_DATA &&
                    rhs_qref.port->text && strcmp(rhs_qref.port->text, "ASYNC") == 0) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s is an ASYNC read port; use %s.%s[addr] indexed syntax instead of .data",
                      rhs_qref.mem_decl && rhs_qref.mem_decl->name ? rhs_qref.mem_decl->name : "mem",
@@ -1878,7 +1878,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
         } else if (rhs_qref.field == MEM_PORT_FIELD_DATA &&
                    rhs_qref.port->text && strcmp(rhs_qref.port->text, "SYNC") == 0 &&
                    !is_sync) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "%s.%s.data is a SYNC read output and may not be read in ASYNCHRONOUS blocks\n"
                      "move the read into a SYNCHRONOUS block",
@@ -1897,7 +1897,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
         rhs_qref.port->text && strcmp(rhs_qref.port->text, "SYNC") == 0 &&
         rhs_qref.field == MEM_PORT_FIELD_DATA &&
         !is_receive) {
-        char msg[320];
+        char msg[512];
         snprintf(msg, sizeof(msg),
                  "%s.%s.data must use '<=' (receive) operator in SYNCHRONOUS blocks\n"
                  "'=' aliasing is not allowed for synchronous MEM reads",

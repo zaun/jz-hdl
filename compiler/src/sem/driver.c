@@ -136,7 +136,7 @@ static void sem_check_identifier_lexical(JZASTNode *node,
 
         /* ID_SYNTAX_INVALID: identifier exceeds 255 characters. */
         if (len > 255 && diagnostics) {
-            char msg[384];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%.*s...' is %zu characters long\n"
                      "identifiers must be 255 characters or fewer",
@@ -179,7 +179,7 @@ static void sem_check_identifier_lexical(JZASTNode *node,
         /* KEYWORD_AS_IDENTIFIER: reserved keyword used in a declaration name. */
         if (diagnostics && sem_identifier_is_decl_context(node) &&
             sem_is_reserved_keyword(node->name)) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is a reserved keyword and cannot be used as a declaration name",
                      node->name);
@@ -219,7 +219,7 @@ int module_scope_add_symbol(JZModuleScope *scope,
         /* Handle instance-specific conflicts first. */
         if (existing->kind == JZ_SYM_INSTANCE && kind == JZ_SYM_INSTANCE) {
             if (diagnostics) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "instance '%s' is already declared in this module\n"
                          "each @new instance must have a unique name",
@@ -233,7 +233,7 @@ int module_scope_add_symbol(JZModuleScope *scope,
         }
         if (existing->kind == JZ_SYM_INSTANCE || kind == JZ_SYM_INSTANCE) {
             if (diagnostics) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "'%s' is used as both an instance name and a signal/CONST name\n"
                          "instance names must not collide with other identifiers",
@@ -253,7 +253,7 @@ int module_scope_add_symbol(JZModuleScope *scope,
         if ((existing->kind == JZ_SYM_MUX && kind != JZ_SYM_INSTANCE) ||
             (kind == JZ_SYM_MUX && existing->kind != JZ_SYM_INSTANCE)) {
             if (diagnostics) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "MUX '%s' conflicts with an existing declaration of the same name",
                          name);
@@ -268,7 +268,7 @@ int module_scope_add_symbol(JZModuleScope *scope,
         /* MEM_DUP_NAME: two MEM declarations with the same name in a module. */
         if (existing->kind == JZ_SYM_MEM && kind == JZ_SYM_MEM) {
             if (diagnostics) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "MEM '%s' is already declared in this module\n"
                          "each MEM block must have a unique name",
@@ -283,7 +283,7 @@ int module_scope_add_symbol(JZModuleScope *scope,
 
         /* Generic duplicate identifier within module. */
         if (diagnostics) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is already declared in this module\n"
                      "all PORT, WIRE, REGISTER, CONST, and LATCH names must be unique",
@@ -490,7 +490,7 @@ int sem_resolve_bus_access(const JZASTNode *expr,
     const JZSymbol *port_sym = module_scope_lookup_kind(mod_scope, bus_port_name, JZ_SYM_PORT);
     if (!port_sym || !port_sym->node) {
         if (diagnostics && expr->type == JZ_AST_EXPR_BUS_ACCESS) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is not declared in this module",
                      bus_port_name);
@@ -504,7 +504,7 @@ int sem_resolve_bus_access(const JZASTNode *expr,
     }
     if (!port_sym->node->block_kind || strcmp(port_sym->node->block_kind, "BUS") != 0) {
         if (diagnostics && expr->type == JZ_AST_EXPR_BUS_ACCESS) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is not a BUS port; dot-access syntax requires BUS PORT declaration",
                      bus_port_name);
@@ -540,7 +540,7 @@ int sem_resolve_bus_access(const JZASTNode *expr,
     }
     if (!bus_sym || !bus_sym->node) {
         if (diagnostics) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "BUS type '%s' referenced by port '%s' is not declared in the project\n"
                      "add a BUS %s { ... } definition at the project level",
@@ -570,7 +570,7 @@ int sem_resolve_bus_access(const JZASTNode *expr,
     }
     if (!signal_decl) {
         if (diagnostics) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is not a signal in BUS '%s'\n"
                      "check the BUS definition for valid signal names",
@@ -590,7 +590,7 @@ int sem_resolve_bus_access(const JZASTNode *expr,
         unsigned tmp = 0;
         if (sem_eval_width_expr(port_sym->node->width, mod_scope, project_symbols, &tmp) != 0) {
             if (diagnostics) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "BUS port '%s' array count '%s' could not be evaluated\n"
                          "array count must be a positive integer constant expression",
@@ -614,7 +614,7 @@ int sem_resolve_bus_access(const JZASTNode *expr,
 
     if (!out->has_index && is_array) {
         if (diagnostics) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is a BUS array of %u elements; use %s[index].%s or %s[*].%s",
                      bus_port_name, bus_count,
@@ -629,7 +629,7 @@ int sem_resolve_bus_access(const JZASTNode *expr,
 
     if (out->has_index && !is_array) {
         if (diagnostics) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is not a BUS array; remove the index and use %s.%s",
                      bus_port_name, bus_port_name, signal_name);
@@ -647,7 +647,7 @@ int sem_resolve_bus_access(const JZASTNode *expr,
             out->index_value = idx_val;
             if (is_array && idx_val >= bus_count) {
                 if (diagnostics) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "%s[%u] is out of range; '%s' has %u element%s (valid indices: 0..%u)",
                              bus_port_name, idx_val,
@@ -1013,7 +1013,7 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
 
             /* Forbid GLOBAL.<name> usage in module-level CONST initializers. */
             if (project_symbols && sem_expr_has_global_ref(expr_text, project_symbols)) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "CONST '%s' references GLOBAL.<name> which is not allowed\n"
                          "module-level CONSTs may only reference other CONSTs or CONFIG values",
@@ -1026,7 +1026,7 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
             }
 
             if (sem_expr_has_lit_call(expr_text)) {
-                char msg[320];
+                char msg[512];
                 snprintf(msg, sizeof(msg),
                          "CONST '%s' uses lit() which is not allowed\n"
                          "lit() is only valid in signal assignment expressions, not CONST initializers",
@@ -1162,7 +1162,7 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
              */
             if (sem_expr_has_nonpositive_simple_width_literal(expr_text)) {
                 if (diagnostics) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "CONST '%s' contains a literal with non-positive width\n"
                              "in expression: %.*s",
@@ -1186,7 +1186,7 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
              */
             if (sem_expr_has_undefined_width_ident(expr_text, scope, project_symbols)) {
                 if (diagnostics) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "CONST '%s' contains a sized literal whose width name is undefined\n"
                              "in expression: %.*s",
@@ -1357,7 +1357,7 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
                  * diagnostic on the same CONST.
                  */
                 if (diagnostics && !sem_expr_has_nonpositive_simple_width_literal(expr_text)) {
-                    char msg[384];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "CONST '%s' = %.*s does not evaluate to a nonnegative integer\n"
                              "CONST values must be compile-time constant nonnegative integers",
@@ -1417,7 +1417,7 @@ int sem_resolve_string_const(const char *name,
                     }
                     /* Found but not a string. */
                     if (diagnostics) {
-                        char msg[320];
+                        char msg[512];
                         snprintf(msg, sizeof(msg),
                                  "CONFIG.%s is a numeric value, but a string is required here\n"
                                  "declare it as STRING CONFIG in the project CONFIG block",
@@ -1448,7 +1448,7 @@ int sem_resolve_string_const(const char *name,
                 }
                 /* Found but not a string. */
                 if (diagnostics) {
-                    char msg[320];
+                    char msg[512];
                     snprintf(msg, sizeof(msg),
                              "CONST '%s' is a numeric value, but a string is required here\n"
                              "declare it with STRING CONST to use as a string",
@@ -2278,7 +2278,7 @@ static void sem_check_mux_selector_expr(JZASTNode *expr,
     }
 
     if (idx_val >= elem_count) {
-        char msg[320];
+        char msg[512];
         snprintf(msg, sizeof(msg),
                  "%s[%u] is out of range; MUX '%s' has %u element%s (valid indices: 0..%u)",
                  base->name, idx_val,
@@ -2382,7 +2382,7 @@ int jz_sem_run(JZASTNode *root,
         if (chip_status == JZ_CHIP_LOAD_OK) {
             chip_ptr = &chip;
         } else if (chip_status == JZ_CHIP_LOAD_NOT_FOUND) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "no chip data found for '%s'\n"
                      "provide a local .json file or use a supported built-in chip name",
@@ -2392,7 +2392,7 @@ int jz_sem_run(JZASTNode *root,
                             "PROJECT_CHIP_DATA_NOT_FOUND",
                             msg);
         } else if (chip_status == JZ_CHIP_LOAD_JSON_ERROR) {
-            char msg[320];
+            char msg[512];
             snprintf(msg, sizeof(msg),
                      "chip data JSON for '%s' could not be parsed\n"
                      "check the JSON file for syntax errors",
