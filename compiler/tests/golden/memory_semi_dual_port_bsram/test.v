@@ -131,7 +131,7 @@ module ram (
                 data_ready <= 1'b0;
             end
             else if (pending_read == 1'b1) begin
-                read_data <= ram_mem[ram_read_addr];
+                read_data <= ram_mem_bsram_out;
                 data_ready <= 1'b1;
                 pending_read <= 1'b0;
             end
