@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Build the VitePress docs site and deploy to the gh-pages branch.
+# Usage: scripts/gitpages-update
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+DOCS_DIR="$REPO_ROOT/docs"
+DIST_DIR="$DOCS_DIR/.vitepress/dist"
+
+# Save current branch to return to it later
+CURRENT_BRANCH="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)"
+
+echo "==> Installing dependencies..."
+(cd "$DOCS_DIR" && npm install)
+
+echo "==> Building site..."
+(cd "$DOCS_DIR" && npm run build)
+
+if [ ! -d "$DIST_DIR" ]; then
+  echo "Error: Build output not found at $DIST_DIR"
+  exit 1
+fi
+
+echo "==> Deploying to gh-pages..."
+
+# Create a temporary directory for the deploy
+TMPDIR="$(mktemp -d)"
+cp -r "$DIST_DIR"/. "$TMPDIR"
+
+# Switch to gh-pages branch (create orphan if it doesn't exist)
+if git -C "$REPO_ROOT" show-ref --verify --quiet refs/heads/gh-pages; then
+  git -C "$REPO_ROOT" checkout gh-pages
+else
+  git -C "$REPO_ROOT" checkout --orphan gh-pages
+  git -C "$REPO_ROOT" rm -rf .
+fi
+
+# Replace contents with built site
+# Remove everything except .git
+find "$REPO_ROOT" -maxdepth 1 ! -name '.git' ! -name '.' -exec rm -rf {} +
+
+# Copy built site into repo root
+cp -r "$TMPDIR"/. "$REPO_ROOT"
+
+# Add .nojekyll to bypass Jekyll processing on GitHub Pages
+touch "$REPO_ROOT/.nojekyll"
+
+# Commit and push
+git -C "$REPO_ROOT" add -A
+if git -C "$REPO_ROOT" diff --cached --quiet; then
+  echo "No changes to deploy."
+else
+  git -C "$REPO_ROOT" commit -m "Deploy docs to GitHub Pages"
+  git -C "$REPO_ROOT" push origin gh-pages
+  echo "==> Deployed successfully."
+fi
+
+# Return to original branch
+git -C "$REPO_ROOT" checkout "$CURRENT_BRANCH"
+
+# Clean up
+rm -rf "$TMPDIR"
+
+echo "==> Done."

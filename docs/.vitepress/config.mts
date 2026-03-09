@@ -5,6 +5,7 @@ import jzTheme from '../shiki/jz-hdl.theme.json';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  base: '/jz-hdl/',
   vite: {
     plugins: [llmstxt()]
   },
