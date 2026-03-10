@@ -110,6 +110,7 @@ add_library(jz_hdl_lib
     src/sem/driver_mem.c
     src/sem/driver_project.c
     src/sem/driver_project_hw.c
+    src/repeat_expand.c
     src/sem/template_expand.c
     src/sem/driver_testbench.c
     src/report/alias/alias_report.c

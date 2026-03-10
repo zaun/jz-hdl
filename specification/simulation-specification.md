@@ -204,6 +204,42 @@ TAP {
 - All assignments within a single `@update` block use **simultaneous assignment semantics**: all RHS expressions are evaluated using the pre-update wire values before any LHS targets are written. This means `b <= a; a <= a + 1;` assigns the old value of `a` to `b`, not the incremented value (see Testbench Specification Section 6.5 for details).
 - After all assignments complete, combinational logic settles, and the result is logged to the waveform before the next `@run` advances time.
 
+### 4.5 @repeat
+
+**Syntax:**
+```text
+@repeat <count>
+<body>
+@end
+```
+
+The `@repeat` directive is a **pre-parser text expansion** shared with `@testbench`. Before lexing or parsing, the compiler scans the source text for `@repeat N ... @end` blocks, duplicates the body `N` times, and replaces each standalone occurrence of the identifier `IDX` with the iteration index (0 through N-1).
+
+- `<count>` must be a positive integer literal.
+- `<body>` may contain any valid simulation content: `@run`, `@update`, comments, or any other text.
+- `IDX` is replaced on word boundaries only.
+- Nesting is supported.
+- `@end` closes only `@repeat` blocks — it does not conflict with `@endsim`.
+- `@repeat` inside comments or string literals is ignored.
+
+**Example — Burst stimulus with IDX:**
+```text
+@repeat 4
+@update {
+    data_in <= 8'hIDX;
+}
+@run(ns=10)
+@end
+// Expands to 4 sequential update/run pairs with data_in = 0, 1, 2, 3
+```
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| RPT-001 | `@repeat` requires a positive integer count |
+| RPT-002 | `@repeat` without matching `@end` |
+
 ---
 
 ## 5. CLI USAGE
