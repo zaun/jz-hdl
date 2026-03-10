@@ -18,6 +18,8 @@
 #include "../../include/ast.h"
 #include "../../include/ir.h"
 
+#include "sim_perf.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -633,6 +635,7 @@ static void build_port_bindings(SimTestState *ts,
 /* ---- Input / output propagation ---- */
 
 static void sim_propagate_inputs(SimTestState *ts) {
+    PERF_TIMER_START(PERF_PROPAGATE_INPUTS);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
         const IR_Signal *sig = NULL;
@@ -660,9 +663,11 @@ static void sim_propagate_inputs(SimTestState *ts) {
             }
         }
     }
+    PERF_TIMER_STOP(PERF_PROPAGATE_INPUTS);
 }
 
 static void sim_propagate_outputs(SimTestState *ts) {
+    PERF_TIMER_START(PERF_PROPAGATE_OUTPUTS);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
         const IR_Signal *sig = NULL;
@@ -692,6 +697,7 @@ static void sim_propagate_outputs(SimTestState *ts) {
             }
         }
     }
+    PERF_TIMER_STOP(PERF_PROPAGATE_OUTPUTS);
 }
 
 /* ---- INOUT z-resolution ---- */
@@ -702,6 +708,7 @@ static void sim_propagate_outputs(SimTestState *ts) {
  * z loses to any real value from the other side of the bus.
  */
 static void sim_resolve_inout_z(SimTestState *ts) {
+    PERF_TIMER_START(PERF_RESOLVE_INOUT_Z);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
         const IR_Signal *sig = NULL;
@@ -726,15 +733,18 @@ static void sim_resolve_inout_z(SimTestState *ts) {
             }
         }
     }
+    PERF_TIMER_STOP(PERF_RESOLVE_INOUT_Z);
 }
 
 /* ---- Full settle: propagate inputs, settle, resolve inout, propagate outputs ---- */
 
 static void sim_full_settle(SimTestState *ts) {
+    PERF_TIMER_START(PERF_FULL_SETTLE);
     sim_propagate_inputs(ts);
     sim_settle_checked(ts);
     sim_resolve_inout_z(ts);
     sim_propagate_outputs(ts);
+    PERF_TIMER_STOP(PERF_FULL_SETTLE);
 }
 
 /* ---- Apply reset values for a clock domain ---- */
@@ -776,6 +786,7 @@ static void sim_apply_domain_reset(SimContext *ctx, const IR_ClockDomain *cd) {
 static void sim_fire_domains_for_clock(SimTestState *ts, int clock_port_id,
                                         uint64_t new_clk_val,
                                         int apply_nba_per_domain) {
+    PERF_TIMER_START(PERF_FIRE_DOMAINS);
     for (int d = 0; d < ts->dut->module->num_clock_domains; d++) {
         const IR_ClockDomain *cd = &ts->dut->module->clock_domains[d];
 
@@ -818,6 +829,7 @@ static void sim_fire_domains_for_clock(SimTestState *ts, int clock_port_id,
             sim_ctx_apply_nba(ts->dut);
         }
     }
+    PERF_TIMER_STOP(PERF_FIRE_DOMAINS);
 }
 
 /* ---- Clock advancement ---- */
@@ -1234,6 +1246,8 @@ int jz_sim_run_testbenches(const JZASTNode *root,
 
     if (!root || !design) return 1;
 
+    perf_reset();
+
     int total_tests = 0;
     int total_passed = 0;
     int total_failed = 0;
@@ -1284,6 +1298,8 @@ int jz_sim_run_testbenches(const JZASTNode *root,
     fprintf(stdout, "\nResults: %d passed, %d failed, %d total\n",
             total_passed, total_failed, total_tests);
     fprintf(stdout, "Seed: 0x%08x\n", seed);
+
+    perf_print_summary();
 
     return total_failed > 0 ? 1 : 0;
 }
@@ -1721,8 +1737,10 @@ static int sim_run_simulation(const JZASTNode *root,
 
             while (current_time_ps < end_time_ps && !ts.runtime_error) {
                 current_time_ps += tick_ps;
+                PERF_STATE_TICK();
 
                 /* Toggle clocks scheduled at this tick */
+                PERF_TIMER_START(PERF_CLOCK_TOGGLE);
                 int any_edge = 0;
                 for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                     if (sim_clocks[ci2].toggle_ps > 0 &&
@@ -1736,6 +1754,7 @@ static int sim_run_simulation(const JZASTNode *root,
                         }
                     }
                 }
+                PERF_TIMER_STOP(PERF_CLOCK_TOGGLE);
 
                 /* Propagate inputs and settle combinational */
                 sim_propagate_inputs(&ts);
@@ -1780,8 +1799,10 @@ static int sim_run_simulation(const JZASTNode *root,
 
                 /* Dump to waveform (skip if trace is off) */
                 if (trace_enabled) {
+                    PERF_TIMER_START(PERF_WAVEFORM_DUMP);
                     sim_wave_set_time(wave,current_time_ps);
                     wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+                    PERF_TIMER_STOP(PERF_WAVEFORM_DUMP);
                 }
             }
         } else if (child->type == JZ_AST_SIM_RUN_UNTIL ||
@@ -1820,8 +1841,10 @@ static int sim_run_simulation(const JZASTNode *root,
 
             while (current_time_ps < end_time_ps && !ts.runtime_error) {
                 current_time_ps += tick_ps;
+                PERF_STATE_TICK();
 
                 /* Toggle clocks scheduled at this tick */
+                PERF_TIMER_START(PERF_CLOCK_TOGGLE);
                 int any_edge = 0;
                 for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                     if (sim_clocks[ci2].toggle_ps > 0 &&
@@ -1835,6 +1858,7 @@ static int sim_run_simulation(const JZASTNode *root,
                         }
                     }
                 }
+                PERF_TIMER_STOP(PERF_CLOCK_TOGGLE);
 
                 /* Propagate inputs and settle combinational */
                 sim_propagate_inputs(&ts);
@@ -1873,8 +1897,10 @@ static int sim_run_simulation(const JZASTNode *root,
 
                 /* Dump to waveform (skip if trace is off) */
                 if (trace_enabled) {
+                    PERF_TIMER_START(PERF_WAVEFORM_DUMP);
                     sim_wave_set_time(wave,current_time_ps);
                     wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+                    PERF_TIMER_STOP(PERF_WAVEFORM_DUMP);
                 }
 
                 /* Evaluate condition */
@@ -1996,6 +2022,8 @@ int jz_sim_run_simulations(const JZASTNode *root,
 
     if (!root || !design) return 1;
 
+    perf_reset();
+
     int any_sim_found = 0;
     int rc = 0;
 
@@ -2025,6 +2053,8 @@ int jz_sim_run_simulations(const JZASTNode *root,
     if (!any_sim_found) {
         fprintf(stdout, "\nNo simulations found.\n");
     }
+
+    perf_print_summary();
 
     return rc;
 }

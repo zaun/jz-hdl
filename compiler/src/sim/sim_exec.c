@@ -7,6 +7,7 @@
 
 #include "sim_exec.h"
 #include "sim_eval.h"
+#include "sim_perf.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -80,6 +81,7 @@ static void apply_assign(SimContext *ctx, const IR_Assignment *asgn, int is_nba)
 
 void sim_exec_stmt(SimContext *ctx, const IR_Stmt *stmt, int is_nba) {
     if (!stmt) return;
+    PERF_COUNT(PERF_EXEC_STMT);
 
     switch (stmt->kind) {
 
@@ -318,6 +320,7 @@ static void propagate_to_all_children(SimContext *ctx) {
  * 4. Propagate children → parent
  */
 static void settle_hierarchy_once(SimContext *ctx) {
+    PERF_TIMER_START(PERF_SETTLE_HIERARCHY_ONCE);
     /* Execute this context's async block */
     if (ctx->module->async_block) {
         sim_exec_stmt(ctx, ctx->module->async_block, 0);
@@ -333,9 +336,11 @@ static void settle_hierarchy_once(SimContext *ctx) {
             ctx->runtime_error = 1;
         propagate_from_child(ctx, &ctx->children[c]);
     }
+    PERF_TIMER_STOP(PERF_SETTLE_HIERARCHY_ONCE);
 }
 
 int sim_settle_combinational(SimContext *ctx, int max_iters) {
+    PERF_TIMER_START(PERF_SETTLE_COMBINATIONAL);
     int has_any_async = (ctx->module->async_block != NULL);
     for (int c = 0; c < ctx->num_children; c++) {
         if (ctx->children[c].ctx && ctx->children[c].child_module &&
@@ -343,13 +348,26 @@ int sim_settle_combinational(SimContext *ctx, int max_iters) {
             has_any_async = 1;
         }
     }
-    if (!has_any_async) return 0;
+    if (!has_any_async) {
+        PERF_TIMER_STOP(PERF_SETTLE_COMBINATIONAL);
+        return 0;
+    }
+
+#ifdef TRACK_PERF
+    int total_iters = 0;
+    int total_changed = 0;
+#endif
 
     for (int iter = 0; iter < max_iters; iter++) {
+#ifdef TRACK_PERF
+        total_iters++;
+#endif
+
         /* Snapshot current values (parent only for convergence check) */
         int n = ctx->num_signals;
         SimValue *snap = (SimValue *)malloc((size_t)n * sizeof(SimValue));
         if (!snap) {
+            PERF_TIMER_STOP(PERF_SETTLE_COMBINATIONAL);
             return -1;
         }
 
@@ -364,16 +382,27 @@ int sim_settle_combinational(SimContext *ctx, int max_iters) {
         int changed = 0;
         for (int i = 0; i < n; i++) {
             if (!sim_val_equal(ctx->signals[i].current, snap[i])) {
-                changed = 1;
+                changed++;
+#ifndef TRACK_PERF
                 break;
+#endif
             }
         }
 
+#ifdef TRACK_PERF
+        total_changed += changed;
+#endif
         free(snap);
 
-        if (!changed) return 0; /* converged */
+        if (!changed) {
+            PERF_STATE_SETTLE_ITER(total_iters, total_changed);
+            PERF_TIMER_STOP(PERF_SETTLE_COMBINATIONAL);
+            return 0; /* converged */
+        }
     }
 
+    PERF_STATE_SETTLE_ITER(total_iters, total_changed);
+    PERF_TIMER_STOP(PERF_SETTLE_COMBINATIONAL);
     return -1; /* oscillation */
 }
 
@@ -460,7 +489,9 @@ void sim_exec_sync_domain(SimContext *ctx, int domain_idx) {
     const IR_ClockDomain *cd = &ctx->module->clock_domains[domain_idx];
     if (!cd->statements) return;
 
+    PERF_TIMER_START(PERF_EXEC_SYNC_DOMAIN);
     sim_exec_stmt(ctx, cd->statements, 1); /* NBA mode */
+    PERF_TIMER_STOP(PERF_EXEC_SYNC_DOMAIN);
 }
 
 void sim_exec_sync_domain_with_children(SimContext *ctx, int domain_idx,

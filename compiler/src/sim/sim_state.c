@@ -4,6 +4,7 @@
  */
 
 #include "sim_state.h"
+#include "sim_perf.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -155,16 +156,25 @@ SimMemEntry *sim_ctx_lookup_mem(SimContext *ctx, const char *name) {
 /* ---- NBA apply ---- */
 
 void sim_ctx_apply_nba(SimContext *ctx) {
+    PERF_TIMER_START(PERF_APPLY_NBA);
+#ifdef TRACK_PERF
+    int pending_count = 0;
+#endif
     for (int i = 0; i < ctx->num_signals; i++) {
         SimSignalEntry *e = &ctx->signals[i];
         if (e->has_pending) {
             e->current = e->next;
             e->has_pending = 0;
+#ifdef TRACK_PERF
+            pending_count++;
+#endif
         }
     }
+    PERF_STATE_NBA_PENDING(pending_count);
     /* Recursively apply NBA to children */
     for (int c = 0; c < ctx->num_children; c++) {
         if (ctx->children[c].ctx)
             sim_ctx_apply_nba(ctx->children[c].ctx);
     }
+    PERF_TIMER_STOP(PERF_APPLY_NBA);
 }
