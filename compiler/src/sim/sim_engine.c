@@ -13,6 +13,7 @@
 #include "sim_state.h"
 #include "sim_eval.h"
 #include "sim_exec.h"
+#include <time.h>
 #include "sim_value.h"
 #include "../../include/ast.h"
 #include "../../include/ir.h"
@@ -1515,12 +1516,31 @@ static int sim_run_simulation(const JZASTNode *root,
         goto cleanup_dut;
     }
 
+    /* Write JZW metadata (no-op for VCD/FST) */
+    {
+        char buf[64];
+        time_t now = time(NULL);
+        struct tm *tm_info = gmtime(&now);
+        char date_buf[32];
+        strftime(date_buf, sizeof(date_buf), "%Y-%m-%dT%H:%M:%SZ", tm_info);
+        sim_wave_set_meta(wave, "date", date_buf);
+        sim_wave_set_meta(wave, "source_file", filename ? filename : "");
+        sim_wave_set_meta(wave, "compiler_version", "0.1.0");
+        snprintf(buf, sizeof(buf), "0x%08X", seed);
+        sim_wave_set_meta(wave, "seed", buf);
+        snprintf(buf, sizeof(buf), "%llu", (unsigned long long)tick_ps);
+        sim_wave_set_meta(wave, "tick_ps", buf);
+        sim_wave_set_meta(wave, "module_name",
+                          dut_module->name ? dut_module->name : "");
+    }
+
     /* Register testbench wires in waveform writer */
     int *wave_ids = calloc((size_t)ts.num_tb_wires, sizeof(int));
     for (int i = 0; i < ts.num_tb_wires; i++) {
         const char *scope = ts.tb_wires[i].is_clock ? "clocks" : "wires";
+        const char *type = ts.tb_wires[i].is_clock ? "clock" : "wire";
         wave_ids[i] = sim_wave_add_signal(wave, scope, ts.tb_wires[i].name,
-                                           ts.tb_wires[i].width);
+                                           ts.tb_wires[i].width, type);
     }
 
     /* Collect and register TAP signals in VCD */
@@ -1577,7 +1597,7 @@ static int sim_run_simulation(const JZASTNode *root,
                         sim_taps[num_sim_taps].full_path = path;
                         sim_taps[num_sim_taps].signal_id = found_id;
                         sim_taps[num_sim_taps].wave_id =
-                            sim_wave_add_signal(wave, scope, sig_name, found_width);
+                            sim_wave_add_signal(wave, scope, sig_name, found_width, "tap");
                         num_sim_taps++;
                     } else if (verbose) {
                         fprintf(stderr, "warning: TAP signal '%s' not found in DUT\n",
@@ -1875,7 +1895,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 (unsigned long long)current_time_ps);
     }
     fprintf(stdout, "%s written to: %s\n",
-            format == SIM_WAVE_FST ? "FST" : "VCD", output_path);
+            format == SIM_WAVE_JZW ? "JZW" : format == SIM_WAVE_FST ? "FST" : "VCD",
+            output_path);
 
     /* Cleanup */
     free(wave_ids);

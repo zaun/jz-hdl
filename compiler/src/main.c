@@ -37,7 +37,7 @@ static void print_usage(const char *prog) {
             "       %s JZ_FILE --ast [-o OUT_FILE]\n"
             "       %s JZ_FILE --ir [-o OUT_FILE] [--tristate-default=GND|VCC]\n"
             "       %s JZ_FILE --test [--verbose] [--seed=0xHEX]\n"
-            "       %s JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--verbose] [--seed=0xHEX]\n"
+            "       %s JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--jzw] [--verbose] [--seed=0xHEX]\n"
             "       %s --chip-info [CHIP_ID] [-o OUT_FILE]\n"
             "       %s --lint-rules\n"
             "       %s --help\n"
@@ -217,6 +217,7 @@ int main(int argc, char **argv) {
     int test_mode = 0;
     int simulate_mode = 0;
     int sim_format_fst = 0;
+    int sim_format_jzw = 0;
     int verbose = 0;
     uint32_t test_seed = 0;
     int test_seed_set = 0;
@@ -260,9 +261,14 @@ int main(int argc, char **argv) {
         } else if (strcmp(arg, "--simulate") == 0) {
             simulate_mode = 1;
         } else if (strcmp(arg, "--vcd") == 0) {
-            sim_format_fst = 0; /* VCD is default; explicit flag resets FST */
+            sim_format_fst = 0; /* VCD is default; explicit flag resets FST/JZW */
+            sim_format_jzw = 0;
         } else if (strcmp(arg, "--fst") == 0) {
             sim_format_fst = 1;
+            sim_format_jzw = 0;
+        } else if (strcmp(arg, "--jzw") == 0) {
+            sim_format_jzw = 1;
+            sim_format_fst = 0;
         } else if (strcmp(arg, "--verbose") == 0) {
             verbose = 1;
         } else if (strncmp(arg, "--seed=", 7) == 0) {
@@ -828,8 +834,11 @@ int main(int argc, char **argv) {
         !jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR) &&
         compiler.ast_root != NULL) {
         {
-            SimWaveFormat wave_format = sim_format_fst ? SIM_WAVE_FST : SIM_WAVE_VCD;
-            const char *ext = sim_format_fst ? ".fst" : ".vcd";
+            SimWaveFormat wave_format = sim_format_jzw ? SIM_WAVE_JZW
+                                     : sim_format_fst ? SIM_WAVE_FST
+                                     : SIM_WAVE_VCD;
+            const char *ext = sim_format_jzw ? ".jzw"
+                            : sim_format_fst ? ".fst" : ".vcd";
 
             if (!compiler.ir_root) {
                 if (jz_ir_build_design(compiler.ast_root,
