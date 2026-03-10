@@ -111,7 +111,7 @@ git -C "$REPO_ROOT" archive \
   --format=tar.gz \
   --prefix="jz-hdl-${VERSION}/" \
   -o "$RELEASE_DIR/jz-hdl-${VERSION}-source.tar.gz" \
-  "v${VERSION}"
+  "v${VERSION}" -- compiler/
 
 # ---------------------------------------------------------------------------
 # 6. Build PDF tarball from committed PDFs
