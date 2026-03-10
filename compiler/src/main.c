@@ -20,6 +20,7 @@
 #include "template_expand.h"
 #include "repeat_expand.h"
 #include "sim/sim_engine.h"
+#include "sim/sim_waveform.h"
 #include "path_security.h"
 
 /* Global verbose flag for timing diagnostics. */
@@ -215,7 +216,6 @@ int main(int argc, char **argv) {
     int tristate_default = 0; /* 0=none, 1=GND, 2=VCC */
     int test_mode = 0;
     int simulate_mode = 0;
-    int sim_format_vcd = 0;
     int sim_format_fst = 0;
     int verbose = 0;
     uint32_t test_seed = 0;
@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
         } else if (strcmp(arg, "--simulate") == 0) {
             simulate_mode = 1;
         } else if (strcmp(arg, "--vcd") == 0) {
-            sim_format_vcd = 1;
+            sim_format_fst = 0; /* VCD is default; explicit flag resets FST */
         } else if (strcmp(arg, "--fst") == 0) {
             sim_format_fst = 1;
         } else if (strcmp(arg, "--verbose") == 0) {
@@ -827,11 +827,10 @@ int main(int argc, char **argv) {
         rc == 0 &&
         !jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR) &&
         compiler.ast_root != NULL) {
-        if (sim_format_fst) {
-            fprintf(stderr, "FST output format is not yet supported; use --vcd instead.\n");
-            rc = 1;
-        } else {
-            (void)sim_format_vcd; /* VCD is the default */
+        {
+            SimWaveFormat wave_format = sim_format_fst ? SIM_WAVE_FST : SIM_WAVE_VCD;
+            const char *ext = sim_format_fst ? ".fst" : ".vcd";
+
             if (!compiler.ir_root) {
                 if (jz_ir_build_design(compiler.ast_root,
                                        &compiler.ir_root,
@@ -847,17 +846,17 @@ int main(int argc, char **argv) {
                 if (!test_seed_set) {
                     test_seed = 0;
                 }
-                /* Determine output path: -o flag or default to <input>.vcd */
-                char default_vcd[1024];
+                /* Determine output path: -o flag or default to <input>.<ext> */
+                char default_wave[1024];
                 const char *sim_output = output_filename;
                 if (!sim_output) {
-                    /* Strip extension and append .vcd */
+                    /* Strip extension and append format extension */
                     const char *dot = strrchr(input_filename, '.');
                     size_t base_len = dot ? (size_t)(dot - input_filename) : strlen(input_filename);
-                    if (base_len > sizeof(default_vcd) - 5) base_len = sizeof(default_vcd) - 5;
-                    memcpy(default_vcd, input_filename, base_len);
-                    memcpy(default_vcd + base_len, ".vcd", 5);
-                    sim_output = default_vcd;
+                    if (base_len > sizeof(default_wave) - 5) base_len = sizeof(default_wave) - 5;
+                    memcpy(default_wave, input_filename, base_len);
+                    memcpy(default_wave + base_len, ext, strlen(ext) + 1);
+                    sim_output = default_wave;
                 }
                 int sim_rc = jz_sim_run_simulations(compiler.ast_root,
                                                      compiler.ir_root,
@@ -865,7 +864,8 @@ int main(int argc, char **argv) {
                                                      verbose,
                                                      &compiler.diagnostics,
                                                      input_filename,
-                                                     sim_output);
+                                                     sim_output,
+                                                     wave_format);
                 if (sim_rc != 0) {
                     rc = 1;
                 }

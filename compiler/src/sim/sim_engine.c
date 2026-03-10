@@ -1288,10 +1288,10 @@ int jz_sim_run_testbenches(const JZASTNode *root,
 }
 
 /* ==================================================================
- * @simulation support — time-based simulation with VCD output
+ * @simulation support — time-based simulation with waveform output
  * ================================================================== */
 
-#include "sim_vcd.h"
+#include "sim_waveform.h"
 #include <math.h>
 
 /* GCD for uint64_t */
@@ -1372,32 +1372,32 @@ static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
 }
 
 /**
- * @brief Dump all tracked signals to VCD.
+ * @brief Dump all tracked signals to waveform writer.
  */
 /* ---- TAP signal tracking ---- */
 
 typedef struct SimTap {
-    int          vcd_id;       /* VCD signal ID */
+    int          wave_id;      /* waveform signal ID */
     int          signal_id;    /* IR signal ID in DUT */
     const char  *full_path;    /* e.g. "dut.count_a" */
 } SimTap;
 
-static void vcd_dump_all(VCDWriter *vcd, SimTestState *ts, int *vcd_ids,
-                          SimTap *taps, int num_taps) {
+static void wave_dump_all(SimWaveWriter *wave, SimTestState *ts, int *wave_ids,
+                           SimTap *taps, int num_taps) {
     for (int i = 0; i < ts->num_tb_wires; i++) {
-        if (vcd_ids[i] >= 0) {
-            vcd_dump_value(vcd, vcd_ids[i],
-                           ts->tb_wires[i].value.val[0],
-                           ts->tb_wires[i].width);
+        if (wave_ids[i] >= 0) {
+            sim_wave_dump_value(wave, wave_ids[i],
+                                ts->tb_wires[i].value.val[0],
+                                ts->tb_wires[i].width);
         }
     }
     /* Dump TAP signals from DUT internals */
     for (int i = 0; i < num_taps; i++) {
-        if (taps[i].vcd_id >= 0 && ts->dut) {
+        if (taps[i].wave_id >= 0 && ts->dut) {
             SimSignalEntry *se = sim_ctx_lookup(ts->dut, taps[i].signal_id);
             if (se) {
-                vcd_dump_value(vcd, taps[i].vcd_id, se->current.val[0],
-                               se->current.width);
+                sim_wave_dump_value(wave, taps[i].wave_id, se->current.val[0],
+                                    se->current.width);
             }
         }
     }
@@ -1444,7 +1444,8 @@ static int sim_run_simulation(const JZASTNode *root,
                                uint32_t seed,
                                int verbose,
                                const char *filename,
-                               const char *vcd_path) {
+                               const char *output_path,
+                               SimWaveFormat format) {
     SimTestState ts;
     memset(&ts, 0, sizeof(ts));
     ts.verbose = verbose;
@@ -1506,20 +1507,20 @@ static int sim_run_simulation(const JZASTNode *root,
         }
     }
 
-    /* Open VCD — use 1ns timescale so waveform viewers show readable timestamps */
-    uint64_t vcd_timescale_ps = 1000; /* 1 ns */
-    VCDWriter *vcd = vcd_open(vcd_path, vcd_timescale_ps);
-    if (!vcd) {
-        fprintf(stderr, "error: failed to open VCD file '%s'\n", vcd_path);
+    /* Open waveform writer — use 1ns timescale for readable timestamps */
+    uint64_t wave_timescale_ps = 1000; /* 1 ns */
+    SimWaveWriter *wave = sim_wave_open(output_path, wave_timescale_ps, format);
+    if (!wave) {
+        fprintf(stderr, "error: failed to open waveform file '%s'\n", output_path);
         goto cleanup_dut;
     }
 
-    /* Register testbench wires in VCD */
-    int *vcd_ids = calloc((size_t)ts.num_tb_wires, sizeof(int));
+    /* Register testbench wires in waveform writer */
+    int *wave_ids = calloc((size_t)ts.num_tb_wires, sizeof(int));
     for (int i = 0; i < ts.num_tb_wires; i++) {
         const char *scope = ts.tb_wires[i].is_clock ? "clocks" : "wires";
-        vcd_ids[i] = vcd_add_signal(vcd, scope, ts.tb_wires[i].name,
-                                     ts.tb_wires[i].width);
+        wave_ids[i] = sim_wave_add_signal(wave, scope, ts.tb_wires[i].name,
+                                           ts.tb_wires[i].width);
     }
 
     /* Collect and register TAP signals in VCD */
@@ -1575,8 +1576,8 @@ static int sim_run_simulation(const JZASTNode *root,
                     if (found_id >= 0) {
                         sim_taps[num_sim_taps].full_path = path;
                         sim_taps[num_sim_taps].signal_id = found_id;
-                        sim_taps[num_sim_taps].vcd_id =
-                            vcd_add_signal(vcd, scope, sig_name, found_width);
+                        sim_taps[num_sim_taps].wave_id =
+                            sim_wave_add_signal(wave, scope, sig_name, found_width);
                         num_sim_taps++;
                     } else if (verbose) {
                         fprintf(stderr, "warning: TAP signal '%s' not found in DUT\n",
@@ -1589,7 +1590,7 @@ static int sim_run_simulation(const JZASTNode *root,
         }
     }
 
-    vcd_end_definitions(vcd);
+    sim_wave_end_definitions(wave);
 
     /* ------------------------------------------------------------------ */
     /* Time 0 initialization sequence:                                     */
@@ -1618,8 +1619,8 @@ static int sim_run_simulation(const JZASTNode *root,
     sim_full_settle(&ts);
 
     /* Step 5: dump Time 0 */
-    vcd_set_time(vcd, 0);
-    vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
+    sim_wave_set_time(wave,0);
+    wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
 
     /* Walk simulation body sequentially (skip the @setup we already ran) */
     int setup_done = 0;
@@ -1638,15 +1639,15 @@ static int sim_run_simulation(const JZASTNode *root,
             /* Subsequent @setup blocks (unusual) — treat like @update */
             process_setup_update(&ts, child, 1);
             sim_full_settle(&ts);
-            vcd_set_time(vcd, current_time_ps);
-            vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
+            sim_wave_set_time(wave,current_time_ps);
+            wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
 
         } else if (child->type == JZ_AST_TB_UPDATE) {
             /* @update: apply wire changes at current time, then settle */
             process_setup_update(&ts, child, 0);
             sim_full_settle(&ts);
-            vcd_set_time(vcd, current_time_ps);
-            vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
+            sim_wave_set_time(wave,current_time_ps);
+            wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
 
         } else if (child->type == JZ_AST_SIM_RUN) {
             /* @run: advance time */
@@ -1725,8 +1726,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 sim_propagate_outputs(&ts);
 
                 /* Dump to VCD */
-                vcd_set_time(vcd, current_time_ps);
-                vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
+                sim_wave_set_time(wave,current_time_ps);
+                wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
             }
         } else if (child->type == JZ_AST_SIM_RUN_UNTIL ||
                    child->type == JZ_AST_SIM_RUN_WHILE) {
@@ -1814,8 +1815,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 sim_propagate_outputs(&ts);
 
                 /* Dump to VCD */
-                vcd_set_time(vcd, current_time_ps);
-                vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
+                sim_wave_set_time(wave,current_time_ps);
+                wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
 
                 /* Evaluate condition */
                 SimValue actual = eval_tb_ast_expr(&ts, sig_node);
@@ -1873,12 +1874,13 @@ static int sim_run_simulation(const JZASTNode *root,
         fprintf(stdout, "Simulation complete. %llu ps simulated.\n",
                 (unsigned long long)current_time_ps);
     }
-    fprintf(stdout, "VCD written to: %s\n", vcd_path);
+    fprintf(stdout, "%s written to: %s\n",
+            format == SIM_WAVE_FST ? "FST" : "VCD", output_path);
 
     /* Cleanup */
-    free(vcd_ids);
+    free(wave_ids);
     free(sim_taps);
-    vcd_close(vcd);
+    sim_wave_close(wave);
 
 cleanup_dut:
     sim_ctx_destroy(ts.dut);
@@ -1905,7 +1907,8 @@ int jz_sim_run_simulations(const JZASTNode *root,
                             int verbose,
                             JZDiagnosticList *diagnostics,
                             const char *filename,
-                            const char *vcd_path) {
+                            const char *output_path,
+                            SimWaveFormat format) {
     (void)diagnostics;
 
     if (!root || !design) return 1;
@@ -1931,7 +1934,8 @@ int jz_sim_run_simulations(const JZASTNode *root,
         fprintf(stdout, "\n=== @simulation %s ===\n", module_name);
 
         int sim_rc = sim_run_simulation(root, child, dut_module, design,
-                                         seed, verbose, filename, vcd_path);
+                                         seed, verbose, filename,
+                                         output_path, format);
         if (sim_rc != 0) rc = 1;
     }
 

@@ -142,6 +142,8 @@ add_library(jz_hdl_lib
     src/sim/sim_exec.c
     src/sim/sim_engine.c
     src/sim/sim_vcd.c
+    src/sim/sim_fst.c
+    src/sim/sim_waveform.c
 )
 
 # Embed JSON data files as headers

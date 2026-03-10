@@ -9,6 +9,7 @@
 #include "../../include/ast.h"
 #include "../../include/ir.h"
 #include "../../include/diagnostic.h"
+#include "sim_waveform.h"
 
 /**
  * @brief Run all testbenches found in the AST against the IR design.
@@ -39,7 +40,8 @@ int jz_sim_run_testbenches(const JZASTNode *root,
  * @param verbose     Non-zero for verbose output.
  * @param diagnostics Diagnostic list for errors.
  * @param filename    Source filename for error messages.
- * @param vcd_path    Output VCD file path.
+ * @param output_path Output waveform file path.
+ * @param format      Waveform format (SIM_WAVE_VCD or SIM_WAVE_FST).
  * @return 0 on success, non-zero otherwise.
  */
 int jz_sim_run_simulations(const JZASTNode *root,
@@ -48,6 +50,7 @@ int jz_sim_run_simulations(const JZASTNode *root,
                             int verbose,
                             JZDiagnosticList *diagnostics,
                             const char *filename,
-                            const char *vcd_path);
+                            const char *output_path,
+                            SimWaveFormat format);
 
 #endif /* JZ_SIM_ENGINE_H */

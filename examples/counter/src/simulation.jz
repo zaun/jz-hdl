@@ -1,0 +1,83 @@
+// Simulation for the counter example.
+//
+// The counter module is a 27-bit counter that drives 6 LEDs.
+// This simulation verifies:
+//   - POR (power-on reset) holds counter in reset
+//   - Button reset (rst_n) holds counter in reset
+//   - Counter increments after both resets are released
+//   - LED outputs reflect upper bits of counter
+
+@module counter
+    PORT {
+        IN  [1] clk;
+        IN  [1] por;
+        IN  [1] rst_n;
+        OUT [6] leds;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        counter [27] = 27'b1;
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+
+        leds <= ~counter[26:21];
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        counter <= counter + 27'b1;
+    }
+@endmod
+
+@simulation counter
+    CLOCK {
+        clk = { period=37.04 }; // 27MHz
+    }
+
+    WIRE {
+        por   [1];
+        rst_n [1];
+        leds  [6];
+    }
+
+    TAP {
+        dut.counter;
+    }
+
+    @new dut counter {
+        clk   [1] = clk;
+        por   [1] = por;
+        rst_n [1] = rst_n;
+        leds  [6] = leds;
+    }
+
+    // Start with both resets active (low)
+    @setup {
+        por   <= 1'b0;
+        rst_n <= 1'b0;
+    }
+
+    // Hold reset for ~5 clock cycles (~185 ns)
+    @run(ns=185)
+
+    // Release POR (DONE signal goes high after programming)
+    @update {
+        por <= 1'b1;
+    }
+
+    // Run a few cycles with only POR released
+    @run(ns=185)
+
+    // Release button reset
+    @update {
+        rst_n <= 1'b1;
+    }
+
+    // Run for ~50 clock cycles to watch counter increment
+    @run(ns=1852)
+@endsim

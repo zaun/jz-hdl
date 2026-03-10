@@ -1,4 +1,4 @@
-.PHONY: check tang_nano_9k tang_nano_20k build synthesis load clean
+.PHONY: check tang_nano_9k tang_nano_20k build simulate synthesis load clean
 
 JZ_HDL := ../../compiler/build/jz-hdl
 PYTHON3 := $(shell which python3)
@@ -40,6 +40,11 @@ tang_nano_9k:
 
 tang_nano_20k:
 	@true
+
+simulate:
+	@mkdir -p out
+	$(JZ_HDL) --sandbox-root=./ --allow-traversal --simulate src/simulation.jz --vcd -o out/simulation.vcd
+	$(JZ_HDL) --sandbox-root=./ --allow-traversal --simulate src/simulation.jz --fst -o out/simulation.fst
 
 build:
 	@test -n "$(HDL)" || (echo "ERROR: board not selected"; exit 1)
