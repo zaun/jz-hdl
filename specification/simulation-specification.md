@@ -204,6 +204,150 @@ TAP {
 - All assignments within a single `@update` block use **simultaneous assignment semantics**: all RHS expressions are evaluated using the pre-update wire values before any LHS targets are written. This means `b <= a; a <= a + 1;` assigns the old value of `a` to `b`, not the incremented value (see Testbench Specification Section 6.5 for details).
 - After all assignments complete, combinational logic settles, and the result is logged to the waveform before the next `@run` advances time.
 
+### 4.4 @run_until (Conditional Time Advancement)
+
+**Syntax:**
+```text
+@run_until(<signal> == <value>, timeout=<unit>=<amount>)
+@run_until(<signal> != <value>, timeout=<unit>=<amount>)
+```
+
+The `@run_until` directive advances simulation time tick-by-tick until the specified condition becomes true, or until the timeout is reached. Clocks toggle automatically during advancement, exactly as with `@run`.
+
+- `<signal>` must be a testbench `WIRE` identifier (typically connected to a module output).
+- `<value>` must be a sized literal.
+- The condition is evaluated after each tick (after combinational settling and synchronous domain firing).
+- The `timeout` parameter specifies the maximum simulation time to advance. If the condition is not met within the timeout, the simulator reports a **TIMEOUT** runtime error and aborts the simulation.
+- The timeout uses the same time units as `@run`: `ns`, `ms`, or `ticks`.
+
+**Example:**
+```text
+@run_until(count == 8'h05, timeout=ns=1000)
+// Simulation advances until count reaches 5, or 1000ns elapses (error)
+```
+
+### 4.5 @run_while (Conditional Time Advancement)
+
+**Syntax:**
+```text
+@run_while(<signal> == <value>, timeout=<unit>=<amount>)
+@run_while(<signal> != <value>, timeout=<unit>=<amount>)
+```
+
+The `@run_while` directive advances simulation time tick-by-tick while the specified condition remains true, or until the timeout is reached. It is the logical complement of `@run_until`.
+
+- Same rules as `@run_until` for signal references, value types, and timeout behavior.
+- The condition is evaluated after each tick. Simulation stops when the condition becomes false.
+- If the timeout is reached while the condition is still true, the simulator reports a **TIMEOUT** runtime error.
+
+**Example:**
+```text
+@run_while(busy == 1'b1, timeout=ns=5000)
+// Simulation advances while busy is high, or 5000ns elapses (error)
+```
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| SIM-030 | `@run_until`/`@run_while` condition not met within timeout (TIMEOUT runtime error) |
+
+### 4.6 @repeat
+
+**Syntax:**
+```text
+@repeat <count>
+<body>
+@end
+```
+
+The `@repeat` directive is a **pre-parser text expansion** shared with `@testbench`. Before lexing or parsing, the compiler scans the source text for `@repeat N ... @end` blocks, duplicates the body `N` times, and replaces each standalone occurrence of the identifier `IDX` with the iteration index (0 through N-1).
+
+- `<count>` must be a positive integer literal.
+- `<body>` may contain any valid simulation content: `@run`, `@update`, comments, or any other text.
+- `IDX` is replaced on word boundaries only.
+- Nesting is supported.
+- `@end` closes only `@repeat` blocks — it does not conflict with `@endsim`.
+- `@repeat` inside comments or string literals is ignored.
+
+**Example — Burst stimulus with IDX:**
+```text
+@repeat 4
+@update {
+    data_in <= 8'hIDX;
+}
+@run(ns=10)
+@end
+// Expands to 4 sequential update/run pairs with data_in = 0, 1, 2, 3
+```
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| RPT-001 | `@repeat` requires a positive integer count |
+| RPT-002 | `@repeat` without matching `@end` |
+
+### 4.7 @print
+
+**Syntax:**
+```text
+@print("<format_string>", <arg1>, <arg2>, ...)
+```
+
+The `@print` directive outputs a formatted message to the simulator's standard output at the current simulation time.
+
+- `<format_string>` is a string literal containing text and optional format specifiers.
+- Arguments following the format string are testbench wire identifiers or hierarchical signal references, matched positionally to format specifiers.
+- The message is printed after all combinational logic has settled following the most recent `@run`, `@run_until`, `@run_while`, or `@update` directive.
+- `@print` may appear anywhere in the simulation body where `@update` is valid.
+
+**Format specifiers:**
+
+| Specifier | Description |
+| :--- | :--- |
+| `%h` | Display the argument value in hexadecimal |
+| `%d` | Display the argument value in decimal |
+| `%b` | Display the argument value in binary |
+| `%tick` | Display the current tick count (no argument consumed) |
+| `%ms` | Display the current simulation time in milliseconds (no argument consumed) |
+
+- `%tick` and `%ms` are **autonomous specifiers** — they do not consume an argument from the argument list.
+- The number of non-autonomous format specifiers must match the number of arguments. A mismatch is a compile error.
+
+**Example:**
+```text
+@print("wr_ptr = %h at tick %tick", dut.wr_ptr)
+@print("time %ms: data_out = %d", data_out)
+@print("tick %tick: reset released")
+```
+
+### 4.8 @print_if
+
+**Syntax:**
+```text
+@print_if(<condition>, "<format_string>", <arg1>, <arg2>, ...)
+```
+
+The `@print_if` directive conditionally outputs a formatted message. The message is printed only if `<condition>` evaluates to a non-zero (truthy) value.
+
+- `<condition>` is a testbench wire identifier or hierarchical signal reference. The condition is truthy if any bit is `1`.
+- The format string and arguments follow the same rules as `@print`.
+- `@print_if` may appear anywhere `@print` is valid.
+
+**Example:**
+```text
+@print_if(full, "FIFO full at time %ms, wr_ptr=%h", dut.wr_ptr)
+@print_if(empty, "FIFO empty at tick %tick")
+```
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| PRT-001 | Number of non-autonomous format specifiers must match the number of arguments |
+| PRT-002 | `@print` / `@print_if` may not appear inside `@setup` or `@update` blocks |
+
 ---
 
 ## 5. CLI USAGE

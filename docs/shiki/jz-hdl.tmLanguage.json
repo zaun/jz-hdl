@@ -23,7 +23,7 @@
     "directives": {
       "patterns": [
         {
-          "match": "@(project|endproj|module|endmod|blackbox|global|endglob|new|top|import|feature|else|endfeat)\\b",
+          "match": "@(project|endproj|module|endmod|blackbox|global|endglob|new|top|import|feature|else|endfeat|testbench|endtb|simulation|endsim|setup|clock|update|run|run_until|run_while|expect_equal|expect_not_equal|expect_tristate|print|print_if|repeat|end)\\b",
           "name": "keyword.control.directive.jz-hdl"
         }
       ]
@@ -59,7 +59,7 @@
     "declarations": {
       "patterns": [
         {
-          "match": "\\b(PORT|WIRE|REGISTER|MUX|MEM|LATCH|CONST|CONFIG|BUS)\\b",
+          "match": "\\b(PORT|WIRE|REGISTER|MUX|MEM|LATCH|CONST|CONFIG|BUS|CLOCK|TAP|TEST)\\b",
           "name": "storage.type.jz-hdl"
         },
         {

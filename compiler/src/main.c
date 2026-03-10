@@ -18,6 +18,7 @@
 #include "version.h"
 #include "chip_data.h"
 #include "template_expand.h"
+#include "repeat_expand.h"
 #include "sim/sim_engine.h"
 #include "path_security.h"
 
@@ -75,6 +76,15 @@ static int run_frontend(JZCompiler *compiler,
                              "IO001", "failed to read source file");
         return 1;
     }
+
+    /* Expand @repeat N ... @end blocks before lexing */
+    char *expanded = jz_repeat_expand(source, filename, &compiler->diagnostics);
+    if (!expanded) {
+        free(source);
+        return 1;
+    }
+    free(source);
+    source = expanded;
 
     JZTokenStream tokens;
     size_t diag_before = compiler->diagnostics.buffer.len;

@@ -93,6 +93,7 @@ SimValue sim_val_sext(SimValue v, int new_width);
 /* Formatting (writes into caller-provided buffer, returns buf) */
 char *sim_val_to_hex(SimValue v, char *buf, int buflen);
 char *sim_val_to_bin(SimValue v, char *buf, int buflen);
+char *sim_val_to_dec(SimValue v, char *buf, int buflen);
 
 /* Format as sized literal string, e.g. "8'hFF" */
 char *sim_val_format_literal(SimValue v, char *buf, int buflen);

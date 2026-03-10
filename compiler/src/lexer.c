@@ -254,6 +254,10 @@ static int match_keyword(const char *lexeme, JZTokenType *out_type) {
     if (strcmp(lexeme, "@simulation") == 0)      { *out_type = JZ_TOK_KW_SIMULATION; return 1; }
     if (strcmp(lexeme, "@endsim") == 0)          { *out_type = JZ_TOK_KW_ENDSIM;     return 1; }
     if (strcmp(lexeme, "@run") == 0)             { *out_type = JZ_TOK_KW_RUN;        return 1; }
+    if (strcmp(lexeme, "@run_until") == 0)       { *out_type = JZ_TOK_KW_RUN_UNTIL; return 1; }
+    if (strcmp(lexeme, "@run_while") == 0)       { *out_type = JZ_TOK_KW_RUN_WHILE; return 1; }
+    if (strcmp(lexeme, "@print") == 0)           { *out_type = JZ_TOK_KW_PRINT;    return 1; }
+    if (strcmp(lexeme, "@print_if") == 0)        { *out_type = JZ_TOK_KW_PRINT_IF; return 1; }
 
     /* Block and structural keywords */
     if (strcmp(lexeme, "CONST") == 0)         { *out_type = JZ_TOK_KW_CONST;      return 1; }

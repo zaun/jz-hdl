@@ -294,6 +294,231 @@ static JZASTNode *parse_sim_run(Parser *p)
 }
 
 /**
+ * @brief Parse @print or @print_if directive.
+ *
+ * @print("format", arg1, arg2, ...)
+ * @print_if(condition, "format", arg1, arg2, ...)
+ */
+JZASTNode *parse_print_directive(Parser *p, int is_print_if)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1]; /* keyword already consumed */
+    JZASTNodeType node_type = is_print_if ? JZ_AST_PRINT_IF : JZ_AST_PRINT;
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, is_print_if
+            ? "expected '(' after @print_if"
+            : "expected '(' after @print");
+        return NULL;
+    }
+
+    JZASTNode *node = jz_ast_new(node_type, kw->loc);
+    if (!node) return NULL;
+
+    /* For @print_if, the first argument is the condition expression */
+    if (is_print_if) {
+        JZASTNode *cond = parse_expression(p);
+        if (!cond) {
+            jz_ast_free(node);
+            return NULL;
+        }
+        jz_ast_add_child(node, cond);
+
+        if (!match(p, JZ_TOK_COMMA)) {
+            parser_error(p, "expected ',' after condition in @print_if");
+            jz_ast_free(node);
+            return NULL;
+        }
+    }
+
+    /* Format string */
+    const JZToken *fmt_tok = peek(p);
+    if (fmt_tok->type != JZ_TOK_STRING || !fmt_tok->lexeme) {
+        parser_error(p, "expected format string in @print/@print_if");
+        jz_ast_free(node);
+        return NULL;
+    }
+    jz_ast_set_text(node, fmt_tok->lexeme);
+    advance(p);
+
+    /* Optional arguments: , arg1, arg2, ... */
+    while (peek(p)->type == JZ_TOK_COMMA) {
+        advance(p); /* consume comma */
+        JZASTNode *arg = parse_expression(p);
+        if (!arg) {
+            jz_ast_free(node);
+            return NULL;
+        }
+        jz_ast_add_child(node, arg);
+    }
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @print/@print_if");
+        jz_ast_free(node);
+        return NULL;
+    }
+
+    return node;
+}
+
+/**
+ * @brief Parse @run_until / @run_while directive.
+ *
+ * Syntax:
+ *   @run_until(<signal> == <value>, timeout=<unit>=<amount>)
+ *   @run_until(<signal> != <value>, timeout=<unit>=<amount>)
+ *   @run_while(<signal> == <value>, timeout=<unit>=<amount>)
+ *   @run_while(<signal> != <value>, timeout=<unit>=<amount>)
+ *
+ * Returns a SIM_RUN_UNTIL or SIM_RUN_WHILE node with:
+ *   children[0] = signal identifier
+ *   children[1] = expected value (literal)
+ *   block_kind  = "==" or "!="
+ *   text        = timeout unit ("ns", "ms", "ticks")
+ *   name        = timeout value
+ */
+static JZASTNode *parse_sim_run_cond(Parser *p, JZASTNodeType node_type)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1]; /* keyword already consumed */
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, "expected '(' after @run_until/@run_while");
+        return NULL;
+    }
+
+    /* Signal identifier */
+    const JZToken *sig_tok = peek(p);
+    if (!is_decl_identifier_token(sig_tok)) {
+        parser_error(p, "expected signal name in @run_until/@run_while condition");
+        return NULL;
+    }
+    JZASTNode *sig = jz_ast_new(JZ_AST_EXPR_IDENTIFIER, sig_tok->loc);
+    if (!sig) return NULL;
+    jz_ast_set_name(sig, sig_tok->lexeme);
+    advance(p);
+
+    /* == or != */
+    const char *op = NULL;
+    const JZToken *op_tok = peek(p);
+    if (op_tok->type == JZ_TOK_OP_EQ) {
+        op = "==";
+        advance(p);
+    } else if (op_tok->type == JZ_TOK_OP_NEQ) {
+        op = "!=";
+        advance(p);
+    } else {
+        parser_error(p, "expected '==' or '!=' in @run_until/@run_while condition");
+        jz_ast_free(sig);
+        return NULL;
+    }
+
+    /* Value expression (literal) */
+    JZASTNode *val = parse_expression(p);
+    if (!val) {
+        jz_ast_free(sig);
+        return NULL;
+    }
+
+    /* Comma */
+    if (!match(p, JZ_TOK_COMMA)) {
+        parser_error(p, "expected ',' before 'timeout=' in @run_until/@run_while");
+        jz_ast_free(sig);
+        jz_ast_free(val);
+        return NULL;
+    }
+
+    /* timeout= */
+    const JZToken *timeout_kw = peek(p);
+    if (!timeout_kw->lexeme || strcmp(timeout_kw->lexeme, "timeout") != 0) {
+        parser_error(p, "expected 'timeout=' in @run_until/@run_while");
+        jz_ast_free(sig);
+        jz_ast_free(val);
+        return NULL;
+    }
+    advance(p);
+
+    if (!match(p, JZ_TOK_OP_ASSIGN)) {
+        parser_error(p, "expected '=' after 'timeout' in @run_until/@run_while");
+        jz_ast_free(sig);
+        jz_ast_free(val);
+        return NULL;
+    }
+
+    /* Time unit: ns, ms, ticks */
+    const JZToken *unit_tok = peek(p);
+    if (!unit_tok->lexeme ||
+        (strcmp(unit_tok->lexeme, "ns") != 0 &&
+         strcmp(unit_tok->lexeme, "ms") != 0 &&
+         strcmp(unit_tok->lexeme, "ticks") != 0)) {
+        parser_error(p, "expected 'ns=', 'ms=', or 'ticks=' after 'timeout=' in @run_until/@run_while");
+        jz_ast_free(sig);
+        jz_ast_free(val);
+        return NULL;
+    }
+    const char *unit = unit_tok->lexeme;
+    advance(p);
+
+    if (!match(p, JZ_TOK_OP_ASSIGN)) {
+        parser_error(p, "expected '=' after unit in timeout");
+        jz_ast_free(sig);
+        jz_ast_free(val);
+        return NULL;
+    }
+
+    /* Collect timeout value tokens until ')' */
+    size_t tval_start = p->pos;
+    while (peek(p)->type != JZ_TOK_EOF &&
+           peek(p)->type != JZ_TOK_RPAREN) {
+        advance(p);
+    }
+    size_t tval_end = p->pos;
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @run_until/@run_while");
+        jz_ast_free(sig);
+        jz_ast_free(val);
+        return NULL;
+    }
+
+    /* Build timeout value text */
+    char *tval_text = NULL;
+    if (tval_start < tval_end) {
+        size_t buf_sz = 0;
+        for (size_t i = tval_start; i < tval_end; ++i) {
+            const JZToken *vt = &p->tokens[i];
+            if (vt->lexeme) buf_sz += strlen(vt->lexeme) + 1;
+        }
+        if (buf_sz > 0) {
+            tval_text = (char *)malloc(buf_sz + 1);
+            if (!tval_text) { jz_ast_free(sig); jz_ast_free(val); return NULL; }
+            tval_text[0] = '\0';
+            for (size_t i = tval_start; i < tval_end; ++i) {
+                const JZToken *vt = &p->tokens[i];
+                if (!vt->lexeme) continue;
+                strcat(tval_text, vt->lexeme);
+            }
+        }
+    }
+
+    JZASTNode *node = jz_ast_new(node_type, kw->loc);
+    if (!node) {
+        jz_ast_free(sig);
+        jz_ast_free(val);
+        free(tval_text);
+        return NULL;
+    }
+    jz_ast_set_block_kind(node, op);
+    jz_ast_set_text(node, unit);
+    if (tval_text) {
+        jz_ast_set_name(node, tval_text);
+        free(tval_text);
+    }
+    jz_ast_add_child(node, sig);
+    jz_ast_add_child(node, val);
+
+    return node;
+}
+
+/**
  * @brief Parse the binding list inside a simulation @new block.
  *
  * Same as testbench @new — direction-less bindings.
@@ -792,6 +1017,26 @@ JZASTNode *parse_simulation(Parser *p)
             JZASTNode *run = parse_sim_run(p);
             if (!run) { jz_ast_free(sim); return NULL; }
             jz_ast_add_child(sim, run);
+        } else if (t->type == JZ_TOK_KW_RUN_UNTIL) {
+            advance(p);
+            JZASTNode *ru = parse_sim_run_cond(p, JZ_AST_SIM_RUN_UNTIL);
+            if (!ru) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, ru);
+        } else if (t->type == JZ_TOK_KW_RUN_WHILE) {
+            advance(p);
+            JZASTNode *rw = parse_sim_run_cond(p, JZ_AST_SIM_RUN_WHILE);
+            if (!rw) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, rw);
+        } else if (t->type == JZ_TOK_KW_PRINT) {
+            advance(p);
+            JZASTNode *pr = parse_print_directive(p, 0);
+            if (!pr) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, pr);
+        } else if (t->type == JZ_TOK_KW_PRINT_IF) {
+            advance(p);
+            JZASTNode *pr = parse_print_directive(p, 1);
+            if (!pr) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, pr);
         } else {
             parser_error(p, "unexpected token in @simulation block");
             jz_ast_free(sim);

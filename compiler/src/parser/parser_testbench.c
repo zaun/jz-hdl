@@ -764,6 +764,16 @@ static int parse_test_body(Parser *p, JZASTNode *test_node)
             JZASTNode *expect = parse_tb_expect_tristate(p);
             if (!expect) return -1;
             jz_ast_add_child(test_node, expect);
+        } else if (t->type == JZ_TOK_KW_PRINT) {
+            advance(p);
+            JZASTNode *pr = parse_print_directive(p, 0);
+            if (!pr) return -1;
+            jz_ast_add_child(test_node, pr);
+        } else if (t->type == JZ_TOK_KW_PRINT_IF) {
+            advance(p);
+            JZASTNode *pr = parse_print_directive(p, 1);
+            if (!pr) return -1;
+            jz_ast_add_child(test_node, pr);
         } else {
             parser_error(p, "unexpected token in TEST block");
             return -1;

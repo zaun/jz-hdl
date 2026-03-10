@@ -153,6 +153,18 @@ void parser_report_rule(const Parser *p,
 JZASTNode *parse_expression(Parser *p);
 
 /**
+ * @brief Parse @print or @print_if directive arguments.
+ *
+ * @print("format", arg1, arg2, ...)
+ * @print_if(condition, "format", arg1, arg2, ...)
+ *
+ * @param p         Active parser
+ * @param is_print_if  Non-zero for @print_if (expects condition as first arg)
+ * @return AST node (JZ_AST_PRINT or JZ_AST_PRINT_IF), or NULL on error
+ */
+JZASTNode *parse_print_directive(Parser *p, int is_print_if);
+
+/**
  * @brief Parse a structured block following a block keyword.
  *
  * This dispatches to block-specific parsing logic based on node type

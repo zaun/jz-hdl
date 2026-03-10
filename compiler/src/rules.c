@@ -438,6 +438,13 @@ const JZRuleInfo jz_rule_table[] = {
     { "SIMULATION", "SIM_WRONG_TOOL",             0, JZ_RULE_MODE_ERR, "File contains @simulation blocks; use --simulate to run simulations" },
     { "SIMULATION", "SIM_PROJECT_MIXED",          0, JZ_RULE_MODE_ERR, "SIM-020 A file may not contain both @project and @simulation" },
 
+    /* [SIMULATION_RUNTIME] */
+    { "SIMULATION", "SIM_RUN_COND_TIMEOUT",         0, JZ_RULE_MODE_ERR, "SIM-030 @run_until/@run_while condition not met within timeout" },
+
+    /* [REPEAT] */
+    { "REPEAT", "RPT_COUNT_INVALID",              0, JZ_RULE_MODE_ERR, "RPT-001 @repeat requires a positive integer count" },
+    { "REPEAT", "RPT_NO_MATCHING_END",            0, JZ_RULE_MODE_ERR, "RPT-002 @repeat without matching @end" },
+
     /* [GENERAL_WARNINGS] */
     { "GENERAL_WARNINGS", "WARN_UNUSED_REGISTER",                   0, JZ_RULE_MODE_WRN, "S8.3 Register is never read or written; remove it if unused" },
     { "GENERAL_WARNINGS", "WARN_UNSINKED_REGISTER",                0, JZ_RULE_MODE_WRN, "S8.3 Register is written but its value is never read" },

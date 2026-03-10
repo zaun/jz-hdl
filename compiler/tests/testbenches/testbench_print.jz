@@ -1,0 +1,57 @@
+// Test @print and @print_if in testbench context.
+
+@module counter
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        OUT [8] count;
+    }
+
+    REGISTER {
+        cnt [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        count <= cnt;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        cnt <= cnt + 8'h01;
+    }
+@endmod
+
+@testbench counter
+    CLOCK {
+        clk;
+    }
+
+    WIRE {
+        rst_n [1];
+        count [8];
+    }
+
+    TEST "Print directives" {
+        @new dut counter {
+            clk [1] = clk;
+            rst_n [1] = rst_n;
+            count [8] = count;
+        }
+
+        @setup {
+            rst_n <= 1'b0;
+        }
+
+        @clock(clk, cycle=1)
+        @update {
+            rst_n <= 1'b1;
+        }
+
+        @print("After reset: count=%h", count)
+        @clock(clk, cycle=3)
+        @print("After 3 cycles: count=%d (hex=%h, bin=%b)", count, count, count)
+        @print("Current tick: %tick")
+        @print_if(count == 8'h03, "Count is 3!")
+        @print_if(count == 8'hFF, "This should not print")
+        @expect_equal(count, 8'h03)
+    }
+@endtb

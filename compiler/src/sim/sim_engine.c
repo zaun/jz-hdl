@@ -1,7 +1,12 @@
 /**
  * @file sim_engine.c
- * @brief Testbench simulation orchestrator: test runner, clock advancement,
- *        expect checking, and output formatting.
+ * @brief Unified simulation engine for both @testbench and @simulation systems.
+ *
+ * Shared infrastructure: declaration collection, port binding, combinational
+ * settling, clock domain firing, and reset application.
+ *
+ * System-specific: testbench uses cycle-stepped clocks with assertions;
+ * simulation uses time-based auto-toggling clocks with VCD output.
  */
 
 #include "sim_engine.h"
@@ -30,6 +35,11 @@ static int  sim_run_test(const JZASTNode *root,
 
 static void sim_propagate_inputs(SimTestState *ts);
 static void sim_propagate_outputs(SimTestState *ts);
+static void sim_full_settle(SimTestState *ts);
+static void sim_apply_domain_reset(SimContext *ctx, const IR_ClockDomain *cd);
+static void sim_fire_domains_for_clock(SimTestState *ts, int clock_port_id,
+                                        uint64_t new_clk_val,
+                                        int apply_nba_per_domain);
 static void sim_clock_advance(SimTestState *ts, const char *clock_name, int num_cycles);
 static void record_failure(SimTestState *ts, const char *msg);
 
@@ -228,10 +238,79 @@ static SimValue eval_tb_ast_expr(SimTestState *ts, const JZASTNode *node) {
     }
 
     if (node->type == JZ_AST_EXPR_IDENTIFIER) {
-        /* Look up in tb_wires */
         int idx = find_tb_wire(ts, node->name);
         if (idx >= 0) return ts->tb_wires[idx].value;
         return sim_val_all_x(1);
+    }
+
+    if (node->type == JZ_AST_EXPR_BINARY) {
+        if (node->child_count < 2) return sim_val_all_x(1);
+        SimValue lhs = eval_tb_ast_expr(ts, node->children[0]);
+        SimValue rhs = eval_tb_ast_expr(ts, node->children[1]);
+        const char *op = node->block_kind;
+        if (!op) return sim_val_all_x(1);
+
+        if (strcmp(op, "EQ") == 0)        return sim_val_eq(lhs, rhs);
+        if (strcmp(op, "NEQ") == 0)       return sim_val_neq(lhs, rhs);
+        if (strcmp(op, "LT") == 0)        return sim_val_lt(lhs, rhs);
+        if (strcmp(op, "GT") == 0)        return sim_val_gt(lhs, rhs);
+        if (strcmp(op, "LTE") == 0)       return sim_val_lte(lhs, rhs);
+        if (strcmp(op, "GTE") == 0)       return sim_val_gte(lhs, rhs);
+        if (strcmp(op, "AND") == 0)       return sim_val_and(lhs, rhs);
+        if (strcmp(op, "OR") == 0)        return sim_val_or(lhs, rhs);
+        if (strcmp(op, "XOR") == 0)       return sim_val_xor(lhs, rhs);
+        if (strcmp(op, "ADD") == 0)       return sim_val_add(lhs, rhs);
+        if (strcmp(op, "SUB") == 0)       return sim_val_sub(lhs, rhs);
+        if (strcmp(op, "MUL") == 0)       return sim_val_mul(lhs, rhs);
+        if (strcmp(op, "DIV") == 0)       return sim_val_div(lhs, rhs);
+        if (strcmp(op, "MOD") == 0)       return sim_val_mod(lhs, rhs);
+        if (strcmp(op, "SHL") == 0)       return sim_val_shl(lhs, rhs);
+        if (strcmp(op, "SHR") == 0)       return sim_val_shr(lhs, rhs);
+        if (strcmp(op, "LOG_AND") == 0)   return sim_val_logical_and(lhs, rhs);
+        if (strcmp(op, "LOG_OR") == 0)    return sim_val_logical_or(lhs, rhs);
+        return sim_val_all_x(1);
+    }
+
+    if (node->type == JZ_AST_EXPR_UNARY) {
+        if (node->child_count < 1) return sim_val_all_x(1);
+        SimValue operand = eval_tb_ast_expr(ts, node->children[0]);
+        const char *op = node->block_kind;
+        if (!op) return sim_val_all_x(1);
+
+        if (strcmp(op, "NOT") == 0)       return sim_val_not(operand);
+        if (strcmp(op, "LOG_NOT") == 0)   return sim_val_logical_not(operand);
+        if (strcmp(op, "NEG") == 0)       return sim_val_neg(operand);
+        return sim_val_all_x(1);
+    }
+
+    if (node->type == JZ_AST_EXPR_SLICE) {
+        if (node->child_count < 1) return sim_val_all_x(1);
+        SimValue base = eval_tb_ast_expr(ts, node->children[0]);
+        /* name="msb:lsb" or children[1]=msb, children[2]=lsb */
+        if (node->name) {
+            int msb = 0, lsb = 0;
+            sscanf(node->name, "%d:%d", &msb, &lsb);
+            return sim_val_slice(base, msb, lsb);
+        }
+        return sim_val_all_x(1);
+    }
+
+    if (node->type == JZ_AST_EXPR_CONCAT) {
+        if (node->child_count == 0) return sim_val_all_x(1);
+        SimValue parts[64];
+        int count = (int)node->child_count;
+        if (count > 64) count = 64;
+        for (int i = 0; i < count; i++)
+            parts[i] = eval_tb_ast_expr(ts, node->children[i]);
+        return sim_val_concat(parts, count);
+    }
+
+    if (node->type == JZ_AST_EXPR_TERNARY) {
+        if (node->child_count < 3) return sim_val_all_x(1);
+        SimValue cond = eval_tb_ast_expr(ts, node->children[0]);
+        SimValue t = eval_tb_ast_expr(ts, node->children[1]);
+        SimValue f = eval_tb_ast_expr(ts, node->children[2]);
+        return sim_val_ternary(cond, t, f);
     }
 
     /* Fallback: try text as a literal */
@@ -253,7 +332,96 @@ static void record_failure(SimTestState *ts, const char *msg) {
     ts->failure_msgs[ts->num_failure_msgs++] = strdup(msg);
 }
 
-/* ---- Collect clocks and wires from testbench ---- */
+/* ---- @print / @print_if execution ---- */
+
+/**
+ * Process a @print or @print_if AST node.
+ *
+ * Format specifiers:
+ *   %h  - hex value of next arg
+ *   %d  - decimal value of next arg
+ *   %b  - binary value of next arg
+ *   %tick - current tick/cycle count
+ *   %ms   - current simulation time in milliseconds
+ */
+static void process_print(SimTestState *ts, const JZASTNode *node) {
+    if (!node) return;
+
+    int is_print_if = (node->type == JZ_AST_PRINT_IF);
+
+    /* For @print_if, children[0] is the condition */
+    int arg_start = 0;
+    if (is_print_if) {
+        if (node->child_count < 1) return;
+        SimValue cond = eval_tb_ast_expr(ts, node->children[0]);
+        int truth = sim_val_is_true(cond);
+        if (truth != 1) return; /* skip if false or x/z */
+        arg_start = 1;
+    }
+
+    const char *fmt = node->text;
+    if (!fmt) return;
+
+    int arg_idx = arg_start;
+    char valbuf[512];
+
+    for (const char *p = fmt; *p; p++) {
+        if (*p == '%') {
+            /* Check for %tick */
+            if (strncmp(p, "%tick", 5) == 0) {
+                /* In testbench mode, tick = cycle_count; in simulation, use time */
+                if (ts->tick_ps > 0) {
+                    uint64_t ticks = ts->current_time_ps / ts->tick_ps;
+                    fprintf(stdout, "%llu", (unsigned long long)ticks);
+                } else {
+                    fprintf(stdout, "%llu", (unsigned long long)ts->cycle_count);
+                }
+                p += 4; /* skip "tick" (loop will advance past %) */
+                continue;
+            }
+            /* Check for %ms */
+            if (strncmp(p, "%ms", 3) == 0) {
+                double ms = (double)ts->current_time_ps / 1e9;
+                fprintf(stdout, "%.6f", ms);
+                p += 2; /* skip "ms" */
+                continue;
+            }
+            /* %h, %d, %b — consume next argument */
+            if (p[1] == 'h' || p[1] == 'd' || p[1] == 'b') {
+                char spec = p[1];
+                p++; /* skip the specifier char */
+
+                if (arg_idx < (int)node->child_count) {
+                    SimValue val = eval_tb_ast_expr(ts, node->children[arg_idx++]);
+                    switch (spec) {
+                    case 'h':
+                        sim_val_to_hex(val, valbuf, sizeof(valbuf));
+                        break;
+                    case 'd':
+                        sim_val_to_dec(val, valbuf, sizeof(valbuf));
+                        break;
+                    case 'b':
+                        sim_val_to_bin(val, valbuf, sizeof(valbuf));
+                        break;
+                    }
+                    fputs(valbuf, stdout);
+                } else {
+                    /* Not enough arguments */
+                    fputc('%', stdout);
+                    fputc(spec, stdout);
+                }
+                continue;
+            }
+            /* Unknown % sequence, print literally */
+            fputc('%', stdout);
+            continue;
+        }
+        fputc(*p, stdout);
+    }
+    fputc('\n', stdout);
+}
+
+/* ---- Collect clocks and wires (shared by testbench and simulation) ---- */
 
 static int count_bus_signals(const JZASTNode *bus_def) {
     if (!bus_def) return 0;
@@ -266,25 +434,33 @@ static int count_bus_signals(const JZASTNode *bus_def) {
     return n;
 }
 
-static void collect_tb_decls(SimTestState *ts, const JZASTNode *tb_node,
-                              const JZASTNode *root) {
+/**
+ * Unified declaration collector for both @testbench and @simulation.
+ * The only difference is the AST node types for clock blocks/decls:
+ *   - Testbench:  JZ_AST_TB_CLOCK_BLOCK / JZ_AST_TB_CLOCK_DECL
+ *   - Simulation: JZ_AST_SIM_CLOCK_BLOCK / JZ_AST_SIM_CLOCK_DECL
+ * Wire blocks use JZ_AST_TB_WIRE_BLOCK / JZ_AST_TB_WIRE_DECL in both cases.
+ */
+static void collect_decls(SimTestState *ts, const JZASTNode *container,
+                           const JZASTNode *root,
+                           JZASTNodeType clock_block_type,
+                           JZASTNodeType clock_decl_type) {
     /* Count clocks and wires */
     int num_clocks = 0, num_wires = 0;
 
-    for (size_t i = 0; i < tb_node->child_count; i++) {
-        const JZASTNode *child = tb_node->children[i];
+    for (size_t i = 0; i < container->child_count; i++) {
+        const JZASTNode *child = container->children[i];
         if (!child) continue;
-        if (child->type == JZ_AST_TB_CLOCK_BLOCK) {
+        if (child->type == clock_block_type) {
             for (size_t j = 0; j < child->child_count; j++)
                 if (child->children[j] &&
-                    child->children[j]->type == JZ_AST_TB_CLOCK_DECL)
+                    child->children[j]->type == clock_decl_type)
                     num_clocks++;
         } else if (child->type == JZ_AST_TB_WIRE_BLOCK) {
             for (size_t j = 0; j < child->child_count; j++) {
                 const JZASTNode *wd = child->children[j];
                 if (!wd || wd->type != JZ_AST_TB_WIRE_DECL) continue;
                 if (wd->block_kind && strcmp(wd->block_kind, "BUS") == 0) {
-                    /* BUS wire: expand to array_count * bus_signal_count */
                     int arr_count = wd->width ? (int)strtol(wd->width, NULL, 10) : 1;
                     if (arr_count <= 0) arr_count = 1;
                     const JZASTNode *bus_def = find_bus_def(root, wd->text);
@@ -301,62 +477,64 @@ static void collect_tb_decls(SimTestState *ts, const JZASTNode *tb_node,
     ts->tb_wires = calloc((size_t)(total > 0 ? total : 1), sizeof(SimTbWire));
     int idx = 0;
 
-    for (size_t i = 0; i < tb_node->child_count; i++) {
-        const JZASTNode *child = tb_node->children[i];
-        if (!child) continue;
-        if (child->type == JZ_AST_TB_CLOCK_BLOCK) {
-            for (size_t j = 0; j < child->child_count; j++) {
-                const JZASTNode *decl = child->children[j];
-                if (!decl || decl->type != JZ_AST_TB_CLOCK_DECL) continue;
-                ts->tb_wires[idx].name = decl->name;
-                ts->tb_wires[idx].width = 1;
-                ts->tb_wires[idx].is_clock = 1;
-                ts->tb_wires[idx].value = sim_val_zero(1);
-                idx++;
-            }
-        } else if (child->type == JZ_AST_TB_WIRE_BLOCK) {
-            for (size_t j = 0; j < child->child_count; j++) {
-                const JZASTNode *decl = child->children[j];
-                if (!decl || decl->type != JZ_AST_TB_WIRE_DECL) continue;
+    /* Clocks first */
+    for (size_t i = 0; i < container->child_count; i++) {
+        const JZASTNode *child = container->children[i];
+        if (!child || child->type != clock_block_type) continue;
+        for (size_t j = 0; j < child->child_count; j++) {
+            const JZASTNode *decl = child->children[j];
+            if (!decl || decl->type != clock_decl_type) continue;
+            ts->tb_wires[idx].name = decl->name;
+            ts->tb_wires[idx].width = 1;
+            ts->tb_wires[idx].is_clock = 1;
+            ts->tb_wires[idx].value = sim_val_zero(1);
+            idx++;
+        }
+    }
 
-                if (decl->block_kind && strcmp(decl->block_kind, "BUS") == 0) {
-                    /* Expand BUS wire to individual signals */
-                    int arr_count = decl->width ? (int)strtol(decl->width, NULL, 10) : 1;
-                    if (arr_count <= 0) arr_count = 1;
-                    const JZASTNode *bus_def = find_bus_def(root, decl->text);
-                    if (!bus_def) continue;
+    /* Wires */
+    for (size_t i = 0; i < container->child_count; i++) {
+        const JZASTNode *child = container->children[i];
+        if (!child || child->type != JZ_AST_TB_WIRE_BLOCK) continue;
+        for (size_t j = 0; j < child->child_count; j++) {
+            const JZASTNode *decl = child->children[j];
+            if (!decl || decl->type != JZ_AST_TB_WIRE_DECL) continue;
 
-                    for (int ai = 0; ai < arr_count; ai++) {
-                        for (size_t bi = 0; bi < bus_def->child_count; bi++) {
-                            const JZASTNode *bd = bus_def->children[bi];
-                            if (!bd || bd->type != JZ_AST_BUS_DECL) continue;
-                            int w = parse_width_text(bd->width);
+            if (decl->block_kind && strcmp(decl->block_kind, "BUS") == 0) {
+                int arr_count = decl->width ? (int)strtol(decl->width, NULL, 10) : 1;
+                if (arr_count <= 0) arr_count = 1;
+                const JZASTNode *bus_def = find_bus_def(root, decl->text);
+                if (!bus_def) continue;
 
-                            /* Build name: group{elem}_{signal} or group_{signal} */
-                            char namebuf[128];
-                            if (arr_count > 1)
-                                snprintf(namebuf, sizeof(namebuf), "%s%d_%s",
-                                         decl->name, ai, bd->name);
-                            else
-                                snprintf(namebuf, sizeof(namebuf), "%s_%s",
-                                         decl->name, bd->name);
+                for (int ai = 0; ai < arr_count; ai++) {
+                    for (size_t bi = 0; bi < bus_def->child_count; bi++) {
+                        const JZASTNode *bd = bus_def->children[bi];
+                        if (!bd || bd->type != JZ_AST_BUS_DECL) continue;
+                        int w = parse_width_text(bd->width);
 
-                            ts->tb_wires[idx].name = strdup(namebuf);
-                            ts->tb_wires[idx].width = w;
-                            ts->tb_wires[idx].is_clock = 0;
-                            ts->tb_wires[idx].owns_name = 1;
-                            ts->tb_wires[idx].value = sim_val_zero(w);
-                            idx++;
-                        }
+                        char namebuf[128];
+                        if (arr_count > 1)
+                            snprintf(namebuf, sizeof(namebuf), "%s%d_%s",
+                                     decl->name, ai, bd->name);
+                        else
+                            snprintf(namebuf, sizeof(namebuf), "%s_%s",
+                                     decl->name, bd->name);
+
+                        ts->tb_wires[idx].name = strdup(namebuf);
+                        ts->tb_wires[idx].width = w;
+                        ts->tb_wires[idx].is_clock = 0;
+                        ts->tb_wires[idx].owns_name = 1;
+                        ts->tb_wires[idx].value = sim_val_zero(w);
+                        idx++;
                     }
-                } else {
-                    int w = parse_width_text(decl->width);
-                    ts->tb_wires[idx].name = decl->name;
-                    ts->tb_wires[idx].width = w;
-                    ts->tb_wires[idx].is_clock = 0;
-                    ts->tb_wires[idx].value = sim_val_zero(w);
-                    idx++;
                 }
+            } else {
+                int w = parse_width_text(decl->width);
+                ts->tb_wires[idx].name = decl->name;
+                ts->tb_wires[idx].width = w;
+                ts->tb_wires[idx].is_clock = 0;
+                ts->tb_wires[idx].value = sim_val_zero(w);
+                idx++;
             }
         }
     }
@@ -549,6 +727,98 @@ static void sim_resolve_inout_z(SimTestState *ts) {
     }
 }
 
+/* ---- Full settle: propagate inputs, settle, resolve inout, propagate outputs ---- */
+
+static void sim_full_settle(SimTestState *ts) {
+    sim_propagate_inputs(ts);
+    sim_settle_checked(ts);
+    sim_resolve_inout_z(ts);
+    sim_propagate_outputs(ts);
+}
+
+/* ---- Apply reset values for a clock domain ---- */
+
+static void sim_apply_domain_reset(SimContext *ctx, const IR_ClockDomain *cd) {
+    for (int r = 0; r < cd->num_registers; r++) {
+        int reg_id = cd->register_ids[r];
+        SimSignalEntry *re = sim_ctx_lookup(ctx, reg_id);
+        if (!re) continue;
+
+        for (int s = 0; s < ctx->module->num_signals; s++) {
+            if (ctx->module->signals[s].id == reg_id) {
+                const IR_Signal *sig = &ctx->module->signals[s];
+                if (sig->kind == SIG_REGISTER) {
+                    SimValue rv = sim_val_from_words(
+                        sig->u.reg.reset_value.words,
+                        IR_LIT_WORDS,
+                        sig->u.reg.reset_value.width);
+                    if (rv.width != sig->width)
+                        rv = sim_val_zext(rv, sig->width);
+                    re->current = rv;
+                }
+                break;
+            }
+        }
+    }
+}
+
+/* ---- Fire clock domains for a given clock edge ---- */
+
+/**
+ * Check all clock domains against a clock edge and fire matching ones.
+ * @param ts                Test state with DUT context.
+ * @param clock_port_id     IR signal ID of the clock port (-1 for unknown).
+ * @param new_clk_val       Current clock value after toggle (0 or 1).
+ * @param apply_nba_per_domain  If true, apply NBA after each domain (testbench semantics).
+ *                              If false, caller must apply NBA after all domains.
+ */
+static void sim_fire_domains_for_clock(SimTestState *ts, int clock_port_id,
+                                        uint64_t new_clk_val,
+                                        int apply_nba_per_domain) {
+    for (int d = 0; d < ts->dut->module->num_clock_domains; d++) {
+        const IR_ClockDomain *cd = &ts->dut->module->clock_domains[d];
+
+        /* Check if this domain's clock matches */
+        if (clock_port_id >= 0 && cd->clock_signal_id != clock_port_id)
+            continue;
+
+        /* Check edge */
+        int is_active_edge = 0;
+        if (cd->edge == EDGE_RISING && new_clk_val == 1)
+            is_active_edge = 1;
+        else if (cd->edge == EDGE_FALLING && new_clk_val == 0)
+            is_active_edge = 1;
+        else if (cd->edge == EDGE_BOTH)
+            is_active_edge = 1;
+
+        if (!is_active_edge) continue;
+
+        /* Check reset */
+        int reset_active = 0;
+        if (cd->reset_signal_id >= 0) {
+            SimSignalEntry *rst_entry = sim_ctx_lookup(ts->dut, cd->reset_signal_id);
+            if (rst_entry) {
+                uint64_t rst_val = rst_entry->current.val[0] & 1;
+                if (cd->reset_active == RESET_ACTIVE_HIGH && rst_val == 1)
+                    reset_active = 1;
+                else if (cd->reset_active == RESET_ACTIVE_LOW && rst_val == 0)
+                    reset_active = 1;
+            }
+        }
+
+        if (reset_active) {
+            sim_apply_domain_reset(ts->dut, cd);
+        }
+
+        /* Execute synchronous domain logic */
+        sim_exec_sync_domain_with_children(ts->dut, d, reset_active);
+
+        if (apply_nba_per_domain) {
+            sim_ctx_apply_nba(ts->dut);
+        }
+    }
+}
+
 /* ---- Clock advancement ---- */
 
 static void sim_clock_advance(SimTestState *ts, const char *clock_name, int num_cycles) {
@@ -569,85 +839,18 @@ static void sim_clock_advance(SimTestState *ts, const char *clock_name, int num_
         uint64_t cur = ts->tb_wires[clock_idx].value.val[0] & 1;
         ts->tb_wires[clock_idx].value = sim_val_from_uint(cur ^ 1, 1);
 
-        /* Propagate inputs (including clock) to DUT */
+        /* Propagate inputs and settle */
         sim_propagate_inputs(ts);
-
-        /* Settle combinational logic */
         sim_settle_checked(ts);
         sim_resolve_inout_z(ts);
 
-        /* Check for clock edges on each domain */
+        /* Fire matching clock domains (NBA applied per-domain for testbench) */
         uint64_t new_clk = ts->tb_wires[clock_idx].value.val[0] & 1;
+        sim_fire_domains_for_clock(ts, clock_port_id, new_clk, /*apply_nba_per_domain=*/1);
 
-        for (int d = 0; d < ts->dut->module->num_clock_domains; d++) {
-            const IR_ClockDomain *cd = &ts->dut->module->clock_domains[d];
-
-            /* Check if this domain's clock matches */
-            if (clock_port_id >= 0 && cd->clock_signal_id != clock_port_id)
-                continue;
-
-            /* Check edge */
-            int is_active_edge = 0;
-            if (cd->edge == EDGE_RISING && new_clk == 1)
-                is_active_edge = 1;
-            else if (cd->edge == EDGE_FALLING && new_clk == 0)
-                is_active_edge = 1;
-            else if (cd->edge == EDGE_BOTH)
-                is_active_edge = 1;
-
-            if (!is_active_edge) continue;
-
-            /* Check reset */
-            int reset_active = 0;
-            if (cd->reset_signal_id >= 0) {
-                SimSignalEntry *rst_entry = sim_ctx_lookup(ts->dut, cd->reset_signal_id);
-                if (rst_entry) {
-                    uint64_t rst_val = rst_entry->current.val[0] & 1;
-                    if (cd->reset_active == RESET_ACTIVE_HIGH && rst_val == 1)
-                        reset_active = 1;
-                    else if (cd->reset_active == RESET_ACTIVE_LOW && rst_val == 0)
-                        reset_active = 1;
-                }
-            }
-
-            if (reset_active) {
-                /* Force all domain registers to their reset values */
-                for (int r = 0; r < cd->num_registers; r++) {
-                    int reg_id = cd->register_ids[r];
-                    SimSignalEntry *re = sim_ctx_lookup(ts->dut, reg_id);
-                    if (!re) continue;
-
-                    /* Find the signal to get reset value */
-                    for (int s = 0; s < ts->dut->module->num_signals; s++) {
-                        if (ts->dut->module->signals[s].id == reg_id) {
-                            const IR_Signal *sig = &ts->dut->module->signals[s];
-                            if (sig->kind == SIG_REGISTER) {
-                                SimValue rv = sim_val_from_words(
-                                    sig->u.reg.reset_value.words,
-                                    IR_LIT_WORDS,
-                                    sig->u.reg.reset_value.width);
-                                if (rv.width != sig->width)
-                                    rv = sim_val_zext(rv, sig->width);
-                                re->current = rv;
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-
-            /* Execute synchronous domain logic (parent + children) */
-            sim_exec_sync_domain_with_children(ts->dut, d, reset_active);
-
-            /* Apply NBA updates (parent + children recursively) */
-            sim_ctx_apply_nba(ts->dut);
-        }
-
-        /* Settle combinational logic after sync updates */
+        /* Settle after sync updates and propagate outputs */
         sim_settle_checked(ts);
         sim_resolve_inout_z(ts);
-
-        /* Propagate outputs back to tb wires */
         sim_propagate_outputs(ts);
     }
 
@@ -882,7 +1085,7 @@ static int sim_run_test(const JZASTNode *root,
     ts.test_passed = 1;
 
     /* Collect clocks and wires from the testbench level */
-    collect_tb_decls(&ts, tb_node, root);
+    collect_decls(&ts, tb_node, root, JZ_AST_TB_CLOCK_BLOCK, JZ_AST_TB_CLOCK_DECL);
 
     /* Find @new instance in this test */
     const JZASTNode *instance_node = NULL;
@@ -917,10 +1120,7 @@ static int sim_run_test(const JZASTNode *root,
     build_port_bindings(&ts, instance_node, dut_module);
 
     /* Initial propagation */
-    sim_propagate_inputs(&ts);
-    sim_settle_checked(&ts);
-    sim_resolve_inout_z(&ts);
-    sim_propagate_outputs(&ts);
+    sim_full_settle(&ts);
 
     if (verbose) {
         fprintf(stdout, "  --- \"%s\" ---\n",
@@ -968,6 +1168,11 @@ static int sim_run_test(const JZASTNode *root,
 
         case JZ_AST_TB_EXPECT_TRI:
             process_expect_tristate(&ts, child);
+            break;
+
+        case JZ_AST_PRINT:
+        case JZ_AST_PRINT_IF:
+            process_print(&ts, child);
             break;
 
         default:
@@ -1167,104 +1372,6 @@ static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
 }
 
 /**
- * @brief Collect all sim declarations (clocks + wires) using SIM_CLOCK_BLOCK
- *        and TB_WIRE_BLOCK inside a @simulation node.
- */
-static void collect_sim_decls(SimTestState *ts, const JZASTNode *sim_node,
-                               const JZASTNode *root) {
-    int num_clocks = 0, num_wires = 0;
-
-    for (size_t i = 0; i < sim_node->child_count; i++) {
-        const JZASTNode *child = sim_node->children[i];
-        if (!child) continue;
-        if (child->type == JZ_AST_SIM_CLOCK_BLOCK) {
-            for (size_t j = 0; j < child->child_count; j++)
-                if (child->children[j] &&
-                    child->children[j]->type == JZ_AST_SIM_CLOCK_DECL)
-                    num_clocks++;
-        } else if (child->type == JZ_AST_TB_WIRE_BLOCK) {
-            for (size_t j = 0; j < child->child_count; j++) {
-                const JZASTNode *wd = child->children[j];
-                if (!wd || wd->type != JZ_AST_TB_WIRE_DECL) continue;
-                if (wd->block_kind && strcmp(wd->block_kind, "BUS") == 0) {
-                    int arr = wd->width ? (int)strtol(wd->width, NULL, 10) : 1;
-                    if (arr <= 0) arr = 1;
-                    const JZASTNode *bd = find_bus_def(root, wd->text);
-                    num_wires += arr * count_bus_signals(bd);
-                } else {
-                    num_wires++;
-                }
-            }
-        }
-    }
-
-    int total = num_clocks + num_wires;
-    ts->num_tb_wires = total;
-    ts->tb_wires = calloc((size_t)(total > 0 ? total : 1), sizeof(SimTbWire));
-    int idx = 0;
-
-    /* Clocks first */
-    for (size_t i = 0; i < sim_node->child_count; i++) {
-        const JZASTNode *child = sim_node->children[i];
-        if (!child || child->type != JZ_AST_SIM_CLOCK_BLOCK) continue;
-        for (size_t j = 0; j < child->child_count; j++) {
-            const JZASTNode *decl = child->children[j];
-            if (!decl || decl->type != JZ_AST_SIM_CLOCK_DECL) continue;
-            ts->tb_wires[idx].name = decl->name;
-            ts->tb_wires[idx].width = 1;
-            ts->tb_wires[idx].is_clock = 1;
-            ts->tb_wires[idx].value = sim_val_zero(1);
-            idx++;
-        }
-    }
-
-    /* Wires */
-    for (size_t i = 0; i < sim_node->child_count; i++) {
-        const JZASTNode *child = sim_node->children[i];
-        if (!child || child->type != JZ_AST_TB_WIRE_BLOCK) continue;
-        for (size_t j = 0; j < child->child_count; j++) {
-            const JZASTNode *decl = child->children[j];
-            if (!decl || decl->type != JZ_AST_TB_WIRE_DECL) continue;
-
-            if (decl->block_kind && strcmp(decl->block_kind, "BUS") == 0) {
-                int arr = decl->width ? (int)strtol(decl->width, NULL, 10) : 1;
-                if (arr <= 0) arr = 1;
-                const JZASTNode *bdef = find_bus_def(root, decl->text);
-                if (!bdef) continue;
-                for (int ai = 0; ai < arr; ai++) {
-                    for (size_t bi = 0; bi < bdef->child_count; bi++) {
-                        const JZASTNode *bd = bdef->children[bi];
-                        if (!bd || bd->type != JZ_AST_BUS_DECL) continue;
-                        int w = parse_width_text(bd->width);
-                        char namebuf[128];
-                        if (arr > 1)
-                            snprintf(namebuf, sizeof(namebuf), "%s%d_%s",
-                                     decl->name, ai, bd->name);
-                        else
-                            snprintf(namebuf, sizeof(namebuf), "%s_%s",
-                                     decl->name, bd->name);
-                        ts->tb_wires[idx].name = strdup(namebuf);
-                        ts->tb_wires[idx].width = w;
-                        ts->tb_wires[idx].is_clock = 0;
-                        ts->tb_wires[idx].owns_name = 1;
-                        ts->tb_wires[idx].value = sim_val_zero(w);
-                        idx++;
-                    }
-                }
-            } else {
-                int w = parse_width_text(decl->width);
-                ts->tb_wires[idx].name = decl->name;
-                ts->tb_wires[idx].width = w;
-                ts->tb_wires[idx].is_clock = 0;
-                ts->tb_wires[idx].value = sim_val_zero(w);
-                idx++;
-            }
-        }
-    }
-    ts->num_tb_wires = idx;
-}
-
-/**
  * @brief Dump all tracked signals to VCD.
  */
 /* ---- TAP signal tracking ---- */
@@ -1345,7 +1452,7 @@ static int sim_run_simulation(const JZASTNode *root,
     ts.test_passed = 1;
 
     /* Collect clocks and wires */
-    collect_sim_decls(&ts, sim_node, root);
+    collect_decls(&ts, sim_node, root, JZ_AST_SIM_CLOCK_BLOCK, JZ_AST_SIM_CLOCK_DECL);
 
     /* Find @new instance */
     const JZASTNode *instance_node = NULL;
@@ -1386,6 +1493,7 @@ static int sim_run_simulation(const JZASTNode *root,
             tick_ps = gcd64(tick_ps, sim_clocks[i].toggle_ps);
     }
     if (tick_ps == 0) tick_ps = 1000; /* default 1ns */
+    ts.tick_ps = tick_ps;
 
     if (verbose) {
         fprintf(stdout, "Simulation tick resolution: %llu ps\n",
@@ -1507,10 +1615,7 @@ static int sim_run_simulation(const JZASTNode *root,
     }
 
     /* Step 4: propagate and settle */
-    sim_propagate_inputs(&ts);
-    sim_settle_checked(&ts);
-    sim_resolve_inout_z(&ts);
-    sim_propagate_outputs(&ts);
+    sim_full_settle(&ts);
 
     /* Step 5: dump Time 0 */
     vcd_set_time(vcd, 0);
@@ -1532,20 +1637,14 @@ static int sim_run_simulation(const JZASTNode *root,
             }
             /* Subsequent @setup blocks (unusual) — treat like @update */
             process_setup_update(&ts, child, 1);
-            sim_propagate_inputs(&ts);
-            sim_settle_checked(&ts);
-            sim_resolve_inout_z(&ts);
-            sim_propagate_outputs(&ts);
+            sim_full_settle(&ts);
             vcd_set_time(vcd, current_time_ps);
             vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
 
         } else if (child->type == JZ_AST_TB_UPDATE) {
             /* @update: apply wire changes at current time, then settle */
             process_setup_update(&ts, child, 0);
-            sim_propagate_inputs(&ts);
-            sim_settle_checked(&ts);
-            sim_resolve_inout_z(&ts);
-            sim_propagate_outputs(&ts);
+            sim_full_settle(&ts);
             vcd_set_time(vcd, current_time_ps);
             vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
 
@@ -1585,10 +1684,8 @@ static int sim_run_simulation(const JZASTNode *root,
                     }
                 }
 
-                /* Propagate inputs to DUT */
+                /* Propagate inputs and settle combinational */
                 sim_propagate_inputs(&ts);
-
-                /* Settle combinational */
                 sim_settle_checked(&ts);
                 sim_resolve_inout_z(&ts);
 
@@ -1611,64 +1708,12 @@ static int sim_run_simulation(const JZASTNode *root,
                             }
                         }
 
-                        /* Fire matching domains */
-                        for (int d = 0; d < ts.dut->module->num_clock_domains; d++) {
-                            const IR_ClockDomain *cd = &ts.dut->module->clock_domains[d];
-
-                            if (clock_port_id >= 0 && cd->clock_signal_id != clock_port_id)
-                                continue;
-
-                            int is_active = 0;
-                            if (cd->edge == EDGE_RISING && new_clk == 1)
-                                is_active = 1;
-                            else if (cd->edge == EDGE_FALLING && new_clk == 0)
-                                is_active = 1;
-                            else if (cd->edge == EDGE_BOTH)
-                                is_active = 1;
-
-                            if (!is_active) continue;
-
-                            /* Check reset */
-                            int reset_active = 0;
-                            if (cd->reset_signal_id >= 0) {
-                                SimSignalEntry *rst = sim_ctx_lookup(ts.dut, cd->reset_signal_id);
-                                if (rst) {
-                                    uint64_t rv = rst->current.val[0] & 1;
-                                    if (cd->reset_active == RESET_ACTIVE_HIGH && rv == 1)
-                                        reset_active = 1;
-                                    else if (cd->reset_active == RESET_ACTIVE_LOW && rv == 0)
-                                        reset_active = 1;
-                                }
-                            }
-
-                            if (reset_active) {
-                                for (int r = 0; r < cd->num_registers; r++) {
-                                    int reg_id = cd->register_ids[r];
-                                    SimSignalEntry *re = sim_ctx_lookup(ts.dut, reg_id);
-                                    if (!re) continue;
-                                    for (int s = 0; s < ts.dut->module->num_signals; s++) {
-                                        if (ts.dut->module->signals[s].id == reg_id) {
-                                            const IR_Signal *sig = &ts.dut->module->signals[s];
-                                            if (sig->kind == SIG_REGISTER) {
-                                                SimValue rv2 = sim_val_from_words(
-                                                    sig->u.reg.reset_value.words,
-                                                    IR_LIT_WORDS,
-                                                    sig->u.reg.reset_value.width);
-                                                if (rv2.width != sig->width)
-                                                    rv2 = sim_val_zext(rv2, sig->width);
-                                                re->current = rv2;
-                                            }
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            sim_exec_sync_domain_with_children(ts.dut, d, reset_active);
-                        }
+                        /* Fire matching domains (NBA deferred for simulation) */
+                        sim_fire_domains_for_clock(&ts, clock_port_id, new_clk,
+                                                    /*apply_nba_per_domain=*/0);
                     }
 
-                    /* Apply NBA */
+                    /* Apply all NBA updates at once (simulation semantics) */
                     sim_ctx_apply_nba(ts.dut);
 
                     /* Settle again after NBA */
@@ -1683,6 +1728,137 @@ static int sim_run_simulation(const JZASTNode *root,
                 vcd_set_time(vcd, current_time_ps);
                 vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
             }
+        } else if (child->type == JZ_AST_SIM_RUN_UNTIL ||
+                   child->type == JZ_AST_SIM_RUN_WHILE) {
+            /* @run_until / @run_while: advance time with condition check */
+            int is_until = (child->type == JZ_AST_SIM_RUN_UNTIL);
+
+            /* Parse timeout duration */
+            uint64_t timeout_ps;
+            if (child->text && strcmp(child->text, "ticks") == 0) {
+                uint64_t raw = run_to_ps(child);
+                timeout_ps = raw * tick_ps;
+            } else {
+                timeout_ps = run_to_ps(child);
+            }
+
+            /* Get condition: children[0]=signal, children[1]=value, block_kind=op */
+            const JZASTNode *sig_node = (child->child_count > 0) ? child->children[0] : NULL;
+            const JZASTNode *val_node = (child->child_count > 1) ? child->children[1] : NULL;
+            int cond_is_eq = (!child->block_kind || strcmp(child->block_kind, "==") == 0);
+
+            SimValue expected_val = eval_tb_ast_expr(&ts, val_node);
+
+            if (verbose) {
+                fprintf(stdout, "@%s(%s %s ..., timeout=%s=%s) -> %llu ps\n",
+                        is_until ? "run_until" : "run_while",
+                        sig_node && sig_node->name ? sig_node->name : "?",
+                        cond_is_eq ? "==" : "!=",
+                        child->text ? child->text : "?",
+                        child->name ? child->name : "?",
+                        (unsigned long long)timeout_ps);
+            }
+
+            uint64_t end_time_ps = current_time_ps + timeout_ps;
+            int condition_met = 0;
+
+            while (current_time_ps < end_time_ps && !ts.runtime_error) {
+                current_time_ps += tick_ps;
+
+                /* Toggle clocks scheduled at this tick */
+                int any_edge = 0;
+                for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
+                    if (sim_clocks[ci2].toggle_ps > 0 &&
+                        (current_time_ps % sim_clocks[ci2].toggle_ps) == 0) {
+                        int wi = sim_clocks[ci2].tb_wire_idx;
+                        if (wi >= 0) {
+                            uint64_t cur = ts.tb_wires[wi].value.val[0] & 1;
+                            ts.tb_wires[wi].value = sim_val_from_uint(cur ^ 1, 1);
+                            any_edge = 1;
+                        }
+                    }
+                }
+
+                /* Propagate inputs and settle combinational */
+                sim_propagate_inputs(&ts);
+                sim_settle_checked(&ts);
+                sim_resolve_inout_z(&ts);
+
+                /* Fire sync domains for active clock edges */
+                if (any_edge) {
+                    for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
+                        if (sim_clocks[ci2].toggle_ps == 0) continue;
+                        if ((current_time_ps % sim_clocks[ci2].toggle_ps) != 0) continue;
+
+                        int wi = sim_clocks[ci2].tb_wire_idx;
+                        if (wi < 0) continue;
+                        uint64_t new_clk = ts.tb_wires[wi].value.val[0] & 1;
+
+                        int clock_port_id = -1;
+                        for (int b = 0; b < ts.num_bindings; b++) {
+                            if (ts.bindings[b].tb_wire_index == wi) {
+                                clock_port_id = ts.bindings[b].port_signal_id;
+                                break;
+                            }
+                        }
+
+                        sim_fire_domains_for_clock(&ts, clock_port_id, new_clk,
+                                                    /*apply_nba_per_domain=*/0);
+                    }
+
+                    sim_ctx_apply_nba(ts.dut);
+                    sim_settle_checked(&ts);
+                    sim_resolve_inout_z(&ts);
+                }
+
+                sim_propagate_outputs(&ts);
+
+                /* Dump to VCD */
+                vcd_set_time(vcd, current_time_ps);
+                vcd_dump_all(vcd, &ts, vcd_ids, sim_taps, num_sim_taps);
+
+                /* Evaluate condition */
+                SimValue actual = eval_tb_ast_expr(&ts, sig_node);
+                int match;
+                if (cond_is_eq)
+                    match = sim_val_is_true(sim_val_eq(actual, expected_val)) == 1;
+                else
+                    match = sim_val_is_true(sim_val_neq(actual, expected_val)) == 1;
+
+                if (is_until) {
+                    /* @run_until: stop when condition becomes true */
+                    if (match) {
+                        condition_met = 1;
+                        break;
+                    }
+                } else {
+                    /* @run_while: stop when condition becomes false */
+                    if (!match) {
+                        condition_met = 1;
+                        break;
+                    }
+                }
+            }
+
+            if (!condition_met && !ts.runtime_error) {
+                /* Timeout reached without condition being met */
+                char msg[256];
+                snprintf(msg, sizeof(msg),
+                         "    TIMEOUT: @%s(%s %s ...) at %s:%d\n"
+                         "      Condition not met within timeout",
+                         is_until ? "run_until" : "run_while",
+                         sig_node && sig_node->name ? sig_node->name : "?",
+                         cond_is_eq ? "==" : "!=",
+                         filename ? filename : "?",
+                         child->loc.line);
+                record_failure(&ts, msg);
+                ts.num_failed++;
+                ts.runtime_error = 1;
+            }
+        } else if (child->type == JZ_AST_PRINT ||
+                   child->type == JZ_AST_PRINT_IF) {
+            ts.current_time_ps = current_time_ps;
+            process_print(&ts, child);
         }
         /* Skip other node types (CLOCK_BLOCK, WIRE_BLOCK, TAP_BLOCK, etc.) */
     }

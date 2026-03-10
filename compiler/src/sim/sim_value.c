@@ -690,6 +690,24 @@ char *sim_val_to_bin(SimValue v, char *buf, int buflen) {
     return buf;
 }
 
+char *sim_val_to_dec(SimValue v, char *buf, int buflen) {
+    if (buflen < 2) { buf[0] = '\0'; return buf; }
+    if (sim_val_has_xz(v)) {
+        snprintf(buf, (size_t)buflen, "x");
+        return buf;
+    }
+    /* For values that fit in 64 bits, use simple conversion */
+    if (v.width <= 64) {
+        snprintf(buf, (size_t)buflen, "%llu", (unsigned long long)v.val[0]);
+    } else {
+        /* For wider values, fall back to hex representation */
+        snprintf(buf, (size_t)buflen, "0x");
+        int prefix_len = 2;
+        sim_val_to_hex(v, buf + prefix_len, buflen - prefix_len);
+    }
+    return buf;
+}
+
 char *sim_val_format_literal(SimValue v, char *buf, int buflen) {
     char hex[80];
     sim_val_to_hex(v, hex, sizeof(hex));

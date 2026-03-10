@@ -68,27 +68,37 @@ typedef struct SimPortBinding {
     int tb_wire_index;    /* index into tb_wires array */
 } SimPortBinding;
 
-/* ---- Per-test state ---- */
+/* ---- Per-test/simulation state (shared by both systems) ---- */
 
 typedef struct SimTestState {
+    /* Shared: wires and port bindings */
     SimTbWire       *tb_wires;
     int              num_tb_wires;
     SimPortBinding  *bindings;
     int              num_bindings;
     SimContext       *dut;
-    int              test_passed;
-    int              num_expects;
-    int              num_passed;
-    int              num_failed;
+
+    /* Shared: execution control */
     int              verbose;
     int              runtime_error; /* non-zero if z observed; abort test */
-    uint64_t         cycle_count;
     JZDiagnosticList *diagnostics;
     const char       *filename;
-    /* Failure message buffer for reporting */
+
+    /* Shared: failure reporting */
+    int              num_failed;
     char            **failure_msgs;
     int              num_failure_msgs;
     int              cap_failure_msgs;
+
+    /* Shared: time tracking (for @print %tick / %ms) */
+    uint64_t         current_time_ps;  /* simulation time in picoseconds */
+    uint64_t         tick_ps;          /* tick resolution in picoseconds */
+
+    /* Testbench only: assertion tracking */
+    int              test_passed;
+    int              num_expects;
+    int              num_passed;
+    uint64_t         cycle_count;
 } SimTestState;
 
 /* ---- API ---- */
