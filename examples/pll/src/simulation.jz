@@ -1,0 +1,124 @@
+// Simulation for the PLL blinkers example.
+//
+// The blinkers module has 5 counters, each driven by a different clock.
+// In hardware, clocks come from a PLL. For simulation we provide
+// clocks at the approximate PLL output frequencies:
+//   clk1 (SCLK)  = 27 MHz     → period ≈ 37.04 ns
+//   clk2 (CLK_A) = 225 MHz    → period ≈ 4.44 ns
+//   clk3 (CLK_B) = 225 MHz    → period ≈ 4.44 ns (phase shifted in HW)
+//   clk4 (CLK_C) = 56.25 MHz  → period ≈ 17.78 ns
+//   clk5 (CLK_D) = 75 MHz     → period ≈ 13.33 ns
+
+@module blinkers
+    PORT {
+        IN  [1] clk1;
+        IN  [1] clk2;
+        IN  [1] clk3;
+        IN  [1] clk4;
+        IN  [1] clk5;
+        IN  [1] por;
+        IN  [1] rst_n;
+        OUT [5] leds;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        counter_a [27] = 27'b1;
+        counter_b [27] = 27'b1;
+        counter_c [27] = 27'b1;
+        counter_d [27] = 27'b1;
+        counter_e [27] = 27'b1;
+    }
+
+    ASYNCHRONOUS {
+        reset <= por & rst_n;
+        leds[0] <= ~counter_a[26];
+        leds[1] <= ~counter_b[26];
+        leds[2] <= ~counter_c[26];
+        leds[3] <= ~counter_d[26];
+        leds[4] <= ~counter_e[26];
+    }
+
+    SYNCHRONOUS(CLK=clk1 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_a <= counter_a + 27'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk2 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_b <= counter_b + 27'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk3 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_c <= counter_c + 27'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk4 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_d <= counter_d + 27'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk5 RESET=reset RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        counter_e <= counter_e + 27'b1;
+    }
+@endmod
+
+@simulation blinkers
+    CLOCK {
+        clk1 = { period=37.04 };              // 27 MHz (SCLK)
+        clk2 = { period=4.44 };               // 225 MHz (PLL BASE)
+        clk3 = { period=4.44, phase=45 };     // 225 MHz (PLL PHASE, PHASESEL=1 → 45°)
+        clk4 = { period=17.78 };              // 56.25 MHz (PLL DIV)
+        clk5 = { period=13.33 };              // 75 MHz (PLL DIV3)
+    }
+
+    WIRE {
+        por   [1];
+        rst_n [1];
+        leds  [5];
+    }
+
+    TAP {
+        dut.counter_a;
+        dut.counter_b;
+        dut.counter_c;
+        dut.counter_d;
+        dut.counter_e;
+    }
+
+    @new dut blinkers {
+        clk1  [1] = clk1;
+        clk2  [1] = clk2;
+        clk3  [1] = clk3;
+        clk4  [1] = clk4;
+        clk5  [1] = clk5;
+        por   [1] = por;
+        rst_n [1] = rst_n;
+        leds  [5] = leds;
+    }
+
+    // Start with both resets active (low)
+    @setup {
+        por   <= 1'b0;
+        rst_n <= 1'b0;
+    }
+
+    // Hold reset for ~5 slow clock cycles (~185 ns)
+    @run(ns=185)
+
+    // Release POR
+    @update {
+        por <= 1'b1;
+    }
+
+    // Run a few cycles with only POR released
+    @run(ns=185)
+
+    // Release button reset
+    @update {
+        rst_n <= 1'b1;
+    }
+
+    // Run for a while to watch all counters increment
+    @run(ns=1852)
+@endsim

@@ -1333,6 +1333,7 @@ typedef struct SimClock {
     const char *name;
     int         tb_wire_idx;
     uint64_t    toggle_ps;  /* half period in picoseconds */
+    uint64_t    phase_ps;   /* phase offset in picoseconds */
 } SimClock;
 
 static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
@@ -1346,8 +1347,21 @@ static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
             const JZASTNode *cd = child->children[j];
             if (!cd || cd->type != JZ_AST_SIM_CLOCK_DECL) continue;
 
-            /* period is in ns (from text field) */
-            double period_ns = cd->text ? atof(cd->text) : 10.0;
+            /* Parse period and optional phase from text field.
+             * Format: "period=37.04 phase=45" or legacy "37.04" */
+            double period_ns = 10.0;
+            double phase_deg = 0.0;
+            if (cd->text) {
+                const char *pp = strstr(cd->text, "period=");
+                if (pp) {
+                    period_ns = atof(pp + 7);
+                } else {
+                    /* Legacy: bare number is period */
+                    period_ns = atof(cd->text);
+                }
+                const char *ph = strstr(cd->text, "phase=");
+                if (ph) phase_deg = atof(ph + 6);
+            }
             if (period_ns <= 0.0) period_ns = 10.0;
 
             /* Convert to exact integer ps; reject fractional picoseconds */
@@ -1361,11 +1375,19 @@ static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
             uint64_t toggle_ps = period_ps / 2;
             if (toggle_ps == 0) toggle_ps = 1;
 
+            /* Convert phase degrees to picoseconds offset */
+            uint64_t phase_ps = 0;
+            if (phase_deg > 0.0) {
+                double phase_ns = period_ns * (phase_deg / 360.0);
+                time_to_exact_ps(phase_ns, 1000.0, &phase_ps);
+            }
+
             int wi = find_tb_wire(ts, cd->name);
 
             clocks[n].name = cd->name;
             clocks[n].tb_wire_idx = wi;
             clocks[n].toggle_ps = toggle_ps;
+            clocks[n].phase_ps = phase_ps;
             n++;
         }
     }
@@ -1486,13 +1508,15 @@ static int sim_run_simulation(const JZASTNode *root,
     int num_sim_clocks = collect_sim_clocks(sim_node, &ts, sim_clocks, 64);
     if (num_sim_clocks < 0) return 1; /* conversion error already reported */
 
-    /* Compute GCD tick */
+    /* Compute GCD tick (include phase offsets in GCD so tick aligns) */
     uint64_t tick_ps = 0;
     for (int i = 0; i < num_sim_clocks; i++) {
         if (tick_ps == 0)
             tick_ps = sim_clocks[i].toggle_ps;
         else
             tick_ps = gcd64(tick_ps, sim_clocks[i].toggle_ps);
+        if (sim_clocks[i].phase_ps > 0)
+            tick_ps = gcd64(tick_ps, sim_clocks[i].phase_ps);
     }
     if (tick_ps == 0) tick_ps = 1000; /* default 1ns */
     ts.tick_ps = tick_ps;
@@ -1695,7 +1719,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 int any_edge = 0;
                 for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                     if (sim_clocks[ci2].toggle_ps > 0 &&
-                        (current_time_ps % sim_clocks[ci2].toggle_ps) == 0) {
+                        current_time_ps >= sim_clocks[ci2].phase_ps &&
+                        ((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) == 0) {
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi >= 0) {
                             uint64_t cur = ts.tb_wires[wi].value.val[0] & 1;
@@ -1714,7 +1739,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 if (any_edge) {
                     for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                         if (sim_clocks[ci2].toggle_ps == 0) continue;
-                        if ((current_time_ps % sim_clocks[ci2].toggle_ps) != 0) continue;
+                        if (current_time_ps < sim_clocks[ci2].phase_ps) continue;
+                        if (((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) != 0) continue;
 
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi < 0) continue;
@@ -1790,7 +1816,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 int any_edge = 0;
                 for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                     if (sim_clocks[ci2].toggle_ps > 0 &&
-                        (current_time_ps % sim_clocks[ci2].toggle_ps) == 0) {
+                        current_time_ps >= sim_clocks[ci2].phase_ps &&
+                        ((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) == 0) {
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi >= 0) {
                             uint64_t cur = ts.tb_wires[wi].value.val[0] & 1;
@@ -1809,7 +1836,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 if (any_edge) {
                     for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                         if (sim_clocks[ci2].toggle_ps == 0) continue;
-                        if ((current_time_ps % sim_clocks[ci2].toggle_ps) != 0) continue;
+                        if (current_time_ps < sim_clocks[ci2].phase_ps) continue;
+                        if (((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) != 0) continue;
 
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi < 0) continue;

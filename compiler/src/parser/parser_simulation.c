@@ -63,51 +63,65 @@ static int parse_sim_clock_block_body(Parser *p, JZASTNode *parent)
             return -1;
         }
 
-        /* period=<value> */
-        const JZToken *param = peek(p);
-        if (!param->lexeme || strcmp(param->lexeme, "period") != 0) {
+        /* Parse key=value pairs: period=<value> [, phase=<value>] */
+        char attrs_buf[256];
+        attrs_buf[0] = '\0';
+        int have_period = 0;
+
+        while (peek(p)->type != JZ_TOK_RBRACE &&
+               peek(p)->type != JZ_TOK_EOF) {
+            const JZToken *param = peek(p);
+            if (!param->lexeme) {
+                parser_error(p, "expected parameter name in simulation CLOCK declaration");
+                return -1;
+            }
+            const char *param_name = param->lexeme;
+            advance(p);
+
+            if (!match(p, JZ_TOK_OP_ASSIGN)) {
+                parser_error(p, "expected '=' after parameter name in simulation CLOCK declaration");
+                return -1;
+            }
+
+            /* Collect value tokens until ',' or '}' */
+            size_t val_start = p->pos;
+            while (peek(p)->type != JZ_TOK_EOF &&
+                   peek(p)->type != JZ_TOK_RBRACE &&
+                   peek(p)->type != JZ_TOK_COMMA) {
+                advance(p);
+            }
+            size_t val_end = p->pos;
+
+            /* Build value string */
+            char val_buf[64];
+            val_buf[0] = '\0';
+            for (size_t i = val_start; i < val_end; ++i) {
+                const JZToken *vt = &p->tokens[i];
+                if (vt->lexeme) strcat(val_buf, vt->lexeme);
+            }
+
+            /* Append "key=value " to attrs_buf */
+            size_t cur_len = strlen(attrs_buf);
+            snprintf(attrs_buf + cur_len, sizeof(attrs_buf) - cur_len,
+                     "%s%s=%s", cur_len > 0 ? " " : "", param_name, val_buf);
+
+            if (strcmp(param_name, "period") == 0) have_period = 1;
+
+            /* Skip optional comma */
+            if (peek(p)->type == JZ_TOK_COMMA) advance(p);
+        }
+
+        if (!have_period) {
             parser_error(p, "expected 'period=' in simulation CLOCK declaration");
             return -1;
         }
-        advance(p);
-
-        if (!match(p, JZ_TOK_OP_ASSIGN)) {
-            parser_error(p, "expected '=' after 'period' in simulation CLOCK declaration");
-            return -1;
-        }
-
-        /* Collect period value tokens until '}' */
-        size_t val_start = p->pos;
-        while (peek(p)->type != JZ_TOK_EOF &&
-               peek(p)->type != JZ_TOK_RBRACE) {
-            advance(p);
-        }
-        size_t val_end = p->pos;
 
         if (!match(p, JZ_TOK_RBRACE)) {
-            parser_error(p, "expected '}' after period value in simulation CLOCK declaration");
+            parser_error(p, "expected '}' in simulation CLOCK declaration");
             return -1;
         }
 
-        /* Build period text */
-        char *period_text = NULL;
-        if (val_start < val_end) {
-            size_t buf_sz = 0;
-            for (size_t i = val_start; i < val_end; ++i) {
-                const JZToken *vt = &p->tokens[i];
-                if (vt->lexeme) buf_sz += strlen(vt->lexeme) + 1;
-            }
-            if (buf_sz > 0) {
-                period_text = (char *)malloc(buf_sz + 1);
-                if (!period_text) return -1;
-                period_text[0] = '\0';
-                for (size_t i = val_start; i < val_end; ++i) {
-                    const JZToken *vt = &p->tokens[i];
-                    if (!vt->lexeme) continue;
-                    strcat(period_text, vt->lexeme);
-                }
-            }
-        }
+        char *period_text = strdup(attrs_buf);
 
         /* ; */
         if (!match(p, JZ_TOK_SEMICOLON)) {

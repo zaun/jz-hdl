@@ -363,6 +363,14 @@ const char *jz_chip_clock_gen_output_freq_expr(const JZChipData *data,
                                                 const char *selector);
 
 /**
+ * @brief Get the phase offset expression for a clock generator output.
+ * @return Phase expression in degrees (e.g., "PHASESEL * 45"), or NULL.
+ */
+const char *jz_chip_clock_gen_output_phase_expr(const JZChipData *data,
+                                                 const char *type,
+                                                 const char *selector);
+
+/**
  * @brief Get the FCLKIN frequency range for a clock generator type.
  * @param data    Loaded chip data.
  * @param type    Generator type (e.g., "pll").
