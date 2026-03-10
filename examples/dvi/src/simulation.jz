@@ -1,0 +1,587 @@
+// Simulation for the full DVI top module.
+//
+// Exercises dvi_top with all sub-modules: POR, video_timing,
+// 3× TMDS encoder, hbars, vbars, and debounce.
+//
+// Pixel clock = 37.125 MHz → period ≈ 26.94 ns
+// POR module counts 1,048,576 cycles (~28.2 ms) before releasing reset.
+// After POR releases, video timing starts generating scanlines.
+//
+// Timeline:
+//   0 ns        – Assert por=1, rst_n=1, next=1 (button released)
+//   ~28,250 µs  – POR releases, video starts
+//   ~28,340 µs  – 2 scanlines of active video
+//   ~28,400 µs  – Press pattern-switch button
+
+// Power-on-reset module
+@module por
+    PORT {
+        IN  [1] clk;
+        IN  [1] done;
+        OUT [1] por_n;
+    }
+
+    CONST {
+        POR_CYCLES   = 1_048_576;
+        POR_CNT_BITS = clog2(POR_CYCLES);
+        POR_MAX      = POR_CYCLES - 1;
+    }
+
+    REGISTER {
+        por_reg [1] = 1'b0;
+        cnt     [POR_CNT_BITS] = POR_CNT_BITS'b0;
+    }
+
+    ASYNCHRONOUS {
+        por_n <= por_reg;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (done == 1'b0) {
+            por_reg <= 1'b0;
+            cnt <= POR_CNT_BITS'b0;
+        } ELIF (cnt == lit(POR_CNT_BITS, POR_MAX)) {
+            por_reg <= 1'b1;
+            cnt <= cnt;
+        } ELSE {
+            por_reg <= 1'b0;
+            cnt <= cnt + POR_CNT_BITS'b1;
+        }
+    }
+@endmod
+
+// 1280x720 @ 30Hz Video Timing Generator
+@module video_timing
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        OUT [1]  hsync;
+        OUT [1]  vsync;
+        OUT [1]  display_enable;
+        OUT [11] x_pos;
+        OUT [10] y_pos;
+    }
+
+    CONST {
+        H_ACTIVE = 1280;
+        H_FRONT  = 110;
+        H_SYNC   = 40;
+        H_BACK   = 220;
+        H_TOTAL  = 1650;
+
+        V_ACTIVE = 720;
+        V_FRONT  = 5;
+        V_SYNC   = 5;
+        V_BACK   = 20;
+        V_TOTAL  = 750;
+    }
+
+    REGISTER {
+        h_cnt [11] = 11'b0;
+        v_cnt [10] = 10'b0;
+    }
+
+    ASYNCHRONOUS {
+        hsync <= (h_cnt >= lit(11, H_ACTIVE + H_FRONT) &&
+                  h_cnt <  lit(11, H_ACTIVE + H_FRONT + H_SYNC))
+                 ? 1'b1 : 1'b0;
+
+        vsync <= (v_cnt >= lit(10, V_ACTIVE + V_FRONT) &&
+                  v_cnt <  lit(10, V_ACTIVE + V_FRONT + V_SYNC))
+                 ? 1'b1 : 1'b0;
+
+        display_enable <= (h_cnt < lit(11, H_ACTIVE) &&
+                           v_cnt < lit(10, V_ACTIVE))
+                          ? 1'b1 : 1'b0;
+
+        x_pos <= h_cnt;
+        y_pos <= v_cnt;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        IF (h_cnt == lit(11, H_TOTAL - 1)) {
+            h_cnt <= 11'b0;
+            IF (v_cnt == lit(10, V_TOTAL - 1)) {
+                v_cnt <= 10'b0;
+            } ELSE {
+                v_cnt <= v_cnt + 10'b1;
+            }
+        } ELSE {
+            h_cnt <= h_cnt + 11'b1;
+        }
+    }
+@endmod
+
+// DVI TMDS 8b/10b Encoder
+@module tmds_encoder
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [8]  data_in;
+        IN  [1]  c0;
+        IN  [1]  c1;
+        IN  [1]  display_enable;
+        OUT [10] tmds_out;
+    }
+
+    WIRE {
+        d_p0 [2]; d_p1 [2]; d_p2 [2]; d_p3 [2];
+        d_s0 [3]; d_s1 [3];
+        n1_d [4];
+
+        use_xnor [1];
+
+        qm0 [1]; qm1 [1]; qm2 [1]; qm3 [1];
+        qm4 [1]; qm5 [1]; qm6 [1]; qm7 [1];
+        qm8 [1];
+
+        q_p0 [2]; q_p1 [2]; q_p2 [2]; q_p3 [2];
+        q_s0 [3]; q_s1 [3];
+        n1_q [4];
+
+        cnt_is_zero [1];
+        qm_balanced [1];
+        cond1       [1];
+        cnt_sign    [1];
+        cond_inv    [1];
+
+        diff_n1n0 [5];
+        diff_n0n1 [5];
+        qm8_x2    [5];
+        nqm8_x2   [5];
+
+        tmds_data [10];
+        next_cnt  [5];
+    }
+
+    REGISTER {
+        cnt      [5]  = 5'b00000;
+        tmds_reg [10] = 10'b0000000000;
+    }
+
+    ASYNCHRONOUS {
+        tmds_out <= tmds_reg;
+
+        d_p0 <= {1'b0, data_in[0]} + {1'b0, data_in[1]};
+        d_p1 <= {1'b0, data_in[2]} + {1'b0, data_in[3]};
+        d_p2 <= {1'b0, data_in[4]} + {1'b0, data_in[5]};
+        d_p3 <= {1'b0, data_in[6]} + {1'b0, data_in[7]};
+        d_s0 <= {1'b0, d_p0} + {1'b0, d_p1};
+        d_s1 <= {1'b0, d_p2} + {1'b0, d_p3};
+        n1_d <= {1'b0, d_s0} + {1'b0, d_s1};
+
+        use_xnor <= (n1_d > 4'd4 || (n1_d == 4'd4 && data_in[0] == 1'b0))
+                     ? 1'b1 : 1'b0;
+
+        qm0 <= data_in[0];
+        qm1 <= (use_xnor == 1'b1) ? ~(data_in[1] ^ qm0) : (data_in[1] ^ qm0);
+        qm2 <= (use_xnor == 1'b1) ? ~(data_in[2] ^ qm1) : (data_in[2] ^ qm1);
+        qm3 <= (use_xnor == 1'b1) ? ~(data_in[3] ^ qm2) : (data_in[3] ^ qm2);
+        qm4 <= (use_xnor == 1'b1) ? ~(data_in[4] ^ qm3) : (data_in[4] ^ qm3);
+        qm5 <= (use_xnor == 1'b1) ? ~(data_in[5] ^ qm4) : (data_in[5] ^ qm4);
+        qm6 <= (use_xnor == 1'b1) ? ~(data_in[6] ^ qm5) : (data_in[6] ^ qm5);
+        qm7 <= (use_xnor == 1'b1) ? ~(data_in[7] ^ qm6) : (data_in[7] ^ qm6);
+        qm8 <= (use_xnor == 1'b1) ? 1'b0 : 1'b1;
+
+        q_p0 <= {1'b0, qm0} + {1'b0, qm1};
+        q_p1 <= {1'b0, qm2} + {1'b0, qm3};
+        q_p2 <= {1'b0, qm4} + {1'b0, qm5};
+        q_p3 <= {1'b0, qm6} + {1'b0, qm7};
+        q_s0 <= {1'b0, q_p0} + {1'b0, q_p1};
+        q_s1 <= {1'b0, q_p2} + {1'b0, q_p3};
+        n1_q <= {1'b0, q_s0} + {1'b0, q_s1};
+
+        cnt_is_zero <= (cnt == 5'b00000) ? 1'b1 : 1'b0;
+        qm_balanced <= (n1_q == 4'd4) ? 1'b1 : 1'b0;
+        cond1       <= (cnt_is_zero == 1'b1 || qm_balanced == 1'b1)
+                        ? 1'b1 : 1'b0;
+        cnt_sign    <= cnt[4];
+        cond_inv    <= ((cnt_sign == 1'b0 && cnt_is_zero == 1'b0 && n1_q > 4'd4) ||
+                        (cnt_sign == 1'b1 && n1_q < 4'd4))
+                       ? 1'b1 : 1'b0;
+
+        diff_n1n0 <= {n1_q, 1'b0} - 5'd8;
+        diff_n0n1 <= 5'd8 - {n1_q, 1'b0};
+        qm8_x2   <= {3'b000, qm8, 1'b0};
+        nqm8_x2  <= {3'b000, ~qm8, 1'b0};
+
+        IF (cond1 == 1'b1) {
+            IF (qm8 == 1'b0) {
+                tmds_data <= {1'b1, 1'b0, ~qm7, ~qm6, ~qm5, ~qm4,
+                              ~qm3, ~qm2, ~qm1, ~qm0};
+                next_cnt  <= cnt + diff_n0n1;
+            } ELSE {
+                tmds_data <= {1'b0, 1'b1, qm7, qm6, qm5, qm4,
+                              qm3, qm2, qm1, qm0};
+                next_cnt  <= cnt + diff_n1n0;
+            }
+        } ELIF (cond_inv == 1'b1) {
+            tmds_data <= {1'b1, qm8, ~qm7, ~qm6, ~qm5, ~qm4,
+                          ~qm3, ~qm2, ~qm1, ~qm0};
+            next_cnt  <= cnt + qm8_x2 + diff_n0n1;
+        } ELSE {
+            tmds_data <= {1'b0, qm8, qm7, qm6, qm5, qm4,
+                          qm3, qm2, qm1, qm0};
+            next_cnt  <= cnt - nqm8_x2 + diff_n1n0;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        IF (display_enable == 1'b0) {
+            cnt <= 5'b00000;
+            IF (c0 == 1'b0 && c1 == 1'b0) {
+                tmds_reg <= 10'b1101010100;
+            } ELIF (c0 == 1'b1 && c1 == 1'b0) {
+                tmds_reg <= 10'b0010101011;
+            } ELIF (c0 == 1'b0 && c1 == 1'b1) {
+                tmds_reg <= 10'b0101010100;
+            } ELSE {
+                tmds_reg <= 10'b1010101011;
+            }
+        } ELSE {
+            tmds_reg <= tmds_data;
+            cnt <= next_cnt;
+        }
+    }
+@endmod
+
+// Horizontal color bars pattern generator
+@module hbars
+    PORT {
+        IN  [11] x_pos;
+        OUT [8]  red;
+        OUT [8]  green;
+        OUT [8]  blue;
+    }
+
+    ASYNCHRONOUS {
+        IF (x_pos < 11'd256) {
+            red <= 8'hFF; green <= 8'h00; blue <= 8'h00;
+        } ELSE { IF (x_pos < 11'd512) {
+            red <= 8'h00; green <= 8'hFF; blue <= 8'h00;
+        } ELSE { IF (x_pos < 11'd768) {
+            red <= 8'h00; green <= 8'h00; blue <= 8'hFF;
+        } ELSE { IF (x_pos < 11'd1024) {
+            red <= 8'hFF; green <= 8'hFF; blue <= 8'hFF;
+        } ELSE {
+            red <= 8'h00; green <= 8'h00; blue <= 8'h00;
+        } } } }
+    }
+@endmod
+
+// Vertical color bars pattern generator
+@module vbars
+    PORT {
+        IN  [10] y_pos;
+        OUT [8]  red;
+        OUT [8]  green;
+        OUT [8]  blue;
+    }
+
+    ASYNCHRONOUS {
+        IF (y_pos < 10'd144) {
+            red <= 8'hFF; green <= 8'h00; blue <= 8'h00;
+        } ELSE { IF (y_pos < 10'd288) {
+            red <= 8'h00; green <= 8'hFF; blue <= 8'h00;
+        } ELSE { IF (y_pos < 10'd432) {
+            red <= 8'h00; green <= 8'h00; blue <= 8'hFF;
+        } ELSE { IF (y_pos < 10'd576) {
+            red <= 8'hFF; green <= 8'hFF; blue <= 8'hFF;
+        } ELSE {
+            red <= 8'h00; green <= 8'h00; blue <= 8'h00;
+        } } } }
+    }
+@endmod
+
+// Button debounce module
+@module debounce
+    CONST {
+        DEBOUNCE_COUNT = 742500;
+        COUNTER_BITS   = clog2(DEBOUNCE_COUNT);
+        COUNTER_MAX    = DEBOUNCE_COUNT - 1;
+    }
+
+    PORT {
+        IN   [1] clk;
+        IN   [1] rst_n;
+        IN   [1] btn_in;
+        OUT  [1] btn_press;
+    }
+
+    REGISTER {
+        sync1  [1] = 1'b1;
+        sync2  [1] = 1'b1;
+
+        stable    [1]            = 1'b1;
+        counter   [COUNTER_BITS] = COUNTER_BITS'b0;
+
+        stable_prev [1] = 1'b1;
+    }
+
+    ASYNCHRONOUS {
+        btn_press <= stable_prev & ~stable;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        sync1 <= btn_in;
+        sync2 <= sync1;
+
+        stable_prev <= stable;
+
+        IF (sync2 != stable) {
+            IF (counter == lit(COUNTER_BITS, COUNTER_MAX)) {
+                stable  <= sync2;
+                counter <= COUNTER_BITS'b0;
+            } ELSE {
+                counter <= counter + COUNTER_BITS'b1;
+            }
+        } ELSE {
+            counter <= COUNTER_BITS'b0;
+        }
+    }
+@endmod
+
+// DVI top module (warp disabled — no CONFIG context in simulation)
+@module dvi_top
+    PORT {
+        IN   [1]  clk;
+        IN   [1]  por;
+        IN   [1]  rst_n;
+        IN   [1]  next;
+        OUT  [6]  leds;
+        OUT  [10] tmds_clk;
+        OUT  [10] tmds_d0;
+        OUT  [10] tmds_d1;
+        OUT  [10] tmds_d2;
+    }
+
+    WIRE {
+        reset       [1];
+        por_n       [1];
+        hsync       [1];
+        vsync       [1];
+        de          [1];
+        x_pos       [11];
+        y_pos       [10];
+        red         [8];
+        green       [8];
+        blue        [8];
+
+        dvi_tmds_d0 [10];
+        dvi_tmds_d1 [10];
+        dvi_tmds_d2 [10];
+
+        next_press  [1];
+
+        hbar_r  [8];
+        hbar_g  [8];
+        hbar_b  [8];
+        vbar_r  [8];
+        vbar_g  [8];
+        vbar_b  [8];
+    }
+
+    REGISTER {
+        heartbeat_cnt [25] = 25'b0;
+        heartbeat_led [1]  = 1'b0;
+
+        pattern_sel     [2] = 2'b00;
+        pattern_pending [1] = 1'b0;
+
+        vsync_prev [1] = 1'b0;
+
+        tmds_d0_r    [10] = 10'd0;
+        tmds_d1_r    [10] = 10'd0;
+        tmds_d2_r    [10] = 10'd0;
+    }
+
+    @new por0 por {
+        IN  [1] clk   = clk;
+        IN  [1] done  = por;
+        OUT [1] por_n = por_n;
+    }
+
+    @new vt0 video_timing {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        OUT [1]  hsync          = hsync;
+        OUT [1]  vsync          = vsync;
+        OUT [1]  display_enable = de;
+        OUT [11] x_pos          = x_pos;
+        OUT [10] y_pos          = y_pos;
+    }
+
+    @new enc0 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = blue;
+        IN  [1]  c0             = hsync;
+        IN  [1]  c1             = vsync;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d0;
+    }
+
+    @new enc1 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = green;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d1;
+    }
+
+    @new enc2 tmds_encoder {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = red;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d2;
+    }
+
+    @new hb0 hbars {
+        IN  [11] x_pos = x_pos;
+        OUT [8]  red   = hbar_r;
+        OUT [8]  green = hbar_g;
+        OUT [8]  blue  = hbar_b;
+    }
+
+    @new vb0 vbars {
+        IN  [10] y_pos = y_pos;
+        OUT [8]  red   = vbar_r;
+        OUT [8]  green = vbar_g;
+        OUT [8]  blue  = vbar_b;
+    }
+
+    @new db0 debounce {
+        IN  [1] clk       = clk;
+        IN  [1] rst_n     = reset;
+        IN  [1] btn_in    = next;
+        OUT [1] btn_press = next_press;
+    }
+
+    ASYNCHRONOUS {
+        reset <= rst_n & por_n;
+
+        tmds_clk <= 10'b1111100000;
+
+        tmds_d0 <= tmds_d0_r;
+        tmds_d1 <= tmds_d1_r;
+        tmds_d2 <= tmds_d2_r;
+
+        // Pattern mux (warp disabled)
+        IF (pattern_sel == 2'd0) {
+            red   <= hbar_r;
+            green <= hbar_g;
+            blue  <= hbar_b;
+        } ELSE {
+            red   <= vbar_r;
+            green <= vbar_g;
+            blue  <= vbar_b;
+        }
+
+        leds <= ~{ heartbeat_led, 5'b00000 };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        tmds_d0_r <= dvi_tmds_d0;
+        tmds_d1_r <= dvi_tmds_d1;
+        tmds_d2_r <= dvi_tmds_d2;
+
+        vsync_prev <= vsync;
+
+        IF (vsync == 1'b1 && vsync_prev == 1'b0 && pattern_pending == 1'b1) {
+            IF (pattern_sel == 2'd1) {
+                pattern_sel <= 2'd0;
+            } ELSE {
+                pattern_sel <= pattern_sel + 2'd1;
+            }
+            pattern_pending <= 1'b0;
+        } ELIF (next_press == 1'b1) {
+            pattern_pending <= 1'b1;
+        }
+
+        IF (heartbeat_cnt == 25'd33_554_431) {
+            heartbeat_cnt <= 25'b0;
+            heartbeat_led <= ~heartbeat_led;
+        } ELSE {
+            heartbeat_cnt <= heartbeat_cnt + 25'b1;
+        }
+    }
+@endmod
+
+@simulation dvi_top
+    CLOCK {
+        clk = { period=26.94 }; // 37.125 MHz pixel clock
+    }
+
+    WIRE {
+        por    [1];
+        rst_n  [1];
+        next   [1];
+        leds   [6];
+        tmds_clk [10];
+        tmds_d0  [10];
+        tmds_d1  [10];
+        tmds_d2  [10];
+    }
+
+    TAP {
+        dut.por_n;
+        dut.reset;
+        dut.hsync;
+        dut.vsync;
+        dut.de;
+        dut.x_pos;
+        dut.y_pos;
+        dut.red;
+        dut.green;
+        dut.blue;
+        dut.pattern_sel;
+        dut.heartbeat_led;
+        dut.vt0.h_cnt;
+        dut.vt0.v_cnt;
+    }
+
+    @new dut dvi_top {
+        clk      [1]  = clk;
+        por      [1]  = por;
+        rst_n    [1]  = rst_n;
+        next     [1]  = next;
+        leds     [6]  = leds;
+        tmds_clk [10] = tmds_clk;
+        tmds_d0  [10] = tmds_d0;
+        tmds_d1  [10] = tmds_d1;
+        tmds_d2  [10] = tmds_d2;
+    }
+
+    // Start with DONE asserted (POR counting), button reset released,
+    // pattern button released (active-low)
+    @setup {
+        por   <= 1'b1;
+        rst_n <= 1'b1;
+        next  <= 1'b1;
+    }
+
+    // POR needs 1,048,576 cycles × 26.94 ns ≈ 28,249 µs
+    // Run past POR release plus ~3 scanlines (~134 µs)
+    @run(ns=28400000)
+
+    // Press pattern-switch button (active-low)
+    @update {
+        next <= 1'b0;
+    }
+
+    // Hold button for debounce period (not needed for sim, just a pulse)
+    @run(ns=270)
+
+    // Release button
+    @update {
+        next <= 1'b1;
+    }
+
+    // Run a few more scanlines to see pattern switch on next vsync
+    @run(ns=200000)
+@endsim

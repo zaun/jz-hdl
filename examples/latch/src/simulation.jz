@@ -1,0 +1,114 @@
+// Simulation for the latch example.
+//
+// The latch_test module has a 27-bit counter driving 6 LEDs through
+// a D latch. When btn is high, the latch is transparent and passes
+// ~counter[26:21] to display_buffer. When btn goes low, the latch
+// holds its last value.
+
+@module latch_test
+    PORT {
+        IN  [1] clk;
+        IN  [1] por;
+        IN  [1] rst_n;
+        IN  [1] btn;
+        OUT [6] leds;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        counter [27] = 27'b1;
+    }
+
+    LATCH {
+        display_buffer [6] D;
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+
+        display_buffer <= btn : ~counter[26:21];
+        leds <= { btn, display_buffer[4:0] };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        counter <= counter + 27'b1;
+    }
+@endmod
+
+@simulation latch_test
+    CLOCK {
+        clk = { period=37.04 }; // 27 MHz
+    }
+
+    WIRE {
+        por   [1];
+        rst_n [1];
+        btn   [1];
+        leds  [6];
+    }
+
+    TAP {
+        dut.counter;
+        dut.display_buffer;
+    }
+
+    @new dut latch_test {
+        clk   [1] = clk;
+        por   [1] = por;
+        rst_n [1] = rst_n;
+        btn   [1] = btn;
+        leds  [6] = leds;
+    }
+
+    // Start with resets active, button released
+    @setup {
+        por   <= 1'b0;
+        rst_n <= 1'b0;
+        btn   <= 1'b0;
+    }
+
+    // Hold reset for ~5 clock cycles
+    @run(ns=185)
+
+    // Release resets
+    @update {
+        por   <= 1'b1;
+        rst_n <= 1'b1;
+    }
+
+    // Let counter run for a while
+    @run(ns=500)
+
+    // Press button - latch becomes transparent
+    @update {
+        btn <= 1'b1;
+    }
+
+    // Hold button while counter increments
+    @run(ns=370)
+
+    // Release button - latch holds value
+    @update {
+        btn <= 1'b0;
+    }
+
+    // Counter continues but latch should hold
+    @run(ns=500)
+
+    // Press button again to capture new value
+    @update {
+        btn <= 1'b1;
+    }
+
+    @run(ns=185)
+
+    // Release again
+    @update {
+        btn <= 1'b0;
+    }
+
+    @run(ns=500)
+@endsim
