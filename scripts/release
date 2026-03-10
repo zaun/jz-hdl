@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Create a release: update version, tag, and build source + PDF tarballs.
+# Create a release: update version, build, test, tag, and package tarballs.
 # Usage: scripts/release <version>
 #   e.g. scripts/release 1.0.0
 
@@ -54,17 +54,10 @@ for spec in "$REPO_ROOT"/specification/*.md; do
   sed -i '' "s/Version: [0-9][0-9.]*/Version: ${VERSION}/" "$spec"
 done
 
-# Commit version bump
-git -C "$REPO_ROOT" add \
-  compiler/CMakeLists.txt \
-  compiler/include/version.h \
-  specification/
-git -C "$REPO_ROOT" commit -m "Bump version to ${VERSION}"
-
 # ---------------------------------------------------------------------------
-# 2. Build and test
+# 2. Build (includes PDFs) and test
 # ---------------------------------------------------------------------------
-echo "==> Building compiler and running tests..."
+echo "==> Building compiler, PDFs, and running tests..."
 
 BUILD_DIR="$(mktemp -d)"
 cmake -S "$REPO_ROOT/compiler" -B "$BUILD_DIR" -DBUILD_TESTING=ON
@@ -74,8 +67,8 @@ echo "==> Running CTest..."
 if ! ctest --test-dir "$BUILD_DIR" --output-on-failure; then
   echo "Error: CTest tests failed. Aborting release."
   rm -rf "$BUILD_DIR"
-  # Undo the version bump commit
-  git -C "$REPO_ROOT" reset --hard HEAD~1
+  # Undo version changes
+  git -C "$REPO_ROOT" checkout -- .
   exit 1
 fi
 
@@ -83,20 +76,33 @@ echo "==> Running validation tests..."
 if ! JZ_HDL_BIN="$BUILD_DIR/jz-hdl" bash "$REPO_ROOT/compiler/tests/run_validation.sh"; then
   echo "Error: Validation tests failed. Aborting release."
   rm -rf "$BUILD_DIR"
-  git -C "$REPO_ROOT" reset --hard HEAD~1
+  git -C "$REPO_ROOT" checkout -- .
   exit 1
 fi
 
 rm -rf "$BUILD_DIR"
 
 # ---------------------------------------------------------------------------
-# 3. Tag the release
+# 3. Commit version bump and updated PDFs
+# ---------------------------------------------------------------------------
+echo "==> Committing version bump and PDFs..."
+
+git -C "$REPO_ROOT" add \
+  compiler/CMakeLists.txt \
+  compiler/include/version.h \
+  specification/ \
+  docs/public/pdf/
+
+git -C "$REPO_ROOT" commit -m "Bump version to ${VERSION}"
+
+# ---------------------------------------------------------------------------
+# 4. Tag the release
 # ---------------------------------------------------------------------------
 echo "==> Tagging v${VERSION}..."
 git -C "$REPO_ROOT" tag -a "v${VERSION}" -m "Release v${VERSION}"
 
 # ---------------------------------------------------------------------------
-# 4. Build source tarball
+# 5. Build source tarball
 # ---------------------------------------------------------------------------
 echo "==> Building source tarball..."
 mkdir -p "$RELEASE_DIR"
@@ -108,24 +114,19 @@ git -C "$REPO_ROOT" archive \
   "v${VERSION}"
 
 # ---------------------------------------------------------------------------
-# 5. Build PDF tarball
+# 6. Build PDF tarball from committed PDFs
 # ---------------------------------------------------------------------------
-echo "==> Building PDFs..."
-
-BUILD_DIR="$(mktemp -d)"
-cmake -S "$REPO_ROOT/compiler" -B "$BUILD_DIR" -DBUILD_TESTING=OFF
-cmake --build "$BUILD_DIR" --target docs
+echo "==> Building PDF tarball..."
 
 PDF_STAGING="$(mktemp -d)/jz-hdl-${VERSION}-docs"
 mkdir -p "$PDF_STAGING"
-cp "$BUILD_DIR"/*.pdf "$PDF_STAGING/"
+cp "$REPO_ROOT"/docs/public/pdf/*.pdf "$PDF_STAGING/"
 
-echo "==> Building PDF tarball..."
 tar -czf "$RELEASE_DIR/jz-hdl-${VERSION}-docs.tar.gz" \
   -C "$(dirname "$PDF_STAGING")" \
   "$(basename "$PDF_STAGING")"
 
-rm -rf "$BUILD_DIR" "$(dirname "$PDF_STAGING")"
+rm -rf "$(dirname "$PDF_STAGING")"
 
 # ---------------------------------------------------------------------------
 # Done
@@ -137,4 +138,7 @@ echo "  $RELEASE_DIR/jz-hdl-${VERSION}-docs.tar.gz"
 echo ""
 echo "To publish:"
 echo "  git push origin main --tags"
-echo "  # Then create a GitHub release and attach the tarballs"
+echo "  gh release create v${VERSION} \\"
+echo "    release/jz-hdl-${VERSION}-source.tar.gz \\"
+echo "    release/jz-hdl-${VERSION}-docs.tar.gz \\"
+echo "    --title \"v${VERSION}\" --notes \"Release v${VERSION}\""
