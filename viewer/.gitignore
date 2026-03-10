@@ -1,0 +1,46 @@
+# Build directories
+/build/
+/build-*/
+/out/
+/bin/
+/obj/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+install_manifest.txt
+Testing/
+
+# Compiled object files and libraries
+*.o
+*.lo
+*.la
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+
+# Generated coverage and profiling data
+*.gcno
+*.gcda
+*.gcov
+*.profraw
+*.profdata
+
+# Editor/OS-specific files
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
