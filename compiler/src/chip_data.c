@@ -91,7 +91,7 @@ static char *jz_build_chip_json_path(const char *project_filename,
     }
 
     size_t chip_len = strlen(chip_id);
-    size_t total = dir_len + 1 + chip_len + 5;
+    size_t total = dir_len + 1 + chip_len + 5 + 1;
     char *out = (char *)malloc(total);
     if (!out) return NULL;
 
