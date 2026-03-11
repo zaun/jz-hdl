@@ -659,7 +659,8 @@ int main(int argc, char **argv)
         ImGui::Begin("##Sidebar", nullptr,
                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
-                     ImGuiWindowFlags_NoBringToFrontOnFocus);
+                     ImGuiWindowFlags_NoBringToFrontOnFocus |
+                     ImGuiWindowFlags_NoScrollWithMouse);
 
         /* Reserve space for the ruler row to match the waveform area */
         float sidebar_start_y = ImGui::GetCursorPosY() + 20.0f; /* 20 = ruler_h */
@@ -810,21 +811,22 @@ int main(int argc, char **argv)
             }
         }
 
-        /* Set total content height so scrollbar appears */
-        float total_rows_h = sidebar_start_y + row_idx * row_height + ImGui::GetStyle().WindowPadding.y;
-        ImGui::SetCursorPosY(total_rows_h);
+        int total_row_count = row_idx + 1; /* +1 for empty padding row at bottom */
+
+        /* Set content height large enough that ImGui won't clamp our scroll_y.
+         * We manage scroll_y ourselves for perfect sidebar/waveform sync. */
+        float max_scroll_y = total_row_count * row_height - content_h + 40.0f;
+        if (max_scroll_y < 0) max_scroll_y = 0;
+        ImGui::SetCursorPosY(content_h + max_scroll_y);
         ImGui::Dummy(ImVec2(1, 0));
 
-        /* Sync vertical scroll */
+        /* Handle mouse wheel over sidebar with same scroll logic as waveform */
         if (ImGui::IsWindowHovered() && io.MouseWheel != 0.0f) {
-            /* Sidebar is being scrolled - read its position as source of truth */
-            scroll_y = ImGui::GetScrollY();
-        } else {
-            /* Otherwise push our scroll_y into the sidebar */
-            ImGui::SetScrollY(scroll_y);
+            scroll_y -= io.MouseWheel * row_height;
+            if (scroll_y < 0) scroll_y = 0;
+            if (scroll_y > max_scroll_y) scroll_y = max_scroll_y;
         }
-
-        int total_row_count = row_idx + 1; /* +1 for empty padding row at bottom */
+        ImGui::SetScrollY(scroll_y);
 
         ImGui::End();
 
