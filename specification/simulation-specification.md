@@ -388,6 +388,84 @@ The `@trace` directive controls whether signal value changes are recorded to the
 | TRC-001 | `@trace` state must be `on` or `off` |
 | TRC-002 | `@trace` may not appear inside `@setup` or `@update` blocks |
 
+### 4.10 @mark (Waveform Marker)
+
+**Syntax:**
+```text
+@mark(<color>)
+@mark(<color>, "<message>")
+```
+
+The `@mark` directive creates a global marker annotation at the current simulation time. Marks are unconditional — they fire exactly once at the point where they appear in the simulation sequence.
+
+- `<color>` is a color name (one of: `RED`, `ORANGE`, `YELLOW`, `GREEN`, `BLUE`, `PURPLE`, `CYAN`, `WHITE`). Case-insensitive in source, stored as uppercase.
+- `<message>` is an optional string literal describing the marker.
+- Marks are written to the JZW annotations table with `type="mark"`, `signal_id=NULL` (global), and the specified color and message.
+- Marks have no effect on VCD or FST output.
+
+**Example:**
+```text
+@update {
+    rst_n <= 1'b1;
+}
+@mark(GREEN, "Reset released")
+
+@run(ns=100)
+
+@update {
+    wr_en <= 1'b1;
+}
+@mark(BLUE, "Write burst start")
+
+@run(ns=50)
+```
+
+**Viewer behavior:** Marks are displayed as vertical lines at the marked time in the specified color, with an icon at the bottom. Hovering the icon shows the message.
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| MRK-001 | `@mark` may not appear inside `@setup`, `@update`, or `@new` blocks |
+| MRK-002 | Color name must be one of the predefined names |
+
+### 4.11 @alert (Conditional Alert)
+
+**Syntax:**
+```text
+@alert(<condition>, <color>)
+@alert(<condition>, <color>, "<message>")
+```
+
+The `@alert` directive registers a conditional alert that is evaluated at every tick during subsequent `@run`, `@run_until`, and `@run_while` execution. When the condition is true (non-zero), an annotation is written to the JZW file.
+
+- `<condition>` is a testbench `WIRE` identifier or hierarchical signal reference. If the signal is multi-bit, it is truthy if any bit is `1`.
+- `<color>` is a color name (one of: `RED`, `ORANGE`, `YELLOW`, `GREEN`, `BLUE`, `PURPLE`, `CYAN`, `WHITE`).
+- `<message>` is an optional string literal describing the alert.
+- Once registered, the alert remains active for all subsequent `@run` directives in the simulation. Multiple `@alert` directives may be active simultaneously.
+- If the condition is true on consecutive ticks, an annotation is created for each tick.
+- Alerts are written to the JZW annotations table with `type="alert"`, `signal_id=NULL`, and the specified color and message.
+- Alerts have no effect on VCD or FST output.
+
+**Example:**
+```text
+@alert(full, RED, "FIFO full")
+@alert(overflow, RED)
+
+@run(ns=1000)
+// Alerts fire on any tick where full==1 or overflow==1
+```
+
+**Viewer behavior:** Alert annotations are displayed as small chevron markers (^) at the bottom of the waveform area at the alert time. Hovering shows the message.
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| ALT-001 | `@alert` may not appear inside `@setup`, `@update`, or `@new` blocks |
+| ALT-002 | `@alert` condition must reference a signal in scope (declared in `WIRE`, `CLOCK`, or `TAP`) |
+| ALT-003 | Color name must be one of the predefined names |
+
 ---
 
 ## 5. CLI USAGE

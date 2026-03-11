@@ -140,6 +140,8 @@ typedef enum JZASTNodeType {
     JZ_AST_PRINT,                   /**< \@print directive. text=format_string, children=args. */
     JZ_AST_PRINT_IF,                /**< \@print_if directive. text=format_string, children[0]=condition, children[1..]=args. */
     JZ_AST_SIM_TRACE,               /**< \@trace(state=on/off) directive. name="on" or "off". */
+    JZ_AST_SIM_MARK,                /**< \@mark(color, "message") directive. text=color, name=message. */
+    JZ_AST_SIM_ALERT,               /**< \@alert(condition, color, "message") directive. children[0]=condition, text=color, name=message. */
 } JZASTNodeType;
 
 typedef struct JZASTNode JZASTNode;

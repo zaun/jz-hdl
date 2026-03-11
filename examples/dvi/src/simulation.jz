@@ -557,6 +557,10 @@
         tmds_d2  [10] = tmds_d2;
     }
 
+    // Alert when hsync or vsync is active
+    @alert(dut.hsync, CYAN, "HSYNC pulse")
+    @alert(dut.vsync, PURPLE, "VSYNC pulse")
+
     // Start with DONE asserted (POR counting), button reset released,
     // pattern button released (active-low)
     @setup {
@@ -570,6 +574,7 @@
     @trace(state=off)
     @run(ns=28200000)
     @trace(state=on)
+    @mark(GREEN, "POR complete, video starts")
 
     // Run ~3 scanlines of active video
     @run(ns=200000)
@@ -578,6 +583,7 @@
     @update {
         next <= 1'b0;
     }
+    @mark(YELLOW, "Button pressed")
 
     // Hold button for debounce period (not needed for sim, just a pulse)
     @run(ns=270)
@@ -586,6 +592,7 @@
     @update {
         next <= 1'b1;
     }
+    @mark(YELLOW, "Button released")
 
     // Run a few more scanlines to see pattern switch on next vsync
     @run(ns=200000)

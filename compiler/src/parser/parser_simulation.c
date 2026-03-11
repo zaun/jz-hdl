@@ -375,6 +375,117 @@ JZASTNode *parse_print_directive(Parser *p, int is_print_if)
 }
 
 /**
+ * @brief Parse @mark(color) or @mark(color, "message") directive.
+ *
+ * The @mark keyword has already been consumed.
+ */
+static JZASTNode *parse_sim_mark(Parser *p)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1];
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, "expected '(' after @mark");
+        return NULL;
+    }
+
+    /* Color name (identifier) */
+    const JZToken *color_tok = peek(p);
+    if (color_tok->type != JZ_TOK_IDENTIFIER) {
+        parser_error(p, "expected color name in @mark");
+        return NULL;
+    }
+    const char *color = color_tok->lexeme;
+    advance(p);
+
+    /* Optional message string */
+    const char *message = NULL;
+    if (peek(p)->type == JZ_TOK_COMMA) {
+        advance(p); /* skip comma */
+        const JZToken *msg_tok = peek(p);
+        if (msg_tok->type != JZ_TOK_STRING) {
+            parser_error(p, "expected string literal for @mark message");
+            return NULL;
+        }
+        message = msg_tok->lexeme;
+        advance(p);
+    }
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @mark(...)");
+        return NULL;
+    }
+
+    JZASTNode *node = jz_ast_new(JZ_AST_SIM_MARK, kw->loc);
+    jz_ast_set_text(node, color);
+    if (message) jz_ast_set_name(node, message);
+    return node;
+}
+
+/**
+ * @brief Parse @alert(condition, color) or @alert(condition, color, "message").
+ *
+ * The @alert keyword has already been consumed.
+ */
+static JZASTNode *parse_sim_alert(Parser *p)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1];
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, "expected '(' after @alert");
+        return NULL;
+    }
+
+    /* Condition: signal reference (identifier, possibly dotted) */
+    JZASTNode *cond = parse_expression(p);
+    if (!cond) {
+        parser_error(p, "expected condition expression in @alert");
+        return NULL;
+    }
+
+    if (!match(p, JZ_TOK_COMMA)) {
+        parser_error(p, "expected ',' after @alert condition");
+        jz_ast_free(cond);
+        return NULL;
+    }
+
+    /* Color name (identifier) */
+    const JZToken *color_tok = peek(p);
+    if (color_tok->type != JZ_TOK_IDENTIFIER) {
+        parser_error(p, "expected color name in @alert");
+        jz_ast_free(cond);
+        return NULL;
+    }
+    const char *color = color_tok->lexeme;
+    advance(p);
+
+    /* Optional message string */
+    const char *message = NULL;
+    if (peek(p)->type == JZ_TOK_COMMA) {
+        advance(p); /* skip comma */
+        const JZToken *msg_tok = peek(p);
+        if (msg_tok->type != JZ_TOK_STRING) {
+            parser_error(p, "expected string literal for @alert message");
+            jz_ast_free(cond);
+            return NULL;
+        }
+        message = msg_tok->lexeme;
+        advance(p);
+    }
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @alert(...)");
+        jz_ast_free(cond);
+        return NULL;
+    }
+
+    JZASTNode *node = jz_ast_new(JZ_AST_SIM_ALERT, kw->loc);
+    jz_ast_set_text(node, color);
+    if (message) jz_ast_set_name(node, message);
+    jz_ast_add_child(node, cond);
+    return node;
+}
+
+/**
  * @brief Parse @trace(state=on/off) directive.
  *
  * Syntax: @trace(state=on) or @trace(state=off)
@@ -1106,6 +1217,16 @@ JZASTNode *parse_simulation(Parser *p)
             JZASTNode *tr = parse_sim_trace(p);
             if (!tr) { jz_ast_free(sim); return NULL; }
             jz_ast_add_child(sim, tr);
+        } else if (t->type == JZ_TOK_KW_MARK) {
+            advance(p);
+            JZASTNode *mk = parse_sim_mark(p);
+            if (!mk) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, mk);
+        } else if (t->type == JZ_TOK_KW_ALERT) {
+            advance(p);
+            JZASTNode *al = parse_sim_alert(p);
+            if (!al) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, al);
         } else {
             parser_error(p, "unexpected token in @simulation block");
             jz_ast_free(sim);

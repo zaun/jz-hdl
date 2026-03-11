@@ -131,6 +131,8 @@ static const char *node_type_name(JZASTNodeType t) {
     case JZ_AST_PRINT:                 return "Print";
     case JZ_AST_PRINT_IF:              return "PrintIf";
     case JZ_AST_SIM_TRACE:             return "SimTrace";
+    case JZ_AST_SIM_MARK:              return "SimMark";
+    case JZ_AST_SIM_ALERT:             return "SimAlert";
 
     default:
         return "Unknown";

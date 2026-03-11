@@ -240,7 +240,8 @@ static SimValue eval_tb_ast_expr(SimTestState *ts, const JZASTNode *node) {
         return parse_literal_to_simval(node->text);
     }
 
-    if (node->type == JZ_AST_EXPR_IDENTIFIER) {
+    if (node->type == JZ_AST_EXPR_IDENTIFIER ||
+        node->type == JZ_AST_EXPR_QUALIFIED_IDENTIFIER) {
         int idx = find_tb_wire(ts, node->name);
         if (idx >= 0) return ts->tb_wires[idx].value;
         return sim_val_all_x(1);
@@ -1693,6 +1694,11 @@ static int sim_run_simulation(const JZASTNode *root,
     /* Trace state: on by default */
     int trace_enabled = 1;
 
+    /* Collect @alert nodes for per-tick evaluation during @run */
+    const JZASTNode **alert_nodes = NULL;
+    int num_alerts = 0;
+    int cap_alerts = 0;
+
     /* Walk simulation body sequentially (skip the @setup we already ran) */
     int setup_done = 0;
     for (size_t ci = 0; ci < sim_node->child_count; ci++) {
@@ -1812,6 +1818,28 @@ static int sim_run_simulation(const JZASTNode *root,
                     wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
                     PERF_TIMER_STOP(PERF_WAVEFORM_DUMP);
                 }
+
+                /* Evaluate @alert conditions */
+                for (int ai = 0; ai < num_alerts; ai++) {
+                    const JZASTNode *an = alert_nodes[ai];
+                    if (an->child_count < 1) continue;
+                    const JZASTNode *cond_node = an->children[0];
+                    SimValue cond = eval_tb_ast_expr(&ts, cond_node);
+                    /* If not found in tb_wires, try TAP signals */
+                    if (cond.xmask[0] != 0 && cond_node->name) {
+                        for (int ti = 0; ti < num_sim_taps; ti++) {
+                            if (strcmp(sim_taps[ti].full_path, cond_node->name) == 0) {
+                                SimSignalEntry *se = sim_ctx_lookup(ts.dut, sim_taps[ti].signal_id);
+                                if (se) cond = se->current;
+                                break;
+                            }
+                        }
+                    }
+                    if (sim_val_is_true(cond) == 1) {
+                        sim_wave_add_annotation(wave, current_time_ps, "alert",
+                                                 -1, an->name, an->text, 0);
+                    }
+                }
             }
         } else if (child->type == JZ_AST_SIM_RUN_UNTIL ||
                    child->type == JZ_AST_SIM_RUN_WHILE) {
@@ -1911,6 +1939,17 @@ static int sim_run_simulation(const JZASTNode *root,
                     PERF_TIMER_STOP(PERF_WAVEFORM_DUMP);
                 }
 
+                /* Evaluate @alert conditions */
+                for (int ai = 0; ai < num_alerts; ai++) {
+                    const JZASTNode *an = alert_nodes[ai];
+                    if (an->child_count < 1) continue;
+                    SimValue acond = eval_tb_ast_expr(&ts, an->children[0]);
+                    if (sim_val_is_true(acond) == 1) {
+                        sim_wave_add_annotation(wave, current_time_ps, "alert",
+                                                 -1, an->name, an->text, 0);
+                    }
+                }
+
                 /* Evaluate condition */
                 SimValue actual = eval_tb_ast_expr(&ts, sig_node);
                 int match;
@@ -1976,6 +2015,40 @@ static int sim_run_simulation(const JZASTNode *root,
             }
 
             trace_enabled = new_state;
+
+        } else if (child->type == JZ_AST_SIM_MARK) {
+            /* @mark: write a mark annotation at current time */
+            const char *color = child->text;
+            const char *message = child->name; /* may be NULL */
+
+            if (verbose) {
+                fprintf(stdout, "@mark(%s%s%s) at %llu ps\n",
+                        color ? color : "?",
+                        message ? ", " : "",
+                        message ? message : "",
+                        (unsigned long long)current_time_ps);
+            }
+
+            sim_wave_add_annotation(wave, current_time_ps, "mark",
+                                     -1, message, color, 0);
+
+        } else if (child->type == JZ_AST_SIM_ALERT) {
+            /* @alert: register for per-tick evaluation during @run */
+            if (num_alerts >= cap_alerts) {
+                cap_alerts = cap_alerts ? cap_alerts * 2 : 8;
+                alert_nodes = (const JZASTNode **)realloc(
+                    (void *)alert_nodes,
+                    cap_alerts * sizeof(const JZASTNode *));
+            }
+            alert_nodes[num_alerts++] = child;
+
+            if (verbose) {
+                fprintf(stdout, "@alert registered (%s%s%s) at line %d\n",
+                        child->text ? child->text : "?",
+                        child->name ? ", " : "",
+                        child->name ? child->name : "",
+                        child->loc.line);
+            }
         }
         /* Skip other node types (CLOCK_BLOCK, WIRE_BLOCK, TAP_BLOCK, etc.) */
     }
@@ -1997,6 +2070,7 @@ static int sim_run_simulation(const JZASTNode *root,
     /* Cleanup */
     free(wave_ids);
     free(sim_taps);
+    free((void *)alert_nodes);
     sim_wave_close(wave);
 
 cleanup_dut:

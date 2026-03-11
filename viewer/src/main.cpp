@@ -30,13 +30,24 @@ struct ValueChange {
     std::string value;
 };
 
+struct Annotation {
+    int64_t     time;
+    std::string type;       /* "mark", "alert", "trace" */
+    int         signal_id;  /* -1 for global */
+    std::string message;
+    std::string color;
+    int64_t     end_time;   /* 0 if not a range */
+};
+
 struct JZWFile {
     std::string                          filename;
     std::string                          module_name;
     int64_t                              sim_end_time = 0;
+    int64_t                              display_start_time = 0; /* first trace=on time */
     int64_t                              tick_ps = 1;
     std::vector<Signal>                  signals;
     std::map<int, std::vector<ValueChange>> changes; /* signal_id -> changes */
+    std::vector<Annotation>              annotations;
 
     bool load(const char *path);
     const char *value_at(int signal_id, int64_t time) const;
@@ -103,7 +114,49 @@ bool JZWFile::load(const char *path)
         sqlite3_finalize(stmt);
     }
 
+    /* Read annotations */
+    {
+        sqlite3_stmt *stmt;
+        int rc = sqlite3_prepare_v2(db,
+            "SELECT time, type, signal_id, message, color, end_time "
+            "FROM annotations ORDER BY time",
+            -1, &stmt, nullptr);
+        if (rc == SQLITE_OK) {
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                Annotation a;
+                a.time      = sqlite3_column_int64(stmt, 0);
+                a.type      = (const char *)sqlite3_column_text(stmt, 1);
+                a.signal_id = sqlite3_column_type(stmt, 2) == SQLITE_NULL
+                              ? -1 : sqlite3_column_int(stmt, 2);
+                const char *msg = (const char *)sqlite3_column_text(stmt, 3);
+                a.message   = msg ? msg : "";
+                const char *col = (const char *)sqlite3_column_text(stmt, 4);
+                a.color     = col ? col : "";
+                a.end_time  = sqlite3_column_type(stmt, 5) == SQLITE_NULL
+                              ? 0 : sqlite3_column_int64(stmt, 5);
+                annotations.push_back(a);
+            }
+            sqlite3_finalize(stmt);
+        }
+    }
+
     sqlite3_close(db);
+
+    /* Compute display_start_time: if trace starts off, skip to first trace=on */
+    {
+        bool trace_off_at_start = false;
+        for (const auto &a : annotations) {
+            if (a.type == "trace") {
+                if (a.time == 0 && a.message == "off") {
+                    trace_off_at_start = true;
+                } else if (trace_off_at_start && a.message == "on") {
+                    display_start_time = a.time;
+                    break;
+                }
+            }
+        }
+    }
+
     return true;
 }
 
@@ -198,6 +251,21 @@ static void format_value(char *buf, size_t bufsz, const char *binval, int width)
         snprintf(buf, bufsz, "0x%llX", (unsigned long long)val);
 }
 
+/* ---- Annotation color mapping ---- */
+
+static ImU32 annotation_color(const std::string &name)
+{
+    if (name == "RED")    return IM_COL32(255, 80, 80, 255);
+    if (name == "ORANGE") return IM_COL32(255, 160, 50, 255);
+    if (name == "YELLOW") return IM_COL32(255, 255, 80, 255);
+    if (name == "GREEN")  return IM_COL32(80, 220, 80, 255);
+    if (name == "BLUE")   return IM_COL32(80, 140, 255, 255);
+    if (name == "PURPLE") return IM_COL32(180, 100, 255, 255);
+    if (name == "CYAN")   return IM_COL32(80, 220, 220, 255);
+    if (name == "WHITE")  return IM_COL32(220, 220, 220, 255);
+    return IM_COL32(180, 180, 180, 255); /* default gray */
+}
+
 /* ---- Drawing waveforms ---- */
 
 static ImU32 signal_color(const Signal &sig)
@@ -235,6 +303,9 @@ static void draw_waveform(ImDrawList *dl, const Signal &sig,
         return best;
     };
 
+    /* Minimum time span per pixel — used for decimation */
+    int64_t ps_per_2px = (int64_t)(ps_per_px * 2.0);
+
     if (sig.width == 1) {
         /* Digital waveform: step transitions */
         int start_idx = find_start();
@@ -244,6 +315,45 @@ static void draw_waveform(ImDrawList *dl, const Signal &sig,
 
             int64_t t0 = vc[i].time;
             int64_t t1 = (i + 1 < (int)vc.size()) ? vc[i + 1].time : t_end;
+
+            /* Decimation: if many transitions fit in < 2 pixels, draw a filled
+               bar to represent activity and skip ahead */
+            if (i + 2 < (int)vc.size() && (vc[i + 2].time - t0) < ps_per_2px) {
+                /* Find the extent of this dense cluster */
+                int64_t cluster_start = t0;
+                int j = i;
+                while (j + 1 < (int)vc.size() &&
+                       (vc[j + 1].time - vc[j].time) < ps_per_2px) {
+                    j++;
+                    if (vc[j].time > t_end) break;
+                }
+                int64_t cluster_end = vc[j].time;
+                int64_t next_t = (j + 1 < (int)vc.size()) ? vc[j + 1].time : t_end;
+                if (cluster_end < t_start) cluster_start = t_start;
+
+                float cx1 = x0 + (float)((std::max(cluster_start, t_start) - scroll_ps) / ps_per_px);
+                float cx2 = x0 + (float)((std::min(cluster_end, t_end) - scroll_ps) / ps_per_px);
+                if (cx2 - cx1 < 1.0f) cx2 = cx1 + 1.0f;
+
+                /* Draw filled activity bar */
+                dl->AddRectFilled(ImVec2(cx1, hi_y), ImVec2(cx2, lo_y),
+                                  (col_wave & 0x00FFFFFF) | 0x60000000);
+                dl->AddLine(ImVec2(cx1, hi_y), ImVec2(cx2, hi_y), col_wave, 1.0f);
+                dl->AddLine(ImVec2(cx1, lo_y), ImVec2(cx2, lo_y), col_wave, 1.0f);
+
+                /* Draw the final stable value after the cluster */
+                bool end_val = (vc[j].value == "1");
+                float end_x = cx2;
+                float end_x2 = x0 + (float)((std::min(next_t, t_end) - scroll_ps) / ps_per_px);
+                if (end_x2 > end_x) {
+                    float ey = end_val ? hi_y : lo_y;
+                    dl->AddLine(ImVec2(end_x, ey), ImVec2(end_x2, ey), col_wave, 1.5f);
+                }
+
+                i = j; /* skip ahead */
+                continue;
+            }
+
             if (t1 > t_end) t1 = t_end;
             if (t0 < t_start) t0 = t_start;
 
@@ -270,6 +380,60 @@ static void draw_waveform(ImDrawList *dl, const Signal &sig,
 
             int64_t t0 = vc[i].time;
             int64_t t1 = (i + 1 < (int)vc.size()) ? vc[i + 1].time : t_end;
+
+            /* Decimation: skip sub-pixel changes */
+            if (i + 2 < (int)vc.size() && (vc[i + 2].time - t0) < ps_per_2px) {
+                int j = i;
+                while (j + 1 < (int)vc.size() &&
+                       (vc[j + 1].time - vc[j].time) < ps_per_2px) {
+                    j++;
+                    if (vc[j].time > t_end) break;
+                }
+                int64_t cs = std::max(t0, t_start);
+                int64_t ce = std::min(vc[j].time, t_end);
+                float cx1 = x0 + (float)((cs - scroll_ps) / ps_per_px);
+                float cx2 = x0 + (float)((ce - scroll_ps) / ps_per_px);
+                if (cx2 - cx1 < 1.0f) cx2 = cx1 + 1.0f;
+                dl->AddRectFilled(ImVec2(cx1, hi_y), ImVec2(cx2, lo_y),
+                                  (col_wave & 0x00FFFFFF) | 0x60000000);
+                dl->AddLine(ImVec2(cx1, hi_y), ImVec2(cx2, hi_y), col_wave, 1.0f);
+                dl->AddLine(ImVec2(cx1, lo_y), ImVec2(cx2, lo_y), col_wave, 1.0f);
+
+                /* Draw stable value after cluster as a bus segment */
+                int64_t next_t = (j + 1 < (int)vc.size()) ? vc[j + 1].time : t_end;
+                if (next_t > ce && ce < t_end) {
+                    float ex1 = cx2;
+                    float ex2 = x0 + (float)((std::min(next_t, t_end) - scroll_ps) / ps_per_px);
+                    if (ex2 > ex1 + 1.0f) {
+                        float dw = std::min(4.0f, (ex2 - ex1) * 0.3f);
+                        ImVec2 pts[6] = {
+                            {ex1 + dw, hi_y}, {ex2 - dw, hi_y}, {ex2, mid_y},
+                            {ex2 - dw, lo_y}, {ex1 + dw, lo_y}, {ex1, mid_y}
+                        };
+                        dl->AddPolyline(pts, 6, col_wave, ImDrawFlags_Closed, 1.5f);
+
+                        uint64_t val = binstr_to_u64(vc[j].value.c_str());
+                        char label[32];
+                        if (sig.width <= 4)
+                            snprintf(label, sizeof(label), "%llX", (unsigned long long)val);
+                        else if (sig.width <= 8)
+                            snprintf(label, sizeof(label), "0x%02llX", (unsigned long long)val);
+                        else if (sig.width <= 16)
+                            snprintf(label, sizeof(label), "0x%04llX", (unsigned long long)val);
+                        else
+                            snprintf(label, sizeof(label), "0x%llX", (unsigned long long)val);
+                        float text_w = ImGui::CalcTextSize(label).x;
+                        float avail = ex2 - ex1 - dw * 2 - 4;
+                        if (avail > text_w) {
+                            dl->AddText(ImVec2(ex1 + dw + 2, mid_y - 6), col_text, label);
+                        }
+                    }
+                }
+
+                i = j;
+                continue;
+            }
+
             if (t1 > t_end) t1 = t_end;
             if (t0 < t_start) t0 = t_start;
 
@@ -357,7 +521,7 @@ int main(int argc, char **argv)
     /* State */
     int    zoom_idx   = 9;  /* start at 1us */
     float  sidebar_w  = 220.0f;
-    int64_t scroll_ps = 0;
+    int64_t scroll_ps = jzw.display_start_time;
     float  scroll_y   = 0.0f;
     float  row_height = 30.0f;
     float  toolbar_h  = 32.0f;
@@ -467,7 +631,8 @@ int main(int argc, char **argv)
             if (ImGui::Button("Fit")) {
                 float fit_w = ws.x - sidebar_w - 20.0f;
                 if (fit_w < 1.0f) fit_w = 1.0f;
-                double needed_ps_per_px = (double)jzw.sim_end_time / (double)fit_w;
+                int64_t display_dur = jzw.sim_end_time - jzw.display_start_time;
+                double needed_ps_per_px = (double)display_dur / (double)fit_w;
                 int best = num_zoom_levels - 1;
                 for (int z = 0; z < num_zoom_levels; z++) {
                     if (zoom_levels[z].ps_per_pixel >= needed_ps_per_px) {
@@ -476,15 +641,18 @@ int main(int argc, char **argv)
                     }
                 }
                 zoom_idx = best;
-                scroll_ps = 0;
+                scroll_ps = jzw.display_start_time;
             }
         }
 
         ImGui::End();
 
-        /* ---- Sidebar (signal names) ---- */
+        /* ---- Layout: toolbar | content | gutter ---- */
+        float gutter_h = row_height;
         float content_y = wp.y + toolbar_h;
-        float content_h = ws.y - toolbar_h;
+        float content_h = ws.y - toolbar_h - gutter_h;
+
+        /* ---- Sidebar (signal names) ---- */
 
         ImGui::SetNextWindowPos(ImVec2(wp.x, content_y));
         ImGui::SetNextWindowSize(ImVec2(sidebar_w, content_h));
@@ -496,18 +664,14 @@ int main(int argc, char **argv)
         /* Reserve space for the ruler row to match the waveform area */
         float sidebar_start_y = ImGui::GetCursorPosY() + 20.0f; /* 20 = ruler_h */
 
-        /* Column widths */
+        /* Column widths — account for scrollbar eating into right side */
         float expand_col_w = 20.0f;
         float width_col_w = 40.0f;
-        float name_col_w = sidebar_w - width_col_w - expand_col_w -
+        float sb_scroll_w = ImGui::GetStyle().ScrollbarSize;
+        float sidebar_avail_w = sidebar_w - sb_scroll_w;
+        float name_col_w = sidebar_avail_w - width_col_w - expand_col_w -
                            ImGui::GetStyle().WindowPadding.x * 2 - 8.0f;
         (void)name_col_w;
-
-        /* Cursor value column width */
-        float cursor_val_w = 0.0f;
-        if (cursor_visible && cursor_ps >= 0) {
-            cursor_val_w = 60.0f;
-        }
 
         int row_idx = 0;
         for (size_t i = 0; i < jzw.signals.size(); i++) {
@@ -555,7 +719,7 @@ int main(int argc, char **argv)
                 float abs_row_y = ImGui::GetWindowPos().y - ImGui::GetScrollY() + row_y;
                 ImVec2 drag_min(ImGui::GetWindowPos().x + ImGui::GetStyle().WindowPadding.x + expand_col_w,
                                 abs_row_y);
-                ImVec2 drag_max(ImGui::GetWindowPos().x + sidebar_w - width_col_w - cursor_val_w - splitter_w,
+                ImVec2 drag_max(ImGui::GetWindowPos().x + sidebar_avail_w - width_col_w - splitter_w,
                                 abs_row_y + row_height);
 
                 bool in_drag_zone = (io.MousePos.x >= drag_min.x && io.MousePos.x <= drag_max.x &&
@@ -576,24 +740,13 @@ int main(int argc, char **argv)
                                   sig.width, sig.type.c_str(), time_buf);
             }
 
-            /* Cursor value column (between name and width) */
-            if (cursor_visible && cursor_ps >= 0) {
-                const char *binval = jzw.value_at(sig.id, cursor_ps);
-                char vbuf[32];
-                format_value(vbuf, sizeof(vbuf), binval, sig.width);
-                float vw = ImGui::CalcTextSize(vbuf).x;
-                ImGui::SetCursorPosY(text_y);
-                ImGui::SetCursorPosX(sidebar_w - ImGui::GetStyle().WindowPadding.x - width_col_w - cursor_val_w - splitter_w + (cursor_val_w - vw) * 0.5f);
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.4f, 1.0f), "%s", vbuf);
-            }
-
             /* Width column (right-aligned) */
             {
                 char wbuf[16];
                 snprintf(wbuf, sizeof(wbuf), "[%d]", sig.width);
                 float tw = ImGui::CalcTextSize(wbuf).x;
                 ImGui::SetCursorPosY(text_y);
-                ImGui::SetCursorPosX(sidebar_w - ImGui::GetStyle().WindowPadding.x - tw - splitter_w);
+                ImGui::SetCursorPosX(sidebar_avail_w - ImGui::GetStyle().WindowPadding.x - tw - splitter_w);
                 ImGui::TextDisabled("%s", wbuf);
             }
 
@@ -610,23 +763,6 @@ int main(int argc, char **argv)
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(col4.x * 0.7f, col4.y * 0.7f, col4.z * 0.7f, 1.0f));
                     ImGui::Text("[%d]", b);
                     ImGui::PopStyleColor();
-
-                    /* Cursor value for expanded bit */
-                    if (cursor_visible && cursor_ps >= 0) {
-                        const char *binval = jzw.value_at(sig.id, cursor_ps);
-                        int bit_pos = b;
-                        int len = (int)strlen(binval);
-                        char bit_val = '0';
-                        if (bit_pos < len) {
-                            bit_val = binval[len - 1 - bit_pos];
-                        }
-                        char vbuf[4];
-                        snprintf(vbuf, sizeof(vbuf), "%c", bit_val);
-                        float vw = ImGui::CalcTextSize(vbuf).x;
-                        ImGui::SetCursorPosY(bit_text_y);
-                        ImGui::SetCursorPosX(sidebar_w - ImGui::GetStyle().WindowPadding.x - width_col_w - cursor_val_w - splitter_w + (cursor_val_w - vw) * 0.5f);
-                        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.4f, 0.7f), "%s", vbuf);
-                    }
 
                     row_idx++;
                 }
@@ -739,8 +875,9 @@ int main(int argc, char **argv)
 
         double ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
 
-        /* Total content width in pixels for the entire simulation */
-        float total_content_w = (float)(jzw.sim_end_time / ps_per_px) + wave_w;
+        /* Total content width in pixels for the display range */
+        int64_t display_duration = jzw.sim_end_time - jzw.display_start_time;
+        float total_content_w = (float)(display_duration / ps_per_px) + wave_w;
 
         /* ---- Keyboard shortcuts ---- */
         /* Only process when no ImGui widget has focus (i.e. not typing in a text box) */
@@ -761,7 +898,7 @@ int main(int argc, char **argv)
                     zoom_idx--;
                     double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
                     scroll_ps = focus_ps - (int64_t)(focus_screen_x * new_ps_per_px);
-                    if (scroll_ps < 0) scroll_ps = 0;
+                    if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
                     if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
                 }
             }
@@ -779,15 +916,15 @@ int main(int argc, char **argv)
                     zoom_idx++;
                     double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
                     scroll_ps = focus_ps - (int64_t)(focus_screen_x * new_ps_per_px);
-                    if (scroll_ps < 0) scroll_ps = 0;
+                    if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
                     if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
                 }
             }
 
             /* Zoom to fit: F key */
             if (ImGui::IsKeyPressed(ImGuiKey_F)) {
-                /* Calculate ps_per_pixel needed to fit entire simulation */
-                double needed_ps_per_px = (double)jzw.sim_end_time / (double)(wave_w - 20.0f);
+                /* Calculate ps_per_pixel needed to fit display range */
+                double needed_ps_per_px = (double)display_duration / (double)(wave_w - 20.0f);
                 /* Find closest zoom level that fits (>= needed) */
                 int best = num_zoom_levels - 1;
                 for (int z = 0; z < num_zoom_levels; z++) {
@@ -797,7 +934,7 @@ int main(int argc, char **argv)
                     }
                 }
                 zoom_idx = best;
-                scroll_ps = 0;
+                scroll_ps = jzw.display_start_time;
             }
 
             /* Arrow keys: Left/Right for horizontal scroll */
@@ -805,7 +942,7 @@ int main(int argc, char **argv)
                 double step = ps_per_px * 40.0;
                 if (io.KeyShift) step *= 5.0;
                 scroll_ps -= (int64_t)step;
-                if (scroll_ps < 0) scroll_ps = 0;
+                if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_RightArrow) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) {
                 double step = ps_per_px * 40.0;
@@ -828,13 +965,13 @@ int main(int argc, char **argv)
 
             /* Home/End: jump to start/end of simulation */
             if (ImGui::IsKeyPressed(ImGuiKey_Home)) {
-                scroll_ps = 0;
+                scroll_ps = jzw.display_start_time;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_End)) {
                 /* Scroll so end of simulation is visible at right edge */
                 double visible_ps = wave_w * ps_per_px;
                 scroll_ps = jzw.sim_end_time - (int64_t)visible_ps;
-                if (scroll_ps < 0) scroll_ps = 0;
+                if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
             }
 
             /* Escape: clear cursors */
@@ -863,7 +1000,7 @@ int main(int argc, char **argv)
 
                     double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
                     scroll_ps = mouse_ps - (int64_t)(mouse_rel_x * new_ps_per_px);
-                    if (scroll_ps < 0) scroll_ps = 0;
+                    if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
                     if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
                     ps_per_px = new_ps_per_px;
                 } else {
@@ -879,7 +1016,7 @@ int main(int argc, char **argv)
             if (wheelH != 0.0f) {
                 double ps_step = ps_per_px * 50.0;
                 scroll_ps += (int64_t)(wheelH * ps_step);
-                if (scroll_ps < 0) scroll_ps = 0;
+                if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
                 if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
             }
 
@@ -888,7 +1025,7 @@ int main(int argc, char **argv)
                 float mouse_rel_x = io.MousePos.x - (wave_x + ImGui::GetStyle().WindowPadding.x);
                 if (mouse_rel_x >= 0 && mouse_rel_x < wave_w) {
                     int64_t click_ps = scroll_ps + (int64_t)(mouse_rel_x * ps_per_px);
-                    if (click_ps >= 0 && click_ps <= jzw.sim_end_time) {
+                    if (click_ps >= jzw.display_start_time && click_ps <= jzw.sim_end_time) {
                         if (io.KeyShift && cursor_visible) {
                             /* Shift+click places secondary cursor */
                             cursor2_ps = click_ps;
@@ -909,17 +1046,23 @@ int main(int argc, char **argv)
 
         /* Use the fixed window position for drawing, not the scrolled cursor pos */
         ImVec2 wpos = ImGui::GetWindowPos();
-        wpos.x += ImGui::GetStyle().WindowPadding.x;
-        wpos.y += ImGui::GetStyle().WindowPadding.y;
+        float pad_x = ImGui::GetStyle().WindowPadding.x;
+        float pad_y = ImGui::GetStyle().WindowPadding.y;
+        wpos.x += pad_x;
+        wpos.y += pad_y;
+
+        /* Drawable area within window padding */
+        float draw_w = wave_w - pad_x * 2;
+        float draw_h = content_h - pad_y * 2;
 
         /* Apply vertical scroll offset */
         float vert_offset = -scroll_y;
 
         /* Clip rect for drawing - only draw visible area */
         float clip_x0 = wpos.x;
-        float clip_x1 = wpos.x + wave_w;
+        float clip_x1 = wpos.x + draw_w;
         float clip_y0 = wpos.y;
-        float clip_y1 = wpos.y + content_h;
+        float clip_y1 = wpos.y + draw_h;
 
         /* Time ruler (fixed at top, does not scroll vertically) */
         float ruler_h = 20.0f;
@@ -976,12 +1119,15 @@ int main(int argc, char **argv)
             }
         }
 
-        /* Waveform content area starts below ruler */
+        /* Waveform content area starts below ruler, scrollbar at bottom */
+        float sb_h_reserve = 14.0f; /* horizontal scrollbar height + padding */
         float wave_area_y = wpos.y + ruler_h;
-        float wave_area_h = content_h - ruler_h;
+        float wave_area_h = draw_h - ruler_h - sb_h_reserve;
+        if (wave_area_h < 0) wave_area_h = 0;
+        float wave_area_bottom = wave_area_y + wave_area_h;
 
-        /* Clip waveform drawing to area below ruler */
-        dl->PushClipRect(ImVec2(clip_x0, wave_area_y), ImVec2(clip_x1, clip_y1), true);
+        /* Clip waveform drawing to area below ruler, above scrollbar */
+        dl->PushClipRect(ImVec2(clip_x0, wave_area_y), ImVec2(clip_x1, wave_area_bottom), true);
 
         /* Draw grid lines through the full waveform area */
         {
@@ -997,7 +1143,7 @@ int main(int argc, char **argv)
                 float x = wpos.x + (float)((t - scroll_ps) / ps_per_px);
                 if (x > clip_x1) break;
                 if (x >= clip_x0) {
-                    dl->AddLine(ImVec2(x, wave_area_y), ImVec2(x, clip_y1),
+                    dl->AddLine(ImVec2(x, wave_area_y), ImVec2(x, wave_area_bottom),
                                 IM_COL32(50, 50, 50, 255), 1.0f);
                 }
             }
@@ -1014,7 +1160,7 @@ int main(int argc, char **argv)
             float y = wave_area_y + vert_offset + wave_row * row_height;
 
             /* Skip rows that are fully off-screen */
-            bool row_visible = (y + row_height > wave_area_y) && (y < clip_y1);
+            bool row_visible = (y + row_height > wave_area_y) && (y < wave_area_bottom);
 
             if (row_visible) {
                 /* Row separator */
@@ -1042,7 +1188,7 @@ int main(int argc, char **argv)
                 const auto &vc = it->second;
                 for (int b = sig.width - 1; b >= 0; b--) {
                     float bit_y = wave_area_y + vert_offset + wave_row * row_height;
-                    bool bit_visible = (bit_y + row_height > wave_area_y) && (bit_y < clip_y1);
+                    bool bit_visible = (bit_y + row_height > wave_area_y) && (bit_y < wave_area_bottom);
 
                     if (bit_visible) {
                         /* Row separator */
@@ -1094,18 +1240,18 @@ int main(int argc, char **argv)
             }
         }
 
-        /* Draw cursor lines (on top of waveforms) */
+        /* Draw cursor lines (on top of waveforms, clipped to waveform area) */
         if (cursor_visible && cursor_ps >= 0) {
             float cx = wpos.x + (float)((cursor_ps - scroll_ps) / ps_per_px);
             if (cx >= clip_x0 && cx <= clip_x1) {
-                dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, clip_y1),
+                dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, wave_area_bottom),
                             IM_COL32(255, 255, 100, 180), 1.5f);
             }
         }
         if (cursor2_visible && cursor2_ps >= 0) {
             float cx = wpos.x + (float)((cursor2_ps - scroll_ps) / ps_per_px);
             if (cx >= clip_x0 && cx <= clip_x1) {
-                dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, clip_y1),
+                dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, wave_area_bottom),
                             IM_COL32(100, 255, 255, 180), 1.5f);
             }
 
@@ -1117,7 +1263,7 @@ int main(int argc, char **argv)
                 float left = std::max(cx1, clip_x0);
                 float right = std::min(cx2, clip_x1);
                 if (left < right) {
-                    dl->AddRectFilled(ImVec2(left, wave_area_y), ImVec2(right, clip_y1),
+                    dl->AddRectFilled(ImVec2(left, wave_area_y), ImVec2(right, wave_area_bottom),
                                       IM_COL32(255, 255, 100, 20));
                 }
             }
@@ -1125,13 +1271,33 @@ int main(int argc, char **argv)
 
         dl->PopClipRect();
 
+        /* Draw mark vertical lines in waveform area */
+        dl->PushClipRect(ImVec2(clip_x0, wave_area_y), ImVec2(clip_x1, wave_area_bottom), true);
+        {
+            int64_t t_start = scroll_ps;
+            int64_t t_end = scroll_ps + (int64_t)(draw_w * ps_per_px);
+
+            for (const auto &ann : jzw.annotations) {
+                if (ann.type != "mark") continue;
+                if (ann.time > t_end) break;
+                if (ann.time < t_start) continue;
+                float ax = wpos.x + (float)((ann.time - scroll_ps) / ps_per_px);
+                if (ax < clip_x0 || ax > clip_x1) continue;
+
+                ImU32 col = annotation_color(ann.color);
+                dl->AddLine(ImVec2(ax, wave_area_y), ImVec2(ax, wave_area_bottom),
+                            col, 1.5f);
+            }
+        }
+        dl->PopClipRect();
+
         /* ---- Custom horizontal scrollbar ---- */
         {
             float sb_h = 12.0f;
-            float sb_y = wpos.y + content_h - sb_h - ImGui::GetStyle().WindowPadding.y;
+            float sb_y = wave_area_bottom + 1.0f;
             float sb_x = wpos.x;
-            float sb_w = wave_w - ImGui::GetStyle().WindowPadding.x * 2;
-            float total_time_px = (float)(jzw.sim_end_time / ps_per_px);
+            float sb_w = draw_w;
+            float total_time_px = (float)(display_duration / ps_per_px);
 
             if (total_time_px > sb_w) {
                 /* Background track */
@@ -1142,7 +1308,7 @@ int main(int argc, char **argv)
                 float visible_frac = sb_w / total_time_px;
                 float thumb_w = sb_w * visible_frac;
                 if (thumb_w < 20.0f) thumb_w = 20.0f;
-                float scroll_frac = (float)(scroll_ps / ps_per_px) / (total_time_px - sb_w);
+                float scroll_frac = (float)((scroll_ps - jzw.display_start_time) / ps_per_px) / (total_time_px - sb_w);
                 if (scroll_frac < 0) scroll_frac = 0;
                 if (scroll_frac > 1) scroll_frac = 1;
                 float thumb_x = sb_x + scroll_frac * (sb_w - thumb_w);
@@ -1164,7 +1330,7 @@ int main(int argc, char **argv)
                         float click_frac = (io.MousePos.x - sb_x - thumb_w * 0.5f) / (sb_w - thumb_w);
                         if (click_frac < 0) click_frac = 0;
                         if (click_frac > 1) click_frac = 1;
-                        scroll_ps = (int64_t)(click_frac * (total_time_px - sb_w) * ps_per_px);
+                        scroll_ps = jzw.display_start_time + (int64_t)(click_frac * (total_time_px - sb_w) * ps_per_px);
                         dragging_scrollbar = true;
                         drag_offset = thumb_w * 0.5f;
                     }
@@ -1176,7 +1342,7 @@ int main(int argc, char **argv)
                     float new_frac = (new_thumb_x - sb_x) / (sb_w - thumb_w);
                     if (new_frac < 0) new_frac = 0;
                     if (new_frac > 1) new_frac = 1;
-                    scroll_ps = (int64_t)(new_frac * (total_time_px - sb_w) * ps_per_px);
+                    scroll_ps = jzw.display_start_time + (int64_t)(new_frac * (total_time_px - sb_w) * ps_per_px);
                     /* Recalc for drawing */
                     scroll_frac = new_frac;
                     thumb_x = sb_x + scroll_frac * (sb_w - thumb_w);
@@ -1188,6 +1354,119 @@ int main(int argc, char **argv)
                 dl->AddRectFilled(ImVec2(thumb_x, sb_y), ImVec2(thumb_x + thumb_w, sb_y + sb_h),
                                   thumb_col, 3.0f);
             }
+        }
+
+        ImGui::End();
+
+        /* ---- Gutter: annotation icons (full-width bottom bar) ---- */
+        float gutter_y = wp.y + ws.y - gutter_h;
+        ImGui::SetNextWindowPos(ImVec2(wp.x, gutter_y));
+        ImGui::SetNextWindowSize(ImVec2(ws.x, gutter_h));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::Begin("##Gutter", nullptr,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                     ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+                     ImGuiWindowFlags_NoBringToFrontOnFocus);
+        ImGui::PopStyleVar();
+
+        {
+            ImDrawList *gdl = ImGui::GetWindowDrawList();
+
+            /* Separator line at top of gutter */
+            gdl->AddLine(ImVec2(wp.x, gutter_y), ImVec2(wp.x + ws.x, gutter_y),
+                         IM_COL32(70, 70, 70, 255), 1.0f);
+
+            /* Annotation icons are aligned to the waveform x coordinates */
+            float gutter_clip_x0 = wave_x + pad_x;
+            float gutter_clip_x1 = wave_x + wave_w - pad_x;
+            float gutter_bottom = gutter_y + gutter_h;
+
+            gdl->PushClipRect(ImVec2(gutter_clip_x0, gutter_y), ImVec2(gutter_clip_x1, gutter_bottom), true);
+
+            int64_t t_start = scroll_ps;
+            int64_t t_end = scroll_ps + (int64_t)(draw_w * ps_per_px);
+            float icon_size = 8.0f;
+            float icon_y_pos = gutter_y + (gutter_h - icon_size) * 0.5f;
+
+            /* Binary search for first annotation at or after t_start */
+            const auto &anns = jzw.annotations;
+            int ann_lo = 0, ann_hi = (int)anns.size() - 1, ann_start = (int)anns.size();
+            while (ann_lo <= ann_hi) {
+                int mid = (ann_lo + ann_hi) / 2;
+                if (anns[mid].time >= t_start) { ann_start = mid; ann_hi = mid - 1; }
+                else ann_lo = mid + 1;
+            }
+            if (ann_start > 0) ann_start--;
+
+            float last_alert_px = -100.0f;
+            float min_alert_spacing = 2.0f;
+
+            for (int ai = ann_start; ai < (int)anns.size(); ai++) {
+                const auto &ann = anns[ai];
+                if (ann.time > t_end) break;
+
+                float ax = wpos.x + (float)((ann.time - scroll_ps) / ps_per_px);
+                if (ax < gutter_clip_x0 || ax > gutter_clip_x1) continue;
+
+                ImU32 col = annotation_color(ann.color);
+
+                if (ann.type == "mark") {
+                    gdl->AddRectFilled(
+                        ImVec2(ax - icon_size * 0.5f, icon_y_pos),
+                        ImVec2(ax + icon_size * 0.5f, icon_y_pos + icon_size),
+                        col);
+
+                    if (io.MousePos.x >= ax - icon_size && io.MousePos.x <= ax + icon_size &&
+                        io.MousePos.y >= gutter_y && io.MousePos.y <= gutter_bottom) {
+                        char tbuf[64];
+                        format_time(tbuf, sizeof(tbuf), ann.time);
+                        if (!ann.message.empty())
+                            ImGui::SetTooltip("Mark: %s\nTime: %s\nColor: %s",
+                                              ann.message.c_str(), tbuf, ann.color.c_str());
+                        else
+                            ImGui::SetTooltip("Mark at %s", tbuf);
+                    }
+                } else if (ann.type == "alert") {
+                    if (ax - last_alert_px < min_alert_spacing) {
+                        float cw = icon_size * 0.6f;
+                        if (io.MousePos.x >= ax - cw - 2 && io.MousePos.x <= ax + cw + 2 &&
+                            io.MousePos.y >= gutter_y && io.MousePos.y <= gutter_bottom) {
+                            char tbuf[64];
+                            format_time(tbuf, sizeof(tbuf), ann.time);
+                            if (!ann.message.empty())
+                                ImGui::SetTooltip("Alert: %s\nTime: %s",
+                                                  ann.message.c_str(), tbuf);
+                            else
+                                ImGui::SetTooltip("Alert at %s", tbuf);
+                        }
+                        continue;
+                    }
+                    last_alert_px = ax;
+
+                    float ch = icon_size;
+                    float cw = icon_size * 0.6f;
+                    ImVec2 tri[3] = {
+                        {ax, icon_y_pos},
+                        {ax - cw, icon_y_pos + ch},
+                        {ax + cw, icon_y_pos + ch}
+                    };
+                    gdl->AddTriangleFilled(tri[0], tri[1], tri[2], col);
+
+                    if (io.MousePos.x >= ax - cw - 2 && io.MousePos.x <= ax + cw + 2 &&
+                        io.MousePos.y >= gutter_y && io.MousePos.y <= gutter_bottom) {
+                        char tbuf[64];
+                        format_time(tbuf, sizeof(tbuf), ann.time);
+                        if (!ann.message.empty())
+                            ImGui::SetTooltip("Alert: %s\nTime: %s",
+                                              ann.message.c_str(), tbuf);
+                        else
+                            ImGui::SetTooltip("Alert at %s", tbuf);
+                    }
+                }
+            }
+
+            gdl->PopClipRect();
         }
 
         ImGui::End();
