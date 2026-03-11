@@ -28,12 +28,37 @@ typedef struct SimMemEntry {
     int       depth;
 } SimMemEntry;
 
+/* ---- Precomputed port mapping for fast propagation ---- */
+
+typedef struct SimPortMapping {
+    SimSignalEntry *parent_entry;  /* Direct pointer into parent signals[] */
+    SimSignalEntry *child_entry;   /* Direct pointer into child signals[] */
+    int             parent_msb;    /* Slice MSB, or -1 for full-width */
+    int             parent_lsb;    /* Slice LSB, or -1 for full-width */
+    int             child_width;   /* Child port width (for width fixup) */
+    int             is_inout;      /* 1 if child port is INOUT */
+} SimPortMapping;
+
+/* ---- Async chunk for dependency-driven re-execution ---- */
+
+typedef struct SimAsyncChunk {
+    const IR_Stmt *stmt;           /* Statement to execute */
+    int           *read_indices;   /* Indices into ctx->signals[] that this chunk reads */
+    int            num_reads;
+    int           *write_indices;  /* Indices into ctx->signals[] that this chunk writes */
+    int            num_writes;
+} SimAsyncChunk;
+
 /* ---- Sub-instance context ---- */
 
 typedef struct SimChildInstance {
     struct SimContext   *ctx;           /* Child simulation context */
     const IR_Instance  *inst;          /* IR instance descriptor */
     const IR_Module    *child_module;  /* Child module IR */
+    SimPortMapping     *input_maps;    /* Precomputed parent->child mappings */
+    int                 num_input_maps;
+    SimPortMapping     *output_maps;   /* Precomputed child->parent mappings */
+    int                 num_output_maps;
 } SimChildInstance;
 
 /* ---- DUT simulation context ---- */
@@ -43,12 +68,18 @@ typedef struct SimContext {
     const IR_Design    *design;
     SimSignalEntry     *signals;
     int                 num_signals;
+    int                *sig_id_map;    /* signal_id -> signals[] index, size max_sig_id+1 */
+    int                 max_sig_id;    /* largest signal_id in this context */
     SimMemEntry        *memories;
     int                 num_memories;
     SimChildInstance   *children;
     int                 num_children;
     uint32_t            rng_state;
     int                 runtime_error; /* z reached non-tristate expression (SE-008) */
+    int                 settle_dirty;  /* non-zero if any signal changed during settle */
+    SimAsyncChunk      *async_chunks;  /* Dependency-analyzed async block chunks */
+    int                 num_async_chunks;
+    uint8_t            *sig_dirty;     /* Per-signal dirty flags (indexed by signals[] position) */
 } SimContext;
 
 /* ---- Testbench wire ---- */
@@ -110,6 +141,7 @@ void       sim_ctx_destroy(SimContext *ctx);
 SimSignalEntry *sim_ctx_lookup(SimContext *ctx, int signal_id);
 SimMemEntry    *sim_ctx_lookup_mem(SimContext *ctx, const char *name);
 void            sim_ctx_apply_nba(SimContext *ctx);
+void            sim_ctx_clear_dirty(SimContext *ctx);
 
 /* Simple xorshift32 PRNG */
 uint32_t sim_rng_next(uint32_t *state);

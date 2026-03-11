@@ -638,21 +638,21 @@ static void sim_propagate_inputs(SimTestState *ts) {
     PERF_TIMER_START(PERF_PROPAGATE_INPUTS);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
+        int sig_id = b->port_signal_id;
         const IR_Signal *sig = NULL;
 
-        /* Find the signal in the DUT module */
-        for (int j = 0; j < ts->dut->module->num_signals; j++) {
-            if (ts->dut->module->signals[j].id == b->port_signal_id) {
-                sig = &ts->dut->module->signals[j];
-                break;
-            }
+        /* O(1) signal lookup via DUT context map */
+        if (sig_id >= 0 && sig_id <= ts->dut->max_sig_id) {
+            int idx = ts->dut->sig_id_map[sig_id];
+            if (idx >= 0)
+                sig = &ts->dut->module->signals[idx];
         }
         if (!sig) continue;
 
         if (sig->kind == SIG_PORT &&
             (sig->u.port.direction == PORT_IN || sig->u.port.direction == PORT_INOUT)) {
             /* Copy tb wire value -> DUT input */
-            SimSignalEntry *entry = sim_ctx_lookup(ts->dut, b->port_signal_id);
+            SimSignalEntry *entry = sim_ctx_lookup(ts->dut, sig_id);
             if (entry) {
                 entry->current = ts->tb_wires[b->tb_wire_index].value;
                 /* Match widths */
@@ -660,6 +660,9 @@ static void sim_propagate_inputs(SimTestState *ts) {
                     entry->current.width = sig->width;
                     entry->current = sim_val_mask(entry->current);
                 }
+                ts->dut->settle_dirty = 1;
+                int sig_idx = (int)(entry - ts->dut->signals);
+                ts->dut->sig_dirty[sig_idx] = 1;
             }
         }
     }
@@ -670,13 +673,14 @@ static void sim_propagate_outputs(SimTestState *ts) {
     PERF_TIMER_START(PERF_PROPAGATE_OUTPUTS);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
+        int sig_id = b->port_signal_id;
         const IR_Signal *sig = NULL;
 
-        for (int j = 0; j < ts->dut->module->num_signals; j++) {
-            if (ts->dut->module->signals[j].id == b->port_signal_id) {
-                sig = &ts->dut->module->signals[j];
-                break;
-            }
+        /* O(1) signal lookup via DUT context map */
+        if (sig_id >= 0 && sig_id <= ts->dut->max_sig_id) {
+            int idx = ts->dut->sig_id_map[sig_id];
+            if (idx >= 0)
+                sig = &ts->dut->module->signals[idx];
         }
         if (!sig) continue;
 
@@ -711,13 +715,14 @@ static void sim_resolve_inout_z(SimTestState *ts) {
     PERF_TIMER_START(PERF_RESOLVE_INOUT_Z);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
+        int sig_id = b->port_signal_id;
         const IR_Signal *sig = NULL;
 
-        for (int j = 0; j < ts->dut->module->num_signals; j++) {
-            if (ts->dut->module->signals[j].id == b->port_signal_id) {
-                sig = &ts->dut->module->signals[j];
-                break;
-            }
+        /* O(1) signal lookup via DUT context map */
+        if (sig_id >= 0 && sig_id <= ts->dut->max_sig_id) {
+            int idx = ts->dut->sig_id_map[sig_id];
+            if (idx >= 0)
+                sig = &ts->dut->module->signals[idx];
         }
         if (!sig) continue;
 
@@ -755,20 +760,23 @@ static void sim_apply_domain_reset(SimContext *ctx, const IR_ClockDomain *cd) {
         SimSignalEntry *re = sim_ctx_lookup(ctx, reg_id);
         if (!re) continue;
 
-        for (int s = 0; s < ctx->module->num_signals; s++) {
-            if (ctx->module->signals[s].id == reg_id) {
-                const IR_Signal *sig = &ctx->module->signals[s];
-                if (sig->kind == SIG_REGISTER) {
-                    SimValue rv = sim_val_from_words(
-                        sig->u.reg.reset_value.words,
-                        IR_LIT_WORDS,
-                        sig->u.reg.reset_value.width);
-                    if (rv.width != sig->width)
-                        rv = sim_val_zext(rv, sig->width);
-                    re->current = rv;
-                }
-                break;
-            }
+        const IR_Signal *sig = NULL;
+        if (reg_id >= 0 && reg_id <= ctx->max_sig_id) {
+            int idx = ctx->sig_id_map[reg_id];
+            if (idx >= 0)
+                sig = &ctx->module->signals[idx];
+        }
+        if (sig && sig->kind == SIG_REGISTER) {
+            SimValue rv = sim_val_from_words(
+                sig->u.reg.reset_value.words,
+                IR_LIT_WORDS,
+                sig->u.reg.reset_value.width);
+            if (rv.width != sig->width)
+                rv = sim_val_zext(rv, sig->width);
+            re->current = rv;
+            ctx->settle_dirty = 1;
+            int sig_idx = (int)(re - ctx->signals);
+            ctx->sig_dirty[sig_idx] = 1;
         }
     }
 }
