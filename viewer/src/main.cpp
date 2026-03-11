@@ -131,7 +131,7 @@ struct ZoomLevel {
 };
 
 static const ZoomLevel zoom_levels[] = {
-    {"1ns",    1000.0   /  1.0},    /*    1 ps/px → 1ns across 1000px */
+    {"1ns",    1000.0   /  1.0},    /*    1 ps/px -> 1ns across 1000px */
     {"2ns",    2000.0   /  1000.0},
     {"5ns",    5000.0   /  1000.0},
     {"10ns",   10000.0  /  1000.0},
@@ -181,6 +181,21 @@ static void format_time(char *buf, size_t bufsz, int64_t ps)
         snprintf(buf, bufsz, "%.3f ns", ps / 1e3);
     else
         snprintf(buf, bufsz, "%lld ps", (long long)ps);
+}
+
+static void format_value(char *buf, size_t bufsz, const char *binval, int width)
+{
+    uint64_t val = binstr_to_u64(binval);
+    if (width == 1)
+        snprintf(buf, bufsz, "%llu", (unsigned long long)val);
+    else if (width <= 4)
+        snprintf(buf, bufsz, "%llX", (unsigned long long)val);
+    else if (width <= 8)
+        snprintf(buf, bufsz, "0x%02llX", (unsigned long long)val);
+    else if (width <= 16)
+        snprintf(buf, bufsz, "0x%04llX", (unsigned long long)val);
+    else
+        snprintf(buf, bufsz, "0x%llX", (unsigned long long)val);
 }
 
 /* ---- Drawing waveforms ---- */
@@ -351,6 +366,16 @@ int main(int argc, char **argv)
     float  sidebar_max_w = 500.0f;
     float  splitter_w = 4.0f;
 
+    /* Cursor state */
+    int64_t cursor_ps = -1;       /* primary cursor time (-1 = not placed) */
+    int64_t cursor2_ps = -1;      /* secondary cursor time (-1 = not placed) */
+    bool    cursor_visible = false;
+    bool    cursor2_visible = false;
+
+    /* Drag-reorder state */
+    int drag_src_idx = -1;        /* index in jzw.signals being dragged */
+    bool dragging_signal = false;
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -385,13 +410,36 @@ int main(int argc, char **argv)
             ImGui::TextDisabled("(%s)", jzw.module_name.c_str());
         }
 
+        /* Cursor info in toolbar */
+        if (cursor_visible && cursor_ps >= 0) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("|");
+            ImGui::SameLine();
+            char tbuf[64];
+            format_time(tbuf, sizeof(tbuf), cursor_ps);
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.4f, 1.0f), "C1: %s", tbuf);
+
+            if (cursor2_visible && cursor2_ps >= 0) {
+                ImGui::SameLine();
+                format_time(tbuf, sizeof(tbuf), cursor2_ps);
+                ImGui::TextColored(ImVec4(0.4f, 1.0f, 1.0f, 1.0f), "C2: %s", tbuf);
+
+                ImGui::SameLine();
+                int64_t delta = cursor2_ps - cursor_ps;
+                if (delta < 0) delta = -delta;
+                format_time(tbuf, sizeof(tbuf), delta);
+                ImGui::TextColored(ImVec4(1.0f, 0.6f, 1.0f, 1.0f), "dt: %s", tbuf);
+            }
+        }
+
         /* Zoom control on the right side */
         {
             const char *zoom_label = zoom_levels[zoom_idx].label;
             /* Fixed-width label area: "Zoom: 100ms/div" is the widest */
             float label_w = ImGui::CalcTextSize("Zoom: 100ms/div").x;
             float btn_w = ImGui::CalcTextSize(" - ").x + ImGui::GetStyle().FramePadding.x * 2;
-            float total_w = btn_w * 2 + label_w + ImGui::GetStyle().ItemSpacing.x * 4 + 8;
+            float fit_btn_w = ImGui::CalcTextSize("Fit").x + ImGui::GetStyle().FramePadding.x * 2;
+            float total_w = btn_w * 2 + fit_btn_w + label_w + ImGui::GetStyle().ItemSpacing.x * 5 + 8;
             ImGui::SameLine(ws.x - total_w);
 
             if (ImGui::Button(" - ##zout")) {
@@ -414,6 +462,21 @@ int main(int argc, char **argv)
             ImGui::SameLine();
             if (ImGui::Button(" + ##zin")) {
                 if (zoom_idx > 0) zoom_idx--;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Fit")) {
+                float fit_w = ws.x - sidebar_w - 20.0f;
+                if (fit_w < 1.0f) fit_w = 1.0f;
+                double needed_ps_per_px = (double)jzw.sim_end_time / (double)fit_w;
+                int best = num_zoom_levels - 1;
+                for (int z = 0; z < num_zoom_levels; z++) {
+                    if (zoom_levels[z].ps_per_pixel >= needed_ps_per_px) {
+                        best = z;
+                        break;
+                    }
+                }
+                zoom_idx = best;
+                scroll_ps = 0;
             }
         }
 
@@ -438,6 +501,13 @@ int main(int argc, char **argv)
         float width_col_w = 40.0f;
         float name_col_w = sidebar_w - width_col_w - expand_col_w -
                            ImGui::GetStyle().WindowPadding.x * 2 - 8.0f;
+        (void)name_col_w;
+
+        /* Cursor value column width */
+        float cursor_val_w = 0.0f;
+        if (cursor_visible && cursor_ps >= 0) {
+            cursor_val_w = 60.0f;
+        }
 
         int row_idx = 0;
         for (size_t i = 0; i < jzw.signals.size(); i++) {
@@ -451,6 +521,10 @@ int main(int argc, char **argv)
             /* Position at exact row to match waveform area */
             float row_y = sidebar_start_y + row_idx * row_height;
             float text_y = row_y + (row_height - ImGui::GetTextLineHeight()) * 0.5f;
+
+            /* Drag-reorder: detect drag start on signal name */
+            ImVec2 row_min(ImGui::GetStyle().WindowPadding.x,
+                           row_y - scroll_y + ImGui::GetWindowPos().y - ImGui::GetWindowPos().y);
 
             /* Expand button column */
             ImGui::SetCursorPosY(text_y);
@@ -476,6 +550,23 @@ int main(int argc, char **argv)
             ImGui::Text("%s", sig.display_name.c_str());
             ImGui::PopStyleColor();
 
+            /* Drag-reorder: invisible button over signal name for drag source */
+            {
+                float abs_row_y = ImGui::GetWindowPos().y - ImGui::GetScrollY() + row_y;
+                ImVec2 drag_min(ImGui::GetWindowPos().x + ImGui::GetStyle().WindowPadding.x + expand_col_w,
+                                abs_row_y);
+                ImVec2 drag_max(ImGui::GetWindowPos().x + sidebar_w - width_col_w - cursor_val_w - splitter_w,
+                                abs_row_y + row_height);
+
+                bool in_drag_zone = (io.MousePos.x >= drag_min.x && io.MousePos.x <= drag_max.x &&
+                                     io.MousePos.y >= drag_min.y && io.MousePos.y <= drag_max.y);
+
+                if (in_drag_zone && ImGui::IsMouseClicked(0) && !dragging_signal) {
+                    drag_src_idx = (int)i;
+                    dragging_signal = true;
+                }
+            }
+
             /* Show current value tooltip */
             if (ImGui::IsItemHovered()) {
                 char time_buf[64];
@@ -483,6 +574,17 @@ int main(int argc, char **argv)
                 ImGui::SetTooltip("[%d] %s  width=%d  type=%s\nEnd: %s",
                                   sig.id, sig.display_name.c_str(),
                                   sig.width, sig.type.c_str(), time_buf);
+            }
+
+            /* Cursor value column (between name and width) */
+            if (cursor_visible && cursor_ps >= 0) {
+                const char *binval = jzw.value_at(sig.id, cursor_ps);
+                char vbuf[32];
+                format_value(vbuf, sizeof(vbuf), binval, sig.width);
+                float vw = ImGui::CalcTextSize(vbuf).x;
+                ImGui::SetCursorPosY(text_y);
+                ImGui::SetCursorPosX(sidebar_w - ImGui::GetStyle().WindowPadding.x - width_col_w - cursor_val_w - splitter_w + (cursor_val_w - vw) * 0.5f);
+                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.4f, 1.0f), "%s", vbuf);
             }
 
             /* Width column (right-aligned) */
@@ -509,11 +611,67 @@ int main(int argc, char **argv)
                     ImGui::Text("[%d]", b);
                     ImGui::PopStyleColor();
 
+                    /* Cursor value for expanded bit */
+                    if (cursor_visible && cursor_ps >= 0) {
+                        const char *binval = jzw.value_at(sig.id, cursor_ps);
+                        int bit_pos = b;
+                        int len = (int)strlen(binval);
+                        char bit_val = '0';
+                        if (bit_pos < len) {
+                            bit_val = binval[len - 1 - bit_pos];
+                        }
+                        char vbuf[4];
+                        snprintf(vbuf, sizeof(vbuf), "%c", bit_val);
+                        float vw = ImGui::CalcTextSize(vbuf).x;
+                        ImGui::SetCursorPosY(bit_text_y);
+                        ImGui::SetCursorPosX(sidebar_w - ImGui::GetStyle().WindowPadding.x - width_col_w - cursor_val_w - splitter_w + (cursor_val_w - vw) * 0.5f);
+                        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.4f, 0.7f), "%s", vbuf);
+                    }
+
                     row_idx++;
                 }
             }
 
             ImGui::PopID();
+        }
+
+        /* Handle drag-reorder drop */
+        if (dragging_signal && drag_src_idx >= 0) {
+            if (!ImGui::IsMouseDown(0)) {
+                /* Determine drop target based on mouse Y */
+                float mouse_rel_y = io.MousePos.y - (ImGui::GetWindowPos().y - ImGui::GetScrollY() + sidebar_start_y);
+                int drop_row = (int)(mouse_rel_y / row_height);
+
+                /* Map drop row to signal index (skip expanded bit rows) */
+                int current_row = 0;
+                int drop_sig_idx = -1;
+                for (size_t si = 0; si < jzw.signals.size(); si++) {
+                    if (current_row >= drop_row) {
+                        drop_sig_idx = (int)si;
+                        break;
+                    }
+                    current_row++;
+                    if (jzw.signals[si].expanded && jzw.signals[si].width > 1) {
+                        current_row += jzw.signals[si].width;
+                    }
+                }
+                if (drop_sig_idx < 0) drop_sig_idx = (int)jzw.signals.size() - 1;
+
+                /* Move signal from drag_src_idx to drop_sig_idx */
+                if (drop_sig_idx != drag_src_idx && drop_sig_idx >= 0 &&
+                    drop_sig_idx < (int)jzw.signals.size()) {
+                    Signal moved = jzw.signals[drag_src_idx];
+                    jzw.signals.erase(jzw.signals.begin() + drag_src_idx);
+                    if (drop_sig_idx > drag_src_idx) drop_sig_idx--;
+                    jzw.signals.insert(jzw.signals.begin() + drop_sig_idx, moved);
+                }
+
+                dragging_signal = false;
+                drag_src_idx = -1;
+            } else {
+                /* Draw drag indicator */
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+            }
         }
 
         /* Set total content height so scrollbar appears */
@@ -523,7 +681,7 @@ int main(int argc, char **argv)
 
         /* Sync vertical scroll */
         if (ImGui::IsWindowHovered() && io.MouseWheel != 0.0f) {
-            /* Sidebar is being scrolled — read its position as source of truth */
+            /* Sidebar is being scrolled - read its position as source of truth */
             scroll_y = ImGui::GetScrollY();
         } else {
             /* Otherwise push our scroll_y into the sidebar */
@@ -584,15 +742,138 @@ int main(int argc, char **argv)
         /* Total content width in pixels for the entire simulation */
         float total_content_w = (float)(jzw.sim_end_time / ps_per_px) + wave_w;
 
-        /* Mouse wheel over waveform = vertical scroll */
+        /* ---- Keyboard shortcuts ---- */
+        /* Only process when no ImGui widget has focus (i.e. not typing in a text box) */
+        if (!io.WantTextInput) {
+            /* Zoom: +/= to zoom in, - to zoom out */
+            if (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)) {
+                if (zoom_idx > 0) {
+                    /* Zoom centered on cursor if visible, otherwise center of view */
+                    int64_t focus_ps;
+                    float focus_screen_x;
+                    if (cursor_visible && cursor_ps >= 0) {
+                        focus_ps = cursor_ps;
+                        focus_screen_x = (float)((cursor_ps - scroll_ps) / ps_per_px);
+                    } else {
+                        focus_screen_x = wave_w * 0.5f;
+                        focus_ps = scroll_ps + (int64_t)(focus_screen_x * ps_per_px);
+                    }
+                    zoom_idx--;
+                    double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
+                    scroll_ps = focus_ps - (int64_t)(focus_screen_x * new_ps_per_px);
+                    if (scroll_ps < 0) scroll_ps = 0;
+                    if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+                }
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract)) {
+                if (zoom_idx < num_zoom_levels - 1) {
+                    int64_t focus_ps;
+                    float focus_screen_x;
+                    if (cursor_visible && cursor_ps >= 0) {
+                        focus_ps = cursor_ps;
+                        focus_screen_x = (float)((cursor_ps - scroll_ps) / ps_per_px);
+                    } else {
+                        focus_screen_x = wave_w * 0.5f;
+                        focus_ps = scroll_ps + (int64_t)(focus_screen_x * ps_per_px);
+                    }
+                    zoom_idx++;
+                    double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
+                    scroll_ps = focus_ps - (int64_t)(focus_screen_x * new_ps_per_px);
+                    if (scroll_ps < 0) scroll_ps = 0;
+                    if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+                }
+            }
+
+            /* Zoom to fit: F key */
+            if (ImGui::IsKeyPressed(ImGuiKey_F)) {
+                /* Calculate ps_per_pixel needed to fit entire simulation */
+                double needed_ps_per_px = (double)jzw.sim_end_time / (double)(wave_w - 20.0f);
+                /* Find closest zoom level that fits (>= needed) */
+                int best = num_zoom_levels - 1;
+                for (int z = 0; z < num_zoom_levels; z++) {
+                    if (zoom_levels[z].ps_per_pixel >= needed_ps_per_px) {
+                        best = z;
+                        break;
+                    }
+                }
+                zoom_idx = best;
+                scroll_ps = 0;
+            }
+
+            /* Arrow keys: Left/Right for horizontal scroll */
+            if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow) || ImGui::IsKeyDown(ImGuiKey_LeftArrow)) {
+                double step = ps_per_px * 40.0;
+                if (io.KeyShift) step *= 5.0;
+                scroll_ps -= (int64_t)step;
+                if (scroll_ps < 0) scroll_ps = 0;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) {
+                double step = ps_per_px * 40.0;
+                if (io.KeyShift) step *= 5.0;
+                scroll_ps += (int64_t)step;
+                if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+            }
+
+            /* Arrow keys: Up/Down for vertical scroll */
+            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) {
+                scroll_y -= row_height;
+                if (scroll_y < 0) scroll_y = 0;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_DownArrow) || ImGui::IsKeyDown(ImGuiKey_DownArrow)) {
+                float max_scroll_y = total_row_count * row_height - content_h + 40.0f;
+                if (max_scroll_y < 0) max_scroll_y = 0;
+                scroll_y += row_height;
+                if (scroll_y > max_scroll_y) scroll_y = max_scroll_y;
+            }
+
+            /* Home/End: jump to start/end of simulation */
+            if (ImGui::IsKeyPressed(ImGuiKey_Home)) {
+                scroll_ps = 0;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_End)) {
+                /* Scroll so end of simulation is visible at right edge */
+                double visible_ps = wave_w * ps_per_px;
+                scroll_ps = jzw.sim_end_time - (int64_t)visible_ps;
+                if (scroll_ps < 0) scroll_ps = 0;
+            }
+
+            /* Escape: clear cursors */
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                if (cursor2_visible) {
+                    cursor2_visible = false;
+                    cursor2_ps = -1;
+                } else if (cursor_visible) {
+                    cursor_visible = false;
+                    cursor_ps = -1;
+                }
+            }
+        }
+
+        /* Mouse wheel over waveform */
         if (ImGui::IsWindowHovered()) {
             float wheel = io.MouseWheel;
             if (wheel != 0.0f) {
-                float max_scroll_y = total_row_count * row_height - content_h + 40.0f;
-                if (max_scroll_y < 0) max_scroll_y = 0;
-                scroll_y -= wheel * row_height;
-                if (scroll_y < 0) scroll_y = 0;
-                if (scroll_y > max_scroll_y) scroll_y = max_scroll_y;
+                if (io.KeyCtrl) {
+                    /* Ctrl+wheel = zoom centered on mouse position */
+                    float mouse_rel_x = io.MousePos.x - (wave_x + ImGui::GetStyle().WindowPadding.x);
+                    int64_t mouse_ps = scroll_ps + (int64_t)(mouse_rel_x * ps_per_px);
+
+                    if (wheel > 0 && zoom_idx > 0) zoom_idx--;
+                    else if (wheel < 0 && zoom_idx < num_zoom_levels - 1) zoom_idx++;
+
+                    double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
+                    scroll_ps = mouse_ps - (int64_t)(mouse_rel_x * new_ps_per_px);
+                    if (scroll_ps < 0) scroll_ps = 0;
+                    if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+                    ps_per_px = new_ps_per_px;
+                } else {
+                    /* Regular wheel = vertical scroll */
+                    float max_scroll_y = total_row_count * row_height - content_h + 40.0f;
+                    if (max_scroll_y < 0) max_scroll_y = 0;
+                    scroll_y -= wheel * row_height;
+                    if (scroll_y < 0) scroll_y = 0;
+                    if (scroll_y > max_scroll_y) scroll_y = max_scroll_y;
+                }
             }
             float wheelH = io.MouseWheelH;
             if (wheelH != 0.0f) {
@@ -600,6 +881,27 @@ int main(int argc, char **argv)
                 scroll_ps += (int64_t)(wheelH * ps_step);
                 if (scroll_ps < 0) scroll_ps = 0;
                 if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+            }
+
+            /* Click in waveform area to place cursor */
+            if (ImGui::IsMouseClicked(0) && !dragging_signal) {
+                float mouse_rel_x = io.MousePos.x - (wave_x + ImGui::GetStyle().WindowPadding.x);
+                if (mouse_rel_x >= 0 && mouse_rel_x < wave_w) {
+                    int64_t click_ps = scroll_ps + (int64_t)(mouse_rel_x * ps_per_px);
+                    if (click_ps >= 0 && click_ps <= jzw.sim_end_time) {
+                        if (io.KeyShift && cursor_visible) {
+                            /* Shift+click places secondary cursor */
+                            cursor2_ps = click_ps;
+                            cursor2_visible = true;
+                        } else {
+                            cursor_ps = click_ps;
+                            cursor_visible = true;
+                            /* Clear secondary cursor on primary click */
+                            cursor2_visible = false;
+                            cursor2_ps = -1;
+                        }
+                    }
+                }
             }
         }
 
@@ -645,6 +947,31 @@ int main(int argc, char **argv)
                     char tbuf[32];
                     format_time(tbuf, sizeof(tbuf), t);
                     dl->AddText(ImVec2(x + 3, wpos.y + 2), ruler_text, tbuf);
+                }
+            }
+
+            /* Draw cursor marker on ruler */
+            if (cursor_visible && cursor_ps >= 0) {
+                float cx = wpos.x + (float)((cursor_ps - scroll_ps) / ps_per_px);
+                if (cx >= clip_x0 && cx <= clip_x1) {
+                    /* Small triangle marker on ruler */
+                    ImVec2 tri[3] = {
+                        {cx - 4, wpos.y + ruler_h},
+                        {cx + 4, wpos.y + ruler_h},
+                        {cx, wpos.y + ruler_h - 6}
+                    };
+                    dl->AddTriangleFilled(tri[0], tri[1], tri[2], IM_COL32(255, 255, 100, 255));
+                }
+            }
+            if (cursor2_visible && cursor2_ps >= 0) {
+                float cx = wpos.x + (float)((cursor2_ps - scroll_ps) / ps_per_px);
+                if (cx >= clip_x0 && cx <= clip_x1) {
+                    ImVec2 tri[3] = {
+                        {cx - 4, wpos.y + ruler_h},
+                        {cx + 4, wpos.y + ruler_h},
+                        {cx, wpos.y + ruler_h - 6}
+                    };
+                    dl->AddTriangleFilled(tri[0], tri[1], tri[2], IM_COL32(100, 255, 255, 255));
                 }
             }
         }
@@ -694,6 +1021,12 @@ int main(int argc, char **argv)
                 dl->AddLine(ImVec2(clip_x0, y + row_height),
                             ImVec2(clip_x1, y + row_height),
                             IM_COL32(50, 50, 50, 255), 1.0f);
+
+                /* Highlight row being dragged */
+                if (dragging_signal && drag_src_idx == (int)i) {
+                    dl->AddRectFilled(ImVec2(clip_x0, y), ImVec2(clip_x1, y + row_height),
+                                      IM_COL32(80, 80, 120, 80));
+                }
 
                 if (it != jzw.changes.end()) {
                     draw_waveform(dl, sig, it->second,
@@ -757,6 +1090,35 @@ int main(int argc, char **argv)
                     }
 
                     wave_row++;
+                }
+            }
+        }
+
+        /* Draw cursor lines (on top of waveforms) */
+        if (cursor_visible && cursor_ps >= 0) {
+            float cx = wpos.x + (float)((cursor_ps - scroll_ps) / ps_per_px);
+            if (cx >= clip_x0 && cx <= clip_x1) {
+                dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, clip_y1),
+                            IM_COL32(255, 255, 100, 180), 1.5f);
+            }
+        }
+        if (cursor2_visible && cursor2_ps >= 0) {
+            float cx = wpos.x + (float)((cursor2_ps - scroll_ps) / ps_per_px);
+            if (cx >= clip_x0 && cx <= clip_x1) {
+                dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, clip_y1),
+                            IM_COL32(100, 255, 255, 180), 1.5f);
+            }
+
+            /* Draw shaded region between cursors */
+            if (cursor_visible && cursor_ps >= 0) {
+                float cx1 = wpos.x + (float)((cursor_ps - scroll_ps) / ps_per_px);
+                float cx2 = wpos.x + (float)((cursor2_ps - scroll_ps) / ps_per_px);
+                if (cx1 > cx2) { float tmp = cx1; cx1 = cx2; cx2 = tmp; }
+                float left = std::max(cx1, clip_x0);
+                float right = std::min(cx2, clip_x1);
+                if (left < right) {
+                    dl->AddRectFilled(ImVec2(left, wave_area_y), ImVec2(right, clip_y1),
+                                      IM_COL32(255, 255, 100, 20));
                 }
             }
         }
