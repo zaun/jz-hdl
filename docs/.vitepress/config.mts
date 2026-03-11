@@ -24,6 +24,7 @@ export default defineConfig({
           { text: 'Simulation Specification', link: '/jz-hdl/pdf/simulation-specification.pdf', target: '_blank' },
           { text: 'Testbench Specification', link: '/jz-hdl/pdf/testbench-specification.pdf', target: '_blank' },
           { text: 'Chip Info Specification', link: '/jz-hdl/pdf/chip-info-specification.pdf', target: '_blank' },
+          { text: 'JZW File Format Specification', link: '/jz-hdl/pdf/jzw-specification.pdf', target: '_blank' },
         ]
       },
     ],
@@ -81,6 +82,7 @@ export default defineConfig({
           { text: 'Simulation Specification', link: '/jz-hdl/pdf/simulation-specification.pdf', target: '_blank' },
           { text: 'Testbench Specification', link: '/jz-hdl/pdf/testbench-specification.pdf', target: '_blank' },
           { text: 'Chip Info Specification', link: '/jz-hdl/pdf/chip-info-specification.pdf', target: '_blank' },
+          { text: 'JZW File Format Specification', link: '/jz-hdl/pdf/jzw-specification.pdf', target: '_blank' },
         ]
       }, {
         text: 'Examples',

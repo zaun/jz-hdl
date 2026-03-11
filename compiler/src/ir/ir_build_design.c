@@ -1496,11 +1496,23 @@ int jz_ir_build_design(JZASTNode *root,
 
                     double period_ns = 1000.0 / freq_mhz;
 
+                    /* Evaluate phase expression if present. */
+                    double phase_deg = 0.0;
+                    const char *phase_expr = have_chip
+                        ? jz_chip_clock_gen_output_phase_expr(&chip_data, unit_type, out->selector)
+                        : NULL;
+                    if (phase_expr) {
+                        phase_deg = ir_eval_cgen_expr(
+                            phase_expr, unit, input_period,
+                            have_chip ? &chip_data : NULL, unit_type);
+                    }
+
                     for (int ci = 0; ci < proj->num_clocks; ++ci) {
                         IR_Clock *clk = &proj->clocks[ci];
                         if (clk->name &&
                             strcmp(clk->name, out->clock_name) == 0) {
                             clk->period_ns = period_ns;
+                            clk->phase_deg = phase_deg;
                             clk->is_generated = true;
                             break;
                         }

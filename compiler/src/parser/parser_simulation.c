@@ -63,51 +63,65 @@ static int parse_sim_clock_block_body(Parser *p, JZASTNode *parent)
             return -1;
         }
 
-        /* period=<value> */
-        const JZToken *param = peek(p);
-        if (!param->lexeme || strcmp(param->lexeme, "period") != 0) {
+        /* Parse key=value pairs: period=<value> [, phase=<value>] */
+        char attrs_buf[256];
+        attrs_buf[0] = '\0';
+        int have_period = 0;
+
+        while (peek(p)->type != JZ_TOK_RBRACE &&
+               peek(p)->type != JZ_TOK_EOF) {
+            const JZToken *param = peek(p);
+            if (!param->lexeme) {
+                parser_error(p, "expected parameter name in simulation CLOCK declaration");
+                return -1;
+            }
+            const char *param_name = param->lexeme;
+            advance(p);
+
+            if (!match(p, JZ_TOK_OP_ASSIGN)) {
+                parser_error(p, "expected '=' after parameter name in simulation CLOCK declaration");
+                return -1;
+            }
+
+            /* Collect value tokens until ',' or '}' */
+            size_t val_start = p->pos;
+            while (peek(p)->type != JZ_TOK_EOF &&
+                   peek(p)->type != JZ_TOK_RBRACE &&
+                   peek(p)->type != JZ_TOK_COMMA) {
+                advance(p);
+            }
+            size_t val_end = p->pos;
+
+            /* Build value string */
+            char val_buf[64];
+            val_buf[0] = '\0';
+            for (size_t i = val_start; i < val_end; ++i) {
+                const JZToken *vt = &p->tokens[i];
+                if (vt->lexeme) strcat(val_buf, vt->lexeme);
+            }
+
+            /* Append "key=value " to attrs_buf */
+            size_t cur_len = strlen(attrs_buf);
+            snprintf(attrs_buf + cur_len, sizeof(attrs_buf) - cur_len,
+                     "%s%s=%s", cur_len > 0 ? " " : "", param_name, val_buf);
+
+            if (strcmp(param_name, "period") == 0) have_period = 1;
+
+            /* Skip optional comma */
+            if (peek(p)->type == JZ_TOK_COMMA) advance(p);
+        }
+
+        if (!have_period) {
             parser_error(p, "expected 'period=' in simulation CLOCK declaration");
             return -1;
         }
-        advance(p);
-
-        if (!match(p, JZ_TOK_OP_ASSIGN)) {
-            parser_error(p, "expected '=' after 'period' in simulation CLOCK declaration");
-            return -1;
-        }
-
-        /* Collect period value tokens until '}' */
-        size_t val_start = p->pos;
-        while (peek(p)->type != JZ_TOK_EOF &&
-               peek(p)->type != JZ_TOK_RBRACE) {
-            advance(p);
-        }
-        size_t val_end = p->pos;
 
         if (!match(p, JZ_TOK_RBRACE)) {
-            parser_error(p, "expected '}' after period value in simulation CLOCK declaration");
+            parser_error(p, "expected '}' in simulation CLOCK declaration");
             return -1;
         }
 
-        /* Build period text */
-        char *period_text = NULL;
-        if (val_start < val_end) {
-            size_t buf_sz = 0;
-            for (size_t i = val_start; i < val_end; ++i) {
-                const JZToken *vt = &p->tokens[i];
-                if (vt->lexeme) buf_sz += strlen(vt->lexeme) + 1;
-            }
-            if (buf_sz > 0) {
-                period_text = (char *)malloc(buf_sz + 1);
-                if (!period_text) return -1;
-                period_text[0] = '\0';
-                for (size_t i = val_start; i < val_end; ++i) {
-                    const JZToken *vt = &p->tokens[i];
-                    if (!vt->lexeme) continue;
-                    strcat(period_text, vt->lexeme);
-                }
-            }
-        }
+        char *period_text = strdup(attrs_buf);
 
         /* ; */
         if (!match(p, JZ_TOK_SEMICOLON)) {
@@ -357,6 +371,276 @@ JZASTNode *parse_print_directive(Parser *p, int is_print_if)
         return NULL;
     }
 
+    return node;
+}
+
+/**
+ * @brief Parse @mark(color) or @mark(color, "message") directive.
+ *
+ * The @mark keyword has already been consumed.
+ */
+static JZASTNode *parse_sim_mark(Parser *p)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1];
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, "expected '(' after @mark");
+        return NULL;
+    }
+
+    /* Color name (identifier) */
+    const JZToken *color_tok = peek(p);
+    if (color_tok->type != JZ_TOK_IDENTIFIER) {
+        parser_error(p, "expected color name in @mark");
+        return NULL;
+    }
+    const char *color = color_tok->lexeme;
+    advance(p);
+
+    /* Optional message string */
+    const char *message = NULL;
+    if (peek(p)->type == JZ_TOK_COMMA) {
+        advance(p); /* skip comma */
+        const JZToken *msg_tok = peek(p);
+        if (msg_tok->type != JZ_TOK_STRING) {
+            parser_error(p, "expected string literal for @mark message");
+            return NULL;
+        }
+        message = msg_tok->lexeme;
+        advance(p);
+    }
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @mark(...)");
+        return NULL;
+    }
+
+    JZASTNode *node = jz_ast_new(JZ_AST_SIM_MARK, kw->loc);
+    jz_ast_set_text(node, color);
+    if (message) jz_ast_set_name(node, message);
+    return node;
+}
+
+/**
+ * @brief Parse @alert(color) or @alert(color, "message") directive.
+ *
+ * The @alert keyword has already been consumed.
+ * One-shot unconditional alert annotation at the current simulation time.
+ * Same syntax as @mark.
+ */
+static JZASTNode *parse_sim_alert(Parser *p)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1];
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, "expected '(' after @alert");
+        return NULL;
+    }
+
+    /* Color name (identifier) */
+    const JZToken *color_tok = peek(p);
+    if (color_tok->type != JZ_TOK_IDENTIFIER) {
+        parser_error(p, "expected color name in @alert");
+        return NULL;
+    }
+    const char *color = color_tok->lexeme;
+    advance(p);
+
+    /* Optional message string */
+    const char *message = NULL;
+    if (peek(p)->type == JZ_TOK_COMMA) {
+        advance(p); /* skip comma */
+        const JZToken *msg_tok = peek(p);
+        if (msg_tok->type != JZ_TOK_STRING) {
+            parser_error(p, "expected string literal for @alert message");
+            return NULL;
+        }
+        message = msg_tok->lexeme;
+        advance(p);
+    }
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @alert(...)");
+        return NULL;
+    }
+
+    JZASTNode *node = jz_ast_new(JZ_AST_SIM_ALERT, kw->loc);
+    jz_ast_set_text(node, color);
+    if (message) jz_ast_set_name(node, message);
+    return node;
+}
+
+/**
+ * @brief Parse @mark_if(condition, color) or @mark_if(condition, color, "message").
+ *
+ * The @mark_if keyword has already been consumed.
+ * Same syntax as @alert but produces a SIM_MARK_IF node.
+ */
+static JZASTNode *parse_sim_mark_if(Parser *p)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1];
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, "expected '(' after @mark_if");
+        return NULL;
+    }
+
+    JZASTNode *cond = parse_expression(p);
+    if (!cond) {
+        parser_error(p, "expected condition expression in @mark_if");
+        return NULL;
+    }
+
+    if (!match(p, JZ_TOK_COMMA)) {
+        parser_error(p, "expected ',' after @mark_if condition");
+        jz_ast_free(cond);
+        return NULL;
+    }
+
+    const JZToken *color_tok = peek(p);
+    if (color_tok->type != JZ_TOK_IDENTIFIER) {
+        parser_error(p, "expected color name in @mark_if");
+        jz_ast_free(cond);
+        return NULL;
+    }
+    const char *color = color_tok->lexeme;
+    advance(p);
+
+    const char *message = NULL;
+    if (peek(p)->type == JZ_TOK_COMMA) {
+        advance(p);
+        const JZToken *msg_tok = peek(p);
+        if (msg_tok->type != JZ_TOK_STRING) {
+            parser_error(p, "expected string literal for @mark_if message");
+            jz_ast_free(cond);
+            return NULL;
+        }
+        message = msg_tok->lexeme;
+        advance(p);
+    }
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @mark_if(...)");
+        jz_ast_free(cond);
+        return NULL;
+    }
+
+    JZASTNode *node = jz_ast_new(JZ_AST_SIM_MARK_IF, kw->loc);
+    jz_ast_set_text(node, color);
+    if (message) jz_ast_set_name(node, message);
+    jz_ast_add_child(node, cond);
+    return node;
+}
+
+/**
+ * @brief Parse @alert_if(condition, color) or @alert_if(condition, color, "message").
+ *
+ * The @alert_if keyword has already been consumed.
+ * Same syntax as @alert but produces a SIM_ALERT_IF node.
+ */
+static JZASTNode *parse_sim_alert_if(Parser *p)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1];
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, "expected '(' after @alert_if");
+        return NULL;
+    }
+
+    JZASTNode *cond = parse_expression(p);
+    if (!cond) {
+        parser_error(p, "expected condition expression in @alert_if");
+        return NULL;
+    }
+
+    if (!match(p, JZ_TOK_COMMA)) {
+        parser_error(p, "expected ',' after @alert_if condition");
+        jz_ast_free(cond);
+        return NULL;
+    }
+
+    const JZToken *color_tok = peek(p);
+    if (color_tok->type != JZ_TOK_IDENTIFIER) {
+        parser_error(p, "expected color name in @alert_if");
+        jz_ast_free(cond);
+        return NULL;
+    }
+    const char *color = color_tok->lexeme;
+    advance(p);
+
+    const char *message = NULL;
+    if (peek(p)->type == JZ_TOK_COMMA) {
+        advance(p);
+        const JZToken *msg_tok = peek(p);
+        if (msg_tok->type != JZ_TOK_STRING) {
+            parser_error(p, "expected string literal for @alert_if message");
+            jz_ast_free(cond);
+            return NULL;
+        }
+        message = msg_tok->lexeme;
+        advance(p);
+    }
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @alert_if(...)");
+        jz_ast_free(cond);
+        return NULL;
+    }
+
+    JZASTNode *node = jz_ast_new(JZ_AST_SIM_ALERT_IF, kw->loc);
+    jz_ast_set_text(node, color);
+    if (message) jz_ast_set_name(node, message);
+    jz_ast_add_child(node, cond);
+    return node;
+}
+
+/**
+ * @brief Parse @trace(state=on/off) directive.
+ *
+ * Syntax: @trace(state=on) or @trace(state=off)
+ * The @trace keyword has already been consumed.
+ */
+static JZASTNode *parse_sim_trace(Parser *p)
+{
+    const JZToken *kw = &p->tokens[p->pos - 1];
+
+    if (!match(p, JZ_TOK_LPAREN)) {
+        parser_error(p, "expected '(' after @trace");
+        return NULL;
+    }
+
+    /* Expect 'state' identifier */
+    const JZToken *state_tok = peek(p);
+    if (!state_tok->lexeme || strcmp(state_tok->lexeme, "state") != 0) {
+        parser_error(p, "expected 'state' in @trace directive");
+        return NULL;
+    }
+    advance(p);
+
+    /* Expect '=' */
+    if (!match(p, JZ_TOK_OP_ASSIGN)) {
+        parser_error(p, "expected '=' after 'state' in @trace");
+        return NULL;
+    }
+
+    /* Expect 'on' or 'off' */
+    const JZToken *val_tok = peek(p);
+    if (!val_tok->lexeme ||
+        (strcmp(val_tok->lexeme, "on") != 0 &&
+         strcmp(val_tok->lexeme, "off") != 0)) {
+        parser_error(p, "expected 'on' or 'off' in @trace(state=...)");
+        return NULL;
+    }
+    const char *state_val = val_tok->lexeme;
+    advance(p);
+
+    if (!match(p, JZ_TOK_RPAREN)) {
+        parser_error(p, "expected ')' after @trace(state=...)");
+        return NULL;
+    }
+
+    JZASTNode *node = jz_ast_new(JZ_AST_SIM_TRACE, kw->loc);
+    jz_ast_set_name(node, state_val);
     return node;
 }
 
@@ -789,6 +1073,8 @@ JZASTNode *parse_simulation(Parser *p)
     if (!sim) return NULL;
     jz_ast_set_name(sim, mod_name->lexeme);
 
+    int has_monitor = 0;
+
     /* Parse body until @endsim */
     while (peek(p)->type != JZ_TOK_EOF &&
            peek(p)->type != JZ_TOK_KW_ENDSIM) {
@@ -1037,6 +1323,83 @@ JZASTNode *parse_simulation(Parser *p)
             JZASTNode *pr = parse_print_directive(p, 1);
             if (!pr) { jz_ast_free(sim); return NULL; }
             jz_ast_add_child(sim, pr);
+        } else if (t->type == JZ_TOK_KW_TRACE) {
+            advance(p);
+            JZASTNode *tr = parse_sim_trace(p);
+            if (!tr) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, tr);
+        } else if (t->type == JZ_TOK_KW_MARK) {
+            advance(p);
+            JZASTNode *mk = parse_sim_mark(p);
+            if (!mk) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, mk);
+        } else if (t->type == JZ_TOK_KW_MARK_IF) {
+            advance(p);
+            JZASTNode *mk = parse_sim_mark_if(p);
+            if (!mk) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, mk);
+        } else if (t->type == JZ_TOK_KW_ALERT) {
+            advance(p);
+            JZASTNode *al = parse_sim_alert(p);
+            if (!al) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, al);
+        } else if (t->type == JZ_TOK_KW_ALERT_IF) {
+            advance(p);
+            JZASTNode *al = parse_sim_alert_if(p);
+            if (!al) { jz_ast_free(sim); return NULL; }
+            jz_ast_add_child(sim, al);
+        } else if (t->type == JZ_TOK_IDENTIFIER && t->lexeme && strcmp(t->lexeme, "MONITOR") == 0) {
+            if (has_monitor) {
+                parser_error(p, "only one MONITOR block is permitted per @simulation");
+                jz_ast_free(sim);
+                return NULL;
+            }
+            has_monitor = 1;
+            advance(p);
+            JZASTNode *mon_block = jz_ast_new(JZ_AST_SIM_MONITOR_BLOCK, t->loc);
+            if (!mon_block) { jz_ast_free(sim); return NULL; }
+            if (!match(p, JZ_TOK_LBRACE)) {
+                parser_error(p, "expected '{' after MONITOR");
+                jz_ast_free(mon_block);
+                jz_ast_free(sim);
+                return NULL;
+            }
+            /* Parse MONITOR body: only @print_if, @mark_if, @alert_if allowed */
+            for (;;) {
+                const JZToken *mt = peek(p);
+                if (mt->type == JZ_TOK_RBRACE) {
+                    advance(p);
+                    break;
+                }
+                if (mt->type == JZ_TOK_EOF) {
+                    parser_error(p, "unterminated MONITOR block (missing '}')");
+                    jz_ast_free(mon_block);
+                    jz_ast_free(sim);
+                    return NULL;
+                }
+                if (mt->type == JZ_TOK_KW_PRINT_IF) {
+                    advance(p);
+                    JZASTNode *pr = parse_print_directive(p, 1);
+                    if (!pr) { jz_ast_free(mon_block); jz_ast_free(sim); return NULL; }
+                    jz_ast_add_child(mon_block, pr);
+                } else if (mt->type == JZ_TOK_KW_MARK_IF) {
+                    advance(p);
+                    JZASTNode *mk = parse_sim_mark_if(p);
+                    if (!mk) { jz_ast_free(mon_block); jz_ast_free(sim); return NULL; }
+                    jz_ast_add_child(mon_block, mk);
+                } else if (mt->type == JZ_TOK_KW_ALERT_IF) {
+                    advance(p);
+                    JZASTNode *al = parse_sim_alert_if(p);
+                    if (!al) { jz_ast_free(mon_block); jz_ast_free(sim); return NULL; }
+                    jz_ast_add_child(mon_block, al);
+                } else {
+                    parser_error(p, "only @print_if, @mark_if, and @alert_if are permitted inside MONITOR block");
+                    jz_ast_free(mon_block);
+                    jz_ast_free(sim);
+                    return NULL;
+                }
+            }
+            jz_ast_add_child(sim, mon_block);
         } else {
             parser_error(p, "unexpected token in @simulation block");
             jz_ast_free(sim);

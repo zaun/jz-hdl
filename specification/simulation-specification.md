@@ -120,8 +120,8 @@ Simulation follows the same x and z semantics as the JZ-HDL specification (Secti
     @new <instance_name> <module_name> { ... }
 
     @setup { ... }
-    
-    // Sequence of @run and @update directives
+
+    // Sequence of @run, @update, and @trace directives
 @endsim
 ```
 
@@ -348,6 +348,231 @@ The `@print_if` directive conditionally outputs a formatted message. The message
 | PRT-001 | Number of non-autonomous format specifiers must match the number of arguments |
 | PRT-002 | `@print` / `@print_if` may not appear inside `@setup` or `@update` blocks |
 
+### 4.9 @trace (Waveform Recording Control)
+
+**Syntax:**
+```text
+@trace(state=on)
+@trace(state=off)
+```
+
+The `@trace` directive controls whether signal value changes are recorded to the output waveform file during subsequent `@run`, `@run_until`, and `@run_while` directives.
+
+- **Default state is `on`.** If no `@trace` directive appears, all signal changes are recorded (backward compatible).
+- When `state=off`, the simulation continues to execute — clocks toggle, logic evaluates, time advances — but no signal values are written to the waveform output. This dramatically reduces output file size and simulation time for uninteresting periods (e.g., waiting for a power-on reset counter).
+- When `state=on` after a `state=off` period, the simulator writes a **full state snapshot** at the current simulation time before resuming per-tick recording. This ensures the waveform viewer sees correct signal values at the start of the recorded window, not stale time-0 values.
+- `@trace` may be toggled any number of times to capture specific windows of interest.
+- `@trace` directives apply to all waveform output formats (VCD, FST, JZW).
+- For JZW output, each `@trace` toggle writes an annotation of type `trace` to the annotations table, with `message` set to `"on"` or `"off"`. Viewers can use these annotations to indicate trace-off periods visually.
+
+**Example:**
+```text
+@setup {
+    por   <= 1'b1;
+    rst_n <= 1'b1;
+}
+
+// Skip recording during 28ms POR wait
+@trace(state=off)
+@run(ns=28200000)
+@trace(state=on)
+
+// Now record the interesting video output
+@run(ns=200000)
+```
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| TRC-001 | `@trace` state must be `on` or `off` |
+| TRC-002 | `@trace` may not appear inside `@setup` or `@update` blocks |
+
+### 4.10 @mark (Waveform Marker)
+
+**Syntax:**
+```text
+@mark(<color>)
+@mark(<color>, "<message>")
+```
+
+The `@mark` directive creates a global marker annotation at the current simulation time. Marks are unconditional — they fire exactly once at the point where they appear in the simulation sequence.
+
+- `<color>` is a color name (one of: `RED`, `ORANGE`, `YELLOW`, `GREEN`, `BLUE`, `PURPLE`, `CYAN`, `WHITE`). Case-insensitive in source, stored as uppercase.
+- `<message>` is an optional string literal describing the marker.
+- Marks are written to the JZW annotations table with `type="mark"`, `signal_id=NULL` (global), and the specified color and message.
+- Marks have no effect on VCD or FST output.
+
+**Example:**
+```text
+@update {
+    rst_n <= 1'b1;
+}
+@mark(GREEN, "Reset released")
+
+@run(ns=100)
+
+@update {
+    wr_en <= 1'b1;
+}
+@mark(BLUE, "Write burst start")
+
+@run(ns=50)
+```
+
+**Viewer behavior:** Marks are displayed as vertical lines at the marked time in the specified color, with an icon at the bottom. Hovering the icon shows the message.
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| MRK-001 | `@mark` may not appear inside `@setup`, `@update`, or `@new` blocks |
+| MRK-002 | Color name must be one of the predefined names |
+
+### 4.11 @alert (Unconditional Alert Annotation)
+
+**Syntax:**
+```text
+@alert(<color>)
+@alert(<color>, "<message>")
+```
+
+The `@alert` directive creates a one-shot, unconditional alert annotation at the current simulation time. It is the alert equivalent of `@mark` — it fires exactly once, right where it appears in the simulation sequence.
+
+- `<color>` is a color name (one of: `RED`, `ORANGE`, `YELLOW`, `GREEN`, `BLUE`, `PURPLE`, `CYAN`, `WHITE`).
+- `<message>` is an optional string literal describing the alert.
+- The annotation is written to the JZW annotations table with `type="alert"`, `signal_id=NULL`, and the specified color and message.
+- For conditional per-tick alert evaluation, use `@alert_if` inside a `MONITOR` block (§4.14).
+
+**Example:**
+```text
+@run(ns=1000)
+@alert(RED, "Checkpoint reached at 1µs")
+@run(ns=1000)
+```
+
+**Viewer behavior:** Alert annotations are displayed as small chevron markers (^) at the bottom of the waveform area at the alert time. Hovering shows the message.
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| ALT-001 | `@alert` may not appear inside `@setup`, `@update`, or `@new` blocks |
+| ALT-002 | Color name must be one of the predefined names |
+
+### 4.12 @mark_if (Conditional One-Shot Marker)
+
+**Syntax:**
+```text
+@mark_if(<condition>, <color>)
+@mark_if(<condition>, <color>, "<message>")
+```
+
+The `@mark_if` directive evaluates a condition once at the current simulation time. If the condition is true (non-zero), a mark annotation is created — identical to what `@mark` would produce. If the condition is false, nothing happens.
+
+- `<condition>` is a testbench `WIRE` identifier or hierarchical signal reference (`TAP`). If the signal is multi-bit, it is truthy if any bit is `1`.
+- `<color>` is a color name (one of: `RED`, `ORANGE`, `YELLOW`, `GREEN`, `BLUE`, `PURPLE`, `CYAN`, `WHITE`).
+- `<message>` is an optional string literal describing the marker.
+- Unlike `@alert`, this is **not** registered for per-tick evaluation. It fires at most once, at the point it appears in the simulation sequence.
+
+**Example:**
+```text
+@run(ns=1000)
+@mark_if(dut.error_flag, RED, "Error detected at checkpoint")
+@run(ns=1000)
+```
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| MKI-001 | `@mark_if` may not appear inside `@setup`, `@update`, or `@new` blocks |
+| MKI-002 | `@mark_if` condition must reference a signal in scope (declared in `WIRE`, `CLOCK`, or `TAP`) |
+| MKI-003 | Color name must be one of the predefined names |
+
+### 4.13 @alert_if (Conditional One-Shot Alert)
+
+**Syntax:**
+```text
+@alert_if(<condition>, <color>)
+@alert_if(<condition>, <color>, "<message>")
+```
+
+The `@alert_if` directive evaluates a condition once at the current simulation time. If the condition is true (non-zero), an alert annotation is created — identical to what a per-tick `@alert` would produce for a single tick. If the condition is false, nothing happens.
+
+- `<condition>` is a testbench `WIRE` identifier or hierarchical signal reference (`TAP`). If the signal is multi-bit, it is truthy if any bit is `1`.
+- `<color>` is a color name (one of: `RED`, `ORANGE`, `YELLOW`, `GREEN`, `BLUE`, `PURPLE`, `CYAN`, `WHITE`).
+- `<message>` is an optional string literal describing the alert.
+- Unlike `@alert`, this is **not** registered for per-tick evaluation. It fires at most once, at the point it appears in the simulation sequence.
+
+**Example:**
+```text
+@run(ns=5000)
+@alert_if(dut.fifo_full, RED, "FIFO full at 5µs checkpoint")
+@run(ns=5000)
+@alert_if(dut.fifo_full, RED, "FIFO full at 10µs checkpoint")
+```
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| ALI-001 | `@alert_if` may not appear inside `@setup`, `@update`, or `@new` blocks |
+| ALI-002 | `@alert_if` condition must reference a signal in scope (declared in `WIRE`, `CLOCK`, or `TAP`) |
+| ALI-003 | Color name must be one of the predefined names |
+
+### 4.14 MONITOR Block (Per-Tick Conditional Evaluation)
+
+**Syntax:**
+```text
+MONITOR {
+    @print_if(<condition>, "<format>", ...)
+    @mark_if(<condition>, <color>)
+    @mark_if(<condition>, <color>, "<message>")
+    @alert_if(<condition>, <color>)
+    @alert_if(<condition>, <color>, "<message>")
+}
+```
+
+The `MONITOR` block defines a set of conditional directives that are evaluated **every tick** during all `@run`, `@run_until`, and `@run_while` directives. Unlike the one-shot forms of `@print_if`, `@mark_if`, and `@alert_if` that appear in the simulation body, directives inside a `MONITOR` block fire repeatedly whenever their conditions are met.
+
+- At most **one** `MONITOR` block is permitted per `@simulation`.
+- Only `@print_if`, `@mark_if`, and `@alert_if` are permitted inside a `MONITOR` block. Other directives (e.g., `@run`, `@update`, `@print`, `@mark`, `@alert`) are not allowed.
+- The `MONITOR` block may appear anywhere in the simulation body (before or after `@setup`, `@run`, etc.). Its position does not affect when evaluation begins — monitor directives are always evaluated on every tick from the first `@run` onward.
+- Conditions reference `WIRE`, `CLOCK`, or `TAP` signals, following the same resolution rules as one-shot directives.
+
+**Example:**
+```text
+@simulation fifo_test
+    @import "fifo.jz";
+
+    CLOCK { clk = { period=10.0 }; }
+    WIRE { rst_n [1]; full [1]; empty [1]; }
+    TAP { dut.overflow; }
+
+    @new dut fifo { ... }
+
+    MONITOR {
+        @alert_if(dut.overflow, RED, "FIFO overflow detected!")
+        @mark_if(full, ORANGE, "FIFO full")
+        @print_if(empty, "FIFO empty at %t", $time)
+    }
+
+    @setup { rst_n <= 1'b0; }
+    @run(ns=50)
+    @update { rst_n <= 1'b1; }
+    @run(ns=1000)
+@endsim
+```
+
+**Rules:**
+
+| Rule | Description |
+| :--- | :--- |
+| MON-001 | Only one `MONITOR` block is permitted per `@simulation` |
+| MON-002 | Only `@print_if`, `@mark_if`, and `@alert_if` are permitted inside `MONITOR` |
+| MON-003 | `MONITOR` conditions must reference signals in scope (`WIRE`, `CLOCK`, or `TAP`) |
+
 ---
 
 ## 5. CLI USAGE
@@ -436,6 +661,11 @@ Every signal in `CLOCK`, `WIRE`, and `TAP` blocks is sampled and written to the 
         dout   [8] = data_out;
         full   [1] = full;
         empty  [1] = empty;
+    }
+
+    MONITOR {
+        @alert_if(full, RED, "FIFO full")
+        @mark_if(empty, CYAN, "FIFO empty")
     }
 
     @setup {

@@ -7,6 +7,7 @@
 
 #include "sim_exec.h"
 #include "sim_eval.h"
+#include "sim_perf.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -52,6 +53,18 @@ static void apply_assign(SimContext *ctx, const IR_Assignment *asgn, int is_nba)
             entry->next = entry->current;
         }
 
+        /* Snapshot affected words for dirty tracking (immediate mode) */
+        int lo_wi = lsb / 64;
+        int hi_wi = msb / 64;
+        uint64_t snap_val[SIM_VAL_WORDS], snap_x[SIM_VAL_WORDS], snap_z[SIM_VAL_WORDS];
+        if (!is_nba) {
+            for (int w = lo_wi; w <= hi_wi; w++) {
+                snap_val[w] = target->val[w];
+                snap_x[w] = target->xmask[w];
+                snap_z[w] = target->zmask[w];
+            }
+        }
+
         /* Write each bit of the slice */
         for (int b = 0; b < slice_w; b++) {
             int dst_bit = lsb + b;
@@ -66,20 +79,51 @@ static void apply_assign(SimContext *ctx, const IR_Assignment *asgn, int is_nba)
             target->zmask[dst_wi] = (target->zmask[dst_wi] & ~bmask) | (((rhs_val.zmask[src_wi] >> src_bi) & 1) << dst_bi);
         }
 
-        if (is_nba) entry->has_pending = 1;
+        if (is_nba) {
+            entry->has_pending = 1;
+        } else {
+            /* Dirty tracking: compare affected words */
+            for (int w = lo_wi; w <= hi_wi; w++) {
+                if (target->val[w] != snap_val[w] ||
+                    target->xmask[w] != snap_x[w] ||
+                    target->zmask[w] != snap_z[w]) {
+                    ctx->settle_dirty = 1;
+                    int sig_idx = (int)(entry - ctx->signals);
+                    ctx->sig_dirty[sig_idx] = 1;
+                    break;
+                }
+            }
+        }
     } else {
         /* Full-width write */
         if (is_nba) {
             entry->next = rhs_val;
             entry->has_pending = 1;
         } else {
-            entry->current = rhs_val;
+            /* Dirty tracking: only write and mark dirty if value changed */
+            int nw = (target_width + 63) / 64;
+            int same = 1;
+            for (int w = 0; w < nw; w++) {
+                if (entry->current.val[w] != rhs_val.val[w] ||
+                    entry->current.xmask[w] != rhs_val.xmask[w] ||
+                    entry->current.zmask[w] != rhs_val.zmask[w]) {
+                    same = 0;
+                    break;
+                }
+            }
+            if (!same) {
+                entry->current = rhs_val;
+                ctx->settle_dirty = 1;
+                int sig_idx = (int)(entry - ctx->signals);
+                ctx->sig_dirty[sig_idx] = 1;
+            }
         }
     }
 }
 
 void sim_exec_stmt(SimContext *ctx, const IR_Stmt *stmt, int is_nba) {
     if (!stmt) return;
+    PERF_COUNT(PERF_EXEC_STMT);
 
     switch (stmt->kind) {
 
@@ -197,101 +241,116 @@ void sim_exec_stmt(SimContext *ctx, const IR_Stmt *stmt, int is_nba) {
 
 /* ---- Instance port propagation ---- */
 
-static const IR_Signal *find_signal_in_module(const IR_Module *mod, int signal_id) {
-    for (int i = 0; i < mod->num_signals; i++) {
-        if (mod->signals[i].id == signal_id)
-            return &mod->signals[i];
+/**
+ * O(1) signal lookup using the SimContext's prebuilt index map.
+ */
+static const IR_Signal *find_signal_in_ctx(SimContext *ctx, int signal_id) {
+    if (signal_id >= 0 && signal_id <= ctx->max_sig_id) {
+        int idx = ctx->sig_id_map[signal_id];
+        if (idx >= 0)
+            return &ctx->module->signals[idx];
     }
     return NULL;
 }
 
 /**
- * Propagate values from parent context to child instance inputs.
- * For each instance connection where the child port is INPUT or INOUT,
- * copy the parent signal value (possibly sliced) to the child port entry.
+ * Compare two SimValues for exact equality (fast, no masking).
+ * Assumes unused bits above width are already zeroed.
  */
-static void propagate_to_child(SimContext *parent, SimChildInstance *ci) {
-    if (!ci->ctx || !ci->inst) return;
+static inline int sim_val_same(SimValue a, SimValue b, int nw) {
+    for (int i = 0; i < nw; i++) {
+        if (a.val[i] != b.val[i] || a.xmask[i] != b.xmask[i] ||
+            a.zmask[i] != b.zmask[i])
+            return 0;
+    }
+    return 1;
+}
 
-    for (int p = 0; p < ci->inst->num_connections; p++) {
-        const IR_InstanceConnection *conn = &ci->inst->connections[p];
-        if (conn->const_expr) continue; /* constant binding, skip */
+/**
+ * Propagate values from parent context to child instance inputs.
+ * Uses precomputed port mappings for zero-lookup propagation.
+ * Returns 1 if any child input actually changed, 0 otherwise.
+ */
+static int propagate_to_child(SimContext *parent, SimChildInstance *ci) {
+    (void)parent;
+    int changed = 0;
+    for (int i = 0; i < ci->num_input_maps; i++) {
+        SimPortMapping *m = &ci->input_maps[i];
+        SimValue old = m->child_entry->current;
 
-        const IR_Signal *child_sig = find_signal_in_module(ci->child_module, conn->child_port_id);
-        if (!child_sig || child_sig->kind != SIG_PORT) continue;
+        if (m->parent_msb >= 0) {
+            /* Sliced connection: extract slice from parent */
+            m->child_entry->current = sim_val_slice(m->parent_entry->current,
+                                                     m->parent_msb,
+                                                     m->parent_lsb);
+        } else {
+            /* Full-width connection */
+            m->child_entry->current = m->parent_entry->current;
+            if (m->child_entry->current.width != m->child_width) {
+                m->child_entry->current.width = m->child_width;
+                m->child_entry->current = sim_val_mask(m->child_entry->current);
+            }
+        }
 
-        if (child_sig->u.port.direction == PORT_IN ||
-            child_sig->u.port.direction == PORT_INOUT) {
-            SimSignalEntry *parent_entry = sim_ctx_lookup(parent, conn->parent_signal_id);
-            SimSignalEntry *child_entry = sim_ctx_lookup(ci->ctx, conn->child_port_id);
-            if (!parent_entry || !child_entry) continue;
-
-            if (conn->parent_msb >= 0 && conn->parent_lsb >= 0) {
-                /* Sliced connection: extract slice from parent */
-                child_entry->current = sim_val_slice(parent_entry->current,
-                                                     conn->parent_msb,
-                                                     conn->parent_lsb);
-            } else {
-                /* Full-width connection */
-                child_entry->current = parent_entry->current;
-                if (child_entry->current.width != child_sig->width) {
-                    child_entry->current.width = child_sig->width;
-                    child_entry->current = sim_val_mask(child_entry->current);
-                }
+        {
+            int nw = (m->child_width + 63) / 64;
+            if (!sim_val_same(old, m->child_entry->current, nw)) {
+                changed = 1;
+                int sig_idx = (int)(m->child_entry - ci->ctx->signals);
+                ci->ctx->sig_dirty[sig_idx] = 1;
             }
         }
     }
+    return changed;
 }
 
 /**
  * Propagate values from child instance outputs back to parent context.
- * For each instance connection where the child port is OUTPUT or INOUT,
- * copy the child port value back to the parent signal.
+ * Uses precomputed port mappings for zero-lookup propagation.
+ * Sets parent settle_dirty if any parent signal changes.
  */
 static void propagate_from_child(SimContext *parent, SimChildInstance *ci) {
-    if (!ci->ctx || !ci->inst) return;
+    for (int i = 0; i < ci->num_output_maps; i++) {
+        SimPortMapping *m = &ci->output_maps[i];
 
-    for (int p = 0; p < ci->inst->num_connections; p++) {
-        const IR_InstanceConnection *conn = &ci->inst->connections[p];
-        if (conn->const_expr) continue;
+        /* For INOUT: don't overwrite parent with z */
+        if (m->is_inout && sim_val_is_all_z(m->child_entry->current))
+            continue;
 
-        const IR_Signal *child_sig = find_signal_in_module(ci->child_module, conn->child_port_id);
-        if (!child_sig || child_sig->kind != SIG_PORT) continue;
-
-        if (child_sig->u.port.direction == PORT_OUT ||
-            child_sig->u.port.direction == PORT_INOUT) {
-            SimSignalEntry *parent_entry = sim_ctx_lookup(parent, conn->parent_signal_id);
-            SimSignalEntry *child_entry = sim_ctx_lookup(ci->ctx, conn->child_port_id);
-            if (!parent_entry || !child_entry) continue;
-
-            /* For INOUT: don't overwrite parent with z */
-            if (child_sig->u.port.direction == PORT_INOUT &&
-                sim_val_is_all_z(child_entry->current)) {
-                continue;
+        if (m->parent_msb >= 0) {
+            /* Sliced: write child value into parent's slice (multi-word) */
+            int msb = m->parent_msb;
+            int lsb = m->parent_lsb;
+            int sw = msb - lsb + 1;
+            SimValue old = m->parent_entry->current;
+            for (int b = 0; b < sw; b++) {
+                int dst_bit = lsb + b;
+                int dst_wi = dst_bit / 64;
+                int dst_bi = dst_bit % 64;
+                int src_wi = b / 64;
+                int src_bi = b % 64;
+                uint64_t bmask = (uint64_t)1 << dst_bi;
+                m->parent_entry->current.val[dst_wi] = (m->parent_entry->current.val[dst_wi] & ~bmask) |
+                    (((m->child_entry->current.val[src_wi] >> src_bi) & 1) << dst_bi);
+                m->parent_entry->current.xmask[dst_wi] = (m->parent_entry->current.xmask[dst_wi] & ~bmask) |
+                    (((m->child_entry->current.xmask[src_wi] >> src_bi) & 1) << dst_bi);
+                m->parent_entry->current.zmask[dst_wi] = (m->parent_entry->current.zmask[dst_wi] & ~bmask) |
+                    (((m->child_entry->current.zmask[src_wi] >> src_bi) & 1) << dst_bi);
             }
-
-            if (conn->parent_msb >= 0 && conn->parent_lsb >= 0) {
-                /* Sliced: write child value into parent's slice (multi-word) */
-                int msb = conn->parent_msb;
-                int lsb = conn->parent_lsb;
-                int sw = msb - lsb + 1;
-                for (int b = 0; b < sw; b++) {
-                    int dst_bit = lsb + b;
-                    int dst_wi = dst_bit / 64;
-                    int dst_bi = dst_bit % 64;
-                    int src_wi = b / 64;
-                    int src_bi = b % 64;
-                    uint64_t bmask = (uint64_t)1 << dst_bi;
-                    parent_entry->current.val[dst_wi] = (parent_entry->current.val[dst_wi] & ~bmask) |
-                        (((child_entry->current.val[src_wi] >> src_bi) & 1) << dst_bi);
-                    parent_entry->current.xmask[dst_wi] = (parent_entry->current.xmask[dst_wi] & ~bmask) |
-                        (((child_entry->current.xmask[src_wi] >> src_bi) & 1) << dst_bi);
-                    parent_entry->current.zmask[dst_wi] = (parent_entry->current.zmask[dst_wi] & ~bmask) |
-                        (((child_entry->current.zmask[src_wi] >> src_bi) & 1) << dst_bi);
-                }
-            } else {
-                /* Full-width */
-                parent_entry->current = child_entry->current;
+            int nw = (m->parent_entry->current.width + 63) / 64;
+            if (!sim_val_same(old, m->parent_entry->current, nw)) {
+                parent->settle_dirty = 1;
+                int sig_idx = (int)(m->parent_entry - parent->signals);
+                parent->sig_dirty[sig_idx] = 1;
+            }
+        } else {
+            /* Full-width */
+            int nw = (m->child_entry->current.width + 63) / 64;
+            if (!sim_val_same(m->parent_entry->current, m->child_entry->current, nw)) {
+                m->parent_entry->current = m->child_entry->current;
+                parent->settle_dirty = 1;
+                int sig_idx = (int)(m->parent_entry - parent->signals);
+                parent->sig_dirty[sig_idx] = 1;
             }
         }
     }
@@ -313,29 +372,75 @@ static void propagate_to_all_children(SimContext *ctx) {
 /**
  * Execute one round of async settling across the entire hierarchy:
  * 1. Run parent async block
- * 2. Propagate parent → children
+ * 2. Propagate parent → children (skip if inputs unchanged)
  * 3. Run children async blocks (recursively)
  * 4. Propagate children → parent
+ *
+ * Uses dirty tracking to skip unchanged subtrees.
  */
 static void settle_hierarchy_once(SimContext *ctx) {
-    /* Execute this context's async block */
-    if (ctx->module->async_block) {
+    PERF_TIMER_START(PERF_SETTLE_HIERARCHY_ONCE);
+    /* Execute this context's async block (chunk-based if available) */
+    if (ctx->async_chunks && ctx->num_async_chunks > 0) {
+        for (int i = 0; i < ctx->num_async_chunks; i++) {
+            SimAsyncChunk *chunk = &ctx->async_chunks[i];
+            /* Check if any read signal is dirty */
+            int needs_exec = (chunk->num_reads == 0); /* always run constant chunks */
+            for (int r = 0; r < chunk->num_reads; r++) {
+                if (ctx->sig_dirty[chunk->read_indices[r]]) {
+                    needs_exec = 1;
+                    break;
+                }
+            }
+            if (needs_exec) {
+                sim_exec_stmt(ctx, chunk->stmt, 0);
+            }
+        }
+    } else if (ctx->module->async_block) {
         sim_exec_stmt(ctx, ctx->module->async_block, 0);
     }
 
     /* Propagate to children and settle them */
     for (int c = 0; c < ctx->num_children; c++) {
-        if (!ctx->children[c].ctx) continue;
-        propagate_to_child(ctx, &ctx->children[c]);
-        settle_hierarchy_once(ctx->children[c].ctx);
+        SimChildInstance *ci = &ctx->children[c];
+        if (!ci->ctx) continue;
+
+        int inputs_changed = propagate_to_child(ctx, ci);
+
+        /* Skip child if its inputs didn't change AND it has no internal
+         * dirty state (e.g., from NBA apply or previous iteration). */
+        if (!inputs_changed && !ci->ctx->settle_dirty) {
+            /* Still propagate runtime_error */
+            if (ci->ctx->runtime_error)
+                ctx->runtime_error = 1;
+            continue;
+        }
+
+        ci->ctx->settle_dirty = 0; /* clear before recursing */
+        settle_hierarchy_once(ci->ctx);
+
         /* Propagate runtime_error from child to parent */
-        if (ctx->children[c].ctx->runtime_error)
+        if (ci->ctx->runtime_error)
             ctx->runtime_error = 1;
-        propagate_from_child(ctx, &ctx->children[c]);
+        propagate_from_child(ctx, ci);
+    }
+    PERF_TIMER_STOP(PERF_SETTLE_HIERARCHY_ONCE);
+}
+
+/**
+ * Clear per-signal dirty flags for this context and all children.
+ */
+static void clear_sig_dirty(SimContext *ctx) {
+    if (ctx->sig_dirty)
+        memset(ctx->sig_dirty, 0, (size_t)ctx->num_signals * sizeof(uint8_t));
+    for (int c = 0; c < ctx->num_children; c++) {
+        if (ctx->children[c].ctx)
+            clear_sig_dirty(ctx->children[c].ctx);
     }
 }
 
 int sim_settle_combinational(SimContext *ctx, int max_iters) {
+    PERF_TIMER_START(PERF_SETTLE_COMBINATIONAL);
     int has_any_async = (ctx->module->async_block != NULL);
     for (int c = 0; c < ctx->num_children; c++) {
         if (ctx->children[c].ctx && ctx->children[c].child_module &&
@@ -343,37 +448,44 @@ int sim_settle_combinational(SimContext *ctx, int max_iters) {
             has_any_async = 1;
         }
     }
-    if (!has_any_async) return 0;
+    if (!has_any_async) {
+        PERF_TIMER_STOP(PERF_SETTLE_COMBINATIONAL);
+        return 0;
+    }
+
+#ifdef TRACK_PERF
+    int total_iters = 0;
+    int total_changed = 0;
+#endif
 
     for (int iter = 0; iter < max_iters; iter++) {
-        /* Snapshot current values (parent only for convergence check) */
-        int n = ctx->num_signals;
-        SimValue *snap = (SimValue *)malloc((size_t)n * sizeof(SimValue));
-        if (!snap) {
-            return -1;
-        }
+#ifdef TRACK_PERF
+        total_iters++;
+#endif
 
-        for (int i = 0; i < n; i++) {
-            snap[i] = ctx->signals[i].current;
-        }
+        /* Clear dirty flags before settling */
+        ctx->settle_dirty = 0;
 
         /* Settle entire hierarchy once */
         settle_hierarchy_once(ctx);
 
-        /* Check convergence (parent signals) */
-        int changed = 0;
-        for (int i = 0; i < n; i++) {
-            if (!sim_val_equal(ctx->signals[i].current, snap[i])) {
-                changed = 1;
-                break;
-            }
+        /* Convergence: if no signal changed anywhere, we're done */
+        int changed = ctx->settle_dirty;
+
+#ifdef TRACK_PERF
+        total_changed += changed;
+#endif
+
+        if (!changed) {
+            clear_sig_dirty(ctx);
+            PERF_STATE_SETTLE_ITER(total_iters, total_changed);
+            PERF_TIMER_STOP(PERF_SETTLE_COMBINATIONAL);
+            return 0; /* converged */
         }
-
-        free(snap);
-
-        if (!changed) return 0; /* converged */
     }
 
+    PERF_STATE_SETTLE_ITER(total_iters, total_changed);
+    PERF_TIMER_STOP(PERF_SETTLE_COMBINATIONAL);
     return -1; /* oscillation */
 }
 
@@ -427,7 +539,7 @@ static void exec_children_sync_for_clock(SimContext *parent, int parent_clock_si
                     SimSignalEntry *re = sim_ctx_lookup(ci->ctx, reg_id);
                     if (!re) continue;
 
-                    const IR_Signal *sig = find_signal_in_module(ci->child_module, reg_id);
+                    const IR_Signal *sig = find_signal_in_ctx(ci->ctx, reg_id);
                     if (sig && sig->kind == SIG_REGISTER) {
                         SimValue rv = sim_val_from_words(
                             sig->u.reg.reset_value.words,
@@ -436,6 +548,9 @@ static void exec_children_sync_for_clock(SimContext *parent, int parent_clock_si
                         if (rv.width != sig->width)
                             rv = sim_val_zext(rv, sig->width);
                         re->current = rv;
+                        ci->ctx->settle_dirty = 1;
+                        int sig_idx = (int)(re - ci->ctx->signals);
+                        ci->ctx->sig_dirty[sig_idx] = 1;
                     }
                 }
             } else {
@@ -460,7 +575,9 @@ void sim_exec_sync_domain(SimContext *ctx, int domain_idx) {
     const IR_ClockDomain *cd = &ctx->module->clock_domains[domain_idx];
     if (!cd->statements) return;
 
+    PERF_TIMER_START(PERF_EXEC_SYNC_DOMAIN);
     sim_exec_stmt(ctx, cd->statements, 1); /* NBA mode */
+    PERF_TIMER_STOP(PERF_EXEC_SYNC_DOMAIN);
 }
 
 void sim_exec_sync_domain_with_children(SimContext *ctx, int domain_idx,

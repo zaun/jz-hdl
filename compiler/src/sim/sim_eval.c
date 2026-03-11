@@ -4,11 +4,13 @@
  */
 
 #include "sim_eval.h"
+#include "sim_perf.h"
 #include <string.h>
 #include <stdio.h>
 
 SimValue sim_eval_expr(SimContext *ctx, const IR_Expr *expr) {
     if (!expr) return sim_val_all_x(1);
+    PERF_COUNT(PERF_EVAL_EXPR);
 
     switch (expr->kind) {
 

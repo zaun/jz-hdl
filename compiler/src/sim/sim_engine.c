@@ -13,9 +13,12 @@
 #include "sim_state.h"
 #include "sim_eval.h"
 #include "sim_exec.h"
+#include <time.h>
 #include "sim_value.h"
 #include "../../include/ast.h"
 #include "../../include/ir.h"
+
+#include "sim_perf.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -237,7 +240,8 @@ static SimValue eval_tb_ast_expr(SimTestState *ts, const JZASTNode *node) {
         return parse_literal_to_simval(node->text);
     }
 
-    if (node->type == JZ_AST_EXPR_IDENTIFIER) {
+    if (node->type == JZ_AST_EXPR_IDENTIFIER ||
+        node->type == JZ_AST_EXPR_QUALIFIED_IDENTIFIER) {
         int idx = find_tb_wire(ts, node->name);
         if (idx >= 0) return ts->tb_wires[idx].value;
         return sim_val_all_x(1);
@@ -632,23 +636,24 @@ static void build_port_bindings(SimTestState *ts,
 /* ---- Input / output propagation ---- */
 
 static void sim_propagate_inputs(SimTestState *ts) {
+    PERF_TIMER_START(PERF_PROPAGATE_INPUTS);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
+        int sig_id = b->port_signal_id;
         const IR_Signal *sig = NULL;
 
-        /* Find the signal in the DUT module */
-        for (int j = 0; j < ts->dut->module->num_signals; j++) {
-            if (ts->dut->module->signals[j].id == b->port_signal_id) {
-                sig = &ts->dut->module->signals[j];
-                break;
-            }
+        /* O(1) signal lookup via DUT context map */
+        if (sig_id >= 0 && sig_id <= ts->dut->max_sig_id) {
+            int idx = ts->dut->sig_id_map[sig_id];
+            if (idx >= 0)
+                sig = &ts->dut->module->signals[idx];
         }
         if (!sig) continue;
 
         if (sig->kind == SIG_PORT &&
             (sig->u.port.direction == PORT_IN || sig->u.port.direction == PORT_INOUT)) {
             /* Copy tb wire value -> DUT input */
-            SimSignalEntry *entry = sim_ctx_lookup(ts->dut, b->port_signal_id);
+            SimSignalEntry *entry = sim_ctx_lookup(ts->dut, sig_id);
             if (entry) {
                 entry->current = ts->tb_wires[b->tb_wire_index].value;
                 /* Match widths */
@@ -656,21 +661,27 @@ static void sim_propagate_inputs(SimTestState *ts) {
                     entry->current.width = sig->width;
                     entry->current = sim_val_mask(entry->current);
                 }
+                ts->dut->settle_dirty = 1;
+                int sig_idx = (int)(entry - ts->dut->signals);
+                ts->dut->sig_dirty[sig_idx] = 1;
             }
         }
     }
+    PERF_TIMER_STOP(PERF_PROPAGATE_INPUTS);
 }
 
 static void sim_propagate_outputs(SimTestState *ts) {
+    PERF_TIMER_START(PERF_PROPAGATE_OUTPUTS);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
+        int sig_id = b->port_signal_id;
         const IR_Signal *sig = NULL;
 
-        for (int j = 0; j < ts->dut->module->num_signals; j++) {
-            if (ts->dut->module->signals[j].id == b->port_signal_id) {
-                sig = &ts->dut->module->signals[j];
-                break;
-            }
+        /* O(1) signal lookup via DUT context map */
+        if (sig_id >= 0 && sig_id <= ts->dut->max_sig_id) {
+            int idx = ts->dut->sig_id_map[sig_id];
+            if (idx >= 0)
+                sig = &ts->dut->module->signals[idx];
         }
         if (!sig) continue;
 
@@ -691,6 +702,7 @@ static void sim_propagate_outputs(SimTestState *ts) {
             }
         }
     }
+    PERF_TIMER_STOP(PERF_PROPAGATE_OUTPUTS);
 }
 
 /* ---- INOUT z-resolution ---- */
@@ -701,15 +713,17 @@ static void sim_propagate_outputs(SimTestState *ts) {
  * z loses to any real value from the other side of the bus.
  */
 static void sim_resolve_inout_z(SimTestState *ts) {
+    PERF_TIMER_START(PERF_RESOLVE_INOUT_Z);
     for (int i = 0; i < ts->num_bindings; i++) {
         SimPortBinding *b = &ts->bindings[i];
+        int sig_id = b->port_signal_id;
         const IR_Signal *sig = NULL;
 
-        for (int j = 0; j < ts->dut->module->num_signals; j++) {
-            if (ts->dut->module->signals[j].id == b->port_signal_id) {
-                sig = &ts->dut->module->signals[j];
-                break;
-            }
+        /* O(1) signal lookup via DUT context map */
+        if (sig_id >= 0 && sig_id <= ts->dut->max_sig_id) {
+            int idx = ts->dut->sig_id_map[sig_id];
+            if (idx >= 0)
+                sig = &ts->dut->module->signals[idx];
         }
         if (!sig) continue;
 
@@ -725,15 +739,18 @@ static void sim_resolve_inout_z(SimTestState *ts) {
             }
         }
     }
+    PERF_TIMER_STOP(PERF_RESOLVE_INOUT_Z);
 }
 
 /* ---- Full settle: propagate inputs, settle, resolve inout, propagate outputs ---- */
 
 static void sim_full_settle(SimTestState *ts) {
+    PERF_TIMER_START(PERF_FULL_SETTLE);
     sim_propagate_inputs(ts);
     sim_settle_checked(ts);
     sim_resolve_inout_z(ts);
     sim_propagate_outputs(ts);
+    PERF_TIMER_STOP(PERF_FULL_SETTLE);
 }
 
 /* ---- Apply reset values for a clock domain ---- */
@@ -744,20 +761,23 @@ static void sim_apply_domain_reset(SimContext *ctx, const IR_ClockDomain *cd) {
         SimSignalEntry *re = sim_ctx_lookup(ctx, reg_id);
         if (!re) continue;
 
-        for (int s = 0; s < ctx->module->num_signals; s++) {
-            if (ctx->module->signals[s].id == reg_id) {
-                const IR_Signal *sig = &ctx->module->signals[s];
-                if (sig->kind == SIG_REGISTER) {
-                    SimValue rv = sim_val_from_words(
-                        sig->u.reg.reset_value.words,
-                        IR_LIT_WORDS,
-                        sig->u.reg.reset_value.width);
-                    if (rv.width != sig->width)
-                        rv = sim_val_zext(rv, sig->width);
-                    re->current = rv;
-                }
-                break;
-            }
+        const IR_Signal *sig = NULL;
+        if (reg_id >= 0 && reg_id <= ctx->max_sig_id) {
+            int idx = ctx->sig_id_map[reg_id];
+            if (idx >= 0)
+                sig = &ctx->module->signals[idx];
+        }
+        if (sig && sig->kind == SIG_REGISTER) {
+            SimValue rv = sim_val_from_words(
+                sig->u.reg.reset_value.words,
+                IR_LIT_WORDS,
+                sig->u.reg.reset_value.width);
+            if (rv.width != sig->width)
+                rv = sim_val_zext(rv, sig->width);
+            re->current = rv;
+            ctx->settle_dirty = 1;
+            int sig_idx = (int)(re - ctx->signals);
+            ctx->sig_dirty[sig_idx] = 1;
         }
     }
 }
@@ -775,6 +795,7 @@ static void sim_apply_domain_reset(SimContext *ctx, const IR_ClockDomain *cd) {
 static void sim_fire_domains_for_clock(SimTestState *ts, int clock_port_id,
                                         uint64_t new_clk_val,
                                         int apply_nba_per_domain) {
+    PERF_TIMER_START(PERF_FIRE_DOMAINS);
     for (int d = 0; d < ts->dut->module->num_clock_domains; d++) {
         const IR_ClockDomain *cd = &ts->dut->module->clock_domains[d];
 
@@ -817,6 +838,7 @@ static void sim_fire_domains_for_clock(SimTestState *ts, int clock_port_id,
             sim_ctx_apply_nba(ts->dut);
         }
     }
+    PERF_TIMER_STOP(PERF_FIRE_DOMAINS);
 }
 
 /* ---- Clock advancement ---- */
@@ -1233,6 +1255,8 @@ int jz_sim_run_testbenches(const JZASTNode *root,
 
     if (!root || !design) return 1;
 
+    perf_reset();
+
     int total_tests = 0;
     int total_passed = 0;
     int total_failed = 0;
@@ -1284,6 +1308,8 @@ int jz_sim_run_testbenches(const JZASTNode *root,
             total_passed, total_failed, total_tests);
     fprintf(stdout, "Seed: 0x%08x\n", seed);
 
+    perf_print_summary();
+
     return total_failed > 0 ? 1 : 0;
 }
 
@@ -1332,6 +1358,7 @@ typedef struct SimClock {
     const char *name;
     int         tb_wire_idx;
     uint64_t    toggle_ps;  /* half period in picoseconds */
+    uint64_t    phase_ps;   /* phase offset in picoseconds */
 } SimClock;
 
 static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
@@ -1345,8 +1372,21 @@ static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
             const JZASTNode *cd = child->children[j];
             if (!cd || cd->type != JZ_AST_SIM_CLOCK_DECL) continue;
 
-            /* period is in ns (from text field) */
-            double period_ns = cd->text ? atof(cd->text) : 10.0;
+            /* Parse period and optional phase from text field.
+             * Format: "period=37.04 phase=45" or legacy "37.04" */
+            double period_ns = 10.0;
+            double phase_deg = 0.0;
+            if (cd->text) {
+                const char *pp = strstr(cd->text, "period=");
+                if (pp) {
+                    period_ns = atof(pp + 7);
+                } else {
+                    /* Legacy: bare number is period */
+                    period_ns = atof(cd->text);
+                }
+                const char *ph = strstr(cd->text, "phase=");
+                if (ph) phase_deg = atof(ph + 6);
+            }
             if (period_ns <= 0.0) period_ns = 10.0;
 
             /* Convert to exact integer ps; reject fractional picoseconds */
@@ -1360,11 +1400,19 @@ static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
             uint64_t toggle_ps = period_ps / 2;
             if (toggle_ps == 0) toggle_ps = 1;
 
+            /* Convert phase degrees to picoseconds offset */
+            uint64_t phase_ps = 0;
+            if (phase_deg > 0.0) {
+                double phase_ns = period_ns * (phase_deg / 360.0);
+                time_to_exact_ps(phase_ns, 1000.0, &phase_ps);
+            }
+
             int wi = find_tb_wire(ts, cd->name);
 
             clocks[n].name = cd->name;
             clocks[n].tb_wire_idx = wi;
             clocks[n].toggle_ps = toggle_ps;
+            clocks[n].phase_ps = phase_ps;
             n++;
         }
     }
@@ -1485,13 +1533,15 @@ static int sim_run_simulation(const JZASTNode *root,
     int num_sim_clocks = collect_sim_clocks(sim_node, &ts, sim_clocks, 64);
     if (num_sim_clocks < 0) return 1; /* conversion error already reported */
 
-    /* Compute GCD tick */
+    /* Compute GCD tick (include phase offsets in GCD so tick aligns) */
     uint64_t tick_ps = 0;
     for (int i = 0; i < num_sim_clocks; i++) {
         if (tick_ps == 0)
             tick_ps = sim_clocks[i].toggle_ps;
         else
             tick_ps = gcd64(tick_ps, sim_clocks[i].toggle_ps);
+        if (sim_clocks[i].phase_ps > 0)
+            tick_ps = gcd64(tick_ps, sim_clocks[i].phase_ps);
     }
     if (tick_ps == 0) tick_ps = 1000; /* default 1ns */
     ts.tick_ps = tick_ps;
@@ -1515,12 +1565,31 @@ static int sim_run_simulation(const JZASTNode *root,
         goto cleanup_dut;
     }
 
+    /* Write JZW metadata (no-op for VCD/FST) */
+    {
+        char buf[64];
+        time_t now = time(NULL);
+        struct tm *tm_info = gmtime(&now);
+        char date_buf[32];
+        strftime(date_buf, sizeof(date_buf), "%Y-%m-%dT%H:%M:%SZ", tm_info);
+        sim_wave_set_meta(wave, "date", date_buf);
+        sim_wave_set_meta(wave, "source_file", filename ? filename : "");
+        sim_wave_set_meta(wave, "compiler_version", "0.1.0");
+        snprintf(buf, sizeof(buf), "0x%08X", seed);
+        sim_wave_set_meta(wave, "seed", buf);
+        snprintf(buf, sizeof(buf), "%llu", (unsigned long long)tick_ps);
+        sim_wave_set_meta(wave, "tick_ps", buf);
+        sim_wave_set_meta(wave, "module_name",
+                          dut_module->name ? dut_module->name : "");
+    }
+
     /* Register testbench wires in waveform writer */
     int *wave_ids = calloc((size_t)ts.num_tb_wires, sizeof(int));
     for (int i = 0; i < ts.num_tb_wires; i++) {
         const char *scope = ts.tb_wires[i].is_clock ? "clocks" : "wires";
+        const char *type = ts.tb_wires[i].is_clock ? "clock" : "wire";
         wave_ids[i] = sim_wave_add_signal(wave, scope, ts.tb_wires[i].name,
-                                           ts.tb_wires[i].width);
+                                           ts.tb_wires[i].width, type);
     }
 
     /* Collect and register TAP signals in VCD */
@@ -1577,7 +1646,7 @@ static int sim_run_simulation(const JZASTNode *root,
                         sim_taps[num_sim_taps].full_path = path;
                         sim_taps[num_sim_taps].signal_id = found_id;
                         sim_taps[num_sim_taps].wave_id =
-                            sim_wave_add_signal(wave, scope, sig_name, found_width);
+                            sim_wave_add_signal(wave, scope, sig_name, found_width, "tap");
                         num_sim_taps++;
                     } else if (verbose) {
                         fprintf(stderr, "warning: TAP signal '%s' not found in DUT\n",
@@ -1622,6 +1691,14 @@ static int sim_run_simulation(const JZASTNode *root,
     sim_wave_set_time(wave,0);
     wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
 
+    /* Trace state: on by default */
+    int trace_enabled = 1;
+
+    /* Collect MONITOR block children for per-tick evaluation */
+    const JZASTNode **monitor_nodes = NULL;
+    int num_monitors = 0;
+    int cap_monitors = 0;
+
     /* Walk simulation body sequentially (skip the @setup we already ran) */
     int setup_done = 0;
     for (size_t ci = 0; ci < sim_node->child_count; ci++) {
@@ -1639,15 +1716,19 @@ static int sim_run_simulation(const JZASTNode *root,
             /* Subsequent @setup blocks (unusual) — treat like @update */
             process_setup_update(&ts, child, 1);
             sim_full_settle(&ts);
-            sim_wave_set_time(wave,current_time_ps);
-            wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+            if (trace_enabled) {
+                sim_wave_set_time(wave,current_time_ps);
+                wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+            }
 
         } else if (child->type == JZ_AST_TB_UPDATE) {
             /* @update: apply wire changes at current time, then settle */
             process_setup_update(&ts, child, 0);
             sim_full_settle(&ts);
-            sim_wave_set_time(wave,current_time_ps);
-            wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+            if (trace_enabled) {
+                sim_wave_set_time(wave,current_time_ps);
+                wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+            }
 
         } else if (child->type == JZ_AST_SIM_RUN) {
             /* @run: advance time */
@@ -1670,12 +1751,15 @@ static int sim_run_simulation(const JZASTNode *root,
 
             while (current_time_ps < end_time_ps && !ts.runtime_error) {
                 current_time_ps += tick_ps;
+                PERF_STATE_TICK();
 
                 /* Toggle clocks scheduled at this tick */
+                PERF_TIMER_START(PERF_CLOCK_TOGGLE);
                 int any_edge = 0;
                 for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                     if (sim_clocks[ci2].toggle_ps > 0 &&
-                        (current_time_ps % sim_clocks[ci2].toggle_ps) == 0) {
+                        current_time_ps >= sim_clocks[ci2].phase_ps &&
+                        ((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) == 0) {
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi >= 0) {
                             uint64_t cur = ts.tb_wires[wi].value.val[0] & 1;
@@ -1684,6 +1768,7 @@ static int sim_run_simulation(const JZASTNode *root,
                         }
                     }
                 }
+                PERF_TIMER_STOP(PERF_CLOCK_TOGGLE);
 
                 /* Propagate inputs and settle combinational */
                 sim_propagate_inputs(&ts);
@@ -1694,7 +1779,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 if (any_edge) {
                     for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                         if (sim_clocks[ci2].toggle_ps == 0) continue;
-                        if ((current_time_ps % sim_clocks[ci2].toggle_ps) != 0) continue;
+                        if (current_time_ps < sim_clocks[ci2].phase_ps) continue;
+                        if (((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) != 0) continue;
 
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi < 0) continue;
@@ -1725,9 +1811,41 @@ static int sim_run_simulation(const JZASTNode *root,
                 /* Propagate outputs */
                 sim_propagate_outputs(&ts);
 
-                /* Dump to VCD */
-                sim_wave_set_time(wave,current_time_ps);
-                wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+                /* Dump to waveform (skip if trace is off) */
+                if (trace_enabled) {
+                    PERF_TIMER_START(PERF_WAVEFORM_DUMP);
+                    sim_wave_set_time(wave,current_time_ps);
+                    wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+                    PERF_TIMER_STOP(PERF_WAVEFORM_DUMP);
+                }
+
+                /* Evaluate MONITOR block directives */
+                ts.current_time_ps = current_time_ps;
+                for (int mi = 0; mi < num_monitors; mi++) {
+                    const JZASTNode *mn = monitor_nodes[mi];
+                    if (mn->type == JZ_AST_PRINT_IF) {
+                        process_print(&ts, mn);
+                    } else if (mn->type == JZ_AST_SIM_MARK_IF ||
+                               mn->type == JZ_AST_SIM_ALERT_IF) {
+                        if (mn->child_count < 1) continue;
+                        const JZASTNode *cond_node = mn->children[0];
+                        SimValue mcond = eval_tb_ast_expr(&ts, cond_node);
+                        if (mcond.xmask[0] != 0 && cond_node->name) {
+                            for (int ti = 0; ti < num_sim_taps; ti++) {
+                                if (strcmp(sim_taps[ti].full_path, cond_node->name) == 0) {
+                                    SimSignalEntry *se = sim_ctx_lookup(ts.dut, sim_taps[ti].signal_id);
+                                    if (se) mcond = se->current;
+                                    break;
+                                }
+                            }
+                        }
+                        if (sim_val_is_true(mcond) == 1) {
+                            const char *mtype = (mn->type == JZ_AST_SIM_MARK_IF) ? "mark" : "alert";
+                            sim_wave_add_annotation(wave, current_time_ps, mtype,
+                                                     -1, mn->name, mn->text, 0);
+                        }
+                    }
+                }
             }
         } else if (child->type == JZ_AST_SIM_RUN_UNTIL ||
                    child->type == JZ_AST_SIM_RUN_WHILE) {
@@ -1765,12 +1883,15 @@ static int sim_run_simulation(const JZASTNode *root,
 
             while (current_time_ps < end_time_ps && !ts.runtime_error) {
                 current_time_ps += tick_ps;
+                PERF_STATE_TICK();
 
                 /* Toggle clocks scheduled at this tick */
+                PERF_TIMER_START(PERF_CLOCK_TOGGLE);
                 int any_edge = 0;
                 for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                     if (sim_clocks[ci2].toggle_ps > 0 &&
-                        (current_time_ps % sim_clocks[ci2].toggle_ps) == 0) {
+                        current_time_ps >= sim_clocks[ci2].phase_ps &&
+                        ((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) == 0) {
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi >= 0) {
                             uint64_t cur = ts.tb_wires[wi].value.val[0] & 1;
@@ -1779,6 +1900,7 @@ static int sim_run_simulation(const JZASTNode *root,
                         }
                     }
                 }
+                PERF_TIMER_STOP(PERF_CLOCK_TOGGLE);
 
                 /* Propagate inputs and settle combinational */
                 sim_propagate_inputs(&ts);
@@ -1789,7 +1911,8 @@ static int sim_run_simulation(const JZASTNode *root,
                 if (any_edge) {
                     for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
                         if (sim_clocks[ci2].toggle_ps == 0) continue;
-                        if ((current_time_ps % sim_clocks[ci2].toggle_ps) != 0) continue;
+                        if (current_time_ps < sim_clocks[ci2].phase_ps) continue;
+                        if (((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) != 0) continue;
 
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi < 0) continue;
@@ -1814,9 +1937,41 @@ static int sim_run_simulation(const JZASTNode *root,
 
                 sim_propagate_outputs(&ts);
 
-                /* Dump to VCD */
-                sim_wave_set_time(wave,current_time_ps);
-                wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+                /* Dump to waveform (skip if trace is off) */
+                if (trace_enabled) {
+                    PERF_TIMER_START(PERF_WAVEFORM_DUMP);
+                    sim_wave_set_time(wave,current_time_ps);
+                    wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+                    PERF_TIMER_STOP(PERF_WAVEFORM_DUMP);
+                }
+
+                /* Evaluate MONITOR block directives */
+                ts.current_time_ps = current_time_ps;
+                for (int mi = 0; mi < num_monitors; mi++) {
+                    const JZASTNode *mn = monitor_nodes[mi];
+                    if (mn->type == JZ_AST_PRINT_IF) {
+                        process_print(&ts, mn);
+                    } else if (mn->type == JZ_AST_SIM_MARK_IF ||
+                               mn->type == JZ_AST_SIM_ALERT_IF) {
+                        if (mn->child_count < 1) continue;
+                        const JZASTNode *cond_node = mn->children[0];
+                        SimValue mcond = eval_tb_ast_expr(&ts, cond_node);
+                        if (mcond.xmask[0] != 0 && cond_node->name) {
+                            for (int ti = 0; ti < num_sim_taps; ti++) {
+                                if (strcmp(sim_taps[ti].full_path, cond_node->name) == 0) {
+                                    SimSignalEntry *se = sim_ctx_lookup(ts.dut, sim_taps[ti].signal_id);
+                                    if (se) mcond = se->current;
+                                    break;
+                                }
+                            }
+                        }
+                        if (sim_val_is_true(mcond) == 1) {
+                            const char *mtype = (mn->type == JZ_AST_SIM_MARK_IF) ? "mark" : "alert";
+                            sim_wave_add_annotation(wave, current_time_ps, mtype,
+                                                     -1, mn->name, mn->text, 0);
+                        }
+                    }
+                }
 
                 /* Evaluate condition */
                 SimValue actual = eval_tb_ast_expr(&ts, sig_node);
@@ -1860,6 +2015,138 @@ static int sim_run_simulation(const JZASTNode *root,
                    child->type == JZ_AST_PRINT_IF) {
             ts.current_time_ps = current_time_ps;
             process_print(&ts, child);
+
+        } else if (child->type == JZ_AST_SIM_TRACE) {
+            /* @trace(state=on/off): toggle waveform recording */
+            int new_state = (child->name && strcmp(child->name, "on") == 0) ? 1 : 0;
+
+            if (verbose) {
+                fprintf(stdout, "@trace(state=%s) at %llu ps\n",
+                        new_state ? "on" : "off",
+                        (unsigned long long)current_time_ps);
+            }
+
+            /* Write annotation to JZW */
+            sim_wave_add_annotation(wave, current_time_ps, "trace",
+                                     -1, new_state ? "on" : "off",
+                                     NULL, 0);
+
+            if (new_state && !trace_enabled) {
+                /* Turning trace on: dump full state snapshot */
+                sim_wave_set_time(wave, current_time_ps);
+                wave_dump_all(wave, &ts, wave_ids, sim_taps, num_sim_taps);
+            }
+
+            trace_enabled = new_state;
+
+        } else if (child->type == JZ_AST_SIM_MARK) {
+            /* @mark: write a mark annotation at current time */
+            const char *color = child->text;
+            const char *message = child->name; /* may be NULL */
+
+            if (verbose) {
+                fprintf(stdout, "@mark(%s%s%s) at %llu ps\n",
+                        color ? color : "?",
+                        message ? ", " : "",
+                        message ? message : "",
+                        (unsigned long long)current_time_ps);
+            }
+
+            sim_wave_add_annotation(wave, current_time_ps, "mark",
+                                     -1, message, color, 0);
+
+        } else if (child->type == JZ_AST_SIM_MARK_IF) {
+            /* @mark_if: one-shot conditional mark at current time */
+            if (child->child_count >= 1) {
+                const JZASTNode *cond_node = child->children[0];
+                SimValue cond = eval_tb_ast_expr(&ts, cond_node);
+                /* TAP signal fallback */
+                if (cond.xmask[0] != 0 && cond_node->name) {
+                    for (int ti = 0; ti < num_sim_taps; ti++) {
+                        if (strcmp(sim_taps[ti].full_path, cond_node->name) == 0) {
+                            SimSignalEntry *se = sim_ctx_lookup(ts.dut, sim_taps[ti].signal_id);
+                            if (se) cond = se->current;
+                            break;
+                        }
+                    }
+                }
+                if (sim_val_is_true(cond) == 1) {
+                    const char *color = child->text;
+                    const char *message = child->name;
+                    if (verbose) {
+                        fprintf(stdout, "@mark_if -> true (%s%s%s) at %llu ps\n",
+                                color ? color : "?",
+                                message ? ", " : "",
+                                message ? message : "",
+                                (unsigned long long)current_time_ps);
+                    }
+                    sim_wave_add_annotation(wave, current_time_ps, "mark",
+                                             -1, message, color, 0);
+                }
+            }
+
+        } else if (child->type == JZ_AST_SIM_ALERT_IF) {
+            /* @alert_if: one-shot conditional alert at current time */
+            if (child->child_count >= 1) {
+                const JZASTNode *cond_node = child->children[0];
+                SimValue cond = eval_tb_ast_expr(&ts, cond_node);
+                /* TAP signal fallback */
+                if (cond.xmask[0] != 0 && cond_node->name) {
+                    for (int ti = 0; ti < num_sim_taps; ti++) {
+                        if (strcmp(sim_taps[ti].full_path, cond_node->name) == 0) {
+                            SimSignalEntry *se = sim_ctx_lookup(ts.dut, sim_taps[ti].signal_id);
+                            if (se) cond = se->current;
+                            break;
+                        }
+                    }
+                }
+                if (sim_val_is_true(cond) == 1) {
+                    const char *color = child->text;
+                    const char *message = child->name;
+                    if (verbose) {
+                        fprintf(stdout, "@alert_if -> true (%s%s%s) at %llu ps\n",
+                                color ? color : "?",
+                                message ? ", " : "",
+                                message ? message : "",
+                                (unsigned long long)current_time_ps);
+                    }
+                    sim_wave_add_annotation(wave, current_time_ps, "alert",
+                                             -1, message, color, 0);
+                }
+            }
+
+        } else if (child->type == JZ_AST_SIM_ALERT) {
+            /* @alert: one-shot unconditional alert at current time */
+            const char *color = child->text ? child->text : "RED";
+            const char *message = child->name;
+            sim_wave_add_annotation(wave, current_time_ps, "alert",
+                                     -1, message, color, 0);
+
+            if (verbose) {
+                fprintf(stdout, "@alert(%s%s%s) at %llu ps\n",
+                        color,
+                        message ? ", " : "",
+                        message ? message : "",
+                        (unsigned long long)current_time_ps);
+            }
+
+        } else if (child->type == JZ_AST_SIM_MONITOR_BLOCK) {
+            /* MONITOR: collect children for per-tick evaluation */
+            for (size_t mi = 0; mi < child->child_count; mi++) {
+                const JZASTNode *mc = child->children[mi];
+                if (!mc) continue;
+                if (num_monitors >= cap_monitors) {
+                    cap_monitors = cap_monitors ? cap_monitors * 2 : 8;
+                    monitor_nodes = (const JZASTNode **)realloc(
+                        (void *)monitor_nodes,
+                        cap_monitors * sizeof(const JZASTNode *));
+                }
+                monitor_nodes[num_monitors++] = mc;
+            }
+            if (verbose) {
+                fprintf(stdout, "MONITOR block: %d directives registered\n",
+                        num_monitors);
+            }
         }
         /* Skip other node types (CLOCK_BLOCK, WIRE_BLOCK, TAP_BLOCK, etc.) */
     }
@@ -1875,11 +2162,13 @@ static int sim_run_simulation(const JZASTNode *root,
                 (unsigned long long)current_time_ps);
     }
     fprintf(stdout, "%s written to: %s\n",
-            format == SIM_WAVE_FST ? "FST" : "VCD", output_path);
+            format == SIM_WAVE_JZW ? "JZW" : format == SIM_WAVE_FST ? "FST" : "VCD",
+            output_path);
 
     /* Cleanup */
     free(wave_ids);
     free(sim_taps);
+    free((void *)monitor_nodes);
     sim_wave_close(wave);
 
 cleanup_dut:
@@ -1913,6 +2202,8 @@ int jz_sim_run_simulations(const JZASTNode *root,
 
     if (!root || !design) return 1;
 
+    perf_reset();
+
     int any_sim_found = 0;
     int rc = 0;
 
@@ -1942,6 +2233,8 @@ int jz_sim_run_simulations(const JZASTNode *root,
     if (!any_sim_found) {
         fprintf(stdout, "\nNo simulations found.\n");
     }
+
+    perf_print_summary();
 
     return rc;
 }

@@ -1742,6 +1742,23 @@ const char *jz_chip_clock_gen_output_freq_expr(const JZChipData *data,
     return NULL;
 }
 
+const char *jz_chip_clock_gen_output_phase_expr(const JZChipData *data,
+                                                 const char *type,
+                                                 const char *selector)
+{
+    if (!data || !type || !selector) return NULL;
+    const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
+    if (!cg) return NULL;
+    size_t o_count = cg->outputs.len / sizeof(JZChipClockGenOutput);
+    const JZChipClockGenOutput *os = (const JZChipClockGenOutput *)cg->outputs.data;
+    for (size_t j = 0; j < o_count; ++j) {
+        if (os[j].selector && strcmp(os[j].selector, selector) == 0) {
+            return os[j].phase_deg_expr;
+        }
+    }
+    return NULL;
+}
+
 int jz_chip_clock_gen_refclk_range(const JZChipData *data,
                                     const char *type,
                                     double *out_min, double *out_max)

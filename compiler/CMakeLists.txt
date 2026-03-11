@@ -14,8 +14,35 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+# ---- SQLite (for JZW waveform format) ----
+include(FetchContent)
+FetchContent_Declare(
+    sqlite3
+    URL https://www.sqlite.org/2025/sqlite-amalgamation-3490100.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(sqlite3)
+
+add_library(sqlite3_lib STATIC ${sqlite3_SOURCE_DIR}/sqlite3.c)
+target_include_directories(sqlite3_lib PUBLIC ${sqlite3_SOURCE_DIR})
+# SQLite needs C extensions and BSD types; silence warnings in third-party code
+set_target_properties(sqlite3_lib PROPERTIES C_EXTENSIONS ON C_STANDARD 99)
+target_compile_options(sqlite3_lib PRIVATE -w)
+target_compile_definitions(sqlite3_lib PRIVATE _BSD_SOURCE)
+# SQLite needs pthreads on POSIX
+find_package(Threads)
+if(Threads_FOUND)
+    target_link_libraries(sqlite3_lib PUBLIC Threads::Threads)
+endif()
+# SQLite needs dlopen on some platforms
+include(CheckLibraryExists)
+check_library_exists(dl dlopen "" HAVE_LIBDL)
+if(HAVE_LIBDL)
+    target_link_libraries(sqlite3_lib PUBLIC dl)
+endif()
+
 # Expose POSIX and default libc APIs (realpath, strdup, strtok_r, lstat, etc.)
-add_compile_definitions(_DEFAULT_SOURCE _POSIX_C_SOURCE=200809L)
+# Applied to jz_hdl_lib only (not third-party code like SQLite).
 
 # Strict warnings for supported compilers
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
@@ -27,6 +54,12 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
     endif()
 elseif(MSVC)
     add_compile_options(/W4)
+endif()
+
+# Simulation performance tracking
+option(TRACK_PERF "Enable simulation performance tracking" OFF)
+if(TRACK_PERF)
+    add_compile_definitions(TRACK_PERF)
 endif()
 
 # CI-only Werror toggle
@@ -143,7 +176,9 @@ add_library(jz_hdl_lib
     src/sim/sim_engine.c
     src/sim/sim_vcd.c
     src/sim/sim_fst.c
+    src/sim/sim_jzw.c
     src/sim/sim_waveform.c
+    src/sim/sim_perf.c
 )
 
 # Embed JSON data files as headers
@@ -199,6 +234,9 @@ target_include_directories(jz_hdl_lib
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+target_compile_definitions(jz_hdl_lib PUBLIC _DEFAULT_SOURCE _POSIX_C_SOURCE=200809L)
+target_link_libraries(jz_hdl_lib PUBLIC sqlite3_lib)
+
 add_executable(jz-hdl
     src/main.c
 )
@@ -236,6 +274,7 @@ if(PANDOC_EXECUTABLE)
         "simulation-specification"
         "testbench-specification"
         "chip-info-specification"
+        "jzw-specification"
     )
 
     set(PDF_OUTPUTS "")

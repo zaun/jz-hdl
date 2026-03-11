@@ -107,7 +107,7 @@ Simulation follows the same x and z semantics as the main JZ-HDL specification a
 
     @setup { ... }
 
-    // Sequence of @run, @run_until, @run_while, and @update directives
+    // Sequence of @run, @run_until, @run_while, @update, and @trace directives
 @endsim
 ```
 
@@ -318,6 +318,40 @@ Conditionally outputs a formatted message. The message is printed only if `<cond
 @print_if(full, "FIFO full at time %ms, wr_ptr=%h", dut.wr_ptr)
 @print_if(empty, "FIFO empty at tick %tick")
 ```
+
+### @trace
+
+```text
+@trace(state=on)
+@trace(state=off)
+```
+
+Controls whether signal value changes are recorded to the output waveform file during subsequent `@run`, `@run_until`, and `@run_while` directives.
+
+- **Default state is `on`.** If no `@trace` directive appears, all signal changes are recorded (backward compatible).
+- When `state=off`, the simulation continues to execute — clocks toggle, logic evaluates, time advances — but no signal values are written to the waveform output. This dramatically reduces output file size and simulation time for uninteresting periods (e.g., waiting for a power-on reset counter).
+- When `state=on` after a `state=off` period, the simulator writes a **full state snapshot** at the current time before resuming per-tick recording. This ensures the waveform viewer sees correct signal values at the start of the recorded window.
+- `@trace` may be toggled any number of times to capture specific windows of interest.
+- For JZW output, each toggle writes a `trace` annotation to the annotations table.
+
+```jz
+@setup {
+    por   <= 1'b1;
+    rst_n <= 1'b1;
+}
+
+// Skip recording during 28ms POR wait
+@trace(state=off)
+@run(ns=28200000)
+@trace(state=on)
+
+// Now record the interesting video output
+@run(ns=200000)
+```
+
+::: tip When to use @trace
+Use `@trace(state=off)` to skip long initialization periods (POR counters, PLL lock times, debounce waits) that produce large waveforms of mostly static signals. The simulation still runs correctly — only the recording is suppressed.
+:::
 
 ## Waveform Output
 

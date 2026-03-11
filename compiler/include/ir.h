@@ -602,6 +602,7 @@ typedef struct IR_Module {
 typedef struct IR_Clock {
     char        *name;        /**< Clock name. */
     double       period_ns;   /**< Clock period in nanoseconds (may be fractional). */
+    double       phase_deg;   /**< Phase offset in degrees (0 for external/non-phase clocks). */
     IR_ClockEdge edge;        /**< Active edge. */
     bool         is_generated;/**< True for PLL/DLL output clocks (use get_nets in SDC). */
 } IR_Clock;

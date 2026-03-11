@@ -45,6 +45,7 @@ simulate:
 	@mkdir -p out
 	$(JZ_HDL) --sandbox-root=./ --allow-traversal --simulate src/simulation.jz --vcd -o out/simulation.vcd
 	$(JZ_HDL) --sandbox-root=./ --allow-traversal --simulate src/simulation.jz --fst -o out/simulation.fst
+	$(JZ_HDL) --sandbox-root=./ --allow-traversal --simulate src/simulation.jz --jzw -o out/simulation.jzw
 
 build:
 	@test -n "$(HDL)" || (echo "ERROR: board not selected"; exit 1)
