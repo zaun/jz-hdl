@@ -12,8 +12,8 @@
 
 #define JZ_HDL_VERSION_MAJOR 0
 #define JZ_HDL_VERSION_MINOR 1
-#define JZ_HDL_VERSION_PATCH 1
+#define JZ_HDL_VERSION_PATCH 2
 
-#define JZ_HDL_VERSION_STRING "Version 0.1.1 (unknown)"
+#define JZ_HDL_VERSION_STRING "Version 0.1.2 (unknown)"
 
 #endif /* JZ_HDL_VERSION_H */
