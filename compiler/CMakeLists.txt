@@ -179,6 +179,9 @@ add_library(jz_hdl_lib
     src/sim/sim_jzw.c
     src/sim/sim_waveform.c
     src/sim/sim_perf.c
+    src/lsp/lsp_io.c
+    src/lsp/lsp_json.c
+    src/lsp/lsp_server.c
 )
 
 # Embed JSON data files as headers

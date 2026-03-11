@@ -74,11 +74,19 @@ const JZToken *advance(Parser *p) {
  */
 void parser_error(const Parser *p, const char *msg) {
     const JZToken *t = peek(p);
-    fprintf(stderr, "%s:%d:%d: parse error near token '%s': %s\n",
-            t->loc.filename ? t->loc.filename : "<input>",
-            t->loc.line, t->loc.column,
-            t->lexeme ? t->lexeme : "<eof>",
-            msg);
+    if (p->diagnostics) {
+        char buf[512];
+        snprintf(buf, sizeof(buf), "parse error near token '%s': %s",
+                 t->lexeme ? t->lexeme : "<eof>", msg);
+        jz_diagnostic_report(p->diagnostics, t->loc, JZ_SEVERITY_ERROR,
+                             "PARSE000", buf);
+    } else {
+        fprintf(stderr, "%s:%d:%d: parse error near token '%s': %s\n",
+                t->loc.filename ? t->loc.filename : "<input>",
+                t->loc.line, t->loc.column,
+                t->lexeme ? t->lexeme : "<eof>",
+                msg);
+    }
 }
 
 /**

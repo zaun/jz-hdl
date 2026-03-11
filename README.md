@@ -64,9 +64,10 @@ Usage: ./jz-hdl JZ_FILE --lint [--warn-as-error] [--color] [--info] [--explain] 
        ./jz-hdl JZ_FILE --ast [-o OUT_FILE]
        ./jz-hdl JZ_FILE --ir [-o OUT_FILE] [--tristate-default=GND|VCC]
        ./jz-hdl JZ_FILE --test [--verbose] [--seed=0xHEX]
-       ./jz-hdl JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--verbose] [--seed=0xHEX]
+       ./jz-hdl JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--jzw] [--verbose] [--seed=0xHEX]
        ./jz-hdl --chip-info [CHIP_ID] [-o OUT_FILE]
        ./jz-hdl --lint-rules
+       ./jz-hdl --lsp
        ./jz-hdl --help
        ./jz-hdl --version
 
@@ -104,3 +105,27 @@ The `specification/` directory contains the authoritative language specification
 - `testbench-specification.md` — Testbench language and execution model
 
 The compiler implements these specifications directly. When compiler behavior disagrees with the spec, the compiler is wrong and should be fixed — the spec is not modified to match implementation quirks.
+
+## Editor Support
+
+The `vscode-ext/` directory contains a VS Code extension providing:
+
+- **Syntax highlighting** for `.jz` files
+- **LSP integration** — diagnostics, hover info, keyword completion, and go-to-definition via `jz-hdl --lsp`
+
+### Settings
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `jz-hdl.binaryPath` | `""` (system PATH) | Path to the `jz-hdl` binary |
+| `jz-hdl.lsp.enabled` | `true` | Enable/disable the language server |
+
+### Installation
+
+```bash
+cd vscode-ext
+npm install
+npm run compile
+```
+
+Then in VS Code: **Extensions** → **...** → **Install from VSIX** or use **Developer: Install Extension from Location** and select the `vscode-ext/` directory.

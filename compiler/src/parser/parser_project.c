@@ -1006,6 +1006,13 @@ JZASTNode *jz_parse_file(const char *filename,
     }
 
     if (!proj_node) {
+        /* If the file contains modules but no @project, return the
+         * synthetic root.  This allows standalone module files (used via
+         * @import) to be parsed and analysed individually — useful for
+         * the LSP and other tooling that opens single files. */
+        if (root->child_count > 0) {
+            return root;
+        }
         parser_error(&p, "missing @project definition in compilation root");
         jz_ast_free(root);
         return NULL;

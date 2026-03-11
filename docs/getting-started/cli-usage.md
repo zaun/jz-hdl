@@ -11,7 +11,7 @@ outline: deep
 ## Synopsis
 
 ```bash
-jz-hdl JZ_FILE --lint [-o OUT_FILE] [--warn-as-error] [--color] [--info] [--Wno-group=NAME]
+jz-hdl JZ_FILE --lint [-o OUT_FILE] [--warn-as-error] [--color] [--info] [--explain] [--Wno-group=NAME]
 jz-hdl JZ_FILE --verilog [-o OUT_FILE] [--sdc SDC_FILE] [--xdc XDC_FILE] [--pcf PCF_FILE] [--cst CST_FILE] [--tristate-default=GND|VCC]
 jz-hdl JZ_FILE --rtlil [-o OUT_FILE] [--tristate-default=GND|VCC]
 jz-hdl JZ_FILE --alias-report [-o OUT_FILE]
@@ -20,9 +20,10 @@ jz-hdl JZ_FILE --tristate-report [-o OUT_FILE]
 jz-hdl JZ_FILE --ast [-o OUT_FILE]
 jz-hdl JZ_FILE --ir [-o OUT_FILE] [--tristate-default=GND|VCC]
 jz-hdl JZ_FILE --test [--verbose] [--seed=0xHEX]
-jz-hdl JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--verbose] [--seed=0xHEX]
+jz-hdl JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--jzw] [--verbose] [--seed=0xHEX]
 jz-hdl --chip-info [CHIP_ID] [-o OUT_FILE]
-jz-hdl JZ_FILE --lint-rules
+jz-hdl --lint-rules
+jz-hdl --lsp
 jz-hdl --help
 jz-hdl --version
 ```
@@ -43,6 +44,7 @@ jz-hdl --version
 | `--tristate-report` | Print the tri-state driver analysis report. |
 | `--chip-info` | Print chip data for the given CHIP_ID (or list all supported chips if no ID given). |
 | `--lint-rules` | List all diagnostic rule IDs and their descriptions. |
+| `--lsp` | Start the Language Server Protocol server (stdio transport). See [Editor Integration](#editor-integration). |
 | `--help` | Print usage information. |
 | `--version` | Print the compiler version and git commit (e.g., `Version 0.1.0 (abc1234)`). |
 
@@ -53,6 +55,7 @@ jz-hdl --version
 | `-o OUT_FILE` | Write primary output to `OUT_FILE` instead of stdout. |
 | `--color` | Force colored diagnostic output. |
 | `--info` | Include informational diagnostics (not just warnings and errors). |
+| `--explain` | Print detailed explanation under each diagnostic. |
 | `--warn-as-error` | Treat all warnings as errors. |
 | `--Wno-group=NAME` | Suppress diagnostics in the named group. |
 
@@ -106,7 +109,8 @@ See [Tristate Default](../reference-manual/tristate-default.md) for details.
 | --- | --- |
 | `-o WAVEFORM_FILE` | Output waveform file path. Default: `<input_basename>.vcd`. |
 | `--vcd` | Force VCD output format (default). |
-| `--fst` | Force FST output format (not yet supported). |
+| `--fst` | Force FST output format. |
+| `--jzw` | Force JZW output format (SQLite-based). |
 | `--verbose` | Print tick resolution, clock periods, and `@run`/`@update` events. |
 | `--seed=0xHEX` | 32-bit hex seed for register/memory randomization. Default: `0xDEADBEEF`. |
 
@@ -163,4 +167,57 @@ jz-hdl sim_fifo.jz --simulate -o fifo_waves.vcd
 
 # Run simulation with verbose output and fixed seed
 jz-hdl sim_fifo.jz --simulate --verbose --seed=0x1234
+
+# Start the LSP server (used by editors, not invoked directly)
+jz-hdl --lsp
+```
+
+## Editor Integration
+
+The `--lsp` flag starts a [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) server over stdio. The server provides:
+
+- **Diagnostics** — errors and warnings published on file open/change
+- **Hover** — descriptions for JZ-HDL keywords and diagnostic rule codes
+- **Completion** — `@` directives and block keywords
+- **Go-to-definition** — jump to declarations of modules, ports, wires, registers, etc.
+
+### VS Code
+
+A VS Code extension is included in the `vscode-ext/` directory. To install:
+
+```bash
+cd vscode-ext
+npm install
+npm run compile
+```
+
+Then in VS Code: **Extensions** → **...** → **Install from VSIX** or use **Developer: Install Extension from Location** and select the `vscode-ext/` directory.
+
+#### Settings
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `jz-hdl.binaryPath` | `""` (system PATH) | Path to the `jz-hdl` binary. Leave empty to use the system-installed version. |
+| `jz-hdl.lsp.enabled` | `true` | Enable or disable the language server. |
+
+### Other Editors
+
+Any editor with LSP support can use `jz-hdl --lsp`. For example:
+
+**Neovim:**
+```lua
+vim.lsp.start({
+    name = "jz-hdl",
+    cmd = { "jz-hdl", "--lsp" },
+    filetypes = { "jz-hdl" },
+})
+```
+
+**Emacs (with lsp-mode):**
+```elisp
+(lsp-register-client
+ (make-lsp-client
+  :new-connection (lsp-stdio-connection '("jz-hdl" "--lsp"))
+  :activation-fn (lsp-activate-on "jz-hdl")
+  :server-id 'jz-hdl))
 ```

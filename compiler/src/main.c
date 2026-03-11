@@ -22,6 +22,7 @@
 #include "sim/sim_engine.h"
 #include "sim/sim_waveform.h"
 #include "path_security.h"
+#include "lsp.h"
 
 /* Global verbose flag for timing diagnostics. */
 int jz_verbose = 0;
@@ -40,6 +41,7 @@ static void print_usage(const char *prog) {
             "       %s JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--jzw] [--verbose] [--seed=0xHEX]\n"
             "       %s --chip-info [CHIP_ID] [-o OUT_FILE]\n"
             "       %s --lint-rules\n"
+            "       %s --lsp\n"
             "       %s --help\n"
             "       %s --version\n"
             "\n"
@@ -47,7 +49,7 @@ static void print_usage(const char *prog) {
             "  --sandbox-root=<dir>     Add permitted root directory for file access\n"
             "  --allow-absolute-paths   Allow absolute paths in @import / @file()\n"
             "  --allow-traversal        Allow '..' directory traversal in paths\n",
-            prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog);
+            prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog);
 }
 
 static void print_version(void) {
@@ -194,6 +196,13 @@ int main(int argc, char **argv) {
     if (argc < 2) {
         print_usage(argv[0]);
         return 1;
+    }
+
+    /* Check for --lsp mode early — it takes over the process. */
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--lsp") == 0) {
+            return jz_lsp_run();
+        }
     }
 
     const char *mode = NULL;

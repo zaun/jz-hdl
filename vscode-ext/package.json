@@ -1,0 +1,68 @@
+{
+    "name": "jz-hdl",
+    "displayName": "JZ-HDL",
+    "description": "Language support for JZ-HDL hardware correctness language",
+    "version": "0.1.0",
+    "publisher": "jz-hdl",
+    "license": "MIT",
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "activationEvents": [
+        "onLanguage:jz-hdl"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "languages": [
+            {
+                "id": "jz-hdl",
+                "aliases": [
+                    "JZ-HDL",
+                    "jz-hdl"
+                ],
+                "extensions": [
+                    ".jz"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "jz-hdl",
+                "scopeName": "source.jz-hdl",
+                "path": "./syntaxes/jz-hdl.tmLanguage.json"
+            }
+        ],
+        "configuration": {
+            "title": "JZ-HDL",
+            "properties": {
+                "jz-hdl.binaryPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to the jz-hdl compiler binary. Leave empty to use the system-installed version (found on PATH)."
+                },
+                "jz-hdl.lsp.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable the JZ-HDL Language Server for diagnostics, hover, completion, and go-to-definition."
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/node": "^18.0.0",
+        "@types/vscode": "^1.80.0",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "vscode-languageclient": "^9.0.1"
+    }
+}

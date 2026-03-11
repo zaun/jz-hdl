@@ -129,16 +129,42 @@ tar -czf "$RELEASE_DIR/jz-hdl-${VERSION}-docs.tar.gz" \
 rm -rf "$(dirname "$PDF_STAGING")"
 
 # ---------------------------------------------------------------------------
+# 7. Build VS Code extension tarball
+# ---------------------------------------------------------------------------
+echo "==> Building VS Code extension tarball..."
+
+git -C "$REPO_ROOT" archive \
+  --format=tar.gz \
+  --prefix="jz-hdl-${VERSION}-vscode-ext/" \
+  -o "$RELEASE_DIR/jz-hdl-${VERSION}-vscode-ext.tar.gz" \
+  "v${VERSION}" -- vscode-ext/
+
+# ---------------------------------------------------------------------------
+# 8. Build viewer tarball
+# ---------------------------------------------------------------------------
+echo "==> Building viewer tarball..."
+
+git -C "$REPO_ROOT" archive \
+  --format=tar.gz \
+  --prefix="jz-hdl-${VERSION}-viewer/" \
+  -o "$RELEASE_DIR/jz-hdl-${VERSION}-viewer.tar.gz" \
+  "v${VERSION}" -- viewer/
+
+# ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
 echo ""
 echo "Release v${VERSION} prepared:"
 echo "  $RELEASE_DIR/jz-hdl-${VERSION}-source.tar.gz"
 echo "  $RELEASE_DIR/jz-hdl-${VERSION}-docs.tar.gz"
+echo "  $RELEASE_DIR/jz-hdl-${VERSION}-vscode-ext.tar.gz"
+echo "  $RELEASE_DIR/jz-hdl-${VERSION}-viewer.tar.gz"
 echo ""
 echo "To publish:"
 echo "  git push origin main --tags"
 echo "  gh release create v${VERSION} \\"
 echo "    release/jz-hdl-${VERSION}-source.tar.gz \\"
 echo "    release/jz-hdl-${VERSION}-docs.tar.gz \\"
+echo "    release/jz-hdl-${VERSION}-vscode-ext.tar.gz \\"
+echo "    release/jz-hdl-${VERSION}-viewer.tar.gz \\"
 echo "    --title \"v${VERSION}\" --notes \"Release v${VERSION}\""
