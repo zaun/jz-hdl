@@ -806,16 +806,22 @@ void sem_check_project_clock_gen(JZASTNode *project,
                     if (!user_val) continue;
 
                     if (cparam->has_min && cparam->has_max) {
-                        /* Range check */
+                        /* Range check (double for fractional params, int otherwise) */
                         char *endptr = NULL;
-                        long val = strtol(user_val, &endptr, 10);
+                        double val = strtod(user_val, &endptr);
                         if (endptr == user_val) continue; /* non-numeric, skip */
 
                         if (val < cparam->min || val > cparam->max) {
                             char msg[512];
-                            snprintf(msg, sizeof(msg),
-                                     "CLOCK_GEN CONFIG '%s' = %ld is outside valid range [%ld, %ld]",
-                                     cparam->name, val, cparam->min, cparam->max);
+                            if (cparam->is_double) {
+                                snprintf(msg, sizeof(msg),
+                                         "CLOCK_GEN CONFIG '%s' = %g is outside valid range [%g, %g]",
+                                         cparam->name, val, cparam->min, cparam->max);
+                            } else {
+                                snprintf(msg, sizeof(msg),
+                                         "CLOCK_GEN CONFIG '%s' = %ld is outside valid range [%ld, %ld]",
+                                         cparam->name, (long)val, (long)cparam->min, (long)cparam->max);
+                            }
                             sem_report_rule(diagnostics, val_loc,
                                             "CLOCK_GEN_PARAM_OUT_OF_RANGE", msg);
                         }

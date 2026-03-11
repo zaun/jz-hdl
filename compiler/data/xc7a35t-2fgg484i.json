@@ -1,0 +1,453 @@
+{
+  "chipid": "XC7A35T-2FGG484I",
+  "description": "Primitives available on the AMD/Xilinx Artix-7 XC7A35T in FGG484 (484-ball BGA) package, speed grade -2, industrial temperature range.",
+
+  "boards": [
+    {
+      "name": "PA35T-EDU Development Board",
+      "url": "https://www.en.puzhi.com/Product/AMD-FPGA-Development-Board/Artix-7/PA35T-EDU.html"
+    }
+  ],
+
+  "resources": {
+    "LUT6": 20800,
+    "DFF": 41600,
+    "IOB": 210,
+    "DIFF_PAIRS": 100,
+    "GSR": 1
+  },
+
+  "latches": {
+    "source": "DS180 v2.6.1, Section: CLBs, Slices, and LUTs; UG474 v1.8, Section: Storage Elements",
+    "SLICE": {
+      "description": "CLB Slice (General Logic)",
+      "D": true,
+      "SR": false,
+      "note": "Four of eight flip-flops per slice (one per LUT) can be configured as level-sensitive latches. Only SLICEL and SLICEM slices support this."
+    },
+    "IOB": {
+      "description": "I/O Blocks (Input/Output Pins)",
+      "D": true,
+      "SR": false,
+      "modes": ["Transparent"],
+      "note": "I/O register elements can be configured as transparent latches."
+    }
+  },
+
+  "dsp": {
+    "source": "DS180 v2.6.1, Table 4 (Artix-7 Feature Summary); UG479 v1.10, Section: DSP48E1 Slice",
+    "description": "Hardware DSP slices with 25x18 multiplier and 48-bit accumulator",
+    "DSP48E1": {
+      "quantity": 90,
+      "description": "25x18 two's complement multiplier with 48-bit accumulator, pre-adder, and ALU"
+    }
+  },
+
+  "memory": [
+    {
+      "type": "DISTRIBUTED",
+      "source": "DS180 v2.6.1, Table 4 (Distributed RAM 400 Kb); UG474 v1.8, Section: Distributed RAM",
+      "description": "Distributed memory from CLB slice LUTs (SLICEM only). 25-50% of slices support distributed RAM.",
+      "total_bits": 409600,
+      "r_ports": 1,
+      "w_ports": 1,
+      "configurations": [
+        { "width": 1,  "depth": 409600 },
+        { "width": 2,  "depth": 204800 },
+        { "width": 4,  "depth": 102400 },
+        { "width": 8,  "depth": 51200 },
+        { "width": 16, "depth": 25600 }
+      ]
+    },
+    {
+      "type": "BLOCK",
+      "source": "DS180 v2.6.1, Table 4 (Block RAM 1,800 Kb); UG473 v1.14, Section: Block RAM Resources",
+      "description": "Block RAM (RAMB36E1). Each block is 36,864 bits (36 Kb). Total of 50 blocks providing 1,843,200 bits. Each 36 Kb block can also be used as two independent 18 Kb blocks.",
+      "quantity": 50,
+      "bits_per_block": 36864,
+      "total_bits": 1843200,
+      "max_freq_mhz": 509,
+      "note": "50 blocks x 36,864 bits = 1,843,200 bits (1,800 Kb). Max freq for -2 speed grade. Each block can split into two 18 Kb blocks (100 total).",
+      "modes": [{
+        "name": "Single Port",
+        "description": "Single port read/write (RAMB36E1 or RAMB18E1)",
+        "ports": [
+            { "id": "A", "read": true, "write": true }
+        ],
+        "configurations": [
+          { "width": 1,  "depth": 32768 },
+          { "width": 2,  "depth": 16384 },
+          { "width": 4,  "depth": 8192 },
+          { "width": 9,  "depth": 4096 },
+          { "width": 18, "depth": 2048 },
+          { "width": 36, "depth": 1024 },
+          { "width": 72, "depth": 512 }
+        ]
+      },
+      {
+        "name": "True Dual Port",
+        "description": "Two independent ports with read/write on each (RAMB36E1 TDP mode)",
+        "ports": [
+            { "id": "A", "read": true, "write": true },
+            { "id": "B", "read": true, "write": true }
+        ],
+        "configurations": [
+          { "width": 1,  "depth": 32768 },
+          { "width": 2,  "depth": 16384 },
+          { "width": 4,  "depth": 8192 },
+          { "width": 9,  "depth": 4096 },
+          { "width": 18, "depth": 2048 },
+          { "width": 36, "depth": 1024 }
+        ]
+      },
+      {
+        "name": "Simple Dual Port",
+        "description": "Write on Port A, read on Port B simultaneously (RAMB36E1 SDP mode)",
+        "ports": [
+            { "id": "A", "read": false, "write": true },
+            { "id": "B", "read": true,  "write": false }
+        ],
+        "configurations": [
+          { "width": 1,  "depth": 32768 },
+          { "width": 2,  "depth": 16384 },
+          { "width": 4,  "depth": 8192 },
+          { "width": 9,  "depth": 4096 },
+          { "width": 18, "depth": 2048 },
+          { "width": 36, "depth": 1024 },
+          { "width": 72, "depth": 512 }
+        ]
+      },
+      {
+        "name": "Read Only Memory",
+        "description": "Read-only with initialization during configuration",
+        "ports": [
+            { "id": "A", "read": true, "write": false }
+        ],
+        "configurations": [
+          { "width": 1,  "depth": 32768 },
+          { "width": 2,  "depth": 16384 },
+          { "width": 4,  "depth": 8192 },
+          { "width": 9,  "depth": 4096 },
+          { "width": 18, "depth": 2048 },
+          { "width": 36, "depth": 1024 },
+          { "width": 72, "depth": 512 }
+        ]
+      }]
+    }
+  ],
+
+  "clock_gen": [
+    {
+      "type": "pll",
+      "source": "DS180 v2.6.1, Section: Clock Management; DS181 v1.27.1, Table: MMCM Switching Characteristics; UG472 v1.13, Chapter 3: Clock Management Tile",
+      "description": "Mixed-Mode Clock Manager (MMCME2_BASE). Primary clock synthesizer with 7 outputs (CLKOUT0-CLKOUT6), feedback output (CLKFBOUT), and fractional divide on CLKOUT0.",
+
+      "count": 5,
+      "chaining": true,
+
+      "map": {
+        "verilog-2005": [
+          "MMCME2_BASE #(\n",
+          "    .BANDWIDTH(\"OPTIMIZED\"),\n",
+          "    .CLKFBOUT_MULT_F(%%CLKFBOUT_MULT_F%%),\n",
+          "    .CLKFBOUT_PHASE(0.0),\n",
+          "    .CLKIN1_PERIOD(%%REF_CLK_period_ns%%),\n",
+          "    .CLKOUT0_DIVIDE_F(%%CLKOUT0_DIVIDE_F%%),\n",
+          "    .CLKOUT0_PHASE(0.0),\n",
+          "    .CLKOUT0_DUTY_CYCLE(0.5),\n",
+          "    .CLKOUT1_DIVIDE(%%CLKOUT1_DIVIDE%%),\n",
+          "    .CLKOUT1_PHASE(0.0),\n",
+          "    .CLKOUT1_DUTY_CYCLE(0.5),\n",
+          "    .CLKOUT2_DIVIDE(%%CLKOUT2_DIVIDE%%),\n",
+          "    .CLKOUT2_PHASE(0.0),\n",
+          "    .CLKOUT2_DUTY_CYCLE(0.5),\n",
+          "    .CLKOUT3_DIVIDE(%%CLKOUT3_DIVIDE%%),\n",
+          "    .CLKOUT3_PHASE(0.0),\n",
+          "    .CLKOUT3_DUTY_CYCLE(0.5),\n",
+          "    .DIVCLK_DIVIDE(%%DIVCLK_DIVIDE%%),\n",
+          "    .STARTUP_WAIT(\"FALSE\")\n",
+          ") u_mmcm_%%instance_idx%% (\n",
+          "    .CLKIN1(%%REF_CLK%%),\n",
+          "    .CLKFBIN(%%CLKFBOUT%%),\n",
+          "    .CLKFBOUT(%%CLKFBOUT%%),\n",
+          "    .CLKOUT0(%%BASE%%),\n",
+          "    .CLKOUT1(%%CLKOUT1%%),\n",
+          "    .CLKOUT2(%%CLKOUT2%%),\n",
+          "    .CLKOUT3(%%CLKOUT3%%),\n",
+          "    .LOCKED(%%LOCK%%),\n",
+          "    .RST(1'b0),\n",
+          "    .PWRDWN(1'b0)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\MMCME2_BASE $auto$%%instance_idx%%\n",
+          "  parameter \\BANDWIDTH \"OPTIMIZED\"\n",
+          "  parameter \\CLKFBOUT_MULT_F %%CLKFBOUT_MULT_F%%\n",
+          "  parameter \\CLKFBOUT_PHASE 0.0\n",
+          "  parameter \\CLKIN1_PERIOD %%REF_CLK_period_ns%%\n",
+          "  parameter \\CLKOUT0_DIVIDE_F %%CLKOUT0_DIVIDE_F%%\n",
+          "  parameter \\CLKOUT0_PHASE 0.0\n",
+          "  parameter \\CLKOUT0_DUTY_CYCLE 0.5\n",
+          "  parameter \\CLKOUT1_DIVIDE %%CLKOUT1_DIVIDE%%\n",
+          "  parameter \\CLKOUT1_PHASE 0.0\n",
+          "  parameter \\CLKOUT1_DUTY_CYCLE 0.5\n",
+          "  parameter \\CLKOUT2_DIVIDE %%CLKOUT2_DIVIDE%%\n",
+          "  parameter \\CLKOUT2_PHASE 0.0\n",
+          "  parameter \\CLKOUT2_DUTY_CYCLE 0.5\n",
+          "  parameter \\CLKOUT3_DIVIDE %%CLKOUT3_DIVIDE%%\n",
+          "  parameter \\CLKOUT3_PHASE 0.0\n",
+          "  parameter \\CLKOUT3_DUTY_CYCLE 0.5\n",
+          "  parameter \\DIVCLK_DIVIDE %%DIVCLK_DIVIDE%%\n",
+          "  parameter \\STARTUP_WAIT \"FALSE\"\n",
+          "  connect \\CLKIN1 \\%%REF_CLK%%\n",
+          "  connect \\CLKFBIN \\%%CLKFBOUT%%\n",
+          "  connect \\CLKFBOUT \\%%CLKFBOUT%%\n",
+          "  connect \\CLKOUT0 \\%%BASE%%\n",
+          "  connect \\CLKOUT1 \\%%CLKOUT1%%\n",
+          "  connect \\CLKOUT2 \\%%CLKOUT2%%\n",
+          "  connect \\CLKOUT3 \\%%CLKOUT3%%\n",
+          "  connect \\LOCKED \\%%LOCK%%\n",
+          "  connect \\RST 1'0\n",
+          "  connect \\PWRDWN 1'0\n",
+          "end\n"
+        ]
+      },
+
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the MMCM (CLKIN1)",
+          "required": true,
+          "width": 1,
+          "requires_period": true,
+          "min_mhz": 10,
+          "max_mhz": 800
+        }
+      },
+
+      "parameters": {
+        "DIVCLK_DIVIDE": {
+          "description": "Input clock divider D (1-106)",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 106
+        },
+
+        "CLKFBOUT_MULT_F": {
+          "description": "Feedback multiplier M (2.000-64.000, fractional in 0.125 steps)",
+          "type": "double",
+          "default": 5.0,
+          "min": 2.0,
+          "max": 64.0
+        },
+
+        "CLKOUT0_DIVIDE_F": {
+          "description": "Primary output divider O0 (1.000-128.000, fractional in 0.125 steps)",
+          "type": "double",
+          "default": 1.0,
+          "min": 1.0,
+          "max": 128.0
+        },
+
+        "CLKOUT1_DIVIDE": {
+          "description": "Secondary output divider O1 (1-128)",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 128
+        },
+
+        "CLKOUT2_DIVIDE": {
+          "description": "Tertiary output divider O2 (1-128)",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 128
+        },
+
+        "CLKOUT3_DIVIDE": {
+          "description": "Quaternary output divider O3 (1-128)",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 128
+        }
+      },
+
+      "derived": {
+        "FVCO": {
+          "description": "Internal VCO frequency: F_CLKIN * CLKFBOUT_MULT_F / DIVCLK_DIVIDE",
+          "expr": "(1000.0 / REF_CLK_period_ns) * CLKFBOUT_MULT_F / DIVCLK_DIVIDE",
+          "min": 600,
+          "max": 1200
+        }
+      },
+
+      "outputs": {
+        "BASE": {
+          "description": "Primary MMCM output (CLKOUT0)",
+          "port": "CLKOUT0",
+          "frequency_mhz": {
+            "description": "Primary output frequency: FVCO / CLKOUT0_DIVIDE_F",
+            "expr": "FVCO / CLKOUT0_DIVIDE_F"
+          }
+        },
+
+        "CLKOUT1": {
+          "description": "Secondary MMCM output",
+          "port": "CLKOUT1",
+          "frequency_mhz": {
+            "description": "Secondary output frequency: FVCO / CLKOUT1_DIVIDE",
+            "expr": "FVCO / CLKOUT1_DIVIDE"
+          }
+        },
+
+        "CLKOUT2": {
+          "description": "Tertiary MMCM output",
+          "port": "CLKOUT2",
+          "frequency_mhz": {
+            "description": "Tertiary output frequency: FVCO / CLKOUT2_DIVIDE",
+            "expr": "FVCO / CLKOUT2_DIVIDE"
+          }
+        },
+
+        "CLKOUT3": {
+          "description": "Quaternary MMCM output",
+          "port": "CLKOUT3",
+          "frequency_mhz": {
+            "description": "Quaternary output frequency: FVCO / CLKOUT3_DIVIDE",
+            "expr": "FVCO / CLKOUT3_DIVIDE"
+          }
+        },
+
+        "CLKFBOUT": {
+          "description": "Feedback output, must be connected to CLKFBIN for internal feedback",
+          "port": "CLKFBOUT"
+        },
+
+        "LOCK": {
+          "description": "MMCM lock indicator, high when MMCM is locked",
+          "port": "LOCKED"
+        }
+      },
+
+      "constraints": [
+        {
+          "description": "VCO frequency must be within 600-1200 MHz range for -2 speed grade.",
+          "rule": "FVCO range check"
+        },
+        {
+          "description": "Output frequency must not exceed 800 MHz.",
+          "rule": "output frequency range check"
+        }
+      ]
+    },
+    {
+      "type": "buf",
+      "source": "DS180 v2.6.1, Section: Clock Distribution; UG472 v1.13, Section: Global Clock Buffers (BUFG)",
+      "mode": "global",
+      "description": "Global Clock Buffer (BUFG). Drives a signal onto the global clock network with high fanout and low skew.",
+      "count": 32,
+
+      "map": {
+        "verilog-2005": [
+          "BUFG u_bufg_%%instance_idx%% (\n",
+          "    .I(%%REF_CLK%%),\n",
+          "    .O(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\BUFG $auto$%%instance_idx%%\n",
+          "  connect \\I \\%%REF_CLK%%\n",
+          "  connect \\O \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the buffer",
+          "required": true,
+          "width": 1,
+          "requires_period": true
+        }
+      },
+
+      "parameters": {},
+
+      "outputs": {
+        "BASE": {
+          "description": "Buffered clock output on global clock network",
+          "port": "O",
+          "frequency_mhz": {
+            "description": "Same frequency as input (buffer, no division).",
+            "expr": "(1000.0 / REF_CLK_period_ns)"
+          }
+        }
+      }
+    }
+  ],
+
+  "differential": {
+    "source": "DS181 v1.27.1, Table 9 (Differential SelectIO), Table 11 (LVDS_25 DC Specs); UG471 v1.10, Section: Differential I/O Standards",
+    "type": "true",
+    "io_type": "LVDS_25",
+    "output": {
+      "buffer": {
+        "description": "LVDS_25 differential output buffer (OBUFDS)",
+        "map": {
+          "verilog-2005": [
+            "OBUFDS u_%%instance%% (\n",
+            "    .I(%%input%%),\n",
+            "    .O(%%pin_p%%),\n",
+            "    .OB(%%pin_n%%)\n",
+            ");\n"
+          ],
+          "rtlil": [
+            "cell \\OBUFDS $auto$%%instance%%\n",
+            "  connect \\I \\%%input%%\n",
+            "  connect \\O \\%%pin_p%%\n",
+            "  connect \\OB \\%%pin_n%%\n",
+            "end\n"
+          ]
+        }
+      }
+    },
+    "input": {
+      "buffer": {
+        "description": "LVDS_25 differential input buffer (IBUFDS)",
+        "map": {
+          "verilog-2005": [
+            "IBUFDS u_%%instance%% (\n",
+            "    .I(%%pin_p%%),\n",
+            "    .IB(%%pin_n%%),\n",
+            "    .O(%%output%%)\n",
+            ");\n"
+          ],
+          "rtlil": [
+            "cell \\IBUFDS $auto$%%instance%%\n",
+            "  connect \\I \\%%pin_p%%\n",
+            "  connect \\IB \\%%pin_n%%\n",
+            "  connect \\O \\%%output%%\n",
+            "end\n"
+          ]
+        }
+      }
+    }
+  },
+
+  "fixed_pins": [
+    { "pad": "TDI",       "name": "TDI",       "note": "JTAG test data in" },
+    { "pad": "TDO",       "name": "TDO",       "note": "JTAG test data out" },
+    { "pad": "TCK",       "name": "TCK",       "note": "JTAG test clock" },
+    { "pad": "TMS",       "name": "TMS",       "note": "JTAG test mode select" },
+    { "pad": "PROGRAM_B", "name": "PROGRAM_B", "note": "Active-low program initiation" },
+    { "pad": "INIT_B",    "name": "INIT_B",    "note": "Active-low initialization indicator" },
+    { "pad": "DONE",      "name": "DONE",      "note": "Configuration done indicator" },
+    { "pad": "CCLK",      "name": "CCLK",      "note": "Configuration clock" },
+    { "pad": "M0",        "name": "M0",        "note": "Configuration mode select 0" },
+    { "pad": "M1",        "name": "M1",        "note": "Configuration mode select 1" },
+    { "pad": "M2",        "name": "M2",        "note": "Configuration mode select 2" },
+    { "pad": "CFGBVS",    "name": "CFGBVS",    "note": "Configuration bank voltage select" }
+  ]
+}

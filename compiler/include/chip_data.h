@@ -68,10 +68,11 @@ typedef struct JZChipClockGenDerived {
 typedef struct JZChipClockGenParam {
     char *name;          /**< Parameter name (e.g., "IDIV"). */
     char *default_value; /**< Default value as a string (e.g., "1"). */
+    int is_double;       /**< Non-zero if type is "double" (fractional). */
     int has_min;         /**< Non-zero if min constraint exists. */
-    long min;            /**< Minimum valid value for this parameter. */
+    double min;          /**< Minimum valid value for this parameter. */
     int has_max;         /**< Non-zero if max constraint exists. */
-    long max;            /**< Maximum valid value for this parameter. */
+    double max;          /**< Maximum valid value for this parameter. */
     char **valid_values; /**< Array of valid string values (NULL if using min/max). */
     size_t valid_count;  /**< Number of entries in valid_values. */
 } JZChipClockGenParam;
@@ -299,7 +300,7 @@ const char *jz_chip_clock_gen_param_default(const JZChipData *data,
 int jz_chip_clock_gen_param_range(const JZChipData *data,
                                    const char *type,
                                    const char *param_name,
-                                   long *out_min, long *out_max);
+                                   double *out_min, double *out_max);
 
 /**
  * @brief Get the min/max range for a clock generator derived value.
