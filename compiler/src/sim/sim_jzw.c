@@ -9,12 +9,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "sim_jzw.h"
 #include "sqlite3.h"
 
+static uint64_t jzw_now_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
+}
+
 #define JZW_MAX_SIGNALS 4096
 #define JZW_BATCH_SIZE  1000
+#define JZW_FLUSH_INTERVAL_MS 200  /* flush at least every 200ms for live viewers */
 
 typedef struct {
     int      width;
@@ -32,6 +41,7 @@ struct JZWWriter {
     int           defs_ended;
     int           batch_count;
     int           in_transaction;
+    uint64_t      last_flush_ms;     /* last time we flushed (milliseconds) */
 };
 
 /* ---- Internal helpers ---- */
@@ -69,6 +79,13 @@ static void jzw_maybe_commit(JZWWriter *w)
 {
     if (w->batch_count >= JZW_BATCH_SIZE) {
         jzw_commit(w);
+        w->last_flush_ms = jzw_now_ms();
+    } else if (w->in_transaction && w->batch_count > 0) {
+        uint64_t now = jzw_now_ms();
+        if (now - w->last_flush_ms >= JZW_FLUSH_INTERVAL_MS) {
+            jzw_commit(w);
+            w->last_flush_ms = now;
+        }
     }
 }
 
@@ -185,6 +202,8 @@ JZWWriter *jzw_open(const char *filename, uint64_t timescale_ps)
     jzw_exec(w,
         "INSERT INTO meta (key, value) VALUES ('sim_start_time', '0')");
 
+    w->last_flush_ms = jzw_now_ms();
+
     return w;
 }
 
@@ -273,8 +292,18 @@ void jzw_set_time(JZWWriter *w, uint64_t time_ps)
     if (!w || !w->defs_ended) return;
 
     /* Commit previous batch if switching time */
-    if (time_ps != w->current_time && w->in_transaction) {
-        jzw_maybe_commit(w);
+    if (time_ps != w->current_time) {
+        if (w->in_transaction) {
+            jzw_maybe_commit(w);
+        } else if (w->batch_count == 0) {
+            /* No open transaction — still check time-based flush to keep
+               the last_flush_ms tracking current so the next transaction
+               commits promptly after the interval elapses. */
+            uint64_t now = jzw_now_ms();
+            if (now - w->last_flush_ms >= JZW_FLUSH_INTERVAL_MS) {
+                w->last_flush_ms = now;
+            }
+        }
     }
 
     w->current_time = time_ps;

@@ -61,18 +61,34 @@ struct JZWFile {
     std::vector<Annotation>              annotations;
     std::vector<ClockInfo>               clocks;
 
+    /* Live-reload state */
+    sqlite3     *db = nullptr;
+    bool         watching = false;
+    bool         sim_running = false;
+    int64_t      max_loaded_time = 0;
+    int          max_annotation_id = 0;
+    int          loaded_signal_count = 0;
+
     bool load(const char *path);
+    bool poll();
+    void close_db();
+    int64_t effective_end_time() const {
+        return sim_end_time > 0 ? sim_end_time : max_loaded_time;
+    }
     const char *value_at(int signal_id, int64_t time) const;
 };
 
 bool JZWFile::load(const char *path)
 {
-    sqlite3 *db = nullptr;
-    if (sqlite3_open_v2(path, &db, SQLITE_OPEN_READONLY, nullptr) != SQLITE_OK) {
+    if (sqlite3_open_v2(path, &db, SQLITE_OPEN_READWRITE, nullptr) != SQLITE_OK) {
         fprintf(stderr, "Failed to open %s: %s\n", path, sqlite3_errmsg(db));
         sqlite3_close(db);
+        db = nullptr;
         return false;
     }
+
+    /* Allow brief retries if writer is mid-checkpoint */
+    sqlite3_busy_timeout(db, 100);
 
     filename = path;
 
@@ -109,6 +125,7 @@ bool JZWFile::load(const char *path)
             signals.push_back(s);
         }
         sqlite3_finalize(stmt);
+        loaded_signal_count = (int)signals.size();
     }
 
     /* Read all value changes */
@@ -122,6 +139,7 @@ bool JZWFile::load(const char *path)
             int     id = sqlite3_column_int(stmt, 1);
             const char *v = (const char *)sqlite3_column_text(stmt, 2);
             changes[id].push_back({t, v});
+            if (t > max_loaded_time) max_loaded_time = t;
         }
         sqlite3_finalize(stmt);
     }
@@ -130,23 +148,25 @@ bool JZWFile::load(const char *path)
     {
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(db,
-            "SELECT time, type, signal_id, message, color, end_time "
-            "FROM annotations ORDER BY time",
+            "SELECT rowid, time, type, signal_id, message, color, end_time "
+            "FROM annotations ORDER BY rowid",
             -1, &stmt, nullptr);
         if (rc == SQLITE_OK) {
             while (sqlite3_step(stmt) == SQLITE_ROW) {
+                int rowid = sqlite3_column_int(stmt, 0);
                 Annotation a;
-                a.time      = sqlite3_column_int64(stmt, 0);
-                a.type      = (const char *)sqlite3_column_text(stmt, 1);
-                a.signal_id = sqlite3_column_type(stmt, 2) == SQLITE_NULL
-                              ? -1 : sqlite3_column_int(stmt, 2);
-                const char *msg = (const char *)sqlite3_column_text(stmt, 3);
+                a.time      = sqlite3_column_int64(stmt, 1);
+                a.type      = (const char *)sqlite3_column_text(stmt, 2);
+                a.signal_id = sqlite3_column_type(stmt, 3) == SQLITE_NULL
+                              ? -1 : sqlite3_column_int(stmt, 3);
+                const char *msg = (const char *)sqlite3_column_text(stmt, 4);
                 a.message   = msg ? msg : "";
-                const char *col = (const char *)sqlite3_column_text(stmt, 4);
+                const char *col = (const char *)sqlite3_column_text(stmt, 5);
                 a.color     = col ? col : "";
-                a.end_time  = sqlite3_column_type(stmt, 5) == SQLITE_NULL
-                              ? 0 : sqlite3_column_int64(stmt, 5);
+                a.end_time  = sqlite3_column_type(stmt, 6) == SQLITE_NULL
+                              ? 0 : sqlite3_column_int64(stmt, 6);
                 annotations.push_back(a);
+                if (rowid > max_annotation_id) max_annotation_id = rowid;
             }
             sqlite3_finalize(stmt);
         }
@@ -178,7 +198,9 @@ bool JZWFile::load(const char *path)
         }
     }
 
-    sqlite3_close(db);
+    /* Auto-detect if simulation is still running */
+    sim_running = (sim_end_time == 0);
+    watching = sim_running;
 
     /* Compute display_start_time: if trace starts off, skip to first trace=on */
     {
@@ -196,6 +218,176 @@ bool JZWFile::load(const char *path)
     }
 
     return true;
+}
+
+bool JZWFile::poll()
+{
+    if (!watching) return false;
+    bool changed = false;
+
+    /* Reopen the connection to get a fresh WAL snapshot.
+       SQLite WAL readers hold a snapshot from when their connection
+       first reads; the only reliable way to see new commits from
+       another process is to close and reopen. */
+    if (db) {
+        sqlite3_close(db);
+        db = nullptr;
+    }
+    if (sqlite3_open_v2(filename.c_str(), &db, SQLITE_OPEN_READONLY, nullptr) != SQLITE_OK) {
+        fprintf(stderr, "poll: failed to reopen %s\n", filename.c_str());
+        db = nullptr;
+        return false;
+    }
+    sqlite3_busy_timeout(db, 100);
+
+    /* Check sim_end_time */
+    if (sim_running) {
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db,
+                "SELECT value FROM meta WHERE key='sim_end_time'",
+                -1, &stmt, nullptr) == SQLITE_OK) {
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                int64_t et = atoll((const char *)sqlite3_column_text(stmt, 0));
+                if (et > 0) {
+                    sim_end_time = et;
+                    sim_running = false;
+                    changed = true;
+                }
+            }
+            sqlite3_finalize(stmt);
+        }
+
+        /* Also reload clocks (written before simulation starts, but may not
+           have been present when the viewer first opened the file) */
+        if (clocks.empty()) {
+            sqlite3_stmt *cstmt;
+            if (sqlite3_prepare_v2(db,
+                    "SELECT name, period_ps, phase_ps, jitter_pp_ps, "
+                    "jitter_sigma_ps, drift_max_ppm, drift_actual_ppm, drifted_period_ps "
+                    "FROM clocks ORDER BY id",
+                    -1, &cstmt, nullptr) == SQLITE_OK) {
+                while (sqlite3_step(cstmt) == SQLITE_ROW) {
+                    ClockInfo c;
+                    const char *n = (const char *)sqlite3_column_text(cstmt, 0);
+                    c.name             = n ? n : "";
+                    c.period_ps        = sqlite3_column_int64(cstmt, 1);
+                    c.phase_ps         = sqlite3_column_int64(cstmt, 2);
+                    c.jitter_pp_ps     = sqlite3_column_int64(cstmt, 3);
+                    c.jitter_sigma_ps  = sqlite3_column_double(cstmt, 4);
+                    c.drift_max_ppm    = sqlite3_column_double(cstmt, 5);
+                    c.drift_actual_ppm = sqlite3_column_double(cstmt, 6);
+                    c.drifted_period_ps = sqlite3_column_double(cstmt, 7);
+                    clocks.push_back(c);
+                    changed = true;
+                }
+                sqlite3_finalize(cstmt);
+            }
+        }
+    }
+
+    /* Check for new signals */
+    {
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db,
+                "SELECT id, name, scope, width, type FROM signals WHERE id > ? ORDER BY id",
+                -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(stmt, 1, loaded_signal_count);
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                Signal s;
+                s.id    = sqlite3_column_int(stmt, 0);
+                s.name  = (const char *)sqlite3_column_text(stmt, 1);
+                s.scope = (const char *)sqlite3_column_text(stmt, 2);
+                s.width = sqlite3_column_int(stmt, 3);
+                s.type  = (const char *)sqlite3_column_text(stmt, 4);
+                s.display_name = s.scope + "." + s.name;
+                s.visible = true;
+                s.expanded = false;
+                signals.push_back(s);
+                changed = true;
+            }
+            sqlite3_finalize(stmt);
+            loaded_signal_count = (int)signals.size();
+        }
+    }
+
+    /* Fetch new changes */
+    {
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db,
+                "SELECT time, signal_id, value FROM changes WHERE time > ? ORDER BY signal_id, time",
+                -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int64(stmt, 1, (sqlite3_int64)max_loaded_time);
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                int64_t t  = sqlite3_column_int64(stmt, 0);
+                int     id = sqlite3_column_int(stmt, 1);
+                const char *v = (const char *)sqlite3_column_text(stmt, 2);
+                changes[id].push_back({t, v});
+                if (t > max_loaded_time) max_loaded_time = t;
+                changed = true;
+            }
+            sqlite3_finalize(stmt);
+        }
+    }
+
+    /* Fetch new annotations */
+    {
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db,
+                "SELECT rowid, time, type, signal_id, message, color, end_time "
+                "FROM annotations WHERE rowid > ? ORDER BY rowid",
+                -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(stmt, 1, max_annotation_id);
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                int rowid = sqlite3_column_int(stmt, 0);
+                Annotation a;
+                a.time      = sqlite3_column_int64(stmt, 1);
+                a.type      = (const char *)sqlite3_column_text(stmt, 2);
+                a.signal_id = sqlite3_column_type(stmt, 3) == SQLITE_NULL
+                              ? -1 : sqlite3_column_int(stmt, 3);
+                const char *msg = (const char *)sqlite3_column_text(stmt, 4);
+                a.message   = msg ? msg : "";
+                const char *col = (const char *)sqlite3_column_text(stmt, 5);
+                a.color     = col ? col : "";
+                a.end_time  = sqlite3_column_type(stmt, 6) == SQLITE_NULL
+                              ? 0 : sqlite3_column_int64(stmt, 6);
+                annotations.push_back(a);
+                if (rowid > max_annotation_id) max_annotation_id = rowid;
+                changed = true;
+            }
+            sqlite3_finalize(stmt);
+        }
+
+        /* Recompute display_start_time if annotations changed */
+        if (changed && display_start_time == 0) {
+            bool trace_off_at_start = false;
+            for (const auto &a : annotations) {
+                if (a.type == "trace") {
+                    if (a.time == 0 && a.message == "off") {
+                        trace_off_at_start = true;
+                    } else if (trace_off_at_start && a.message == "on") {
+                        display_start_time = a.time;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Stop watching once simulation is done and no more data arriving */
+    if (!sim_running && !changed) {
+        watching = false;
+    }
+
+    return changed;
+}
+
+void JZWFile::close_db()
+{
+    if (db) {
+        sqlite3_close(db);
+        db = nullptr;
+    }
+    watching = false;
 }
 
 const char *JZWFile::value_at(int signal_id, int64_t time) const
@@ -717,15 +909,51 @@ int main(int argc, char **argv)
     bool show_clock_dialog = false;
 
     bool running = true;
+    bool live_follow = true; /* auto-scroll to latest data when live */
+    Uint64 last_poll_ticks = 0;
+
     while (running) {
         SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            ImGui_ImplSDL3_ProcessEvent(&event);
-            if (event.type == SDL_EVENT_QUIT)
-                running = false;
-            if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
-                event.window.windowID == SDL_GetWindowID(window))
-                running = false;
+        if (jzw.watching || jzw.sim_running) {
+            /* Continuous rendering when live */
+            while (SDL_PollEvent(&event)) {
+                ImGui_ImplSDL3_ProcessEvent(&event);
+                if (event.type == SDL_EVENT_QUIT)
+                    running = false;
+                if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
+                    event.window.windowID == SDL_GetWindowID(window))
+                    running = false;
+            }
+            SDL_Delay(16); /* ~60fps cap to avoid busy-spinning */
+        } else {
+            /* Idle: wait for events to save CPU */
+            if (SDL_WaitEventTimeout(&event, 100)) {
+                ImGui_ImplSDL3_ProcessEvent(&event);
+                if (event.type == SDL_EVENT_QUIT)
+                    running = false;
+                if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
+                    event.window.windowID == SDL_GetWindowID(window))
+                    running = false;
+                /* Drain remaining events */
+                while (SDL_PollEvent(&event)) {
+                    ImGui_ImplSDL3_ProcessEvent(&event);
+                    if (event.type == SDL_EVENT_QUIT)
+                        running = false;
+                    if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
+                        event.window.windowID == SDL_GetWindowID(window))
+                        running = false;
+                }
+            }
+        }
+
+        /* Poll for new data every 250ms when watching */
+        bool poll_got_data = false;
+        if (jzw.watching) {
+            Uint64 now = SDL_GetTicks();
+            if (now - last_poll_ticks >= 250) {
+                last_poll_ticks = now;
+                poll_got_data = jzw.poll();
+            }
         }
 
         ImGui_ImplSDLRenderer3_NewFrame();
@@ -735,6 +963,14 @@ int main(int argc, char **argv)
         const ImGuiViewport *viewport = ImGui::GetMainViewport();
         ImVec2 wp = viewport->WorkPos;
         ImVec2 ws = viewport->WorkSize;
+
+        /* Auto-scroll when live data arrives */
+        if (poll_got_data && live_follow) {
+            double ps_per_px_cur = zoom_levels[zoom_idx].ps_per_pixel;
+            double visible_ps = (ws.x - sidebar_w - 20.0f) * ps_per_px_cur;
+            scroll_ps = jzw.effective_end_time() - (int64_t)(visible_ps * 0.9);
+            if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
+        }
 
         /* ---- Toolbar ---- */
         ImGui::PushFont(font_toolbar);
@@ -796,6 +1032,31 @@ int main(int argc, char **argv)
             ImGui::SameLine(0, 4.0f);
         }
         ImGui::SetCursorPosY(text_vcenter_y);
+
+        /* LIVE indicator */
+        if (jzw.sim_running || jzw.watching) {
+            ImGui::SameLine();
+            ImDrawList *ldl = ImGui::GetWindowDrawList();
+            ImVec2 lwpos = ImGui::GetWindowPos();
+            float lx = lwpos.x + ImGui::GetCursorPosX();
+            float ly = lwpos.y + toolbar_pad_y + toolbar_btn_sz * 0.5f;
+
+            if (jzw.sim_running) {
+                /* Pulsing green dot + LIVE text */
+                float pulse = 0.6f + 0.4f * (float)sin(SDL_GetTicks() * 0.005);
+                ImU32 dot_col = IM_COL32(50, (int)(255 * pulse), 50, 255);
+                ldl->AddCircleFilled(ImVec2(lx + 5, ly), 4.0f, dot_col);
+                ldl->AddText(ImVec2(lx + 13, ly - ImGui::GetTextLineHeight() * 0.5f),
+                             IM_COL32(50, 220, 50, 255), "LIVE");
+                ImGui::Dummy(ImVec2(ImGui::CalcTextSize("LIVE").x + 16.0f, 0));
+            } else {
+                ldl->AddCircleFilled(ImVec2(lx + 5, ly), 4.0f, IM_COL32(120, 120, 120, 255));
+                ldl->AddText(ImVec2(lx + 13, ly - ImGui::GetTextLineHeight() * 0.5f),
+                             ImGui::GetColorU32(ImGuiCol_TextDisabled), "Watching");
+                ImGui::Dummy(ImVec2(ImGui::CalcTextSize("Watching").x + 16.0f, 0));
+            }
+            ImGui::SameLine();
+        }
 
         /* Cursor info in toolbar (stacked pairs) */
         {
@@ -1120,7 +1381,7 @@ int main(int argc, char **argv)
                 if (ImGui::Button("##Fit", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
                     float fit_w = ws.x - sidebar_w - 20.0f;
                     if (fit_w < 1.0f) fit_w = 1.0f;
-                    int64_t display_dur = jzw.sim_end_time - jzw.display_start_time;
+                    int64_t display_dur = jzw.effective_end_time() - jzw.display_start_time;
                     double needed_ps_per_px = (double)display_dur / (double)fit_w;
                     int best = num_zoom_levels - 1;
                     for (int z = 0; z < num_zoom_levels; z++) {
@@ -1252,7 +1513,7 @@ int main(int argc, char **argv)
             /* Show current value tooltip */
             if (ImGui::IsItemHovered()) {
                 char time_buf[64];
-                format_time(time_buf, sizeof(time_buf), jzw.sim_end_time);
+                format_time(time_buf, sizeof(time_buf), jzw.effective_end_time());
                 ImGui::SetTooltip("[%d] %s  width=%d  type=%s\nEnd: %s",
                                   sig.id, sig.display_name.c_str(),
                                   sig.width, sig.type.c_str(), time_buf);
@@ -1395,7 +1656,7 @@ int main(int argc, char **argv)
         double ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
 
         /* Total content width in pixels for the display range */
-        int64_t display_duration = jzw.sim_end_time - jzw.display_start_time;
+        int64_t display_duration = jzw.effective_end_time() - jzw.display_start_time;
         float total_content_w = (float)(display_duration / ps_per_px) + wave_w;
 
         /* ---- Keyboard shortcuts ---- */
@@ -1418,7 +1679,7 @@ int main(int argc, char **argv)
                     double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
                     scroll_ps = focus_ps - (int64_t)(focus_screen_x * new_ps_per_px);
                     if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
-                    if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+                    if (scroll_ps > jzw.effective_end_time()) scroll_ps = jzw.effective_end_time();
                 }
             }
             if (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract)) {
@@ -1436,7 +1697,7 @@ int main(int argc, char **argv)
                     double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
                     scroll_ps = focus_ps - (int64_t)(focus_screen_x * new_ps_per_px);
                     if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
-                    if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+                    if (scroll_ps > jzw.effective_end_time()) scroll_ps = jzw.effective_end_time();
                 }
             }
 
@@ -1462,12 +1723,14 @@ int main(int argc, char **argv)
                 if (io.KeyShift) step *= 5.0;
                 scroll_ps -= (int64_t)step;
                 if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
+                live_follow = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_RightArrow) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) {
                 double step = ps_per_px * 40.0;
                 if (io.KeyShift) step *= 5.0;
                 scroll_ps += (int64_t)step;
-                if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+                if (scroll_ps > jzw.effective_end_time()) scroll_ps = jzw.effective_end_time();
+                live_follow = false;
             }
 
             /* Arrow keys: Up/Down for vertical scroll */
@@ -1485,12 +1748,14 @@ int main(int argc, char **argv)
             /* Home/End: jump to start/end of simulation */
             if (ImGui::IsKeyPressed(ImGuiKey_Home)) {
                 scroll_ps = jzw.display_start_time;
+                live_follow = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_End)) {
                 /* Scroll so end of simulation is visible at right edge */
                 double visible_ps = wave_w * ps_per_px;
-                scroll_ps = jzw.sim_end_time - (int64_t)visible_ps;
+                scroll_ps = jzw.effective_end_time() - (int64_t)visible_ps;
                 if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
+                live_follow = true; /* End key re-enables follow */
             }
 
             /* Escape: clear cursors (last placed first) and deactivate toggle */
@@ -1528,8 +1793,9 @@ int main(int argc, char **argv)
                     double new_ps_per_px = zoom_levels[zoom_idx].ps_per_pixel;
                     scroll_ps = mouse_ps - (int64_t)(mouse_rel_x * new_ps_per_px);
                     if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
-                    if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+                    if (scroll_ps > jzw.effective_end_time()) scroll_ps = jzw.effective_end_time();
                     ps_per_px = new_ps_per_px;
+                    live_follow = false;
                 } else {
                     /* Regular wheel = vertical scroll */
                     float max_scroll_y = total_row_count * row_height - content_h + 40.0f;
@@ -1544,7 +1810,8 @@ int main(int argc, char **argv)
                 double ps_step = ps_per_px * 50.0;
                 scroll_ps += (int64_t)(wheelH * ps_step);
                 if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
-                if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
+                if (scroll_ps > jzw.effective_end_time()) scroll_ps = jzw.effective_end_time();
+                live_follow = false;
             }
 
             /* Click in waveform area to place cursor based on active toggle */
@@ -1552,7 +1819,7 @@ int main(int argc, char **argv)
                 float mouse_rel_x = io.MousePos.x - (wave_x + ImGui::GetStyle().WindowPadding.x);
                 if (mouse_rel_x >= 0 && mouse_rel_x < wave_w) {
                     int64_t click_ps = scroll_ps + (int64_t)(mouse_rel_x * ps_per_px);
-                    if (click_ps >= jzw.display_start_time && click_ps <= jzw.sim_end_time) {
+                    if (click_ps >= jzw.display_start_time && click_ps <= jzw.effective_end_time()) {
                         if (active_cursor == 1) {
                             cursor_ps = click_ps;
                             cursor_visible = true;
@@ -1607,7 +1874,7 @@ int main(int argc, char **argv)
                                 else hi = mid - 1;
                             }
                             int64_t t_start_seg = vc[best].time;
-                            int64_t t_end_seg = (best + 1 < (int)vc.size()) ? vc[best + 1].time : jzw.sim_end_time;
+                            int64_t t_end_seg = (best + 1 < (int)vc.size()) ? vc[best + 1].time : jzw.effective_end_time();
                             uint64_t val = binstr_to_u64(vc[best].value.c_str());
 
                             char hex_buf[32], dec_buf[32], start_buf[64], end_buf[64], dur_buf[64];
@@ -2184,6 +2451,8 @@ int main(int argc, char **argv)
         ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
         SDL_RenderPresent(renderer);
     }
+
+    jzw.close_db();
 
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
