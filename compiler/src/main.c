@@ -237,6 +237,10 @@ int main(int argc, char **argv) {
     size_t sandbox_root_count = 0;
     JZWarningGroupOverride group_overrides[16];
     size_t group_override_count = 0;
+    SimJitterConfig jitter_configs[16];
+    int num_jitter = 0;
+    SimDriftConfig drift_configs[16];
+    int num_drift = 0;
 
     for (int i = 1; i < argc; ++i) {
         const char *arg = argv[i];
@@ -283,6 +287,58 @@ int main(int argc, char **argv) {
         } else if (strncmp(arg, "--seed=", 7) == 0) {
             test_seed = (uint32_t)strtoul(arg + 7, NULL, 16);
             test_seed_set = 1;
+        } else if (strncmp(arg, "--jitter=", 9) == 0) {
+            if (num_jitter >= (int)(sizeof(jitter_configs) / sizeof(jitter_configs[0]))) {
+                fprintf(stderr, "Too many --jitter flags (max %d)\n",
+                        (int)(sizeof(jitter_configs) / sizeof(jitter_configs[0])));
+                return 1;
+            }
+            /* Parse --jitter=clock_name;pp_ps */
+            const char *val = arg + 9;
+            const char *semi = strchr(val, ':');
+            if (!semi || semi == val || *(semi + 1) == '\0') {
+                fprintf(stderr, "Invalid --jitter format: '%s' (expected --jitter=<clock>:<ps>)\n", arg);
+                return 1;
+            }
+            size_t name_len = (size_t)(semi - val);
+            char *name_copy = malloc(name_len + 1);
+            memcpy(name_copy, val, name_len);
+            name_copy[name_len] = '\0';
+            uint64_t pp = strtoull(semi + 1, NULL, 10);
+            if (pp == 0) {
+                fprintf(stderr, "Invalid --jitter value: '%s' (peak-to-peak must be > 0)\n", semi + 1);
+                free(name_copy);
+                return 1;
+            }
+            jitter_configs[num_jitter].clock_name = name_copy;
+            jitter_configs[num_jitter].pp_ps = pp;
+            num_jitter++;
+        } else if (strncmp(arg, "--drift=", 8) == 0) {
+            if (num_drift >= (int)(sizeof(drift_configs) / sizeof(drift_configs[0]))) {
+                fprintf(stderr, "Too many --drift flags (max %d)\n",
+                        (int)(sizeof(drift_configs) / sizeof(drift_configs[0])));
+                return 1;
+            }
+            /* Parse --drift=clock_name:max_ppm */
+            const char *val = arg + 8;
+            const char *colon = strchr(val, ':');
+            if (!colon || colon == val || *(colon + 1) == '\0') {
+                fprintf(stderr, "Invalid --drift format: '%s' (expected --drift=<clock>:<ppm>)\n", arg);
+                return 1;
+            }
+            size_t name_len = (size_t)(colon - val);
+            char *name_copy = malloc(name_len + 1);
+            memcpy(name_copy, val, name_len);
+            name_copy[name_len] = '\0';
+            double ppm = strtod(colon + 1, NULL);
+            if (ppm <= 0.0) {
+                fprintf(stderr, "Invalid --drift value: '%s' (ppm must be > 0)\n", colon + 1);
+                free(name_copy);
+                return 1;
+            }
+            drift_configs[num_drift].clock_name = name_copy;
+            drift_configs[num_drift].max_ppm = ppm;
+            num_drift++;
         } else if (strcmp(arg, "--lint-rules") == 0) {
             lint_rules = 1;
         } else if (strcmp(arg, "--sdc") == 0 ||
@@ -883,7 +939,11 @@ int main(int argc, char **argv) {
                                                      &compiler.diagnostics,
                                                      input_filename,
                                                      sim_output,
-                                                     wave_format);
+                                                     wave_format,
+                                                     num_jitter > 0 ? jitter_configs : NULL,
+                                                     num_jitter,
+                                                     num_drift > 0 ? drift_configs : NULL,
+                                                     num_drift);
                 if (sim_rc != 0) {
                     rc = 1;
                 }

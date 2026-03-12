@@ -30,6 +30,14 @@ JZWWriter *jzw_open(const char *filename, uint64_t timescale_ps);
 void jzw_set_meta(JZWWriter *w, const char *key, const char *value);
 
 /**
+ * @brief Add a clock definition to the clocks table.
+ */
+void jzw_add_clock(JZWWriter *w, const char *name, uint64_t period_ps,
+                   uint64_t phase_ps, uint64_t jitter_pp_ps,
+                   double jitter_sigma_ps, double drift_max_ppm,
+                   double drift_actual_ppm, double drifted_period_ps);
+
+/**
  * @brief Add a signal to be tracked.
  *
  * Must be called before jzw_end_definitions().

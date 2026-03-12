@@ -18,13 +18,13 @@ header-includes:
 
 This specification defines the `@simulation` construct for JZ-HDL. While `@testbench` provides strictly manual, cycle-stepped control for functional verification, `@simulation` provides a **time-based, multi-clock continuous simulation environment**.
 
-In a `@simulation`, clocks run automatically in the background based on their defined periods. The simulator calculates a common "tick" resolution, and the test sequence advances via absolute time (`@run`) directives rather than manual edge toggles. All declared `WIRE`s, `CLOCK`s, and `TAP`ped internal signals are automatically monitored and dumped to an output waveform file (e.g., VCD/FST) per tick.
+In a `@simulation`, clocks run automatically in the background based on their defined periods. The simulator uses event-driven scheduling with 1 picosecond resolution, jumping directly between clock edges. The test sequence advances via absolute time (`@run`) directives rather than manual edge toggles. All declared `WIRE`s, `CLOCK`s, and `TAP`ped internal signals are automatically monitored and dumped to an output waveform file (e.g., VCD/FST) at each clock event.
 
 **Relationship to `@testbench`:**
 
 `@simulation` and `@testbench` are two **independent execution models**. They share the same RTL evaluation semantics (combinational settling, NBA for synchronous updates, reset behavior, x/z rules) but differ fundamentally in how time advances:
 
-- `@simulation` is **time-based**: clocks have defined periods and toggle independently via GCD-based tick scheduling. Time advances via `@run` directives in absolute units (nanoseconds, milliseconds). Multiple clocks run concurrently.
+- `@simulation` is **time-based**: clocks have defined periods and toggle independently via event-driven scheduling at 1ps resolution. Time advances via `@run` directives in absolute units (nanoseconds, milliseconds). Multiple clocks run concurrently.
 - `@testbench` is **cycle-stepped**: clocks advance only when explicitly commanded by `@clock` directives, one clock at a time. There is no notion of absolute time or clock periods.
 
 Neither model is a superset of the other. A simulation implementation is not required to use the testbench engine internally, and vice versa. The simulation model is designed for multi-clock timing verification and waveform capture; the testbench model is designed for deterministic, assertion-driven functional tests.
@@ -43,11 +43,60 @@ All time values are represented internally as **64-bit unsigned integers in pico
 - `ns=0.1` → 100 ps (valid: 0.1 × 1000 = 100.0 exactly)
 - `period=3.3335` → 3333.5 ps (rejected: not an integer picosecond count)
 
-### 2.2 The "Tick" Resolution
+### 2.2 Event-Driven Clock Scheduling
 
-Unlike `@testbench`, which is strictly cycle-relative, `@simulation` operates on an absolute timeline discretized into **ticks**.
-- The simulator computes the toggle interval for each clock (half its period, in picoseconds) and takes the **Greatest Common Divisor (GCD)** of all toggle intervals. This GCD becomes the fundamental tick length.
-- Example: If `clk_a` has a period of 10ns (toggles every 5000ps) and `clk_b` has a period of 14ns (toggles every 7000ps), the GCD is 1000ps = 1ns.
+Unlike `@testbench`, which is strictly cycle-relative, `@simulation` operates on an absolute timeline with **1 picosecond resolution**.
+
+The simulator uses **event-driven scheduling** for clock toggles. Each clock maintains a `next_toggle_ps` timestamp indicating when it will next change value. At initialization, `next_toggle_ps` is set to `phase_ps + toggle_ps` (i.e., the phase offset plus half the period). When advancing time, the simulator jumps directly to the earliest `next_toggle_ps` across all clocks — skipping empty time where no clock toggles. After toggling a clock, its `next_toggle_ps` advances by `toggle_ps`.
+
+This approach provides exact 1ps timing resolution while maintaining O(number of clock edges) performance regardless of the time span being simulated.
+
+### 2.2.1 Clock Jitter
+
+The simulator supports optional **period jitter** on any clock, modeling the cycle-to-cycle timing variation present in real oscillators and PLLs. Jitter is enabled per clock via the `--jitter` command-line flag (see Section 5.2).
+
+**Jitter model:**
+
+- **Type: Period jitter (no drift).** Each clock edge is perturbed relative to its **ideal** position. The simulator tracks the ideal `next_toggle_ps` (accumulated from the exact `toggle_ps` half-period) and applies a random offset to produce the actual toggle time. Because the offset is computed from the ideal position — not the previous actual position — jitter does not accumulate into drift. Over long simulations, the clock's average frequency remains exact.
+
+- **Distribution: Gaussian, clamped.** The jitter offset is drawn from a Gaussian (normal) distribution. The `--jitter` parameter specifies the **peak-to-peak** jitter in picoseconds. The standard deviation is `σ = peak_to_peak / 6`, placing the ±peak_to_peak/2 bounds at ±3σ. This means 99.7% of edges fall within the specified range naturally, and the remaining 0.3% are clamped to ±peak_to_peak/2 to prevent physically unrealistic outliers.
+
+  For example, `--jitter=clk:200` specifies 200ps peak-to-peak jitter on clock `clk`: σ ≈ 33.3ps, 99.7% of edges within ±100ps of ideal, hard-clamped at ±100ps.
+
+- **PRNG: Deterministic per-clock.** Each jittered clock receives its own xorshift32 PRNG state, seeded deterministically from the simulation seed and the clock's declaration index: `jitter_rng = seed ^ (clock_index + 0x4A495454)`. Gaussian samples are generated using the Box-Muller transform on pairs of uniform xorshift32 outputs. This ensures jitter sequences are fully reproducible given the same `--seed` and `--jitter` flags, regardless of platform or implementation.
+
+- **Minimum edge spacing.** If a jitter offset would cause `next_toggle_ps` to be less than or equal to `current_time_ps` (i.e., the edge would move into the past), the offset is clamped so the edge occurs at `current_time_ps + 1`. This prevents negative time advancement and maintains simulation causality.
+
+**Interaction with other features:**
+
+- Jitter does not affect the GCD tick computation. The GCD is computed from ideal (unjittered) toggle intervals and is used only for `@run(ticks=N)` conversion.
+- Jitter does not affect `@run` duration accounting. The simulation runs until the requested wall-clock time has elapsed, regardless of how many jittered edges occur.
+- Jitter metadata is recorded in JZW output (see Section 6).
+
+**GCD tick for `@run(ticks=N)`:** The simulator also computes the Greatest Common Divisor (GCD) of all clock toggle intervals. This GCD defines the **tick unit** used when `@run(ticks=N)` is specified — the duration advanced is `N × GCD` picoseconds. For example, if `clk_a` has a period of 10ns (toggles every 5000ps) and `clk_b` has a period of 14ns (toggles every 7000ps), the GCD is 1000ps = 1ns, and `@run(ticks=10)` advances 10ns. The `@run(ns=...)` and `@run(ms=...)` forms are unaffected — they convert directly to picoseconds.
+
+### 2.2.2 Clock Drift
+
+The simulator supports optional **frequency drift** on any clock, modeling the crystal tolerance (ppm accuracy) of real oscillators. Drift is enabled per clock via the `--drift` command-line flag (see Section 5.2).
+
+**Drift model:**
+
+- **Type: Fixed frequency offset.** At simulation start, each drifted clock receives a fixed frequency offset (in parts per million) that persists for the entire simulation. This models the static frequency error of a real crystal oscillator operating at a particular temperature and voltage. Unlike jitter, drift **accumulates** — the clock runs consistently faster or slower than its nominal frequency, causing its edges to progressively diverge from ideal timing.
+
+- **Selection: Gaussian, clamped.** The actual drift value is drawn from a Gaussian distribution at simulation initialization. The `--drift` parameter specifies the **maximum drift** in ppm. The standard deviation is `σ = max_ppm / 3`, placing the ±max_ppm bounds at ±3σ. Values beyond ±max_ppm are clamped. The selected value may be positive (clock runs fast) or negative (clock runs slow).
+
+  For example, `--drift=clk:50` specifies ±50 ppm maximum drift on clock `clk`: σ ≈ 16.7 ppm, 99.7% of runs select a drift within ±50 ppm naturally, hard-clamped at ±50 ppm.
+
+- **Implementation: Adjusted half-period.** The drift is applied by computing a drifted half-period: `drifted_toggle_ps = toggle_ps × (1 + actual_ppm / 1,000,000)`. The simulator tracks the ideal next toggle time as a `double` to accumulate sub-picosecond fractional drift without rounding error. Each scheduled toggle rounds the accumulated double to the nearest integer picosecond.
+
+- **PRNG: Deterministic per-clock.** Each drifted clock's actual ppm is selected using a dedicated xorshift32 PRNG state, seeded from the simulation seed and the clock's declaration index: `drift_rng = seed ^ (clock_index + 0x44524654)`. This ensures drift selection is fully reproducible given the same `--seed` and `--drift` flags.
+
+**Interaction with jitter:**
+
+- When both jitter and drift are active on a clock, drift changes the base period (via `drifted_toggle_ps`), and jitter adds random perturbation on top. The ideal next toggle accumulates using the drifted period, and jitter offsets are applied relative to that drifted ideal position.
+- Drift does not affect the GCD tick computation. The GCD is computed from nominal (undrifted) toggle intervals and is used only for `@run(ticks=N)` conversion.
+- Drift does not affect `@run` duration accounting. The simulation runs until the requested wall-clock time has elapsed.
+- Drift metadata is recorded in JZW output (see Section 6.4).
 
 ### 2.3 Time 0 Initialization
 
@@ -66,11 +115,11 @@ This ensures the waveform viewer shows the full initial setup state before the f
 
 ### 2.4 Execution Flow
 
-1. **Time Advancement (`@run`)**: The simulator advances time tick-by-tick up to the requested duration.
-2. **Tick Evaluation**: At each tick:
-   - If a clock is scheduled to toggle, its value updates.
+1. **Time Advancement (`@run`)**: The simulator advances time by jumping to successive clock events up to the requested duration.
+2. **Clock Event Evaluation**: At each clock event (a time where one or more clocks toggle):
+   - All clocks scheduled to toggle at this time update their values. Each clock's `next_toggle_ps` advances by its `toggle_ps`.
    - Combinational logic evaluates to a fixed point (see Section 2.6).
-   - If an active clock edge occurs, synchronous assignments are sampled and applied (NBA semantics).
+   - Synchronous assignments are sampled and applied (NBA semantics).
    - Combinational logic settles again.
    - Monitored signals are sampled and written to the output file.
 3. **Procedural Updates (`@update`)**: Executed instantaneously between `@run` commands. They apply wire changes, propagate inputs, settle combinational logic, propagate outputs, and record the changes to the waveform before the next `@run` begins.
@@ -82,8 +131,8 @@ This ensures the waveform viewer shows the full initial setup state before the f
 This is a normative requirement. There is no implementation-defined ordering, no thread-dependent scheduling, and no platform-dependent evaluation. Every aspect of simulation is fully determined by the source text and the seed value:
 
 - Storage randomization is derived solely from the seed via a specified PRNG algorithm.
-- Tick scheduling is computed from integer picosecond arithmetic and GCD (Section 2.1, 2.2).
-- Clock toggle order within a tick is determined by declaration order.
+- Clock scheduling uses event-driven `next_toggle_ps` timestamps. Ideal toggle times are tracked as double-precision floats to accumulate sub-picosecond drift fractions, then rounded to integer picoseconds for scheduling (Sections 2.1, 2.2).
+- When multiple clocks toggle at the same time, toggle order is determined by declaration order.
 - Combinational settling follows a deterministic iteration order (Section 2.6).
 - Waveform output records signal values at every tick using exact bit-vector state with no floating-point arithmetic.
 
@@ -582,10 +631,14 @@ The `MONITOR` block defines a set of conditional directives that are evaluated *
 Files containing `@simulation` blocks must be run with the `--simulate` flag. Using `--lint` or `--test` on a file that contains `@simulation` will produce a `SIM_WRONG_TOOL` error.
 
 ```bash
-jz-hdl --simulate sim_file.jz                # produces sim_file.vcd
-jz-hdl --simulate sim_file.jz -o output.vcd  # explicit output path
-jz-hdl --simulate sim_file.jz --seed=0xCAFE  # reproducible register init
-jz-hdl --simulate sim_file.jz --verbose       # print tick resolution, events
+jz-hdl --simulate sim_file.jz                       # produces sim_file.vcd
+jz-hdl --simulate sim_file.jz -o output.vcd         # explicit output path
+jz-hdl --simulate sim_file.jz --seed=0xCAFE         # reproducible register init
+jz-hdl --simulate sim_file.jz --verbose              # print tick resolution, events
+jz-hdl --simulate sim_file.jz --jitter=clk:200       # 200ps p-p jitter on clk
+jz-hdl --simulate sim_file.jz --jitter=clk_wr:200 --jitter=clk_rd:500
+jz-hdl --simulate sim_file.jz --drift=clk:50            # ±50 ppm crystal tolerance
+jz-hdl --simulate sim_file.jz --jitter=clk:200 --drift=clk:50  # jitter + drift
 ```
 
 ### 5.2 Flags
@@ -597,6 +650,8 @@ jz-hdl --simulate sim_file.jz --verbose       # print tick resolution, events
 | `--seed=0x<hex>` | 32-bit seed for register randomization. Default: `0xDEADBEEF`. |
 | `--vcd` | Force VCD output format (default). |
 | `--fst` | Force FST output format (not yet supported). |
+| `--jitter=<clock>:<ps>` | Add Gaussian period jitter to a clock. `<clock>` is the clock name declared in the simulation's `CLOCK` block. `<ps>` is the peak-to-peak jitter in picoseconds (σ = ps/6, clamped at ±ps/2). May be specified multiple times for different clocks. See Section 2.2.1. |
+| `--drift=<clock>:<ppm>` | Add frequency drift to a clock. `<clock>` is the clock name declared in the simulation's `CLOCK` block. `<ppm>` is the maximum drift in parts per million. The actual drift is selected from a Gaussian distribution (σ = ppm/3, clamped at ±ppm) at simulation start. May be specified multiple times for different clocks. See Section 2.2.2. |
 | `--verbose` | Print tick resolution, clock periods, and `@run`/`@update` events. |
 
 ---
@@ -620,6 +675,18 @@ Signals are organized into VCD scopes:
 ### 6.3 What Gets Recorded
 
 Every signal in `CLOCK`, `WIRE`, and `TAP` blocks is sampled and written to the waveform file at every tick during `@run`, and at each `@setup`/`@update` event. The Time 0 dump captures the full initial state before any clock edge.
+
+### 6.4 JZW Metadata
+
+The JZW format stores simulation metadata in its `meta` table. In addition to the standard keys (`date`, `source_file`, `compiler_version`, `seed`, `tick_ps`, `module_name`), the following keys are written when clock jitter or drift is enabled:
+
+| Key | Value | Example |
+|---|---|---|
+| `jitter_<clock_name>` | Peak-to-peak jitter in picoseconds | `jitter_clk = "200"` |
+| `drift_<clock_name>` | Maximum drift in ppm (configured value) | `drift_clk = "50.0"` |
+| `drift_actual_<clock_name>` | Actual selected drift in ppm | `drift_actual_clk = "8.027143"` |
+
+One `jitter_` key is written per jittered clock. Two `drift_` keys are written per drifted clock: one for the configured maximum and one for the actual selected value. Clocks without jitter or drift have no corresponding keys. This allows waveform viewers and analysis tools to determine whether jitter/drift was active and with what parameters, and to reconstruct the exact timing behavior of each clock.
 
 ---
 

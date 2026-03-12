@@ -12,7 +12,7 @@ outline: deep
 
 The `@simulation` construct provides a **time-based, multi-clock continuous simulation environment**. While [`@testbench`](/reference-manual/testbench) provides strictly manual, cycle-stepped control for functional verification, `@simulation` runs clocks automatically in the background based on their defined periods.
 
-In a simulation, the simulator calculates a common "tick" resolution, and the test sequence advances via absolute time (`@run`) directives rather than manual edge toggles. All declared `WIRE`s, `CLOCK`s, and `TAP`ped internal signals are automatically monitored and dumped to an output waveform file (VCD).
+In a simulation, the simulator uses event-driven scheduling with 1 picosecond resolution, jumping directly between clock edges. The test sequence advances via absolute time (`@run`) directives rather than manual edge toggles. All declared `WIRE`s, `CLOCK`s, and `TAP`ped internal signals are automatically monitored and dumped to an output waveform file (VCD) at each clock event.
 
 ::: tip When to use @simulation vs @testbench
 Use `@simulation` for **waveform-based analysis** — observing multi-clock behavior over time with automatic clock toggling and VCD output. Use [`@testbench`](/reference-manual/testbench) for **functional verification** — asserting specific values at specific cycle counts.
@@ -22,7 +22,7 @@ Use `@simulation` for **waveform-based analysis** — observing multi-clock beha
 
 ### Internal Time Resolution
 
-All time values are represented internally as **64-bit unsigned integers in picoseconds**. When a clock period or `@run` duration is specified in nanoseconds or milliseconds, the compiler converts it to an integer picosecond count at parse time. All subsequent arithmetic — GCD computation, tick advancement, clock scheduling — uses pure integer math. This eliminates floating-point drift.
+All time values are represented internally as **64-bit unsigned integers in picoseconds**. When a clock period or `@run` duration is specified in nanoseconds or milliseconds, the compiler converts it to an integer picosecond count at parse time. All subsequent arithmetic — event scheduling, tick advancement, clock toggling — uses pure integer math. This eliminates floating-point drift.
 
 **Exact conversion required.** The specified value must convert to an **exact integer number of picoseconds**. If the conversion would produce a fractional picosecond, the compiler rejects the value with an error. There is no silent rounding or truncation.
 
@@ -33,12 +33,61 @@ All time values are represented internally as **64-bit unsigned integers in pico
 | `ns=0.1` | 0.1 × 1000 | 100 ps (valid) |
 | `period=3.3335` | 3.3335 × 1000 | 3333.5 ps (rejected) |
 
-### The Tick Resolution
+### Event-Driven Clock Scheduling
 
-Unlike `@testbench`, which is strictly cycle-relative, `@simulation` operates on an absolute timeline discretized into **ticks**.
+Unlike `@testbench`, which is strictly cycle-relative, `@simulation` operates on an absolute timeline with **1 picosecond resolution**.
 
-- The simulator computes the toggle interval for each clock (half its period, in picoseconds) and takes the **Greatest Common Divisor (GCD)** of all toggle intervals. This GCD becomes the fundamental tick length.
-- **Example:** If `clk_a` has a period of 10ns (toggles every 5000ps) and `clk_b` has a period of 14ns (toggles every 7000ps), the GCD is 1000ps = 1ns.
+The simulator uses **event-driven scheduling** for clock toggles. Each clock maintains a `next_toggle_ps` timestamp indicating when it will next change value. When advancing time, the simulator jumps directly to the earliest scheduled clock event — skipping empty time where no clock toggles. After toggling a clock, its `next_toggle_ps` advances by half the clock's period. This provides exact 1ps timing resolution while maintaining O(number of clock edges) performance.
+
+**GCD tick for `@run(ticks=N)`:** The simulator also computes the Greatest Common Divisor (GCD) of all clock toggle intervals to define the **tick unit**. When `@run(ticks=N)` is specified, the duration advanced is `N × GCD` picoseconds. For example, if `clk_a` toggles every 5000ps and `clk_b` every 7000ps, the GCD is 1000ps, and `@run(ticks=10)` advances 10ns. The `ns` and `ms` forms are unaffected.
+
+### Clock Jitter
+
+The simulator supports optional **period jitter** on any clock via the `--jitter` command-line flag, modeling the cycle-to-cycle timing variation present in real oscillators and PLLs.
+
+**Key properties:**
+
+- **Period jitter, no drift.** Each clock edge is perturbed relative to its *ideal* position (accumulated from the exact half-period), not the previous actual edge. Jitter does not accumulate — the clock's average frequency remains exact over time.
+- **Gaussian distribution, clamped.** The `--jitter` parameter specifies **peak-to-peak** jitter in picoseconds. The standard deviation is σ = peak_to_peak / 6, placing the ±peak_to_peak/2 bounds at ±3σ. Samples beyond ±peak_to_peak/2 are clamped, preventing physically unrealistic outliers.
+- **Deterministic.** Each jittered clock gets its own PRNG seeded from the simulation seed and clock declaration index. Gaussian samples use the Box-Muller transform. Given the same `--seed` and `--jitter` flags, jitter sequences are bit-identical across runs.
+
+```bash
+# 200ps peak-to-peak jitter on clk: σ ≈ 33ps, 99.7% within ±100ps
+jz-hdl sim.jz --simulate --jitter=clk:200
+
+# Different jitter per clock
+jz-hdl sim.jz --simulate --jitter=clk_wr:200 --jitter=clk_rd:500
+```
+
+::: tip Matching hardware datasheets
+PLL datasheets typically specify jitter as peak-to-peak or RMS (σ). For a datasheet value of "200ps peak-to-peak", use `--jitter=clk:200`. For an RMS value of "33ps", use `--jitter=clk:198` (6 × 33).
+:::
+
+### Clock Drift
+
+The simulator supports optional **frequency drift** on any clock via the `--drift` command-line flag, modeling the crystal tolerance (ppm accuracy) of real oscillators.
+
+**Key properties:**
+
+- **Fixed frequency offset.** At simulation start, each drifted clock receives a fixed frequency offset (in ppm) that persists for the entire simulation. Unlike jitter, drift **accumulates** — the clock runs consistently faster or slower than nominal, causing its edges to progressively diverge from ideal timing.
+- **Gaussian selection, clamped.** The `--drift` parameter specifies the **maximum drift** in ppm. The actual value is drawn from a Gaussian distribution (σ = max/3, clamped at ±max) at simulation start. The value may be positive (fast) or negative (slow).
+- **Deterministic.** Each drifted clock's actual ppm is selected using a dedicated PRNG seeded from the simulation seed and clock declaration index. Given the same `--seed` and `--drift` flags, the selected drift is identical across runs.
+- **Combines with jitter.** When both are active, drift changes the base period and jitter adds random perturbation on top. The ideal next toggle accumulates using the drifted period.
+
+```bash
+# ±50 ppm crystal tolerance on clk
+jz-hdl sim.jz --simulate --drift=clk:50
+
+# Jitter + drift together
+jz-hdl sim.jz --simulate --jitter=clk:200 --drift=clk:50
+
+# Different drift per clock domain
+jz-hdl sim.jz --simulate --drift=clk_wr:20 --drift=clk_rd:100
+```
+
+::: tip Matching crystal datasheets
+Crystal datasheets typically specify frequency tolerance in ppm. For a crystal rated at "±50 ppm", use `--drift=clk:50`. The simulator selects a realistic value from within that tolerance range for each simulation run (deterministic per seed).
+:::
 
 ### Time 0 Initialization
 
@@ -57,11 +106,11 @@ A register's declared reset value is **never** applied automatically at instanti
 
 ### Execution Flow
 
-1. **Time Advancement (`@run`, `@run_until`, `@run_while`)**: The simulator advances time tick-by-tick up to the requested duration or until a condition is met.
-2. **Tick Evaluation**: At each tick:
-   - If a clock is scheduled to toggle, its value updates.
+1. **Time Advancement (`@run`, `@run_until`, `@run_while`)**: The simulator advances time by jumping to successive clock events up to the requested duration or until a condition is met.
+2. **Clock Event Evaluation**: At each clock event (a time where one or more clocks toggle):
+   - All clocks scheduled to toggle at this time update their values and schedule their next toggle.
    - Combinational logic evaluates to a fixed point.
-   - If an active clock edge occurs, synchronous assignments are sampled and applied (NBA semantics).
+   - Synchronous assignments are sampled and applied (NBA semantics).
    - Combinational logic settles again.
    - Monitored signals are sampled and written to the output file.
 3. **Procedural Updates (`@update`)**: Executed instantaneously between `@run` commands. They apply wire changes, propagate inputs, settle combinational logic, propagate outputs, and record the changes before the next `@run` begins.
@@ -73,8 +122,8 @@ A register's declared reset value is **never** applied automatically at instanti
 There is no implementation-defined ordering, no thread-dependent scheduling, and no platform-dependent evaluation. Every aspect of simulation is fully determined by the source text and the seed value:
 
 - Storage randomization is derived solely from the seed via a specified PRNG algorithm.
-- Tick scheduling is computed from integer picosecond arithmetic and GCD.
-- Clock toggle order within a tick is determined by declaration order.
+- Clock scheduling uses event-driven `next_toggle_ps` timestamps computed from integer picosecond arithmetic.
+- When multiple clocks toggle at the same time, toggle order is determined by declaration order.
 - Combinational settling follows a deterministic iteration order.
 - Waveform output records signal values at every tick using exact bit-vector state with no floating-point arithmetic.
 
@@ -190,9 +239,9 @@ Advances the global simulation time by the specified amount.
 
 | Unit | Description |
 | --- | --- |
-| `ticks=<integer>` | Advance by the specified number of simulator ticks. |
-| `ns=<number>` | Advance by nanoseconds. Converted to ticks internally. |
-| `ms=<number>` | Advance by milliseconds. Converted to ticks internally. |
+| `ticks=<integer>` | Advance by the specified number of GCD ticks (see [Event-Driven Clock Scheduling](#event-driven-clock-scheduling)). |
+| `ns=<number>` | Advance by nanoseconds. Converted to picoseconds internally. |
+| `ms=<number>` | Advance by milliseconds. Converted to picoseconds internally. |
 
 ### @update
 
@@ -380,6 +429,8 @@ jz-hdl sim_file.jz --simulate                    # produces sim_file.vcd
 jz-hdl sim_file.jz --simulate -o output.vcd      # explicit output path
 jz-hdl sim_file.jz --simulate --seed=0xCAFE      # reproducible register init
 jz-hdl sim_file.jz --simulate --verbose           # print tick resolution, events
+jz-hdl sim_file.jz --simulate --jitter=clk:200   # 200ps peak-to-peak jitter
+jz-hdl sim_file.jz --simulate --drift=clk:50    # ±50 ppm crystal tolerance
 ```
 
 Files containing `@simulation` blocks must be run with `--simulate`. Using `--lint` or `--test` on a file that contains `@simulation` will produce a `SIM_WRONG_TOOL` error.
@@ -393,6 +444,8 @@ Files containing `@simulation` blocks must be run with `--simulate`. Using `--li
 | `--seed=0xHEX` | 32-bit seed for register randomization. Default: `0xDEADBEEF`. |
 | `--vcd` | Force VCD output format (default). |
 | `--fst` | Force FST output format (not yet supported). |
+| `--jitter=<clock>:<ps>` | Add Gaussian period jitter to a clock. `<ps>` is peak-to-peak jitter in picoseconds (σ = ps/6, clamped at ±ps/2). May be specified multiple times. See [Clock Jitter](#clock-jitter). |
+| `--drift=<clock>:<ppm>` | Add frequency drift to a clock. `<ppm>` is the maximum drift in parts per million. Actual drift selected from Gaussian (σ = ppm/3, clamped at ±ppm). May be specified multiple times. See [Clock Drift](#clock-drift). |
 | `--verbose` | Print tick resolution, clock periods, and `@run`/`@update` events. |
 
 ## Complete Example

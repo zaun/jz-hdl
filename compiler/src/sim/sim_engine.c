@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <math.h>
 
 /* ---- Forward declarations ---- */
 
@@ -1357,9 +1358,100 @@ static int time_to_exact_ps(double value, double scale, uint64_t *ps_out) {
 typedef struct SimClock {
     const char *name;
     int         tb_wire_idx;
-    uint64_t    toggle_ps;  /* half period in picoseconds */
-    uint64_t    phase_ps;   /* phase offset in picoseconds */
+    uint64_t    toggle_ps;           /* half period in picoseconds (nominal) */
+    uint64_t    phase_ps;            /* phase offset in picoseconds */
+    uint64_t    next_toggle_ps;      /* next scheduled (actual) toggle time */
+    double      ideal_next_toggle;   /* next ideal toggle time as double (accumulates drift) */
+    double      drifted_toggle_ps;   /* drift-adjusted half period (double for sub-ps precision) */
+    double      drift_actual_ppm;    /* actual selected drift value in ppm */
+    double      drift_max_ppm;       /* configured max drift in ppm (0 = disabled) */
+    uint64_t    jitter_pp_ps;        /* peak-to-peak jitter (0 = disabled) */
+    double      jitter_sigma;        /* σ = pp/6 */
+    uint32_t    jitter_rng;          /* per-clock xorshift32 PRNG state */
+    int         jitter_has_spare;    /* Box-Muller spare available */
+    double      jitter_spare;        /* Box-Muller cached spare value */
 } SimClock;
+
+/**
+ * @brief Generate a Gaussian random sample using Box-Muller transform.
+ *
+ * Consumes two uniform samples from xorshift32 PRNG to produce two
+ * independent Gaussian samples. Caches the spare for the next call.
+ */
+static double sim_gaussian(SimClock *clk) {
+    if (clk->jitter_has_spare) {
+        clk->jitter_has_spare = 0;
+        return clk->jitter_spare * clk->jitter_sigma;
+    }
+
+    double u, v, s;
+    do {
+        /* Generate two uniform samples in (-1, 1) */
+        u = (double)sim_rng_next(&clk->jitter_rng) / 2147483648.0 - 1.0;
+        v = (double)sim_rng_next(&clk->jitter_rng) / 2147483648.0 - 1.0;
+        s = u * u + v * v;
+    } while (s >= 1.0 || s == 0.0);
+
+    double factor = sqrt(-2.0 * log(s) / s);
+    clk->jitter_spare = v * factor;
+    clk->jitter_has_spare = 1;
+    return u * factor * clk->jitter_sigma;
+}
+
+/**
+ * @brief Generate a clamped Gaussian sample for drift selection.
+ *
+ * Returns a value in [-max_ppm, +max_ppm] drawn from Gaussian with σ = max/3.
+ * Uses a temporary jitter state on the clock to avoid needing a separate PRNG.
+ */
+static double sim_gaussian_drift(uint32_t *rng, double max_ppm) {
+    /* Box-Muller (no caching needed, called once per clock) */
+    double u, v, s;
+    do {
+        u = (double)sim_rng_next(rng) / 2147483648.0 - 1.0;
+        v = (double)sim_rng_next(rng) / 2147483648.0 - 1.0;
+        s = u * u + v * v;
+    } while (s >= 1.0 || s == 0.0);
+    double sigma = max_ppm / 3.0;
+    double sample = u * sqrt(-2.0 * log(s) / s) * sigma;
+    if (sample > max_ppm) sample = max_ppm;
+    if (sample < -max_ppm) sample = -max_ppm;
+    return sample;
+}
+
+/**
+ * @brief Compute jittered next toggle time from ideal position.
+ *
+ * Applies Gaussian jitter offset clamped to ±pp/2, ensures the result
+ * is strictly after current_time_ps.
+ */
+static uint64_t sim_jittered_toggle(SimClock *clk, uint64_t current_time_ps) {
+    uint64_t ideal = (uint64_t)round(clk->ideal_next_toggle);
+
+    if (clk->jitter_pp_ps == 0)
+        return ideal;
+
+    double offset = sim_gaussian(clk);
+    double half_pp = (double)clk->jitter_pp_ps / 2.0;
+
+    /* Clamp to ±pp/2 */
+    if (offset > half_pp) offset = half_pp;
+    if (offset < -half_pp) offset = -half_pp;
+
+    int64_t offset_ps = (int64_t)round(offset);
+
+    /* Apply offset, clamp to prevent backward time */
+    uint64_t actual;
+    if (offset_ps < 0 && (uint64_t)(-offset_ps) >= ideal) {
+        actual = current_time_ps + 1;
+    } else {
+        actual = (uint64_t)((int64_t)ideal + offset_ps);
+    }
+    if (actual <= current_time_ps)
+        actual = current_time_ps + 1;
+
+    return actual;
+}
 
 static int collect_sim_clocks(const JZASTNode *sim_node, SimTestState *ts,
                                SimClock *clocks, int max_clocks) {
@@ -1493,7 +1585,11 @@ static int sim_run_simulation(const JZASTNode *root,
                                int verbose,
                                const char *filename,
                                const char *output_path,
-                               SimWaveFormat format) {
+                               SimWaveFormat format,
+                               const SimJitterConfig *jitter_configs,
+                               int num_jitter,
+                               const SimDriftConfig *drift_configs,
+                               int num_drift) {
     SimTestState ts;
     memset(&ts, 0, sizeof(ts));
     ts.verbose = verbose;
@@ -1544,16 +1640,75 @@ static int sim_run_simulation(const JZASTNode *root,
             tick_ps = gcd64(tick_ps, sim_clocks[i].phase_ps);
     }
     if (tick_ps == 0) tick_ps = 1000; /* default 1ns */
-    ts.tick_ps = tick_ps;
+    ts.tick_ps = 1; /* 1ps internal resolution */
+
+    /* Initialize next_toggle_ps, drift, and jitter for event-driven scheduling */
+    for (int i = 0; i < num_sim_clocks; i++) {
+        double toggle = (double)sim_clocks[i].toggle_ps;
+
+        /* Check for drift config matching this clock */
+        sim_clocks[i].drift_max_ppm = 0.0;
+        sim_clocks[i].drift_actual_ppm = 0.0;
+        sim_clocks[i].drifted_toggle_ps = toggle;
+        for (int j = 0; j < num_drift; j++) {
+            if (drift_configs[j].clock_name &&
+                sim_clocks[i].name &&
+                strcmp(drift_configs[j].clock_name, sim_clocks[i].name) == 0) {
+                sim_clocks[i].drift_max_ppm = drift_configs[j].max_ppm;
+                /* Select fixed drift from Gaussian (σ = max/3, clamped at ±max) */
+                uint32_t drift_rng = seed ^ ((uint32_t)i + 0x44524654); /* 'DRFT' */
+                sim_clocks[i].drift_actual_ppm =
+                    sim_gaussian_drift(&drift_rng, drift_configs[j].max_ppm);
+                sim_clocks[i].drifted_toggle_ps =
+                    toggle * (1.0 + sim_clocks[i].drift_actual_ppm / 1e6);
+                break;
+            }
+        }
+
+        double ideal = (double)sim_clocks[i].phase_ps + sim_clocks[i].drifted_toggle_ps;
+        sim_clocks[i].ideal_next_toggle = ideal;
+        sim_clocks[i].next_toggle_ps = (uint64_t)round(ideal);
+
+        /* Check for jitter config matching this clock */
+        sim_clocks[i].jitter_pp_ps = 0;
+        sim_clocks[i].jitter_sigma = 0.0;
+        sim_clocks[i].jitter_rng = 0;
+        sim_clocks[i].jitter_has_spare = 0;
+        sim_clocks[i].jitter_spare = 0.0;
+        for (int j = 0; j < num_jitter; j++) {
+            if (jitter_configs[j].clock_name &&
+                sim_clocks[i].name &&
+                strcmp(jitter_configs[j].clock_name, sim_clocks[i].name) == 0) {
+                sim_clocks[i].jitter_pp_ps = jitter_configs[j].pp_ps;
+                sim_clocks[i].jitter_sigma = (double)jitter_configs[j].pp_ps / 6.0;
+                sim_clocks[i].jitter_rng = seed ^ ((uint32_t)i + 0x4A495454);
+                /* Apply jitter to first edge */
+                sim_clocks[i].next_toggle_ps =
+                    sim_jittered_toggle(&sim_clocks[i], 0);
+                break;
+            }
+        }
+    }
 
     if (verbose) {
         fprintf(stdout, "Simulation tick resolution: %llu ps\n",
                 (unsigned long long)tick_ps);
         for (int i = 0; i < num_sim_clocks; i++) {
-            fprintf(stdout, "  Clock <%s> period=%llu ps (toggle every %llu ps)\n",
+            fprintf(stdout, "  Clock <%s> period=%llu ps (toggle every %llu ps)",
                     sim_clocks[i].name,
                     (unsigned long long)(sim_clocks[i].toggle_ps * 2),
                     (unsigned long long)sim_clocks[i].toggle_ps);
+            if (sim_clocks[i].drift_max_ppm > 0.0) {
+                fprintf(stdout, " drift=%.3f ppm (max=%.1f ppm)",
+                        sim_clocks[i].drift_actual_ppm,
+                        sim_clocks[i].drift_max_ppm);
+            }
+            if (sim_clocks[i].jitter_pp_ps > 0) {
+                fprintf(stdout, " jitter=%llu ps p-p (σ=%.1f ps)",
+                        (unsigned long long)sim_clocks[i].jitter_pp_ps,
+                        sim_clocks[i].jitter_sigma);
+            }
+            fprintf(stdout, "\n");
         }
     }
 
@@ -1581,6 +1736,45 @@ static int sim_run_simulation(const JZASTNode *root,
         sim_wave_set_meta(wave, "tick_ps", buf);
         sim_wave_set_meta(wave, "module_name",
                           dut_module->name ? dut_module->name : "");
+
+        /* Write jitter metadata for each jittered clock */
+        for (int i = 0; i < num_sim_clocks; i++) {
+            if (sim_clocks[i].jitter_pp_ps > 0 && sim_clocks[i].name) {
+                char key[128];
+                snprintf(key, sizeof(key), "jitter_%s", sim_clocks[i].name);
+                snprintf(buf, sizeof(buf), "%llu",
+                         (unsigned long long)sim_clocks[i].jitter_pp_ps);
+                sim_wave_set_meta(wave, key, buf);
+            }
+        }
+
+        /* Write drift metadata for each drifted clock */
+        for (int i = 0; i < num_sim_clocks; i++) {
+            if (sim_clocks[i].drift_max_ppm > 0.0 && sim_clocks[i].name) {
+                char key[128];
+                snprintf(key, sizeof(key), "drift_%s", sim_clocks[i].name);
+                snprintf(buf, sizeof(buf), "%.1f", sim_clocks[i].drift_max_ppm);
+                sim_wave_set_meta(wave, key, buf);
+                snprintf(key, sizeof(key), "drift_actual_%s", sim_clocks[i].name);
+                snprintf(buf, sizeof(buf), "%.6f", sim_clocks[i].drift_actual_ppm);
+                sim_wave_set_meta(wave, key, buf);
+            }
+        }
+
+        /* Write clock definitions to the clocks table */
+        for (int i = 0; i < num_sim_clocks; i++) {
+            if (sim_clocks[i].name) {
+                sim_wave_add_clock(wave,
+                    sim_clocks[i].name,
+                    sim_clocks[i].toggle_ps * 2,   /* full period */
+                    sim_clocks[i].phase_ps,
+                    sim_clocks[i].jitter_pp_ps,
+                    sim_clocks[i].jitter_sigma,
+                    sim_clocks[i].drift_max_ppm,
+                    sim_clocks[i].drift_actual_ppm,
+                    sim_clocks[i].drifted_toggle_ps * 2.0);  /* full drifted period */
+            }
+        }
     }
 
     /* Register testbench wires in waveform writer */
@@ -1750,22 +1944,35 @@ static int sim_run_simulation(const JZASTNode *root,
             uint64_t end_time_ps = current_time_ps + duration_ps;
 
             while (current_time_ps < end_time_ps && !ts.runtime_error) {
-                current_time_ps += tick_ps;
+                /* Find next clock event */
+                PERF_TIMER_START(PERF_CLOCK_TOGGLE);
+                uint64_t next_event = end_time_ps;
+                for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
+                    if (sim_clocks[ci2].next_toggle_ps < next_event)
+                        next_event = sim_clocks[ci2].next_toggle_ps;
+                }
+                current_time_ps = next_event;
+                if (current_time_ps > end_time_ps) {
+                    current_time_ps = end_time_ps;
+                    PERF_TIMER_STOP(PERF_CLOCK_TOGGLE);
+                    break;
+                }
                 PERF_STATE_TICK();
 
-                /* Toggle clocks scheduled at this tick */
-                PERF_TIMER_START(PERF_CLOCK_TOGGLE);
-                int any_edge = 0;
+                /* Toggle all clocks scheduled at this time */
+                int toggled[64] = {0};
                 for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
-                    if (sim_clocks[ci2].toggle_ps > 0 &&
-                        current_time_ps >= sim_clocks[ci2].phase_ps &&
-                        ((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) == 0) {
+                    if (sim_clocks[ci2].next_toggle_ps == current_time_ps) {
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi >= 0) {
                             uint64_t cur = ts.tb_wires[wi].value.val[0] & 1;
                             ts.tb_wires[wi].value = sim_val_from_uint(cur ^ 1, 1);
-                            any_edge = 1;
                         }
+                        toggled[ci2] = 1;
+                        /* Advance ideal by drifted period, then apply jitter */
+                        sim_clocks[ci2].ideal_next_toggle += sim_clocks[ci2].drifted_toggle_ps;
+                        sim_clocks[ci2].next_toggle_ps =
+                            sim_jittered_toggle(&sim_clocks[ci2], current_time_ps);
                     }
                 }
                 PERF_TIMER_STOP(PERF_CLOCK_TOGGLE);
@@ -1776,37 +1983,33 @@ static int sim_run_simulation(const JZASTNode *root,
                 sim_resolve_inout_z(&ts);
 
                 /* Fire sync domains for active clock edges */
-                if (any_edge) {
-                    for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
-                        if (sim_clocks[ci2].toggle_ps == 0) continue;
-                        if (current_time_ps < sim_clocks[ci2].phase_ps) continue;
-                        if (((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) != 0) continue;
+                for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
+                    if (!toggled[ci2]) continue;
 
-                        int wi = sim_clocks[ci2].tb_wire_idx;
-                        if (wi < 0) continue;
-                        uint64_t new_clk = ts.tb_wires[wi].value.val[0] & 1;
+                    int wi = sim_clocks[ci2].tb_wire_idx;
+                    if (wi < 0) continue;
+                    uint64_t new_clk = ts.tb_wires[wi].value.val[0] & 1;
 
-                        /* Find clock port ID */
-                        int clock_port_id = -1;
-                        for (int b = 0; b < ts.num_bindings; b++) {
-                            if (ts.bindings[b].tb_wire_index == wi) {
-                                clock_port_id = ts.bindings[b].port_signal_id;
-                                break;
-                            }
+                    /* Find clock port ID */
+                    int clock_port_id = -1;
+                    for (int b = 0; b < ts.num_bindings; b++) {
+                        if (ts.bindings[b].tb_wire_index == wi) {
+                            clock_port_id = ts.bindings[b].port_signal_id;
+                            break;
                         }
-
-                        /* Fire matching domains (NBA deferred for simulation) */
-                        sim_fire_domains_for_clock(&ts, clock_port_id, new_clk,
-                                                    /*apply_nba_per_domain=*/0);
                     }
 
-                    /* Apply all NBA updates at once (simulation semantics) */
-                    sim_ctx_apply_nba(ts.dut);
-
-                    /* Settle again after NBA */
-                    sim_settle_checked(&ts);
-                    sim_resolve_inout_z(&ts);
+                    /* Fire matching domains (NBA deferred for simulation) */
+                    sim_fire_domains_for_clock(&ts, clock_port_id, new_clk,
+                                                /*apply_nba_per_domain=*/0);
                 }
+
+                /* Apply all NBA updates at once (simulation semantics) */
+                sim_ctx_apply_nba(ts.dut);
+
+                /* Settle again after NBA */
+                sim_settle_checked(&ts);
+                sim_resolve_inout_z(&ts);
 
                 /* Propagate outputs */
                 sim_propagate_outputs(&ts);
@@ -1882,22 +2085,34 @@ static int sim_run_simulation(const JZASTNode *root,
             int condition_met = 0;
 
             while (current_time_ps < end_time_ps && !ts.runtime_error) {
-                current_time_ps += tick_ps;
+                /* Find next clock event */
+                PERF_TIMER_START(PERF_CLOCK_TOGGLE);
+                uint64_t next_event = end_time_ps;
+                for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
+                    if (sim_clocks[ci2].next_toggle_ps < next_event)
+                        next_event = sim_clocks[ci2].next_toggle_ps;
+                }
+                current_time_ps = next_event;
+                if (current_time_ps > end_time_ps) {
+                    current_time_ps = end_time_ps;
+                    PERF_TIMER_STOP(PERF_CLOCK_TOGGLE);
+                    break;
+                }
                 PERF_STATE_TICK();
 
-                /* Toggle clocks scheduled at this tick */
-                PERF_TIMER_START(PERF_CLOCK_TOGGLE);
-                int any_edge = 0;
+                /* Toggle all clocks scheduled at this time */
+                int toggled2[64] = {0};
                 for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
-                    if (sim_clocks[ci2].toggle_ps > 0 &&
-                        current_time_ps >= sim_clocks[ci2].phase_ps &&
-                        ((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) == 0) {
+                    if (sim_clocks[ci2].next_toggle_ps == current_time_ps) {
                         int wi = sim_clocks[ci2].tb_wire_idx;
                         if (wi >= 0) {
                             uint64_t cur = ts.tb_wires[wi].value.val[0] & 1;
                             ts.tb_wires[wi].value = sim_val_from_uint(cur ^ 1, 1);
-                            any_edge = 1;
                         }
+                        toggled2[ci2] = 1;
+                        sim_clocks[ci2].ideal_next_toggle += sim_clocks[ci2].drifted_toggle_ps;
+                        sim_clocks[ci2].next_toggle_ps =
+                            sim_jittered_toggle(&sim_clocks[ci2], current_time_ps);
                     }
                 }
                 PERF_TIMER_STOP(PERF_CLOCK_TOGGLE);
@@ -1908,32 +2123,28 @@ static int sim_run_simulation(const JZASTNode *root,
                 sim_resolve_inout_z(&ts);
 
                 /* Fire sync domains for active clock edges */
-                if (any_edge) {
-                    for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
-                        if (sim_clocks[ci2].toggle_ps == 0) continue;
-                        if (current_time_ps < sim_clocks[ci2].phase_ps) continue;
-                        if (((current_time_ps - sim_clocks[ci2].phase_ps) % sim_clocks[ci2].toggle_ps) != 0) continue;
+                for (int ci2 = 0; ci2 < num_sim_clocks; ci2++) {
+                    if (!toggled2[ci2]) continue;
 
-                        int wi = sim_clocks[ci2].tb_wire_idx;
-                        if (wi < 0) continue;
-                        uint64_t new_clk = ts.tb_wires[wi].value.val[0] & 1;
+                    int wi = sim_clocks[ci2].tb_wire_idx;
+                    if (wi < 0) continue;
+                    uint64_t new_clk = ts.tb_wires[wi].value.val[0] & 1;
 
-                        int clock_port_id = -1;
-                        for (int b = 0; b < ts.num_bindings; b++) {
-                            if (ts.bindings[b].tb_wire_index == wi) {
-                                clock_port_id = ts.bindings[b].port_signal_id;
-                                break;
-                            }
+                    int clock_port_id = -1;
+                    for (int b = 0; b < ts.num_bindings; b++) {
+                        if (ts.bindings[b].tb_wire_index == wi) {
+                            clock_port_id = ts.bindings[b].port_signal_id;
+                            break;
                         }
-
-                        sim_fire_domains_for_clock(&ts, clock_port_id, new_clk,
-                                                    /*apply_nba_per_domain=*/0);
                     }
 
-                    sim_ctx_apply_nba(ts.dut);
-                    sim_settle_checked(&ts);
-                    sim_resolve_inout_z(&ts);
+                    sim_fire_domains_for_clock(&ts, clock_port_id, new_clk,
+                                                /*apply_nba_per_domain=*/0);
                 }
+
+                sim_ctx_apply_nba(ts.dut);
+                sim_settle_checked(&ts);
+                sim_resolve_inout_z(&ts);
 
                 sim_propagate_outputs(&ts);
 
@@ -2197,7 +2408,11 @@ int jz_sim_run_simulations(const JZASTNode *root,
                             JZDiagnosticList *diagnostics,
                             const char *filename,
                             const char *output_path,
-                            SimWaveFormat format) {
+                            SimWaveFormat format,
+                            const SimJitterConfig *jitter_configs,
+                            int num_jitter,
+                            const SimDriftConfig *drift_configs,
+                            int num_drift) {
     (void)diagnostics;
 
     if (!root || !design) return 1;
@@ -2226,7 +2441,9 @@ int jz_sim_run_simulations(const JZASTNode *root,
 
         int sim_rc = sim_run_simulation(root, child, dut_module, design,
                                          seed, verbose, filename,
-                                         output_path, format);
+                                         output_path, format,
+                                         jitter_configs, num_jitter,
+                                         drift_configs, num_drift);
         if (sim_rc != 0) rc = 1;
     }
 
