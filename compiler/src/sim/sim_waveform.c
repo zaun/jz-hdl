@@ -46,6 +46,19 @@ void sim_wave_set_meta(SimWaveWriter *w, const char *key, const char *value)
     /* No-op for VCD/FST */
 }
 
+void sim_wave_add_clock(SimWaveWriter *w, const char *name, uint64_t period_ps,
+                        uint64_t phase_ps, uint64_t jitter_pp_ps,
+                        double jitter_sigma_ps, double drift_max_ppm,
+                        double drift_actual_ppm, double drifted_period_ps)
+{
+    if (!w) return;
+    if (w->format == SIM_WAVE_JZW)
+        jzw_add_clock(w->backend.jzw, name, period_ps, phase_ps,
+                      jitter_pp_ps, jitter_sigma_ps, drift_max_ppm,
+                      drift_actual_ppm, drifted_period_ps);
+    /* No-op for VCD/FST */
+}
+
 int sim_wave_add_signal(SimWaveWriter *w, const char *scope, const char *name,
                          int width, const char *type)
 {

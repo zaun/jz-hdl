@@ -2,7 +2,7 @@
 mainfont: "Helvetica Neue"
 monofont: "Menlo"
 title: "JZ-HDL WAVEFORM FORMAT SPECIFICATION (JZW)"
-subtitle: "State: Draft — Version: 0.1.2"
+subtitle: "State: Draft — Version: 0.1.3"
 toc: true
 header-includes:
   - \usepackage{titling}
@@ -58,8 +58,9 @@ When the simulator creates a JZW file:
 4. Create all tables and indexes (Section 3).
 5. Populate the `meta` table (Section 3.1).
 6. Populate the `signals` table with all monitored signals (Section 3.2).
-7. Begin simulation, writing value changes and annotations as the simulation progresses.
-8. On simulation completion, write the `sim_end_time` metadata key and close the database.
+7. Populate the `clocks` table with clock configuration and runtime parameters (Section 3.5).
+8. Begin simulation, writing value changes and annotations as the simulation progresses.
+9. On simulation completion, write the `sim_end_time` metadata key and close the database.
 
 ---
 
@@ -175,6 +176,43 @@ Annotations are timestamped metadata entries associated with the simulation time
 | `message` | Optional. Human-readable text describing the annotation. |
 | `color` | Optional. Display color hint. One of the predefined color names (Section 5.4). |
 | `end_time` | Optional. For range annotations (e.g., `select`), the end time in picoseconds. NULL for point-in-time annotations. |
+
+### 3.5 Clocks Table
+
+```sql
+CREATE TABLE clocks (
+    id                INTEGER PRIMARY KEY,
+    name              TEXT    NOT NULL,
+    period_ps         INTEGER NOT NULL,
+    phase_ps          INTEGER NOT NULL DEFAULT 0,
+    jitter_pp_ps      INTEGER NOT NULL DEFAULT 0,
+    jitter_sigma_ps   REAL    NOT NULL DEFAULT 0.0,
+    drift_max_ppm     REAL    NOT NULL DEFAULT 0.0,
+    drift_actual_ppm  REAL    NOT NULL DEFAULT 0.0,
+    drifted_period_ps REAL    NOT NULL DEFAULT 0.0
+);
+```
+
+The `clocks` table stores the configuration and runtime parameters of each clock in the simulation. One row is written per clock at simulation initialization, before any value changes are recorded.
+
+| Column | Description |
+| :--- | :--- |
+| `id` | Auto-incrementing unique identifier. |
+| `name` | Clock name as declared in the `CLOCK` block (e.g., `clk_wr`). |
+| `period_ps` | Nominal full period in picoseconds (twice the half-period / toggle interval). |
+| `phase_ps` | Phase offset in picoseconds. `0` if no phase offset is specified. |
+| `jitter_pp_ps` | Peak-to-peak jitter in picoseconds. `0` if jitter is not enabled for this clock. See Simulation Specification Section 2.2.1. |
+| `jitter_sigma_ps` | Jitter standard deviation in picoseconds (`jitter_pp_ps / 6`). `0.0` if jitter is disabled. |
+| `drift_max_ppm` | Maximum drift in parts per million as configured via `--drift`. `0.0` if drift is not enabled. See Simulation Specification Section 2.2.2. |
+| `drift_actual_ppm` | Actual drift value selected at simulation start from a Gaussian distribution clamped to ±`drift_max_ppm`. Positive values mean the clock runs fast; negative means slow. `0.0` if drift is disabled. |
+| `drifted_period_ps` | Drift-adjusted full period in picoseconds as a floating-point value (`period_ps × (1 + drift_actual_ppm / 1,000,000)`). Stored as `REAL` to preserve sub-picosecond precision from accumulated drift. `0.0` if drift is disabled. |
+
+**Notes:**
+
+- The `clocks` table is written once at simulation start and is not updated during simulation.
+- Clock names in this table correspond to signal names in the `signals` table where `type = 'clock'` and `scope = 'clocks'`.
+- Viewers can use this table to display clock properties (frequency, jitter bounds, drift) without parsing metadata keys or computing values from signal transitions.
+- For backward compatibility, readers should tolerate the absence of this table in older JZW files.
 
 ---
 
@@ -398,6 +436,14 @@ sqlite3 output.jzw "
 "
 ```
 
+**List all clocks with their properties:**
+```bash
+sqlite3 output.jzw "
+  SELECT name, period_ps, phase_ps, jitter_pp_ps, drift_actual_ppm
+  FROM clocks;
+"
+```
+
 **Get the value of all signals at a specific time (most recent change at or before T=50000ps):**
 ```bash
 sqlite3 output.jzw "
@@ -499,5 +545,6 @@ This simulation produces a `.jzw` file containing:
 
 - **`meta` table:** 10 rows with simulation context (version, seed, tick resolution, etc.).
 - **`signals` table:** 9 rows (2 clocks, 5 wires, 2 taps).
+- **`clocks` table:** 2 rows (one per clock: `clk_wr` with period 10000 ps, `clk_rd` with period 25000 ps), plus jitter/drift columns if `--jitter` or `--drift` flags were used.
 - **`changes` table:** 9 rows at time 0 (one per signal), plus one row for each subsequent value change.
 - **`annotations` table:** Entries for the `@mark` directives at reset release and write burst start, the `@select` on `data_out`, and any ticks where the `@alert` condition on `full` was true.

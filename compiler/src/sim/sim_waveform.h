@@ -28,6 +28,14 @@ SimWaveWriter *sim_wave_open(const char *filename, uint64_t timescale_ps,
 void sim_wave_set_meta(SimWaveWriter *w, const char *key, const char *value);
 
 /**
+ * @brief Add a clock definition (JZW only; no-op for VCD/FST).
+ */
+void sim_wave_add_clock(SimWaveWriter *w, const char *name, uint64_t period_ps,
+                        uint64_t phase_ps, uint64_t jitter_pp_ps,
+                        double jitter_sigma_ps, double drift_max_ppm,
+                        double drift_actual_ppm, double drifted_period_ps);
+
+/**
  * @brief Add a signal to the waveform.
  *
  * @param type Signal type: "clock", "wire", or "tap" (used by JZW only).

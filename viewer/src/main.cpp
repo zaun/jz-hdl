@@ -39,6 +39,17 @@ struct Annotation {
     int64_t     end_time;   /* 0 if not a range */
 };
 
+struct ClockInfo {
+    std::string name;
+    int64_t     period_ps;
+    int64_t     phase_ps;
+    int64_t     jitter_pp_ps;
+    double      jitter_sigma_ps;
+    double      drift_max_ppm;
+    double      drift_actual_ppm;
+    double      drifted_period_ps;
+};
+
 struct JZWFile {
     std::string                          filename;
     std::string                          module_name;
@@ -48,6 +59,7 @@ struct JZWFile {
     std::vector<Signal>                  signals;
     std::map<int, std::vector<ValueChange>> changes; /* signal_id -> changes */
     std::vector<Annotation>              annotations;
+    std::vector<ClockInfo>               clocks;
 
     bool load(const char *path);
     const char *value_at(int signal_id, int64_t time) const;
@@ -135,6 +147,32 @@ bool JZWFile::load(const char *path)
                 a.end_time  = sqlite3_column_type(stmt, 5) == SQLITE_NULL
                               ? 0 : sqlite3_column_int64(stmt, 5);
                 annotations.push_back(a);
+            }
+            sqlite3_finalize(stmt);
+        }
+    }
+
+    /* Read clocks table (may not exist in older JZW files) */
+    {
+        sqlite3_stmt *stmt;
+        int rc = sqlite3_prepare_v2(db,
+            "SELECT name, period_ps, phase_ps, jitter_pp_ps, "
+            "jitter_sigma_ps, drift_max_ppm, drift_actual_ppm, drifted_period_ps "
+            "FROM clocks ORDER BY id",
+            -1, &stmt, nullptr);
+        if (rc == SQLITE_OK) {
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                ClockInfo c;
+                const char *n = (const char *)sqlite3_column_text(stmt, 0);
+                c.name             = n ? n : "";
+                c.period_ps        = sqlite3_column_int64(stmt, 1);
+                c.phase_ps         = sqlite3_column_int64(stmt, 2);
+                c.jitter_pp_ps     = sqlite3_column_int64(stmt, 3);
+                c.jitter_sigma_ps  = sqlite3_column_double(stmt, 4);
+                c.drift_max_ppm    = sqlite3_column_double(stmt, 5);
+                c.drift_actual_ppm = sqlite3_column_double(stmt, 6);
+                c.drifted_period_ps = sqlite3_column_double(stmt, 7);
+                clocks.push_back(c);
             }
             sqlite3_finalize(stmt);
         }
@@ -249,6 +287,126 @@ static void format_value(char *buf, size_t bufsz, const char *binval, int width)
         snprintf(buf, bufsz, "0x%04llX", (unsigned long long)val);
     else
         snprintf(buf, bufsz, "0x%llX", (unsigned long long)val);
+}
+
+/* ---- Icon drawing ---- */
+
+static void draw_fit_icon(ImDrawList *dl, ImVec2 pos, float size, ImU32 col)
+{
+    /* Recreates fit-horizontal icon: |<--->| scaled to size x size */
+    float s = size / 64.0f;
+    float x = pos.x, y = pos.y;
+
+    /* Left vertical bar */
+    dl->AddLine(ImVec2(x + 1*s, y + 8*s),  ImVec2(x + 1*s, y + 56*s), col, 1.5f);
+    /* Right vertical bar */
+    dl->AddLine(ImVec2(x + 63*s, y + 8*s), ImVec2(x + 63*s, y + 56*s), col, 1.5f);
+    /* Horizontal line */
+    dl->AddLine(ImVec2(x + 9*s, y + 32*s), ImVec2(x + 55*s, y + 32*s), col, 1.5f);
+    /* Left arrowhead */
+    dl->AddLine(ImVec2(x + 16*s, y + 25*s), ImVec2(x + 9*s, y + 32*s), col, 1.5f);
+    dl->AddLine(ImVec2(x + 9*s, y + 32*s),  ImVec2(x + 16*s, y + 39*s), col, 1.5f);
+    /* Right arrowhead */
+    dl->AddLine(ImVec2(x + 48*s, y + 25*s), ImVec2(x + 55*s, y + 32*s), col, 1.5f);
+    dl->AddLine(ImVec2(x + 55*s, y + 32*s), ImVec2(x + 48*s, y + 39*s), col, 1.5f);
+}
+
+/* Magnifying glass icon with +/- inside the lens.
+   Based on search-svgrepo-com.svg (viewBox 0 0 488.4 488.4):
+   - Circle center ~(203, 203), radius ~179 (the lens)
+   - Handle extends to bottom-right ~(476, 476) at 45 degrees */
+
+static void draw_zoom_icon(ImDrawList *dl, ImVec2 pos, float size, ImU32 col, bool plus)
+{
+    float s = size / 64.0f;
+    float x = pos.x, y = pos.y;
+
+    /* Lens circle: center at (26, 26), radius 20 (mapped from SVG proportions) */
+    float cx = x + 26.0f * s;
+    float cy = y + 26.0f * s;
+    float r  = 20.0f * s;
+    dl->AddCircle(ImVec2(cx, cy), r, col, 0, 2.0f * s);
+
+    /* Handle: from circle edge at 45 degrees to corner */
+    float diag = 0.7071f; /* cos(45) */
+    float hx0 = cx + r * diag;
+    float hy0 = cy + r * diag;
+    float hx1 = x + 58.0f * s;
+    float hy1 = y + 58.0f * s;
+    dl->AddLine(ImVec2(hx0, hy0), ImVec2(hx1, hy1), col, 3.0f * s);
+
+    /* +/- inside the lens */
+    float sign_len = 9.0f * s;
+    /* Horizontal bar (both + and -) */
+    dl->AddLine(ImVec2(cx - sign_len, cy), ImVec2(cx + sign_len, cy), col, 2.0f * s);
+    if (plus) {
+        /* Vertical bar (+ only) */
+        dl->AddLine(ImVec2(cx, cy - sign_len), ImVec2(cx, cy + sign_len), col, 2.0f * s);
+    }
+}
+
+/* Clock icon: circle with clock hands at ~10:10 position
+   Based on clock-circle-svgrepo-com.svg (viewBox 0 0 24 24) */
+
+static void draw_clock_icon(ImDrawList *dl, ImVec2 pos, float size, ImU32 col)
+{
+    float s = size / 24.0f;
+    float cx = pos.x + 12.0f * s;
+    float cy = pos.y + 12.0f * s;
+    float r  = 10.5f * s;
+
+    /* Circle */
+    dl->AddCircle(ImVec2(cx, cy), r, col, 0, 1.8f * s);
+
+    /* Hour hand (pointing ~10 o'clock: up-left) */
+    dl->AddLine(ImVec2(cx, cy), ImVec2(cx - 3.0f * s, cy - 5.0f * s), col, 2.0f * s);
+
+    /* Minute hand (pointing ~2 o'clock: up-right) */
+    dl->AddLine(ImVec2(cx, cy), ImVec2(cx + 3.0f * s, cy - 6.5f * s), col, 1.5f * s);
+}
+
+/* Cursor tag icon: backspace-key shape with a number inside.
+   Based on delete-svgrepo-com.svg (viewBox 0 0 489.425 489.425):
+   - Rounded rect on the right with a pointed arrow on the left */
+
+static void draw_cursor_tag_icon(ImDrawList *dl, ImVec2 pos, float size, ImU32 col,
+                                  const char *label, ImFont *font)
+{
+    float s = size / 64.0f;
+    float x = pos.x, y = pos.y;
+
+    /* Key points mapped from SVG to 64x64 coordinate space:
+       Arrow tip at left center, rounded rect on right */
+    float arrow_x = x + 2.0f * s;    /* left arrow tip */
+    float mid_y   = y + 32.0f * s;   /* vertical center */
+    float left_x  = x + 18.0f * s;   /* where rect starts */
+    float right_x = x + 62.0f * s;   /* right edge */
+    float top_y   = y + 8.0f * s;
+    float bot_y   = y + 56.0f * s;
+    float r       = 8.0f * s;        /* corner rounding */
+
+    /* Build the outline as a polyline:
+       arrow tip -> top-left -> top-right (rounded) -> bottom-right (rounded) -> bottom-left -> arrow tip */
+    ImVec2 pts[] = {
+        {arrow_x, mid_y},             /* arrow tip */
+        {left_x,  top_y},             /* top-left */
+        {right_x - r, top_y},         /* top-right before curve */
+        {right_x, top_y + r},         /* top-right after curve */
+        {right_x, bot_y - r},         /* bottom-right before curve */
+        {right_x - r, bot_y},         /* bottom-right after curve */
+        {left_x,  bot_y},             /* bottom-left */
+    };
+    dl->AddPolyline(pts, 7, col, ImDrawFlags_Closed, 1.5f * s);
+
+    /* Draw the number centered in the rect area */
+    if (label && font) {
+        float rect_cx = (left_x + right_x) * 0.5f;
+        float rect_cy = mid_y;
+        ImVec2 text_sz = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, label);
+        dl->AddText(font, font->FontSize,
+                    ImVec2(rect_cx - text_sz.x * 0.5f, rect_cy - text_sz.y * 0.5f),
+                    col, label);
+    }
 }
 
 /* ---- Annotation color mapping ---- */
@@ -514,6 +672,13 @@ int main(int argc, char **argv)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     ImGui::StyleColorsDark();
+    ImGui::GetStyle().FrameRounding = 3.0f;
+
+    /* Load default font at two sizes: 13px (default) and 15px (toolbar) */
+    ImFont *font_default = io.Fonts->AddFontDefault();
+    ImFontConfig cfg;
+    cfg.SizePixels = 16.0f;
+    ImFont *font_toolbar = io.Fonts->AddFontDefault(&cfg);
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
@@ -524,21 +689,29 @@ int main(int argc, char **argv)
     int64_t scroll_ps = jzw.display_start_time;
     float  scroll_y   = 0.0f;
     float  row_height = 30.0f;
-    float  toolbar_h  = 32.0f;
+    float  toolbar_h  = 44.0f; /* 36px buttons + 4px top/bottom padding */
     bool   dragging_sidebar = false;
     float  sidebar_min_w = 120.0f;
     float  sidebar_max_w = 500.0f;
     float  splitter_w = 4.0f;
 
     /* Cursor state */
-    int64_t cursor_ps = -1;       /* primary cursor time (-1 = not placed) */
-    int64_t cursor2_ps = -1;      /* secondary cursor time (-1 = not placed) */
+    int64_t cursor_ps = -1;       /* C1 time (-1 = not placed) */
+    int64_t cursor2_ps = -1;      /* C2 time */
+    int64_t cursor3_ps = -1;      /* C3 time */
+    int64_t cursor4_ps = -1;      /* C4 time */
     bool    cursor_visible = false;
     bool    cursor2_visible = false;
+    bool    cursor3_visible = false;
+    bool    cursor4_visible = false;
+    int     active_cursor = 0;    /* 0=none, 1=C1, 2=C2, 3=C3, 4=C4 */
 
     /* Drag-reorder state */
     int drag_src_idx = -1;        /* index in jzw.signals being dragged */
     bool dragging_signal = false;
+
+    /* Clock dialog state */
+    bool show_clock_dialog = false;
 
     bool running = true;
     while (running) {
@@ -561,38 +734,167 @@ int main(int argc, char **argv)
         ImVec2 ws = viewport->WorkSize;
 
         /* ---- Toolbar ---- */
+        ImGui::PushFont(font_toolbar);
+        float toolbar_pad_y = 4.0f;
+        float toolbar_btn_sz = 36.0f;
         ImGui::SetNextWindowPos(wp);
         ImGui::SetNextWindowSize(ImVec2(ws.x, toolbar_h));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ImGui::GetStyle().WindowPadding.x, toolbar_pad_y));
         ImGui::Begin("##Toolbar", nullptr,
                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
+                     ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse |
+                     ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-        ImGui::Text("%s", display_name);
-        if (!jzw.module_name.empty()) {
-            ImGui::SameLine();
-            ImGui::TextDisabled("(%s)", jzw.module_name.c_str());
+        /* Vertically center text within the 42px button row */
+        float text_vcenter_y = toolbar_pad_y + (toolbar_btn_sz - ImGui::GetTextLineHeight()) * 0.5f;
+
+        /* Place an invisible dummy to establish the 42px line height without scrolling */
+        ImGui::Dummy(ImVec2(0, toolbar_btn_sz));
+        ImGui::SameLine(0, 0);
+        ImGui::SetCursorPosX(ImGui::GetStyle().WindowPadding.x);
+
+        /* Stacked filename and module name */
+        {
+            ImDrawList *dl = ImGui::GetWindowDrawList();
+            ImVec2 wpos = ImGui::GetWindowPos();
+            float x0 = wpos.x + ImGui::GetCursorPosX();
+            float line_h = ImGui::GetTextLineHeight();
+            float gap = 1.0f;
+            float stack_h = line_h * 2 + gap;
+            float y_top = wpos.y + toolbar_pad_y + (toolbar_btn_sz - stack_h) * 0.5f;
+
+            /* Filename (top) */
+            dl->AddText(ImVec2(x0, y_top), ImGui::GetColorU32(ImGuiCol_Text),
+                        display_name);
+            float name_w = ImGui::CalcTextSize(display_name).x;
+
+            /* Module name (bottom, dimmed) */
+            float mod_w = 0.0f;
+            if (!jzw.module_name.empty()) {
+                char mod_buf[256];
+                snprintf(mod_buf, sizeof(mod_buf), "%s", jzw.module_name.c_str());
+                dl->AddText(ImVec2(x0, y_top + line_h + gap),
+                            ImGui::GetColorU32(ImGuiCol_TextDisabled), mod_buf);
+                mod_w = ImGui::CalcTextSize(mod_buf).x;
+            }
+
+            float text_block_w = (name_w > mod_w) ? name_w : mod_w;
+
+            /* Vertical separator line */
+            float sep_x = x0 + text_block_w + 8.0f;
+            float sep_y0 = wpos.y + toolbar_pad_y + 2.0f;
+            float sep_y1 = wpos.y + toolbar_pad_y + toolbar_btn_sz - 2.0f;
+            dl->AddLine(ImVec2(sep_x, sep_y0), ImVec2(sep_x, sep_y1),
+                        ImGui::GetColorU32(ImGuiCol_Separator), 1.0f);
+
+            /* Advance cursor past the stacked text + separator */
+            ImGui::Dummy(ImVec2(text_block_w + 12.0f, 0));
+            ImGui::SameLine(0, 4.0f);
         }
+        ImGui::SetCursorPosY(text_vcenter_y);
 
-        /* Cursor info in toolbar */
-        if (cursor_visible && cursor_ps >= 0) {
-            ImGui::SameLine();
-            ImGui::TextDisabled("|");
-            ImGui::SameLine();
-            char tbuf[64];
-            format_time(tbuf, sizeof(tbuf), cursor_ps);
-            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.4f, 1.0f), "C1: %s", tbuf);
+        /* Cursor info in toolbar (stacked pairs) */
+        {
+            ImDrawList *dl = ImGui::GetWindowDrawList();
+            ImVec2 wpos = ImGui::GetWindowPos();
+            float line_h = ImGui::GetTextLineHeight();
+            float gap = 1.0f;
+            float stack_h = line_h * 2 + gap;
+            float y_top = wpos.y + toolbar_pad_y + (toolbar_btn_sz - stack_h) * 0.5f;
+            float y_bot = y_top + line_h + gap;
+            char tbuf[64], tbuf2[64];
 
-            if (cursor2_visible && cursor2_ps >= 0) {
+            bool c1_on = cursor_visible && cursor_ps >= 0;
+            bool c2_on = cursor2_visible && cursor2_ps >= 0;
+            bool c3_on = cursor3_visible && cursor3_ps >= 0;
+            bool c4_on = cursor4_visible && cursor4_ps >= 0;
+
+            /* C1/C2 stacked pair */
+            if (c1_on || c2_on) {
                 ImGui::SameLine();
-                format_time(tbuf, sizeof(tbuf), cursor2_ps);
-                ImGui::TextColored(ImVec4(0.4f, 1.0f, 1.0f, 1.0f), "C2: %s", tbuf);
+                float x0 = wpos.x + ImGui::GetCursorPosX();
+                float block_w = 0.0f;
 
+                if (c1_on) {
+                    format_time(tbuf, sizeof(tbuf), cursor_ps);
+                    char label[80]; snprintf(label, sizeof(label), "C1: %s", tbuf);
+                    dl->AddText(ImVec2(x0, y_top),
+                                ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 0.4f, 1.0f)), label);
+                    float w = ImGui::CalcTextSize(label).x;
+                    if (w > block_w) block_w = w;
+                }
+                if (c2_on) {
+                    format_time(tbuf, sizeof(tbuf), cursor2_ps);
+                    char label[80]; snprintf(label, sizeof(label), "C2: %s", tbuf);
+                    dl->AddText(ImVec2(x0, y_bot),
+                                ImGui::ColorConvertFloat4ToU32(ImVec4(0.4f, 1.0f, 1.0f, 1.0f)), label);
+                    float w = ImGui::CalcTextSize(label).x;
+                    if (w > block_w) block_w = w;
+                }
+
+                ImGui::Dummy(ImVec2(block_w, 0));
+
+                /* Hover tooltip with C1-C2 delta */
+                if (c1_on && c2_on) {
+                    ImVec2 block_min(x0, y_top);
+                    ImVec2 block_max(x0 + block_w, y_bot + line_h);
+                    if (ImGui::IsMouseHoveringRect(block_min, block_max)) {
+                        int64_t delta = cursor2_ps - cursor_ps;
+                        if (delta < 0) delta = -delta;
+                        format_time(tbuf, sizeof(tbuf), delta);
+                        ImGui::SetTooltip("C1-C2 dt: %s", tbuf);
+                    }
+                }
+            }
+
+            /* Separator between pairs */
+            if ((c1_on || c2_on) && (c3_on || c4_on)) {
                 ImGui::SameLine();
-                int64_t delta = cursor2_ps - cursor_ps;
-                if (delta < 0) delta = -delta;
-                format_time(tbuf, sizeof(tbuf), delta);
-                ImGui::TextColored(ImVec4(1.0f, 0.6f, 1.0f, 1.0f), "dt: %s", tbuf);
+                float sx = wpos.x + ImGui::GetCursorPosX();
+                float sep_y0 = wpos.y + toolbar_pad_y + 2.0f;
+                float sep_y1 = wpos.y + toolbar_pad_y + toolbar_btn_sz - 2.0f;
+                dl->AddLine(ImVec2(sx, sep_y0), ImVec2(sx, sep_y1),
+                            ImGui::GetColorU32(ImGuiCol_Separator), 1.0f);
+                ImGui::Dummy(ImVec2(4.0f, 0));
+            }
+
+            /* C3/C4 stacked pair */
+            if (c3_on || c4_on) {
+                ImGui::SameLine();
+                float x0 = wpos.x + ImGui::GetCursorPosX();
+                float block_w = 0.0f;
+
+                if (c3_on) {
+                    format_time(tbuf, sizeof(tbuf), cursor3_ps);
+                    char label[80]; snprintf(label, sizeof(label), "C3: %s", tbuf);
+                    dl->AddText(ImVec2(x0, y_top),
+                                ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.6f, 1.0f, 1.0f)), label);
+                    float w = ImGui::CalcTextSize(label).x;
+                    if (w > block_w) block_w = w;
+                }
+                if (c4_on) {
+                    format_time(tbuf, sizeof(tbuf), cursor4_ps);
+                    char label[80]; snprintf(label, sizeof(label), "C4: %s", tbuf);
+                    dl->AddText(ImVec2(x0, y_bot),
+                                ImGui::ColorConvertFloat4ToU32(ImVec4(0.6f, 1.0f, 0.6f, 1.0f)), label);
+                    float w = ImGui::CalcTextSize(label).x;
+                    if (w > block_w) block_w = w;
+                }
+
+                ImGui::Dummy(ImVec2(block_w, 0));
+
+                /* Hover tooltip with C3-C4 delta */
+                if (c3_on && c4_on) {
+                    ImVec2 block_min(x0, y_top);
+                    ImVec2 block_max(x0 + block_w, y_bot + line_h);
+                    if (ImGui::IsMouseHoveringRect(block_min, block_max)) {
+                        int64_t delta = cursor4_ps - cursor3_ps;
+                        if (delta < 0) delta = -delta;
+                        format_time(tbuf, sizeof(tbuf), delta);
+                        ImGui::SetTooltip("C3-C4 dt: %s", tbuf);
+                    }
+                }
             }
         }
 
@@ -600,52 +902,264 @@ int main(int argc, char **argv)
         {
             const char *zoom_label = zoom_levels[zoom_idx].label;
             /* Fixed-width label area: "Zoom: 100ms/div" is the widest */
-            float label_w = ImGui::CalcTextSize("Zoom: 100ms/div").x;
-            float btn_w = ImGui::CalcTextSize(" - ").x + ImGui::GetStyle().FramePadding.x * 2;
-            float fit_btn_w = ImGui::CalcTextSize("Fit").x + ImGui::GetStyle().FramePadding.x * 2;
-            float total_w = btn_w * 2 + fit_btn_w + label_w + ImGui::GetStyle().ItemSpacing.x * 5 + 8;
-            ImGui::SameLine(ws.x - total_w);
+            float label_w = ImGui::CalcTextSize("100ms").x + 16.0f;
+            float zoom_ctrl_w = toolbar_btn_sz * 2 + label_w;
+            float total_w = zoom_ctrl_w + ImGui::GetStyle().ItemSpacing.x * 5 + toolbar_btn_sz * 7;
+            ImGui::SameLine(ws.x - total_w - 4.0f);
+            ImGui::SetCursorPosY(toolbar_pad_y);
+            float zoom_icon_sz = toolbar_btn_sz - 10.0f;
+            float tag_icon_sz = toolbar_btn_sz - 10.0f;
 
-            if (ImGui::Button(" - ##zout")) {
-                if (zoom_idx < num_zoom_levels - 1) zoom_idx++;
-            }
-            ImGui::SameLine();
+            /* Cursor 1 toggle button */
+            {
+                bool c1_on = (active_cursor == 1);
+                ImVec2 c1_pos = ImGui::GetCursorScreenPos();
 
-            /* Center zoom text in a fixed-width area */
-            char zoom_text[64];
-            snprintf(zoom_text, sizeof(zoom_text), "Zoom: %s/div", zoom_label);
-            float text_actual = ImGui::CalcTextSize(zoom_text).x;
-            float pad = (label_w - text_actual) * 0.5f;
-            if (pad > 0) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + pad);
-            ImGui::Text("%s", zoom_text);
-            if (pad > 0) {
-                ImGui::SameLine();
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + pad);
-            }
-
-            ImGui::SameLine();
-            if (ImGui::Button(" + ##zin")) {
-                if (zoom_idx > 0) zoom_idx--;
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Fit")) {
-                float fit_w = ws.x - sidebar_w - 20.0f;
-                if (fit_w < 1.0f) fit_w = 1.0f;
-                int64_t display_dur = jzw.sim_end_time - jzw.display_start_time;
-                double needed_ps_per_px = (double)display_dur / (double)fit_w;
-                int best = num_zoom_levels - 1;
-                for (int z = 0; z < num_zoom_levels; z++) {
-                    if (zoom_levels[z].ps_per_pixel >= needed_ps_per_px) {
-                        best = z;
-                        break;
-                    }
+                if (c1_on) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_ButtonActive));
                 }
-                zoom_idx = best;
-                scroll_ps = jzw.display_start_time;
+                if (ImGui::Button("##C1", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    active_cursor = c1_on ? 0 : 1;
+                }
+                if (c1_on) {
+                    ImGui::PopStyleColor();
+                }
+                ImU32 c1_col = (ImGui::IsItemHovered() || c1_on)
+                    ? IM_COL32(255, 255, 100, 255)
+                    : IM_COL32(180, 180, 180, 255);
+                draw_cursor_tag_icon(ImGui::GetWindowDrawList(),
+                    ImVec2(c1_pos.x + (toolbar_btn_sz - tag_icon_sz) * 0.5f,
+                           c1_pos.y + (toolbar_btn_sz - tag_icon_sz) * 0.5f),
+                    tag_icon_sz, c1_col, "1", font_toolbar);
+            }
+
+            /* Cursor 2 toggle button */
+            ImGui::SameLine(0, 0);
+            ImGui::SetCursorPosY(toolbar_pad_y);
+            {
+                bool c2_on = (active_cursor == 2);
+                ImVec2 c2_pos = ImGui::GetCursorScreenPos();
+
+                if (c2_on) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_ButtonActive));
+                }
+                if (ImGui::Button("##C2", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    active_cursor = c2_on ? 0 : 2;
+                }
+                if (c2_on) {
+                    ImGui::PopStyleColor();
+                }
+                ImU32 c2_col = (ImGui::IsItemHovered() || c2_on)
+                    ? IM_COL32(100, 255, 255, 255)
+                    : IM_COL32(180, 180, 180, 255);
+                draw_cursor_tag_icon(ImGui::GetWindowDrawList(),
+                    ImVec2(c2_pos.x + (toolbar_btn_sz - tag_icon_sz) * 0.5f,
+                           c2_pos.y + (toolbar_btn_sz - tag_icon_sz) * 0.5f),
+                    tag_icon_sz, c2_col, "2", font_toolbar);
+            }
+
+            /* Cursor 3 toggle button */
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(toolbar_pad_y);
+            {
+                bool c3_on = (active_cursor == 3);
+                ImVec2 c3_pos = ImGui::GetCursorScreenPos();
+
+                if (c3_on) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_ButtonActive));
+                }
+                if (ImGui::Button("##C3", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    active_cursor = c3_on ? 0 : 3;
+                }
+                if (c3_on) {
+                    ImGui::PopStyleColor();
+                }
+                ImU32 c3_col = (ImGui::IsItemHovered() || c3_on)
+                    ? IM_COL32(255, 150, 255, 255)
+                    : IM_COL32(180, 180, 180, 255);
+                draw_cursor_tag_icon(ImGui::GetWindowDrawList(),
+                    ImVec2(c3_pos.x + (toolbar_btn_sz - tag_icon_sz) * 0.5f,
+                           c3_pos.y + (toolbar_btn_sz - tag_icon_sz) * 0.5f),
+                    tag_icon_sz, c3_col, "3", font_toolbar);
+            }
+
+            /* Cursor 4 toggle button */
+            ImGui::SameLine(0, 0);
+            ImGui::SetCursorPosY(toolbar_pad_y);
+            {
+                bool c4_on = (active_cursor == 4);
+                ImVec2 c4_pos = ImGui::GetCursorScreenPos();
+
+                if (c4_on) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_ButtonActive));
+                }
+                if (ImGui::Button("##C4", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    active_cursor = c4_on ? 0 : 4;
+                }
+                if (c4_on) {
+                    ImGui::PopStyleColor();
+                }
+                ImU32 c4_col = (ImGui::IsItemHovered() || c4_on)
+                    ? IM_COL32(150, 255, 150, 255)
+                    : IM_COL32(180, 180, 180, 255);
+                draw_cursor_tag_icon(ImGui::GetWindowDrawList(),
+                    ImVec2(c4_pos.x + (toolbar_btn_sz - tag_icon_sz) * 0.5f,
+                           c4_pos.y + (toolbar_btn_sz - tag_icon_sz) * 0.5f),
+                    tag_icon_sz, c4_col, "4", font_toolbar);
+            }
+
+            /* Clear all cursors button */
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(toolbar_pad_y);
+            {
+                ImVec2 cx_pos = ImGui::GetCursorScreenPos();
+                if (ImGui::Button("##CX", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    active_cursor = 0;
+                    cursor_visible = false;  cursor_ps = -1;
+                    cursor2_visible = false; cursor2_ps = -1;
+                    cursor3_visible = false; cursor3_ps = -1;
+                    cursor4_visible = false; cursor4_ps = -1;
+                }
+                ImU32 cx_col = ImGui::IsItemHovered()
+                    ? IM_COL32(255, 100, 100, 255)
+                    : IM_COL32(180, 180, 180, 255);
+                draw_cursor_tag_icon(ImGui::GetWindowDrawList(),
+                    ImVec2(cx_pos.x + (toolbar_btn_sz - tag_icon_sz) * 0.5f,
+                           cx_pos.y + (toolbar_btn_sz - tag_icon_sz) * 0.5f),
+                    tag_icon_sz, cx_col, "X", font_toolbar);
+            }
+
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(toolbar_pad_y);
+
+            /* Draw zoom control as one seamless widget */
+            {
+                float ctrl_w = toolbar_btn_sz * 2 + label_w;
+                ImVec2 ctrl_pos = ImGui::GetCursorScreenPos();
+                ImDrawList *tdl = ImGui::GetWindowDrawList();
+                float rounding = ImGui::GetStyle().FrameRounding;
+
+                /* Background fill for entire control */
+                ImU32 bg_col = ImGui::GetColorU32(ImGuiCol_Button);
+                ImU32 border_col = ImGui::GetColorU32(ImGuiCol_Border);
+                tdl->AddRectFilled(ImVec2(ctrl_pos.x, ctrl_pos.y),
+                                   ImVec2(ctrl_pos.x + ctrl_w, ctrl_pos.y + toolbar_btn_sz),
+                                   bg_col, rounding);
+                tdl->AddRect(ImVec2(ctrl_pos.x, ctrl_pos.y),
+                             ImVec2(ctrl_pos.x + ctrl_w, ctrl_pos.y + toolbar_btn_sz),
+                             border_col, rounding, 0, 1.0f);
+
+                /* Vertical separators between buttons and label */
+                float sep1_x = ctrl_pos.x + toolbar_btn_sz;
+                float sep2_x = ctrl_pos.x + toolbar_btn_sz + label_w;
+                tdl->AddLine(ImVec2(sep1_x, ctrl_pos.y + 1),
+                             ImVec2(sep1_x, ctrl_pos.y + toolbar_btn_sz - 1),
+                             border_col, 1.0f);
+                tdl->AddLine(ImVec2(sep2_x, ctrl_pos.y + 1),
+                             ImVec2(sep2_x, ctrl_pos.y + toolbar_btn_sz - 1),
+                             border_col, 1.0f);
+
+                /* Zoom-out button (left) */
+                ImVec2 zout_min = ctrl_pos;
+                ImVec2 zout_max(ctrl_pos.x + toolbar_btn_sz, ctrl_pos.y + toolbar_btn_sz);
+                ImGui::SetCursorScreenPos(zout_min);
+                if (ImGui::InvisibleButton("##zout", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    if (zoom_idx < num_zoom_levels - 1) zoom_idx++;
+                }
+                if (ImGui::IsItemHovered()) {
+                    tdl->AddRectFilled(zout_min, zout_max,
+                        ImGui::GetColorU32(ImGuiCol_ButtonHovered), rounding,
+                        ImDrawFlags_RoundCornersLeft);
+                }
+                ImU32 zout_col = ImGui::IsItemHovered()
+                    ? IM_COL32(255, 255, 255, 255) : IM_COL32(180, 180, 180, 255);
+                draw_zoom_icon(tdl,
+                    ImVec2(zout_min.x + (toolbar_btn_sz - zoom_icon_sz) * 0.5f,
+                           zout_min.y + (toolbar_btn_sz - zoom_icon_sz) * 0.5f),
+                    zoom_icon_sz, zout_col, false);
+
+                /* Zoom label (center) */
+                float text_actual = ImGui::CalcTextSize(zoom_label).x;
+                float text_x = ctrl_pos.x + toolbar_btn_sz + (label_w - text_actual) * 0.5f;
+                float text_y = ctrl_pos.y + (toolbar_btn_sz - ImGui::GetTextLineHeight()) * 0.5f;
+                tdl->AddText(ImVec2(text_x, text_y),
+                    ImGui::GetColorU32(ImGuiCol_Text), zoom_label);
+
+                /* Zoom-in button (right) */
+                ImVec2 zin_min(ctrl_pos.x + toolbar_btn_sz + label_w, ctrl_pos.y);
+                ImVec2 zin_max(ctrl_pos.x + ctrl_w, ctrl_pos.y + toolbar_btn_sz);
+                ImGui::SetCursorScreenPos(zin_min);
+                if (ImGui::InvisibleButton("##zin", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    if (zoom_idx > 0) zoom_idx--;
+                }
+                if (ImGui::IsItemHovered()) {
+                    tdl->AddRectFilled(zin_min, zin_max,
+                        ImGui::GetColorU32(ImGuiCol_ButtonHovered), rounding,
+                        ImDrawFlags_RoundCornersRight);
+                }
+                ImU32 zin_col = ImGui::IsItemHovered()
+                    ? IM_COL32(255, 255, 255, 255) : IM_COL32(180, 180, 180, 255);
+                draw_zoom_icon(tdl,
+                    ImVec2(zin_min.x + (toolbar_btn_sz - zoom_icon_sz) * 0.5f,
+                           zin_min.y + (toolbar_btn_sz - zoom_icon_sz) * 0.5f),
+                    zoom_icon_sz, zin_col, true);
+
+                /* Advance cursor past the whole control */
+                ImGui::SetCursorScreenPos(ImVec2(ctrl_pos.x + ctrl_w, ctrl_pos.y));
+                ImGui::Dummy(ImVec2(0, toolbar_btn_sz));
+            }
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(toolbar_pad_y);
+            {
+                ImVec2 fit_btn_pos = ImGui::GetCursorScreenPos();
+
+                /* Use Button with empty label for consistent styling */
+                if (ImGui::Button("##Fit", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    float fit_w = ws.x - sidebar_w - 20.0f;
+                    if (fit_w < 1.0f) fit_w = 1.0f;
+                    int64_t display_dur = jzw.sim_end_time - jzw.display_start_time;
+                    double needed_ps_per_px = (double)display_dur / (double)fit_w;
+                    int best = num_zoom_levels - 1;
+                    for (int z = 0; z < num_zoom_levels; z++) {
+                        if (zoom_levels[z].ps_per_pixel >= needed_ps_per_px) {
+                            best = z;
+                            break;
+                        }
+                    }
+                    zoom_idx = best;
+                    scroll_ps = jzw.display_start_time;
+                }
+                /* Draw the fit icon centered in the 42x42 button */
+                ImU32 icon_col = ImGui::IsItemHovered()
+                    ? IM_COL32(255, 255, 255, 255)
+                    : IM_COL32(180, 180, 180, 255);
+                float icon_sz = toolbar_btn_sz - 10.0f; /* 26px icon in 36px button */
+                ImVec2 icon_pos(fit_btn_pos.x + (toolbar_btn_sz - icon_sz) * 0.5f,
+                                fit_btn_pos.y + (toolbar_btn_sz - icon_sz) * 0.5f);
+                draw_fit_icon(ImGui::GetWindowDrawList(), icon_pos, icon_sz, icon_col);
+            }
+
+            /* Clock info button */
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(toolbar_pad_y);
+            {
+                ImVec2 clk_btn_pos = ImGui::GetCursorScreenPos();
+                if (ImGui::Button("##Clocks", ImVec2(toolbar_btn_sz, toolbar_btn_sz))) {
+                    show_clock_dialog = !show_clock_dialog;
+                }
+                ImU32 clk_col = ImGui::IsItemHovered()
+                    ? IM_COL32(255, 255, 255, 255)
+                    : IM_COL32(180, 180, 180, 255);
+                float clk_icon_sz = toolbar_btn_sz - 10.0f;
+                ImVec2 clk_icon_pos(clk_btn_pos.x + (toolbar_btn_sz - clk_icon_sz) * 0.5f,
+                                    clk_btn_pos.y + (toolbar_btn_sz - clk_icon_sz) * 0.5f);
+                draw_clock_icon(ImGui::GetWindowDrawList(), clk_icon_pos, clk_icon_sz, clk_col);
             }
         }
 
         ImGui::End();
+        ImGui::PopStyleVar(); /* WindowPadding */
+        ImGui::PopFont();
 
         /* ---- Layout: toolbar | content | gutter ---- */
         float gutter_h = row_height;
@@ -976,9 +1490,17 @@ int main(int argc, char **argv)
                 if (scroll_ps < jzw.display_start_time) scroll_ps = jzw.display_start_time;
             }
 
-            /* Escape: clear cursors */
+            /* Escape: clear cursors (last placed first) and deactivate toggle */
             if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-                if (cursor2_visible) {
+                if (active_cursor != 0) {
+                    active_cursor = 0;
+                } else if (cursor4_visible) {
+                    cursor4_visible = false;
+                    cursor4_ps = -1;
+                } else if (cursor3_visible) {
+                    cursor3_visible = false;
+                    cursor3_ps = -1;
+                } else if (cursor2_visible) {
                     cursor2_visible = false;
                     cursor2_ps = -1;
                 } else if (cursor_visible) {
@@ -1022,22 +1544,24 @@ int main(int argc, char **argv)
                 if (scroll_ps > jzw.sim_end_time) scroll_ps = jzw.sim_end_time;
             }
 
-            /* Click in waveform area to place cursor */
-            if (ImGui::IsMouseClicked(0) && !dragging_signal) {
+            /* Click in waveform area to place cursor based on active toggle */
+            if (ImGui::IsMouseClicked(0) && !dragging_signal && active_cursor != 0) {
                 float mouse_rel_x = io.MousePos.x - (wave_x + ImGui::GetStyle().WindowPadding.x);
                 if (mouse_rel_x >= 0 && mouse_rel_x < wave_w) {
                     int64_t click_ps = scroll_ps + (int64_t)(mouse_rel_x * ps_per_px);
                     if (click_ps >= jzw.display_start_time && click_ps <= jzw.sim_end_time) {
-                        if (io.KeyShift && cursor_visible) {
-                            /* Shift+click places secondary cursor */
-                            cursor2_ps = click_ps;
-                            cursor2_visible = true;
-                        } else {
+                        if (active_cursor == 1) {
                             cursor_ps = click_ps;
                             cursor_visible = true;
-                            /* Clear secondary cursor on primary click */
-                            cursor2_visible = false;
-                            cursor2_ps = -1;
+                        } else if (active_cursor == 2) {
+                            cursor2_ps = click_ps;
+                            cursor2_visible = true;
+                        } else if (active_cursor == 3) {
+                            cursor3_ps = click_ps;
+                            cursor3_visible = true;
+                        } else if (active_cursor == 4) {
+                            cursor4_ps = click_ps;
+                            cursor4_visible = true;
                         }
                     }
                 }
@@ -1117,6 +1641,28 @@ int main(int argc, char **argv)
                         {cx, wpos.y + ruler_h - 6}
                     };
                     dl->AddTriangleFilled(tri[0], tri[1], tri[2], IM_COL32(100, 255, 255, 255));
+                }
+            }
+            if (cursor3_visible && cursor3_ps >= 0) {
+                float cx = wpos.x + (float)((cursor3_ps - scroll_ps) / ps_per_px);
+                if (cx >= clip_x0 && cx <= clip_x1) {
+                    ImVec2 tri[3] = {
+                        {cx - 4, wpos.y + ruler_h},
+                        {cx + 4, wpos.y + ruler_h},
+                        {cx, wpos.y + ruler_h - 6}
+                    };
+                    dl->AddTriangleFilled(tri[0], tri[1], tri[2], IM_COL32(255, 150, 255, 255));
+                }
+            }
+            if (cursor4_visible && cursor4_ps >= 0) {
+                float cx = wpos.x + (float)((cursor4_ps - scroll_ps) / ps_per_px);
+                if (cx >= clip_x0 && cx <= clip_x1) {
+                    ImVec2 tri[3] = {
+                        {cx - 4, wpos.y + ruler_h},
+                        {cx + 4, wpos.y + ruler_h},
+                        {cx, wpos.y + ruler_h - 6}
+                    };
+                    dl->AddTriangleFilled(tri[0], tri[1], tri[2], IM_COL32(150, 255, 150, 255));
                 }
             }
         }
@@ -1243,22 +1789,25 @@ int main(int argc, char **argv)
         }
 
         /* Draw cursor lines (on top of waveforms, clipped to waveform area) */
-        if (cursor_visible && cursor_ps >= 0) {
-            float cx = wpos.x + (float)((cursor_ps - scroll_ps) / ps_per_px);
-            if (cx >= clip_x0 && cx <= clip_x1) {
-                dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, wave_area_bottom),
-                            IM_COL32(255, 255, 100, 180), 1.5f);
-            }
-        }
-        if (cursor2_visible && cursor2_ps >= 0) {
-            float cx = wpos.x + (float)((cursor2_ps - scroll_ps) / ps_per_px);
-            if (cx >= clip_x0 && cx <= clip_x1) {
-                dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, wave_area_bottom),
-                            IM_COL32(100, 255, 255, 180), 1.5f);
+        {
+            struct { int64_t ps; bool vis; ImU32 col; } cursors[] = {
+                {cursor_ps,  cursor_visible,  IM_COL32(255, 255, 100, 180)},
+                {cursor2_ps, cursor2_visible, IM_COL32(100, 255, 255, 180)},
+                {cursor3_ps, cursor3_visible, IM_COL32(255, 150, 255, 180)},
+                {cursor4_ps, cursor4_visible, IM_COL32(150, 255, 150, 180)},
+            };
+            for (int ci = 0; ci < 4; ci++) {
+                if (cursors[ci].vis && cursors[ci].ps >= 0) {
+                    float cx = wpos.x + (float)((cursors[ci].ps - scroll_ps) / ps_per_px);
+                    if (cx >= clip_x0 && cx <= clip_x1) {
+                        dl->AddLine(ImVec2(cx, wave_area_y), ImVec2(cx, wave_area_bottom),
+                                    cursors[ci].col, 1.5f);
+                    }
+                }
             }
 
-            /* Draw shaded region between cursors */
-            if (cursor_visible && cursor_ps >= 0) {
+            /* Shaded region between C1-C2 */
+            if (cursor_visible && cursor_ps >= 0 && cursor2_visible && cursor2_ps >= 0) {
                 float cx1 = wpos.x + (float)((cursor_ps - scroll_ps) / ps_per_px);
                 float cx2 = wpos.x + (float)((cursor2_ps - scroll_ps) / ps_per_px);
                 if (cx1 > cx2) { float tmp = cx1; cx1 = cx2; cx2 = tmp; }
@@ -1267,6 +1816,19 @@ int main(int argc, char **argv)
                 if (left < right) {
                     dl->AddRectFilled(ImVec2(left, wave_area_y), ImVec2(right, wave_area_bottom),
                                       IM_COL32(255, 255, 100, 20));
+                }
+            }
+
+            /* Shaded region between C3-C4 */
+            if (cursor3_visible && cursor3_ps >= 0 && cursor4_visible && cursor4_ps >= 0) {
+                float cx1 = wpos.x + (float)((cursor3_ps - scroll_ps) / ps_per_px);
+                float cx2 = wpos.x + (float)((cursor4_ps - scroll_ps) / ps_per_px);
+                if (cx1 > cx2) { float tmp = cx1; cx1 = cx2; cx2 = tmp; }
+                float left = std::max(cx1, clip_x0);
+                float right = std::min(cx2, clip_x1);
+                if (left < right) {
+                    dl->AddRectFilled(ImVec2(left, wave_area_y), ImVec2(right, wave_area_bottom),
+                                      IM_COL32(150, 255, 150, 20));
                 }
             }
         }
@@ -1479,6 +2041,74 @@ int main(int argc, char **argv)
         }
 
         ImGui::End();
+
+        /* ---- Clock Info Dialog ---- */
+        if (show_clock_dialog) {
+            ImGui::SetNextWindowSizeConstraints(ImVec2(500, 200), ImVec2(800, 600));
+            if (ImGui::Begin("Clock Information", &show_clock_dialog,
+                             ImGuiWindowFlags_NoCollapse)) {
+                if (jzw.clocks.empty()) {
+                    ImGui::TextDisabled("No clock data available.");
+                } else {
+                    for (size_t ci = 0; ci < jzw.clocks.size(); ci++) {
+                        const ClockInfo &c = jzw.clocks[ci];
+
+                        if (ci > 0) ImGui::Separator();
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
+                        ImGui::Text("%s", c.name.c_str());
+                        ImGui::PopStyleColor();
+
+                        ImGui::Indent(12.0f);
+
+                        /* Period and frequency */
+                        double period_ns = c.period_ps / 1e3;
+                        double freq_mhz = 1e3 / period_ns;
+                        char tbuf[64];
+                        format_time(tbuf, sizeof(tbuf), c.period_ps);
+                        ImGui::Text("Period:    %s  (%.3f MHz)", tbuf, freq_mhz);
+
+                        /* Phase */
+                        if (c.phase_ps > 0) {
+                            format_time(tbuf, sizeof(tbuf), c.phase_ps);
+                            double phase_deg = (double)c.phase_ps / (double)c.period_ps * 360.0;
+                            ImGui::Text("Phase:     %s  (%.1f deg)", tbuf, phase_deg);
+                        } else {
+                            ImGui::TextDisabled("Phase:     0 (none)");
+                        }
+
+                        /* Jitter */
+                        if (c.jitter_pp_ps > 0) {
+                            format_time(tbuf, sizeof(tbuf), c.jitter_pp_ps);
+                            ImGui::Text("Jitter:    %s peak-to-peak", tbuf);
+                            char sbuf[64];
+                            snprintf(sbuf, sizeof(sbuf), "%.1f ps", c.jitter_sigma_ps);
+                            ImGui::Text("           sigma = %s  (clamped at +/-%lld ps)",
+                                        sbuf, (long long)(c.jitter_pp_ps / 2));
+                        } else {
+                            ImGui::TextDisabled("Jitter:    disabled");
+                        }
+
+                        /* Drift */
+                        if (c.drift_max_ppm > 0.0) {
+                            ImGui::Text("Drift:     +/-%.1f ppm max", c.drift_max_ppm);
+                            ImGui::Text("           actual = %.6f ppm", c.drift_actual_ppm);
+                            if (c.drifted_period_ps > 0.0) {
+                                double drifted_ns = c.drifted_period_ps / 1e3;
+                                double drifted_mhz = 1e3 / drifted_ns;
+                                format_time(tbuf, sizeof(tbuf), (int64_t)c.drifted_period_ps);
+                                ImGui::Text("           drifted period = %s  (%.3f MHz)",
+                                            tbuf, drifted_mhz);
+                            }
+                        } else {
+                            ImGui::TextDisabled("Drift:     disabled");
+                        }
+
+                        ImGui::Unindent(12.0f);
+                    }
+                }
+            }
+            ImGui::End();
+        }
 
         /* ---- Render ---- */
         ImGui::Render();

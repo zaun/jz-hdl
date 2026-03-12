@@ -1760,6 +1760,21 @@ static int sim_run_simulation(const JZASTNode *root,
                 sim_wave_set_meta(wave, key, buf);
             }
         }
+
+        /* Write clock definitions to the clocks table */
+        for (int i = 0; i < num_sim_clocks; i++) {
+            if (sim_clocks[i].name) {
+                sim_wave_add_clock(wave,
+                    sim_clocks[i].name,
+                    sim_clocks[i].toggle_ps * 2,   /* full period */
+                    sim_clocks[i].phase_ps,
+                    sim_clocks[i].jitter_pp_ps,
+                    sim_clocks[i].jitter_sigma,
+                    sim_clocks[i].drift_max_ppm,
+                    sim_clocks[i].drift_actual_ppm,
+                    sim_clocks[i].drifted_toggle_ps * 2.0);  /* full drifted period */
+            }
+        }
     }
 
     /* Register testbench wires in waveform writer */

@@ -152,6 +152,19 @@ JZWWriter *jzw_open(const char *filename, uint64_t timescale_ps)
 
     jzw_exec(w, "CREATE INDEX idx_annotations_time ON annotations(time)");
 
+    jzw_exec(w,
+        "CREATE TABLE clocks ("
+        "  id               INTEGER PRIMARY KEY,"
+        "  name             TEXT    NOT NULL,"
+        "  period_ps        INTEGER NOT NULL,"
+        "  phase_ps         INTEGER NOT NULL DEFAULT 0,"
+        "  jitter_pp_ps     INTEGER NOT NULL DEFAULT 0,"
+        "  jitter_sigma_ps  REAL    NOT NULL DEFAULT 0.0,"
+        "  drift_max_ppm    REAL    NOT NULL DEFAULT 0.0,"
+        "  drift_actual_ppm REAL    NOT NULL DEFAULT 0.0,"
+        "  drifted_period_ps REAL   NOT NULL DEFAULT 0.0"
+        ")");
+
     /* Prepare insert statement */
     rc = sqlite3_prepare_v2(w->db,
         "INSERT INTO changes (time, signal_id, value) VALUES (?, ?, ?)",
@@ -187,6 +200,33 @@ void jzw_set_meta(JZWWriter *w, const char *key, const char *value)
 
     sqlite3_bind_text(stmt, 1, key, -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, value, -1, SQLITE_TRANSIENT);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+}
+
+void jzw_add_clock(JZWWriter *w, const char *name, uint64_t period_ps,
+                   uint64_t phase_ps, uint64_t jitter_pp_ps,
+                   double jitter_sigma_ps, double drift_max_ppm,
+                   double drift_actual_ppm, double drifted_period_ps)
+{
+    if (!w || !name) return;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(w->db,
+        "INSERT INTO clocks (name, period_ps, phase_ps, jitter_pp_ps, "
+        "jitter_sigma_ps, drift_max_ppm, drift_actual_ppm, drifted_period_ps) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        -1, &stmt, NULL);
+    if (rc != SQLITE_OK) return;
+
+    sqlite3_bind_text(stmt, 1, name, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 2, (sqlite3_int64)period_ps);
+    sqlite3_bind_int64(stmt, 3, (sqlite3_int64)phase_ps);
+    sqlite3_bind_int64(stmt, 4, (sqlite3_int64)jitter_pp_ps);
+    sqlite3_bind_double(stmt, 5, jitter_sigma_ps);
+    sqlite3_bind_double(stmt, 6, drift_max_ppm);
+    sqlite3_bind_double(stmt, 7, drift_actual_ppm);
+    sqlite3_bind_double(stmt, 8, drifted_period_ps);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 }
