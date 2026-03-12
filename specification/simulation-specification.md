@@ -18,13 +18,13 @@ header-includes:
 
 This specification defines the `@simulation` construct for JZ-HDL. While `@testbench` provides strictly manual, cycle-stepped control for functional verification, `@simulation` provides a **time-based, multi-clock continuous simulation environment**.
 
-In a `@simulation`, clocks run automatically in the background based on their defined periods. The simulator calculates a common "tick" resolution, and the test sequence advances via absolute time (`@run`) directives rather than manual edge toggles. All declared `WIRE`s, `CLOCK`s, and `TAP`ped internal signals are automatically monitored and dumped to an output waveform file (e.g., VCD/FST) per tick.
+In a `@simulation`, clocks run automatically in the background based on their defined periods. The simulator uses event-driven scheduling with 1 picosecond resolution, jumping directly between clock edges. The test sequence advances via absolute time (`@run`) directives rather than manual edge toggles. All declared `WIRE`s, `CLOCK`s, and `TAP`ped internal signals are automatically monitored and dumped to an output waveform file (e.g., VCD/FST) at each clock event.
 
 **Relationship to `@testbench`:**
 
 `@simulation` and `@testbench` are two **independent execution models**. They share the same RTL evaluation semantics (combinational settling, NBA for synchronous updates, reset behavior, x/z rules) but differ fundamentally in how time advances:
 
-- `@simulation` is **time-based**: clocks have defined periods and toggle independently via GCD-based tick scheduling. Time advances via `@run` directives in absolute units (nanoseconds, milliseconds). Multiple clocks run concurrently.
+- `@simulation` is **time-based**: clocks have defined periods and toggle independently via event-driven scheduling at 1ps resolution. Time advances via `@run` directives in absolute units (nanoseconds, milliseconds). Multiple clocks run concurrently.
 - `@testbench` is **cycle-stepped**: clocks advance only when explicitly commanded by `@clock` directives, one clock at a time. There is no notion of absolute time or clock periods.
 
 Neither model is a superset of the other. A simulation implementation is not required to use the testbench engine internally, and vice versa. The simulation model is designed for multi-clock timing verification and waveform capture; the testbench model is designed for deterministic, assertion-driven functional tests.
@@ -43,11 +43,15 @@ All time values are represented internally as **64-bit unsigned integers in pico
 - `ns=0.1` → 100 ps (valid: 0.1 × 1000 = 100.0 exactly)
 - `period=3.3335` → 3333.5 ps (rejected: not an integer picosecond count)
 
-### 2.2 The "Tick" Resolution
+### 2.2 Event-Driven Clock Scheduling
 
-Unlike `@testbench`, which is strictly cycle-relative, `@simulation` operates on an absolute timeline discretized into **ticks**.
-- The simulator computes the toggle interval for each clock (half its period, in picoseconds) and takes the **Greatest Common Divisor (GCD)** of all toggle intervals. This GCD becomes the fundamental tick length.
-- Example: If `clk_a` has a period of 10ns (toggles every 5000ps) and `clk_b` has a period of 14ns (toggles every 7000ps), the GCD is 1000ps = 1ns.
+Unlike `@testbench`, which is strictly cycle-relative, `@simulation` operates on an absolute timeline with **1 picosecond resolution**.
+
+The simulator uses **event-driven scheduling** for clock toggles. Each clock maintains a `next_toggle_ps` timestamp indicating when it will next change value. At initialization, `next_toggle_ps` is set to `phase_ps + toggle_ps` (i.e., the phase offset plus half the period). When advancing time, the simulator jumps directly to the earliest `next_toggle_ps` across all clocks — skipping empty time where no clock toggles. After toggling a clock, its `next_toggle_ps` advances by `toggle_ps`.
+
+This approach provides exact 1ps timing resolution while maintaining O(number of clock edges) performance regardless of the time span being simulated.
+
+**GCD tick for `@run(ticks=N)`:** The simulator also computes the Greatest Common Divisor (GCD) of all clock toggle intervals. This GCD defines the **tick unit** used when `@run(ticks=N)` is specified — the duration advanced is `N × GCD` picoseconds. For example, if `clk_a` has a period of 10ns (toggles every 5000ps) and `clk_b` has a period of 14ns (toggles every 7000ps), the GCD is 1000ps = 1ns, and `@run(ticks=10)` advances 10ns. The `@run(ns=...)` and `@run(ms=...)` forms are unaffected — they convert directly to picoseconds.
 
 ### 2.3 Time 0 Initialization
 
@@ -66,11 +70,11 @@ This ensures the waveform viewer shows the full initial setup state before the f
 
 ### 2.4 Execution Flow
 
-1. **Time Advancement (`@run`)**: The simulator advances time tick-by-tick up to the requested duration.
-2. **Tick Evaluation**: At each tick:
-   - If a clock is scheduled to toggle, its value updates.
+1. **Time Advancement (`@run`)**: The simulator advances time by jumping to successive clock events up to the requested duration.
+2. **Clock Event Evaluation**: At each clock event (a time where one or more clocks toggle):
+   - All clocks scheduled to toggle at this time update their values. Each clock's `next_toggle_ps` advances by its `toggle_ps`.
    - Combinational logic evaluates to a fixed point (see Section 2.6).
-   - If an active clock edge occurs, synchronous assignments are sampled and applied (NBA semantics).
+   - Synchronous assignments are sampled and applied (NBA semantics).
    - Combinational logic settles again.
    - Monitored signals are sampled and written to the output file.
 3. **Procedural Updates (`@update`)**: Executed instantaneously between `@run` commands. They apply wire changes, propagate inputs, settle combinational logic, propagate outputs, and record the changes to the waveform before the next `@run` begins.
@@ -82,8 +86,8 @@ This ensures the waveform viewer shows the full initial setup state before the f
 This is a normative requirement. There is no implementation-defined ordering, no thread-dependent scheduling, and no platform-dependent evaluation. Every aspect of simulation is fully determined by the source text and the seed value:
 
 - Storage randomization is derived solely from the seed via a specified PRNG algorithm.
-- Tick scheduling is computed from integer picosecond arithmetic and GCD (Section 2.1, 2.2).
-- Clock toggle order within a tick is determined by declaration order.
+- Clock scheduling uses event-driven `next_toggle_ps` timestamps computed from integer picosecond arithmetic (Section 2.1, 2.2).
+- When multiple clocks toggle at the same time, toggle order is determined by declaration order.
 - Combinational settling follows a deterministic iteration order (Section 2.6).
 - Waveform output records signal values at every tick using exact bit-vector state with no floating-point arithmetic.
 
