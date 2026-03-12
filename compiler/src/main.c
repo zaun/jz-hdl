@@ -237,6 +237,8 @@ int main(int argc, char **argv) {
     size_t sandbox_root_count = 0;
     JZWarningGroupOverride group_overrides[16];
     size_t group_override_count = 0;
+    SimJitterConfig jitter_configs[16];
+    int num_jitter = 0;
 
     for (int i = 1; i < argc; ++i) {
         const char *arg = argv[i];
@@ -283,6 +285,32 @@ int main(int argc, char **argv) {
         } else if (strncmp(arg, "--seed=", 7) == 0) {
             test_seed = (uint32_t)strtoul(arg + 7, NULL, 16);
             test_seed_set = 1;
+        } else if (strncmp(arg, "--jitter=", 9) == 0) {
+            if (num_jitter >= (int)(sizeof(jitter_configs) / sizeof(jitter_configs[0]))) {
+                fprintf(stderr, "Too many --jitter flags (max %d)\n",
+                        (int)(sizeof(jitter_configs) / sizeof(jitter_configs[0])));
+                return 1;
+            }
+            /* Parse --jitter=clock_name;pp_ps */
+            const char *val = arg + 9;
+            const char *semi = strchr(val, ':');
+            if (!semi || semi == val || *(semi + 1) == '\0') {
+                fprintf(stderr, "Invalid --jitter format: '%s' (expected --jitter=<clock>:<ps>)\n", arg);
+                return 1;
+            }
+            size_t name_len = (size_t)(semi - val);
+            char *name_copy = malloc(name_len + 1);
+            memcpy(name_copy, val, name_len);
+            name_copy[name_len] = '\0';
+            uint64_t pp = strtoull(semi + 1, NULL, 10);
+            if (pp == 0) {
+                fprintf(stderr, "Invalid --jitter value: '%s' (peak-to-peak must be > 0)\n", semi + 1);
+                free(name_copy);
+                return 1;
+            }
+            jitter_configs[num_jitter].clock_name = name_copy;
+            jitter_configs[num_jitter].pp_ps = pp;
+            num_jitter++;
         } else if (strcmp(arg, "--lint-rules") == 0) {
             lint_rules = 1;
         } else if (strcmp(arg, "--sdc") == 0 ||
@@ -883,7 +911,9 @@ int main(int argc, char **argv) {
                                                      &compiler.diagnostics,
                                                      input_filename,
                                                      sim_output,
-                                                     wave_format);
+                                                     wave_format,
+                                                     num_jitter > 0 ? jitter_configs : NULL,
+                                                     num_jitter);
                 if (sim_rc != 0) {
                     rc = 1;
                 }

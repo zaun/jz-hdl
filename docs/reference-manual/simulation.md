@@ -41,6 +41,28 @@ The simulator uses **event-driven scheduling** for clock toggles. Each clock mai
 
 **GCD tick for `@run(ticks=N)`:** The simulator also computes the Greatest Common Divisor (GCD) of all clock toggle intervals to define the **tick unit**. When `@run(ticks=N)` is specified, the duration advanced is `N × GCD` picoseconds. For example, if `clk_a` toggles every 5000ps and `clk_b` every 7000ps, the GCD is 1000ps, and `@run(ticks=10)` advances 10ns. The `ns` and `ms` forms are unaffected.
 
+### Clock Jitter
+
+The simulator supports optional **period jitter** on any clock via the `--jitter` command-line flag, modeling the cycle-to-cycle timing variation present in real oscillators and PLLs.
+
+**Key properties:**
+
+- **Period jitter, no drift.** Each clock edge is perturbed relative to its *ideal* position (accumulated from the exact half-period), not the previous actual edge. Jitter does not accumulate — the clock's average frequency remains exact over time.
+- **Gaussian distribution, clamped.** The `--jitter` parameter specifies **peak-to-peak** jitter in picoseconds. The standard deviation is σ = peak_to_peak / 6, placing the ±peak_to_peak/2 bounds at ±3σ. Samples beyond ±peak_to_peak/2 are clamped, preventing physically unrealistic outliers.
+- **Deterministic.** Each jittered clock gets its own PRNG seeded from the simulation seed and clock declaration index. Gaussian samples use the Box-Muller transform. Given the same `--seed` and `--jitter` flags, jitter sequences are bit-identical across runs.
+
+```bash
+# 200ps peak-to-peak jitter on clk: σ ≈ 33ps, 99.7% within ±100ps
+jz-hdl sim.jz --simulate --jitter=clk:200
+
+# Different jitter per clock
+jz-hdl sim.jz --simulate --jitter=clk_wr:200 --jitter=clk_rd:500
+```
+
+::: tip Matching hardware datasheets
+PLL datasheets typically specify jitter as peak-to-peak or RMS (σ). For a datasheet value of "200ps peak-to-peak", use `--jitter=clk:200`. For an RMS value of "33ps", use `--jitter=clk;198` (6 × 33).
+:::
+
 ### Time 0 Initialization
 
 The simulator models the deterministic power-on initialization sequence at Time 0, before any clock edge occurs:
@@ -381,6 +403,7 @@ jz-hdl sim_file.jz --simulate                    # produces sim_file.vcd
 jz-hdl sim_file.jz --simulate -o output.vcd      # explicit output path
 jz-hdl sim_file.jz --simulate --seed=0xCAFE      # reproducible register init
 jz-hdl sim_file.jz --simulate --verbose           # print tick resolution, events
+jz-hdl sim_file.jz --simulate --jitter=clk:200   # 200ps peak-to-peak jitter
 ```
 
 Files containing `@simulation` blocks must be run with `--simulate`. Using `--lint` or `--test` on a file that contains `@simulation` will produce a `SIM_WRONG_TOOL` error.
@@ -394,6 +417,7 @@ Files containing `@simulation` blocks must be run with `--simulate`. Using `--li
 | `--seed=0xHEX` | 32-bit seed for register randomization. Default: `0xDEADBEEF`. |
 | `--vcd` | Force VCD output format (default). |
 | `--fst` | Force FST output format (not yet supported). |
+| `--jitter=<clock>:<ps>` | Add Gaussian period jitter to a clock. `<ps>` is peak-to-peak jitter in picoseconds (σ = ps/6, clamped at ±ps/2). May be specified multiple times. See [Clock Jitter](#clock-jitter). |
 | `--verbose` | Print tick resolution, clock periods, and `@run`/`@update` events. |
 
 ## Complete Example

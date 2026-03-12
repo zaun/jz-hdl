@@ -51,6 +51,28 @@ The simulator uses **event-driven scheduling** for clock toggles. Each clock mai
 
 This approach provides exact 1ps timing resolution while maintaining O(number of clock edges) performance regardless of the time span being simulated.
 
+### 2.2.1 Clock Jitter
+
+The simulator supports optional **period jitter** on any clock, modeling the cycle-to-cycle timing variation present in real oscillators and PLLs. Jitter is enabled per clock via the `--jitter` command-line flag (see Section 5.2).
+
+**Jitter model:**
+
+- **Type: Period jitter (no drift).** Each clock edge is perturbed relative to its **ideal** position. The simulator tracks the ideal `next_toggle_ps` (accumulated from the exact `toggle_ps` half-period) and applies a random offset to produce the actual toggle time. Because the offset is computed from the ideal position — not the previous actual position — jitter does not accumulate into drift. Over long simulations, the clock's average frequency remains exact.
+
+- **Distribution: Gaussian, clamped.** The jitter offset is drawn from a Gaussian (normal) distribution. The `--jitter` parameter specifies the **peak-to-peak** jitter in picoseconds. The standard deviation is `σ = peak_to_peak / 6`, placing the ±peak_to_peak/2 bounds at ±3σ. This means 99.7% of edges fall within the specified range naturally, and the remaining 0.3% are clamped to ±peak_to_peak/2 to prevent physically unrealistic outliers.
+
+  For example, `--jitter=clk:200` specifies 200ps peak-to-peak jitter on clock `clk`: σ ≈ 33.3ps, 99.7% of edges within ±100ps of ideal, hard-clamped at ±100ps.
+
+- **PRNG: Deterministic per-clock.** Each jittered clock receives its own xorshift32 PRNG state, seeded deterministically from the simulation seed and the clock's declaration index: `jitter_rng = seed ^ (clock_index + 0x4A495454)`. Gaussian samples are generated using the Box-Muller transform on pairs of uniform xorshift32 outputs. This ensures jitter sequences are fully reproducible given the same `--seed` and `--jitter` flags, regardless of platform or implementation.
+
+- **Minimum edge spacing.** If a jitter offset would cause `next_toggle_ps` to be less than or equal to `current_time_ps` (i.e., the edge would move into the past), the offset is clamped so the edge occurs at `current_time_ps + 1`. This prevents negative time advancement and maintains simulation causality.
+
+**Interaction with other features:**
+
+- Jitter does not affect the GCD tick computation. The GCD is computed from ideal (unjittered) toggle intervals and is used only for `@run(ticks=N)` conversion.
+- Jitter does not affect `@run` duration accounting. The simulation runs until the requested wall-clock time has elapsed, regardless of how many jittered edges occur.
+- Jitter metadata is recorded in JZW output (see Section 6).
+
 **GCD tick for `@run(ticks=N)`:** The simulator also computes the Greatest Common Divisor (GCD) of all clock toggle intervals. This GCD defines the **tick unit** used when `@run(ticks=N)` is specified — the duration advanced is `N × GCD` picoseconds. For example, if `clk_a` has a period of 10ns (toggles every 5000ps) and `clk_b` has a period of 14ns (toggles every 7000ps), the GCD is 1000ps = 1ns, and `@run(ticks=10)` advances 10ns. The `@run(ns=...)` and `@run(ms=...)` forms are unaffected — they convert directly to picoseconds.
 
 ### 2.3 Time 0 Initialization
@@ -586,10 +608,12 @@ The `MONITOR` block defines a set of conditional directives that are evaluated *
 Files containing `@simulation` blocks must be run with the `--simulate` flag. Using `--lint` or `--test` on a file that contains `@simulation` will produce a `SIM_WRONG_TOOL` error.
 
 ```bash
-jz-hdl --simulate sim_file.jz                # produces sim_file.vcd
-jz-hdl --simulate sim_file.jz -o output.vcd  # explicit output path
-jz-hdl --simulate sim_file.jz --seed=0xCAFE  # reproducible register init
-jz-hdl --simulate sim_file.jz --verbose       # print tick resolution, events
+jz-hdl --simulate sim_file.jz                       # produces sim_file.vcd
+jz-hdl --simulate sim_file.jz -o output.vcd         # explicit output path
+jz-hdl --simulate sim_file.jz --seed=0xCAFE         # reproducible register init
+jz-hdl --simulate sim_file.jz --verbose              # print tick resolution, events
+jz-hdl --simulate sim_file.jz --jitter=clk:200       # 200ps p-p jitter on clk
+jz-hdl --simulate sim_file.jz --jitter=clk_wr:200 --jitter=clk_rd:500
 ```
 
 ### 5.2 Flags
@@ -601,6 +625,7 @@ jz-hdl --simulate sim_file.jz --verbose       # print tick resolution, events
 | `--seed=0x<hex>` | 32-bit seed for register randomization. Default: `0xDEADBEEF`. |
 | `--vcd` | Force VCD output format (default). |
 | `--fst` | Force FST output format (not yet supported). |
+| `--jitter=<clock>:<ps>` | Add Gaussian period jitter to a clock. `<clock>` is the clock name declared in the simulation's `CLOCK` block. `<ps>` is the peak-to-peak jitter in picoseconds (σ = ps/6, clamped at ±ps/2). May be specified multiple times for different clocks. See Section 2.2.1. |
 | `--verbose` | Print tick resolution, clock periods, and `@run`/`@update` events. |
 
 ---
@@ -624,6 +649,16 @@ Signals are organized into VCD scopes:
 ### 6.3 What Gets Recorded
 
 Every signal in `CLOCK`, `WIRE`, and `TAP` blocks is sampled and written to the waveform file at every tick during `@run`, and at each `@setup`/`@update` event. The Time 0 dump captures the full initial state before any clock edge.
+
+### 6.4 JZW Metadata
+
+The JZW format stores simulation metadata in its `meta` table. In addition to the standard keys (`date`, `source_file`, `compiler_version`, `seed`, `tick_ps`, `module_name`), the following keys are written when clock jitter is enabled:
+
+| Key | Value | Example |
+|---|---|---|
+| `jitter_<clock_name>` | Peak-to-peak jitter in picoseconds | `jitter_clk = "200"` |
+
+One key is written per jittered clock. Clocks without jitter have no corresponding key. This allows waveform viewers and analysis tools to determine whether jitter was active and with what parameters.
 
 ---
 
