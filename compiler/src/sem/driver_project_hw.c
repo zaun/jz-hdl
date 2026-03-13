@@ -1739,7 +1739,7 @@ void sem_check_project_top_new(JZASTNode *project,
          * pass lint.
          */
         int complex_target = 0;
-        if (target_expr && strpbrk(target_expr, "[]{}.,")) {
+        if (target_expr && strpbrk(target_expr, "~[]{}.,")) {
             complex_target = 1;
         }
 

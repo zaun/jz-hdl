@@ -31,7 +31,7 @@ static void print_usage(const char *prog) {
     fprintf(stderr,
             "Usage: %s JZ_FILE --lint [--warn-as-error] [--color] [--info] [--explain] [--Wno-group=NAME] [-o OUT_FILE]\n"
             "       %s JZ_FILE --verilog [-o OUT_FILE] [--sdc SDC_FILE] [--xdc XDC_FILE] [--pcf PCF_FILE] [--cst CST_FILE] [--tristate-default=GND|VCC]\n"
-            "       %s JZ_FILE --rtlil [-o OUT_FILE] [--tristate-default=GND|VCC]\n"
+            "       %s JZ_FILE --rtlil [-o OUT_FILE] [--sdc SDC_FILE] [--xdc XDC_FILE] [--pcf PCF_FILE] [--cst CST_FILE] [--tristate-default=GND|VCC]\n"
             "       %s JZ_FILE --alias-report [-o OUT_FILE]\n"
             "       %s JZ_FILE --memory-report [-o OUT_FILE]\n"
             "       %s JZ_FILE --tristate-report [-o OUT_FILE]\n"

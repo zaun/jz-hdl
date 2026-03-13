@@ -130,9 +130,31 @@ int jz_emit_sdc_constraints(const IR_Design *design,
             continue;
         }
         const char *target_cmd = clk->is_generated ? "get_nets" : "get_ports";
-        fprintf(out,
-                "create_clock -name %s -period %g [%s %s]\n",
-                clk->name, clk->period_ns, target_cmd, clk->name);
+
+        /* For differential clock pins, the Verilog port is <name>_p, not <name>.
+         * Check if this clock name matches a differential pin. */
+        int clk_is_diff = 0;
+        if (!clk->is_generated) {
+            for (int m = 0; m < proj->num_mappings; ++m) {
+                const IR_PinMapping *mp = &proj->mappings[m];
+                if (mp->logical_pin_name && clk->name &&
+                    strcmp(mp->logical_pin_name, clk->name) == 0 &&
+                    mp->board_pin_n_id && mp->board_pin_n_id[0] != '\0') {
+                    clk_is_diff = 1;
+                    break;
+                }
+            }
+        }
+
+        if (clk_is_diff) {
+            fprintf(out,
+                    "create_clock -name %s -period %g [%s %s_p]\n",
+                    clk->name, clk->period_ns, target_cmd, clk->name);
+        } else {
+            fprintf(out,
+                    "create_clock -name %s -period %g [%s %s]\n",
+                    clk->name, clk->period_ns, target_cmd, clk->name);
+        }
     }
 
     if (close_backend_output(out, close_out,
@@ -193,49 +215,92 @@ int jz_emit_xdc_constraints(const IR_Design *design,
         }
 
         const char *port_name = pin->name ? pin->name : "jz_pin";
-
-        /* For differential pins in XDC, constrain the P pin only;
-         * Xilinx infers the N pin automatically.
-         */
         int is_diff = (m->board_pin_n_id && m->board_pin_n_id[0] != '\0');
 
-        fprintf(out, "set_property PACKAGE_PIN %s [get_ports {%s",
-                m->board_pin_id, port_name);
-        if (m->bit_index >= 0) {
-            fprintf(out, "[%d]", m->bit_index);
-        }
-        fprintf(out, "}]\n");
+        if (is_diff) {
+            /* Differential pins: Verilog backend emits ports with _p/_n suffixes.
+             * Array pins are flattened: CLK0_p (not CLK_p[0]).
+             * Emit separate constraints for both P and N ports. */
+            char p_port[256], n_port[256];
+            if (m->bit_index >= 0) {
+                snprintf(p_port, sizeof(p_port), "%s%d_p", port_name, m->bit_index);
+                snprintf(n_port, sizeof(n_port), "%s%d_n", port_name, m->bit_index);
+            } else {
+                snprintf(p_port, sizeof(p_port), "%s_p", port_name);
+                snprintf(n_port, sizeof(n_port), "%s_n", port_name);
+            }
 
-        if (pin->standard && pin->standard[0] != '\0') {
-            fprintf(out, "set_property IOSTANDARD %s [get_ports {%s",
-                    pin->standard, port_name);
+            /* P pin constraints */
+            fprintf(out, "set_property PACKAGE_PIN %s [get_ports {%s}]\n",
+                    m->board_pin_id, p_port);
+            fprintf(out, "set_property LOC %s [get_ports {%s}]\n",
+                    m->board_pin_id, p_port);
+            if (pin->standard && pin->standard[0] != '\0') {
+                fprintf(out, "set_property IOSTANDARD %s [get_ports {%s}]\n",
+                        pin->standard, p_port);
+            }
+
+            /* Differential termination for input pins */
+            if (pin->kind == PIN_IN) {
+                fprintf(out, "set_property DIFF_TERM TRUE [get_ports {%s}]\n",
+                        p_port);
+            }
+
+            /* N pin constraints */
+            fprintf(out, "set_property PACKAGE_PIN %s [get_ports {%s}]\n",
+                    m->board_pin_n_id, n_port);
+            fprintf(out, "set_property LOC %s [get_ports {%s}]\n",
+                    m->board_pin_n_id, n_port);
+            if (pin->standard && pin->standard[0] != '\0') {
+                fprintf(out, "set_property IOSTANDARD %s [get_ports {%s}]\n",
+                        pin->standard, n_port);
+            }
+        } else {
+            /* Single-ended pin */
+            fprintf(out, "set_property PACKAGE_PIN %s [get_ports {%s",
+                    m->board_pin_id, port_name);
             if (m->bit_index >= 0) {
                 fprintf(out, "[%d]", m->bit_index);
             }
             fprintf(out, "}]\n");
-        }
-        if (pin->drive_ma >= 0 && !is_diff) {
-            fprintf(out, "set_property DRIVE %d [get_ports {%s",
-                    pin->drive_ma, port_name);
+            fprintf(out, "set_property LOC %s [get_ports {%s",
+                    m->board_pin_id, port_name);
             if (m->bit_index >= 0) {
                 fprintf(out, "[%d]", m->bit_index);
             }
             fprintf(out, "}]\n");
-        }
-        if (pin->pull == PULL_UP) {
-            fprintf(out, "set_property PULLTYPE PULLUP [get_ports {%s",
-                    port_name);
-            if (m->bit_index >= 0) {
-                fprintf(out, "[%d]", m->bit_index);
+
+            if (pin->standard && pin->standard[0] != '\0') {
+                fprintf(out, "set_property IOSTANDARD %s [get_ports {%s",
+                        pin->standard, port_name);
+                if (m->bit_index >= 0) {
+                    fprintf(out, "[%d]", m->bit_index);
+                }
+                fprintf(out, "}]\n");
             }
-            fprintf(out, "}]\n");
-        } else if (pin->pull == PULL_DOWN) {
-            fprintf(out, "set_property PULLTYPE PULLDOWN [get_ports {%s",
-                    port_name);
-            if (m->bit_index >= 0) {
-                fprintf(out, "[%d]", m->bit_index);
+            if (pin->drive_ma >= 0) {
+                fprintf(out, "set_property DRIVE %d [get_ports {%s",
+                        pin->drive_ma, port_name);
+                if (m->bit_index >= 0) {
+                    fprintf(out, "[%d]", m->bit_index);
+                }
+                fprintf(out, "}]\n");
             }
-            fprintf(out, "}]\n");
+            if (pin->pull == PULL_UP) {
+                fprintf(out, "set_property PULLTYPE PULLUP [get_ports {%s",
+                        port_name);
+                if (m->bit_index >= 0) {
+                    fprintf(out, "[%d]", m->bit_index);
+                }
+                fprintf(out, "}]\n");
+            } else if (pin->pull == PULL_DOWN) {
+                fprintf(out, "set_property PULLTYPE PULLDOWN [get_ports {%s",
+                        port_name);
+                if (m->bit_index >= 0) {
+                    fprintf(out, "[%d]", m->bit_index);
+                }
+                fprintf(out, "}]\n");
+            }
         }
     }
 

@@ -112,6 +112,17 @@ static void sem_check_runtime_const_config_expr(const JZASTNode *node,
         return;
     }
 
+    /* Slice indices (children[1] and children[2]) are compile-time constant
+     * expression contexts where CONST/CONFIG names are allowed per S3.2.
+     * Only recurse into child[0] (the base signal expression).
+     */
+    if (node->type == JZ_AST_EXPR_SLICE) {
+        if (node->child_count > 0 && node->children[0]) {
+            sem_check_runtime_const_config_expr(node->children[0], mod_scope, diagnostics);
+        }
+        return;
+    }
+
     for (size_t i = 0; i < node->child_count; ++i) {
         if (node->children[i]) {
             sem_check_runtime_const_config_expr(node->children[i], mod_scope, diagnostics);

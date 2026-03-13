@@ -1,6 +1,10 @@
 @project COUNTER
     @import "counter.jz"
 
+    CONFIG {
+        CLK_MHZ = 27;
+    }
+
     CLOCKS {
         SCLK = { period=37.04 }; // 27MHz clock
     }
@@ -43,9 +47,12 @@
     }
 
     @top counter {
+        OVERRIDE {
+            CLK_MHZ = CONFIG.CLK_MHZ;
+        }
         IN  [1] clk   = SCLK;
         IN  [1] por   = DONE;
         IN  [1] rst_n = ~KEY[0];
-        OUT [6] leds  = LED;
+        OUT [6] leds  = ~LED;
     }
 @endproj

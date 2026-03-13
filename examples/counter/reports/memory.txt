@@ -1,18 +1,18 @@
 Memory Report
 -------------
-Project: src/tang_nano_20k.jz
-Chip: (unknown)
+Project: src/pa35t-edu.jz
+Chip: XC7A35T-2FGG484
 
 Memory Summary
 --------------
 Block Memory:
     Requested: 0 bytes
-    Max Available: Unknown
-    Used: 0 bytes
+    Max Available: 230400 bytes (50 blocks x 36 Kbits)
+    Used: 0 / 50 blocks (one per BLOCK MEMORY)
 
 Distributed Memory:
     Requested: 0 bytes
-    Max Available: Unknown
+    Max Available: 51200 bytes
     Used: 0 bytes
 
 Errors: 0

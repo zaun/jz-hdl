@@ -4,6 +4,4 @@ File: CONST_STRING_IN_NUMERIC_CONTEXT.jz
       31:5    error NET_FLOATING_WITH_SINK S1.2/S4.10 Signal is read but never driven (floating net); add a driver or remove the read
       35:5    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?
       36:13   error CONST_USED_WHERE_FORBIDDEN S4.3/S6.3 CONST identifier used outside compile-time constant expression contexts (runtime expression)
-      37:18   error CONST_USED_WHERE_FORBIDDEN S4.3/S6.3 CONST identifier used outside compile-time constant expression contexts (runtime expression)
-      37:32   error CONFIG_USED_WHERE_FORBIDDEN S6.3 CONFIG.<name> used outside compile-time constant expression contexts (runtime expression)
       38:13   error LIT_VALUE_INVALID S5.5.11 lit() value must be a nonnegative integer constant expression

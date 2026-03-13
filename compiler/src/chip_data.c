@@ -21,7 +21,7 @@ typedef struct JZChipBuiltin {
 #include "data/ice40up-5k-sg.h"
 #include "data/ice40up-5k-uwg.h"
 #include "data/lfe5u-45f-6bg381.h"
-#include "data/xc7a35t-2fgg484i.h"
+#include "data/xc7a35t-2fgg484.h"
 
 static const JZChipBuiltin k_builtin_chips[] = {
     { "GW1NR-9-QN88-C6-I5",  (const char *)gw1nr_9_qn88_c6_i5_json },
@@ -30,7 +30,7 @@ static const JZChipBuiltin k_builtin_chips[] = {
     { "ICE40UP-5K-SG48",     (const char *)ice40up_5k_sg_json },
     { "ICE40UP-5K-UWG30",    (const char *)ice40up_5k_uwg_json },
     { "LFE5U-45F-6BG381",    (const char *)lfe5u_45f_6bg381_json },
-    { "XC7A35T-2FGG484I",    (const char *)xc7a35t_2fgg484i_json }
+    { "XC7A35T-2FGG484",     (const char *)xc7a35t_2fgg484_json }
 };
 
 static int jz_strcasecmp(const char *a, const char *b)
