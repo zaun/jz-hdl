@@ -893,6 +893,7 @@ static int jz_chip_parse_clock_gen_object(const char *json,
 
     char *type = NULL;
     char *mode = NULL;
+    char *feedback_wire = NULL;
     int map_idx = -1;
     int derived_idx = -1;
     int params_idx = -1;
@@ -935,6 +936,9 @@ static int jz_chip_parse_clock_gen_object(const char *json,
                 has_chaining = 1;
                 chaining = bval;
             }
+        } else if (jz_json_token_eq(json, key, "feedback_wire")) {
+            if (feedback_wire) free(feedback_wire);
+            feedback_wire = jz_json_token_strdup(json, val);
         }
         cur = jz_json_skip(toks, count, cur);
     }
@@ -944,6 +948,7 @@ static int jz_chip_parse_clock_gen_object(const char *json,
         memset(&cg, 0, sizeof(cg));
         cg.type = type;
         cg.mode = mode;
+        cg.feedback_wire = feedback_wire;
         jz_chip_parse_clock_gen_map(json, toks, count, map_idx, &cg);
         if (derived_idx >= 0) {
             jz_chip_parse_clock_gen_derived(json, toks, count, derived_idx, &cg);
@@ -1091,10 +1096,12 @@ static int jz_chip_parse_clock_gen_object(const char *json,
             jz_buf_free(&cg.constraints);
             free(type);
             free(mode);
+            free(feedback_wire);
         }
     } else {
         free(type);
         free(mode);
+        free(feedback_wire);
     }
 
     return jz_json_skip(toks, count, obj_index);
@@ -1538,6 +1545,7 @@ void jz_chip_data_free(JZChipData *data)
             free(cts[j2]);
         }
         jz_buf_free(&cgs[i].constraints);
+        free(cgs[i].feedback_wire);
     }
     jz_buf_free(&data->clock_gens);
 
@@ -1926,6 +1934,15 @@ const char *jz_chip_clock_gen_constraint_at(const JZChipData *data,
     if (index >= ct_count) return NULL;
     const char **cts = (const char **)cg->constraints.data;
     return cts[index];
+}
+
+const char *jz_chip_clock_gen_feedback_wire(const JZChipData *data,
+                                             const char *type)
+{
+    if (!data || !type) return NULL;
+    const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
+    if (!cg) return NULL;
+    return cg->feedback_wire;
 }
 
 unsigned jz_chip_mem_quantity(const JZChipData *data, JZChipMemType type)

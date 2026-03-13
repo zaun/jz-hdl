@@ -554,23 +554,49 @@ static void jz_print_clock_gen_info(const char *json,
     if (!json || !toks || !out || clock_gen_idx < 0 || clock_gen_idx >= count) return;
     if (toks[clock_gen_idx].type != JSMN_ARRAY) return;
 
+    /* First pass: collect entry indices and type names for sorting */
     const jsmntok_t *arr = &toks[clock_gen_idx];
-    int cur = clock_gen_idx + 1;
-    while (cur < count && toks[cur].start < arr->end) {
-        const jsmntok_t *obj = &toks[cur];
-        if (obj->type != JSMN_OBJECT) {
+    struct { int idx; char type[32]; } entries[32];
+    size_t num_entries = 0;
+    {
+        int cur = clock_gen_idx + 1;
+        while (cur < count && toks[cur].start < arr->end) {
+            if (toks[cur].type == JSMN_OBJECT) {
+                int ti = jz_json_object_get(json, toks, count, cur, "type");
+                if (ti >= 0 && toks[ti].type == JSMN_STRING &&
+                    num_entries < sizeof(entries) / sizeof(entries[0])) {
+                    entries[num_entries].idx = cur;
+                    (void)jz_json_token_to_string(json, &toks[ti],
+                                                   entries[num_entries].type,
+                                                   sizeof(entries[num_entries].type));
+                    num_entries++;
+                }
+            }
             cur = jz_json_skip(toks, count, cur);
-            continue;
         }
+    }
 
-        int type_idx = jz_json_object_get(json, toks, count, cur, "type");
-        if (type_idx < 0 || toks[type_idx].type != JSMN_STRING) {
-            cur = jz_json_skip(toks, count, cur);
-            continue;
+    /* Sort entries alphabetically by type name (case-insensitive) */
+    for (size_t i = 0; i < num_entries; ++i) {
+        for (size_t j = i + 1; j < num_entries; ++j) {
+            if (jz_strcasecmp(entries[i].type, entries[j].type) > 0) {
+                int tmp_idx = entries[i].idx;
+                char tmp_type[32];
+                memcpy(tmp_type, entries[i].type, sizeof(tmp_type));
+                entries[i].idx = entries[j].idx;
+                memcpy(entries[i].type, entries[j].type, sizeof(entries[i].type));
+                entries[j].idx = tmp_idx;
+                memcpy(entries[j].type, tmp_type, sizeof(entries[j].type));
+            }
         }
+    }
+
+    /* Second pass: process entries in sorted order */
+    for (size_t entry_i = 0; entry_i < num_entries; ++entry_i) {
+        int cur = entries[entry_i].idx;
 
         char type_buf[32] = {0};
-        (void)jz_json_token_to_string(json, &toks[type_idx], type_buf, sizeof(type_buf));
+        memcpy(type_buf, entries[entry_i].type, sizeof(type_buf));
 
         /* Determine display name based on type (generic: supports numbered variants) */
         char type_display_buf[128];
@@ -1120,7 +1146,6 @@ static void jz_print_clock_gen_info(const char *json,
         }
 
         fprintf(out, "\n");
-        cur = jz_json_skip(toks, count, cur);
     }
 }
 

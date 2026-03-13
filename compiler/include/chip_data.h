@@ -121,6 +121,7 @@ typedef struct JZChipClockGen {
     int       has_chaining;     /**< Non-zero if chaining field was specified. */
     int       chaining;         /**< Non-zero if generators can be chained. */
     JZBuffer  constraints;      /**< Array of char* constraint rule strings. */
+    char     *feedback_wire;    /**< Optional feedback wire base name (e.g., "clkfb"). NULL if not needed. */
 } JZChipClockGen;
 
 /**
@@ -532,6 +533,15 @@ size_t jz_chip_clock_gen_constraint_count(const JZChipData *data, const char *ty
  */
 const char *jz_chip_clock_gen_constraint_at(const JZChipData *data,
                                              const char *type, size_t index);
+
+/**
+ * @brief Get the feedback wire base name for a clock generator type.
+ * @param data Loaded chip data.
+ * @param type Generator type (e.g., "pll").
+ * @return Feedback wire base name (e.g., "clkfb"), or NULL if not specified.
+ */
+const char *jz_chip_clock_gen_feedback_wire(const JZChipData *data,
+                                             const char *type);
 
 /**
  * @brief Get the quantity of physical memory blocks for a given type.

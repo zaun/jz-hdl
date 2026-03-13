@@ -13,6 +13,9 @@
 #include "chip_data.h"
 #include "ir.h"
 
+/* Forward declaration for differential pin check (defined later in this file). */
+static int pin_has_diff_mapping(const IR_Project *proj, const IR_Pin *pin);
+
 /* -------------------------------------------------------------------------
  * Clock gen template substitution helpers
  * -------------------------------------------------------------------------
@@ -281,6 +284,12 @@ static void emit_clock_gen_from_template(FILE *out,
 {
     if (!out || !unit || !template_text) return;
 
+    /* Look up the feedback wire base name from chip data (e.g., "clkfb"). */
+    const char *fb_wire_base = NULL;
+    if (chip_data && clock_gen_type) {
+        fb_wire_base = jz_chip_clock_gen_feedback_wire(chip_data, clock_gen_type);
+    }
+
     const char *p = template_text;
     while (*p) {
         /* Handle escape sequences */
@@ -316,7 +325,25 @@ static void emit_clock_gen_from_template(FILE *out,
                         /* Try as named input (e.g., REF_CLK, CE) */
                         const char *input_sig = find_clock_gen_input(unit, placeholder);
                         if (input_sig) {
-                            fputs(input_sig, out);
+                            /* Check if input signal is a differential pin;
+                             * if so, use the jz_diff_ buffered wire instead. */
+                            int is_diff_input = 0;
+                            if (proj) {
+                                for (int pi = 0; pi < proj->num_pins; ++pi) {
+                                    const IR_Pin *pin = &proj->pins[pi];
+                                    if (pin->name && strcmp(pin->name, input_sig) == 0 &&
+                                        pin->kind == PIN_IN &&
+                                        pin_has_diff_mapping(proj, pin)) {
+                                        is_diff_input = 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (is_diff_input) {
+                                fprintf(out, "jz_diff_%s", input_sig);
+                            } else {
+                                fputs(input_sig, out);
+                            }
                         } else {
                         /* Check for _mhz or _period_ns suffix on input names */
                         int is_input_suffix = 0;
@@ -383,6 +410,11 @@ static void emit_clock_gen_from_template(FILE *out,
                             const char *out_name = find_clock_gen_output(unit, placeholder);
                             if (out_name) {
                                 fputs(out_name, out);
+                            } else if (fb_wire_base &&
+                                       strcmp(placeholder, fb_wire_base) == 0) {
+                                /* Feedback path wire from chip data */
+                                fprintf(out, "%s_%d_%d",
+                                        fb_wire_base, cg_idx, unit_idx);
                             } else if (strcmp(placeholder, "LOCK") == 0 ||
                                        strcmp(placeholder, "BASE") == 0 ||
                                        strcmp(placeholder, "PHASE") == 0 ||
@@ -1148,7 +1180,7 @@ void emit_project_wrapper(FILE *out, const IR_Design *design)
             }
 
             if (template_text) {
-                /* Emit dummy wires for unused PLL outputs before the instantiation */
+                /* Emit dummy wires for unused PLL/MMCM outputs before the instantiation */
                 if (unit_type_str && strncmp(unit_type_str, "pll", 3) == 0) {
                     static const char *pll_selectors[] = {"LOCK", "BASE", "PHASE", "DIV", "DIV3", NULL};
                     for (int si = 0; pll_selectors[si]; ++si) {
@@ -1157,6 +1189,13 @@ void emit_project_wrapper(FILE *out, const IR_Design *design)
                             fprintf(out, "    wire jz_unused_pll_%s_cg%d_u%d;\n",
                                     pll_selectors[si], cg, u);
                         }
+                    }
+                    /* Feedback path wire (from chip data feedback_wire field) */
+                    const char *fb_name = effective_chip
+                        ? jz_chip_clock_gen_feedback_wire(effective_chip, unit_type_str)
+                        : NULL;
+                    if (fb_name) {
+                        fprintf(out, "    wire %s_%d_%d;\n", fb_name, cg, u);
                     }
                 }
                 /* Emit using the chip data template */

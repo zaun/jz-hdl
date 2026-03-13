@@ -136,12 +136,13 @@
 
   "clock_gen": [
     {
-      "type": "pll",
+      "type": "pll2",
       "source": "DS180 v2.6.1, Section: Clock Management; DS181 v1.27.1, Table: MMCM Switching Characteristics; UG472 v1.13, Chapter 3: Clock Management Tile",
       "description": "Mixed-Mode Clock Manager (MMCME2_BASE). Primary clock synthesizer with 7 outputs (CLKOUT0-CLKOUT6), feedback output (CLKFBOUT), and fractional divide on CLKOUT0.",
 
       "count": 5,
       "chaining": true,
+      "feedback_wire": "clkfb",
 
       "map": {
         "verilog-2005": [
@@ -175,8 +176,8 @@
           "    .STARTUP_WAIT(\"FALSE\")\n",
           ") u_mmcm_%%instance_idx%% (\n",
           "    .CLKIN1(%%REF_CLK%%),\n",
-          "    .CLKFBIN(%%CLKFBOUT%%),\n",
-          "    .CLKFBOUT(%%CLKFBOUT%%),\n",
+          "    .CLKFBIN(%%clkfb%%),\n",
+          "    .CLKFBOUT(%%clkfb%%),\n",
           "    .CLKOUT0(%%BASE%%),\n",
           "    .CLKOUT1(%%CLKOUT1%%),\n",
           "    .CLKOUT2(%%CLKOUT2%%),\n",
@@ -219,8 +220,8 @@
           "  parameter \\DIVCLK_DIVIDE %%DIVCLK_DIVIDE%%\n",
           "  parameter \\STARTUP_WAIT \"FALSE\"\n",
           "  connect \\CLKIN1 \\%%REF_CLK%%\n",
-          "  connect \\CLKFBIN \\%%CLKFBOUT%%\n",
-          "  connect \\CLKFBOUT \\%%CLKFBOUT%%\n",
+          "  connect \\CLKFBIN \\%%clkfb%%\n",
+          "  connect \\CLKFBOUT \\%%clkfb%%\n",
           "  connect \\CLKOUT0 \\%%BASE%%\n",
           "  connect \\CLKOUT1 \\%%CLKOUT1%%\n",
           "  connect \\CLKOUT2 \\%%CLKOUT2%%\n",
@@ -393,11 +394,6 @@
           }
         },
 
-        "CLKFBOUT": {
-          "description": "Feedback output, must be connected to CLKFBIN for internal feedback",
-          "port": "CLKFBOUT"
-        },
-
         "LOCK": {
           "description": "MMCM lock indicator, high when MMCM is locked",
           "port": "LOCKED"
@@ -466,6 +462,7 @@
 
       "count": 5,
       "chaining": true,
+      "feedback_wire": "clkfb",
 
       "map": {
         "verilog-2005": [
@@ -496,8 +493,8 @@
           "    .STARTUP_WAIT(\"FALSE\")\n",
           ") u_pll_%%instance_idx%% (\n",
           "    .CLKIN1(%%REF_CLK%%),\n",
-          "    .CLKFBIN(%%CLKFBOUT%%),\n",
-          "    .CLKFBOUT(%%CLKFBOUT%%),\n",
+          "    .CLKFBIN(%%clkfb%%),\n",
+          "    .CLKFBOUT(%%clkfb%%),\n",
           "    .CLKOUT0(%%BASE%%),\n",
           "    .CLKOUT1(%%CLKOUT1%%),\n",
           "    .CLKOUT2(%%CLKOUT2%%),\n",
@@ -536,8 +533,8 @@
           "  parameter \\DIVCLK_DIVIDE %%DIVCLK_DIVIDE%%\n",
           "  parameter \\STARTUP_WAIT \"FALSE\"\n",
           "  connect \\CLKIN1 \\%%REF_CLK%%\n",
-          "  connect \\CLKFBIN \\%%CLKFBOUT%%\n",
-          "  connect \\CLKFBOUT \\%%CLKFBOUT%%\n",
+          "  connect \\CLKFBIN \\%%clkfb%%\n",
+          "  connect \\CLKFBOUT \\%%clkfb%%\n",
           "  connect \\CLKOUT0 \\%%BASE%%\n",
           "  connect \\CLKOUT1 \\%%CLKOUT1%%\n",
           "  connect \\CLKOUT2 \\%%CLKOUT2%%\n",
@@ -690,11 +687,6 @@
             "description": "Output 5 frequency: FVCO / CLKOUT5_DIVIDE",
             "expr": "FVCO / CLKOUT5_DIVIDE"
           }
-        },
-
-        "CLKFBOUT": {
-          "description": "Feedback output, must be connected to CLKFBIN for internal feedback",
-          "port": "CLKFBOUT"
         },
 
         "LOCK": {
