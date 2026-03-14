@@ -117,23 +117,59 @@ void lsp_docstore_close(LspDocStore *store, const char *uri);
 /*  Project discovery                                                 */
 /* ------------------------------------------------------------------ */
 
+#define LSP_MAX_PROJECTS 32
+
 /**
- * @brief Discover the project file associated with a source file.
+ * @struct LspProjectEntry
+ * @brief A single discovered project file with its metadata.
+ */
+typedef struct LspProjectEntry {
+    char file[2048];  /* Absolute path to the project .jz file. */
+    char chip[256];   /* CHIP parameter (may be empty). */
+    char name[256];   /* Project name (may be empty). */
+} LspProjectEntry;
+
+/**
+ * @struct LspProjectList
+ * @brief Collection of discovered project files.
+ */
+typedef struct LspProjectList {
+    LspProjectEntry entries[LSP_MAX_PROJECTS];
+    size_t          count;
+} LspProjectList;
+
+/**
+ * @brief Discover all project files associated with a source file.
  *
- * Searches for a @project file using cached .jzhdl-lsp.rc files and
+ * Searches for @project files using cached .jzhdl-lsp.rc files and
  * directory scanning.  See lsp_project_discovery.c for the full algorithm.
  *
  * @param filepath        Absolute path to the source file being edited.
  * @param workspace_root  Workspace root path from the LSP initialize request.
  * @param is_project_file Non-zero if the file itself contains @project.
- * @param out             Output buffer for the discovered project file path.
- * @param out_cap         Capacity of the output buffer.
- * @return 0 if a project file was found, -1 otherwise.
+ * @param source_content  If non-NULL, use this as the file content instead
+ *                        of reading from disk (for in-memory buffers).
+ * @param out             Output list to receive discovered projects.
+ * @return 0 if at least one project was found, -1 otherwise.
  */
-int lsp_discover_project_file(const char *filepath,
-                              const char *workspace_root,
-                              int is_project_file,
-                              char *out, size_t out_cap);
+int lsp_discover_projects(const char *filepath,
+                          const char *workspace_root,
+                          int is_project_file,
+                          const char *source_content,
+                          LspProjectList *out);
+
+/**
+ * @brief Find which project in a list imports a given source file.
+ *
+ * Scans each project file's @import directives to see which one
+ * references the given filepath.
+ *
+ * @param projects  List of discovered projects.
+ * @param filepath  Absolute path to the source file being edited.
+ * @return Index into projects->entries, or -1 if none imports the file.
+ */
+int lsp_find_project_for_file(const LspProjectList *projects,
+                              const char *filepath);
 
 /* ------------------------------------------------------------------ */
 /*  URI helpers                                                       */

@@ -36,6 +36,12 @@
                 "path": "./syntaxes/jz-hdl.tmLanguage.json"
             }
         ],
+        "commands": [
+            {
+                "command": "jz-hdl.selectProject",
+                "title": "JZ-HDL: Select Project"
+            }
+        ],
         "configuration": {
             "title": "JZ-HDL",
             "properties": {

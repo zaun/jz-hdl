@@ -36,6 +36,56 @@
 /* Workspace root path extracted from initialize request. */
 static char s_workspace_root[2048] = {0};
 
+/* ------------------------------------------------------------------ */
+/*  Project override map                                              */
+/*                                                                    */
+/*  When the user explicitly selects a project via the status bar     */
+/*  picker, we store the mapping: source file → project file.        */
+/*  This takes priority over automatic discovery.                     */
+/* ------------------------------------------------------------------ */
+
+#define LSP_MAX_OVERRIDES 128
+
+typedef struct {
+    char file_path[2048];     /* Canonical path of the source file. */
+    char project_path[2048];  /* Canonical path of the selected project. */
+} LspProjectOverride;
+
+static LspProjectOverride s_project_overrides[LSP_MAX_OVERRIDES];
+static size_t s_project_override_count = 0;
+
+static const char *lookup_project_override(const char *filepath) {
+    for (size_t i = 0; i < s_project_override_count; i++) {
+        if (strcmp(s_project_overrides[i].file_path, filepath) == 0) {
+            return s_project_overrides[i].project_path;
+        }
+    }
+    return NULL;
+}
+
+static void set_project_override(const char *filepath, const char *project_path) {
+    /* Update existing entry. */
+    for (size_t i = 0; i < s_project_override_count; i++) {
+        if (strcmp(s_project_overrides[i].file_path, filepath) == 0) {
+            strncpy(s_project_overrides[i].project_path, project_path,
+                    sizeof(s_project_overrides[i].project_path) - 1);
+            s_project_overrides[i].project_path[
+                sizeof(s_project_overrides[i].project_path) - 1] = '\0';
+            return;
+        }
+    }
+    /* Add new entry. */
+    if (s_project_override_count < LSP_MAX_OVERRIDES) {
+        LspProjectOverride *o = &s_project_overrides[s_project_override_count++];
+        strncpy(o->file_path, filepath, sizeof(o->file_path) - 1);
+        o->file_path[sizeof(o->file_path) - 1] = '\0';
+        strncpy(o->project_path, project_path, sizeof(o->project_path) - 1);
+        o->project_path[sizeof(o->project_path) - 1] = '\0';
+    }
+}
+
+static void handle_select_project(const char *msg, LspDocStore *store);
+
 static void handle_initialize(const char *msg, int id, LspDocStore *store);
 static void handle_initialized(void);
 static void handle_shutdown(int id);
@@ -104,6 +154,8 @@ int jz_lsp_run(void) {
             handle_text_document_completion(msg, id, &store);
         } else if (strcmp(method, "textDocument/definition") == 0) {
             handle_text_document_definition(msg, id, &store);
+        } else if (strcmp(method, "jz-hdl/selectProject") == 0) {
+            handle_select_project(msg, &store);
         } else if (id >= 0) {
             /* Unknown request — respond with MethodNotFound. */
             send_error(id, -32601, "Method not found");
@@ -235,9 +287,45 @@ static void handle_shutdown(int id) {
  * modules), then diagnostics are filtered to only those originating from
  * the file the user is editing.
  */
+/**
+ * @brief Send a jz-hdl/projectInfo notification to the client.
+ *
+ * This custom notification tells the editor which project files are
+ * available and which one is currently active for the file being edited.
+ */
+static void send_project_info(const char *uri,
+                              const LspProjectList *projects,
+                              int active_index) {
+    LspJson j;
+    lsp_json_init(&j);
+    lsp_json_append(&j, "{\"uri\":");
+    lsp_json_append_escaped(&j, uri);
+    lsp_json_append(&j, ",\"projects\":[");
+
+    for (size_t i = 0; i < projects->count; i++) {
+        if (i > 0) lsp_json_append_char(&j, ',');
+        lsp_json_append(&j, "{\"file\":");
+        lsp_json_append_escaped(&j, projects->entries[i].file);
+        lsp_json_append(&j, ",\"chip\":");
+        lsp_json_append_escaped(&j, projects->entries[i].chip);
+        lsp_json_append(&j, ",\"name\":");
+        lsp_json_append_escaped(&j, projects->entries[i].name);
+        lsp_json_append_char(&j, '}');
+    }
+
+    lsp_json_append(&j, "],\"activeIndex\":");
+    lsp_json_append_int(&j, active_index);
+    lsp_json_append_char(&j, '}');
+
+    send_notification("jz-hdl/projectInfo", j.data);
+    lsp_json_free(&j);
+}
+
 static void publish_diagnostics_via_project(const char *uri,
                                             const char *filepath,
-                                            const char *project_path) {
+                                            const char *project_path,
+                                            const LspProjectList *projects,
+                                            int active_index) {
     lsp_log("compiling via project: %s for file: %s", project_path, filepath);
 
     /* Initialize path security from the project file's perspective. */
@@ -361,6 +449,9 @@ static void publish_diagnostics_via_project(const char *uri,
     send_notification("textDocument/publishDiagnostics", j.data);
     lsp_json_free(&j);
 
+    /* Notify the client about project context. */
+    send_project_info(uri, projects, active_index);
+
     /* Cleanup. */
     jz_token_stream_free(&tokens);
     if (free_source) free(expanded);
@@ -414,7 +505,12 @@ static void publish_diagnostics(const char *uri, LspDocStore *store) {
 
     /* Detect whether the source file is a standalone module (no @project).
      * Standalone modules are valid importable files; project-level
-     * diagnostics should be suppressed for them. */
+     * diagnostics should be suppressed for them.
+     *
+     * We check both the AST (when parsing succeeds) and the raw source
+     * text (as a fallback for mid-edit states where parsing may fail).
+     * This ensures project discovery and rc updates happen even when
+     * the file has transient syntax errors. */
     int is_standalone_module = 0;
     int has_project = 0;
     if (ast) {
@@ -427,34 +523,87 @@ static void publish_diagnostics(const char *uri, LspDocStore *store) {
         }
         is_standalone_module = !has_project;
     }
+    /* Fallback: text-level check when the AST is unavailable or
+     * didn't detect @project (e.g. parse error mid-edit). */
+    if (!has_project && doc->content && strstr(doc->content, "@project")) {
+        has_project = 1;
+        is_standalone_module = 0;
+    }
 
     /* For standalone modules, try to discover the parent project file
      * and compile from there to get full cross-file resolution. */
     if (is_standalone_module) {
-        char project_path[2048] = {0};
-        if (lsp_discover_project_file(filepath, s_workspace_root,
-                                      0, project_path,
-                                      sizeof(project_path)) == 0) {
-            /* Clean up the standalone compilation and re-compile via project. */
-            jz_token_stream_free(&tokens);
-            if (free_source) free(source);
-            jz_compiler_dispose(&compiler);
-            jz_path_security_cleanup();
-            jz_parser_free_imported_filenames();
+        LspProjectList projects;
+        projects.count = 0;
+        int idx = -1;
 
-            publish_diagnostics_via_project(uri, filepath, project_path);
-            return;
+        if (lsp_discover_projects(filepath, s_workspace_root,
+                                  0, NULL, &projects) == 0) {
+            /* Check for a user override first. */
+            const char *override = lookup_project_override(filepath);
+            if (override) {
+                for (size_t oi = 0; oi < projects.count; oi++) {
+                    if (strcmp(projects.entries[oi].file, override) == 0) {
+                        idx = (int)oi;
+                        break;
+                    }
+                }
+            }
+
+            /* Fall back to automatic detection via @import. */
+            if (idx < 0) {
+                idx = lsp_find_project_for_file(&projects, filepath);
+            }
+
+            if (idx >= 0) {
+                /* Clean up the standalone compilation and re-compile
+                 * via the project that imports this file. */
+                jz_token_stream_free(&tokens);
+                if (free_source) free(source);
+                jz_compiler_dispose(&compiler);
+                jz_path_security_cleanup();
+                jz_parser_free_imported_filenames();
+
+                publish_diagnostics_via_project(uri, filepath,
+                                                projects.entries[idx].file,
+                                                &projects, idx);
+                return;
+            }
         }
         /* No project file found — fall through to standalone analysis. */
         lsp_log("no project file found, using standalone analysis for %s",
                 filepath);
+
+        /* Notify client: no active project for this file. */
+        send_project_info(uri, &projects, -1);
     }
 
     /* If this file IS a project file, register it for future discovery. */
     if (has_project) {
-        char unused[2048];
-        lsp_discover_project_file(filepath, s_workspace_root, 1,
-                                  unused, sizeof(unused));
+        LspProjectList proj_list;
+        proj_list.count = 0;
+        lsp_discover_projects(filepath, s_workspace_root, 1,
+                              doc->content, &proj_list);
+
+        /* Find this file's index in the discovered list. */
+        int self_idx = -1;
+        char canonical[2048] = {0};
+        {
+            char *real = realpath(filepath, NULL);
+            if (real) {
+                strncpy(canonical, real, sizeof(canonical) - 1);
+                free(real);
+            } else {
+                strncpy(canonical, filepath, sizeof(canonical) - 1);
+            }
+        }
+        for (size_t pi = 0; pi < proj_list.count; pi++) {
+            if (strcmp(proj_list.entries[pi].file, canonical) == 0) {
+                self_idx = (int)pi;
+                break;
+            }
+        }
+        send_project_info(uri, &proj_list, self_idx);
     }
 
     /* Template expansion + semantic analysis. */
@@ -680,6 +829,53 @@ static void handle_text_document_did_save(const char *msg, LspDocStore *store) {
         }
     }
 
+    publish_diagnostics(uri, store);
+
+    /* If this was a project file, other open documents that depend on it
+     * need to be refreshed too (e.g. updated CHIP, renamed project,
+     * added/removed @import lines). */
+    {
+        LspDocument *saved_doc = lsp_docstore_find(store, uri);
+        int saved_is_project = 0;
+        if (saved_doc && saved_doc->content &&
+            strstr(saved_doc->content, "@project")) {
+            saved_is_project = 1;
+        }
+        if (saved_is_project) {
+            lsp_log("project file saved, refreshing all open documents");
+            for (size_t i = 0; i < store->count; i++) {
+                if (store->docs[i].uri &&
+                    strcmp(store->docs[i].uri, uri) != 0) {
+                    publish_diagnostics(store->docs[i].uri, store);
+                }
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  jz-hdl/selectProject                                               */
+/* ------------------------------------------------------------------ */
+
+static void handle_select_project(const char *msg, LspDocStore *store) {
+    char params[4096];
+    if (lsp_json_get_object(msg, "params", params, sizeof(params)) != 0) return;
+
+    char uri[2048] = {0};
+    char project_file[2048] = {0};
+    lsp_json_get_string(params, "uri", uri, sizeof(uri));
+    lsp_json_get_string(params, "projectFile", project_file, sizeof(project_file));
+
+    if (!uri[0] || !project_file[0]) return;
+
+    char filepath[1024];
+    if (lsp_uri_to_path(uri, filepath, sizeof(filepath)) != 0) return;
+
+    lsp_log("selectProject: %s -> %s", filepath, project_file);
+
+    set_project_override(filepath, project_file);
+
+    /* Re-run diagnostics with the new project selection. */
     publish_diagnostics(uri, store);
 }
 
