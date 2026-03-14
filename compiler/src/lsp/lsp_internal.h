@@ -114,6 +114,28 @@ void lsp_docstore_update(LspDocument *doc, const char *content, int version);
 void lsp_docstore_close(LspDocStore *store, const char *uri);
 
 /* ------------------------------------------------------------------ */
+/*  Project discovery                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * @brief Discover the project file associated with a source file.
+ *
+ * Searches for a @project file using cached .jzhdl-lsp.rc files and
+ * directory scanning.  See lsp_project_discovery.c for the full algorithm.
+ *
+ * @param filepath        Absolute path to the source file being edited.
+ * @param workspace_root  Workspace root path from the LSP initialize request.
+ * @param is_project_file Non-zero if the file itself contains @project.
+ * @param out             Output buffer for the discovered project file path.
+ * @param out_cap         Capacity of the output buffer.
+ * @return 0 if a project file was found, -1 otherwise.
+ */
+int lsp_discover_project_file(const char *filepath,
+                              const char *workspace_root,
+                              int is_project_file,
+                              char *out, size_t out_cap);
+
+/* ------------------------------------------------------------------ */
 /*  URI helpers                                                       */
 /* ------------------------------------------------------------------ */
 

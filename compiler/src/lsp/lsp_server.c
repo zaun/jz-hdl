@@ -23,6 +23,8 @@
 #include "ast.h"
 #include "path_security.h"
 
+#include "util.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -223,6 +225,151 @@ static void handle_shutdown(int id) {
 /*  Compile a document and publish diagnostics                        */
 /* ------------------------------------------------------------------ */
 
+/**
+ * @brief Compile from a project file and emit diagnostics filtered to the
+ *        current file.
+ *
+ * This is the project-aware compilation path used when the LSP discovers
+ * that a standalone module belongs to a project.  The project file is read
+ * from disk and compiled normally (its @import directives pull in all
+ * modules), then diagnostics are filtered to only those originating from
+ * the file the user is editing.
+ */
+static void publish_diagnostics_via_project(const char *uri,
+                                            const char *filepath,
+                                            const char *project_path) {
+    lsp_log("compiling via project: %s for file: %s", project_path, filepath);
+
+    /* Initialize path security from the project file's perspective. */
+    if (s_workspace_root[0]) {
+        jz_path_security_init(project_path);
+        jz_path_security_add_root(s_workspace_root);
+    } else {
+        jz_path_security_init(project_path);
+    }
+
+    JZCompiler compiler;
+    jz_compiler_init(&compiler, JZ_COMPILER_MODE_LINT);
+
+    /* Read the project file from disk. */
+    size_t proj_size = 0;
+    char *proj_source = jz_read_entire_file(project_path, &proj_size);
+    if (!proj_source) {
+        lsp_log("failed to read project file: %s", project_path);
+        jz_compiler_dispose(&compiler);
+        jz_path_security_cleanup();
+        /* Fall through: publish empty diagnostics. */
+        LspJson j;
+        lsp_json_init(&j);
+        lsp_json_append(&j, "{\"uri\":");
+        lsp_json_append_escaped(&j, uri);
+        lsp_json_append(&j, ",\"diagnostics\":[]}");
+        send_notification("textDocument/publishDiagnostics", j.data);
+        lsp_json_free(&j);
+        return;
+    }
+
+    /* Expand @repeat blocks in the project source. */
+    char *expanded = jz_repeat_expand(proj_source, project_path,
+                                      &compiler.diagnostics);
+    char *source = expanded ? expanded : proj_source;
+    int free_source = (expanded != NULL);
+
+    /* Lex the project file. */
+    JZTokenStream tokens;
+    memset(&tokens, 0, sizeof(tokens));
+    int lex_ok = (jz_lex_source(project_path, source, &tokens,
+                                &compiler.diagnostics) == 0);
+
+    /* Parse — this processes @import directives, pulling in all modules. */
+    JZASTNode *ast = NULL;
+    if (lex_ok) {
+        ast = jz_parse_file(project_path, &tokens, &compiler.diagnostics);
+        compiler.ast_root = ast;
+    }
+
+    /* Template expansion + semantic analysis on the full project AST. */
+    if (ast) {
+        jz_template_expand(ast, &compiler.diagnostics, project_path);
+        jz_sem_run(ast, &compiler.diagnostics, project_path, 0);
+    }
+
+    /* Build the JSON diagnostics array, filtering to only the current file. */
+    LspJson j;
+    lsp_json_init(&j);
+    lsp_json_append(&j, "{\"uri\":");
+    lsp_json_append_escaped(&j, uri);
+    lsp_json_append(&j, ",\"diagnostics\":[");
+
+    JZDiagnostic *diags = (JZDiagnostic *)compiler.diagnostics.buffer.data;
+    size_t diag_count = compiler.diagnostics.buffer.len / sizeof(JZDiagnostic);
+
+    /* Resolve the canonical base name of the current file for filtering. */
+    const char *base_name = strrchr(filepath, '/');
+    base_name = base_name ? base_name + 1 : filepath;
+
+    int first = 1;
+    for (size_t i = 0; i < diag_count; ++i) {
+        JZDiagnostic *d = &diags[i];
+
+        /* Only publish diagnostics that belong to the edited file. */
+        if (d->loc.filename) {
+            const char *diag_base = strrchr(d->loc.filename, '/');
+            diag_base = diag_base ? diag_base + 1 : d->loc.filename;
+            if (strcmp(diag_base, base_name) != 0) continue;
+        } else {
+            /* Diagnostics without a filename come from the project file
+             * itself, not the module being edited. */
+            continue;
+        }
+
+        /* Map severity. LSP: 1=Error, 2=Warning, 3=Information, 4=Hint. */
+        int lsp_severity;
+        switch (d->severity) {
+        case JZ_SEVERITY_ERROR:   lsp_severity = 1; break;
+        case JZ_SEVERITY_WARNING: lsp_severity = 2; break;
+        case JZ_SEVERITY_NOTE:    lsp_severity = 3; break;
+        default:                  lsp_severity = 3; break;
+        }
+
+        int line = d->loc.line > 0 ? d->loc.line - 1 : 0;
+        int col = d->loc.column > 0 ? d->loc.column - 1 : 0;
+
+        if (!first) lsp_json_append_char(&j, ',');
+        first = 0;
+
+        lsp_json_append(&j, "{\"range\":{\"start\":{\"line\":");
+        lsp_json_append_int(&j, line);
+        lsp_json_append(&j, ",\"character\":");
+        lsp_json_append_int(&j, col);
+        lsp_json_append(&j, "},\"end\":{\"line\":");
+        lsp_json_append_int(&j, line);
+        lsp_json_append(&j, ",\"character\":");
+        lsp_json_append_int(&j, col);
+        lsp_json_append(&j, "}},\"severity\":");
+        lsp_json_append_int(&j, lsp_severity);
+        lsp_json_append(&j, ",\"code\":");
+        lsp_json_append_escaped(&j, d->code ? d->code : "");
+        lsp_json_append(&j, ",\"source\":\"jz-hdl\"");
+        lsp_json_append(&j, ",\"message\":");
+        lsp_json_append_escaped(&j, d->message ? d->message : "");
+        lsp_json_append_char(&j, '}');
+    }
+
+    lsp_json_append(&j, "]}");
+
+    send_notification("textDocument/publishDiagnostics", j.data);
+    lsp_json_free(&j);
+
+    /* Cleanup. */
+    jz_token_stream_free(&tokens);
+    if (free_source) free(expanded);
+    free(proj_source);
+    jz_compiler_dispose(&compiler);
+    jz_path_security_cleanup();
+    jz_parser_free_imported_filenames();
+}
+
 static void publish_diagnostics(const char *uri, LspDocStore *store) {
     LspDocument *doc = lsp_docstore_find(store, uri);
     if (!doc) return;
@@ -269,8 +416,8 @@ static void publish_diagnostics(const char *uri, LspDocStore *store) {
      * Standalone modules are valid importable files; project-level
      * diagnostics should be suppressed for them. */
     int is_standalone_module = 0;
+    int has_project = 0;
     if (ast) {
-        int has_project = 0;
         for (size_t i = 0; i < ast->child_count; ++i) {
             if (ast->children[i] &&
                 ast->children[i]->type == JZ_AST_PROJECT) {
@@ -279,6 +426,35 @@ static void publish_diagnostics(const char *uri, LspDocStore *store) {
             }
         }
         is_standalone_module = !has_project;
+    }
+
+    /* For standalone modules, try to discover the parent project file
+     * and compile from there to get full cross-file resolution. */
+    if (is_standalone_module) {
+        char project_path[2048] = {0};
+        if (lsp_discover_project_file(filepath, s_workspace_root,
+                                      0, project_path,
+                                      sizeof(project_path)) == 0) {
+            /* Clean up the standalone compilation and re-compile via project. */
+            jz_token_stream_free(&tokens);
+            if (free_source) free(source);
+            jz_compiler_dispose(&compiler);
+            jz_path_security_cleanup();
+            jz_parser_free_imported_filenames();
+
+            publish_diagnostics_via_project(uri, filepath, project_path);
+            return;
+        }
+        /* No project file found — fall through to standalone analysis. */
+        lsp_log("no project file found, using standalone analysis for %s",
+                filepath);
+    }
+
+    /* If this file IS a project file, register it for future discovery. */
+    if (has_project) {
+        char unused[2048];
+        lsp_discover_project_file(filepath, s_workspace_root, 1,
+                                  unused, sizeof(unused));
     }
 
     /* Template expansion + semantic analysis. */

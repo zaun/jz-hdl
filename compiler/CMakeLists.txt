@@ -181,6 +181,7 @@ add_library(jz_hdl_lib
     src/sim/sim_perf.c
     src/lsp/lsp_io.c
     src/lsp/lsp_json.c
+    src/lsp/lsp_project_discovery.c
     src/lsp/lsp_server.c
 )
 
