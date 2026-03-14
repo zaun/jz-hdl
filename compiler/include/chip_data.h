@@ -68,10 +68,11 @@ typedef struct JZChipClockGenDerived {
 typedef struct JZChipClockGenParam {
     char *name;          /**< Parameter name (e.g., "IDIV"). */
     char *default_value; /**< Default value as a string (e.g., "1"). */
+    int is_double;       /**< Non-zero if type is "double" (fractional). */
     int has_min;         /**< Non-zero if min constraint exists. */
-    long min;            /**< Minimum valid value for this parameter. */
+    double min;          /**< Minimum valid value for this parameter. */
     int has_max;         /**< Non-zero if max constraint exists. */
-    long max;            /**< Maximum valid value for this parameter. */
+    double max;          /**< Maximum valid value for this parameter. */
     char **valid_values; /**< Array of valid string values (NULL if using min/max). */
     size_t valid_count;  /**< Number of entries in valid_values. */
 } JZChipClockGenParam;
@@ -120,6 +121,7 @@ typedef struct JZChipClockGen {
     int       has_chaining;     /**< Non-zero if chaining field was specified. */
     int       chaining;         /**< Non-zero if generators can be chained. */
     JZBuffer  constraints;      /**< Array of char* constraint rule strings. */
+    char     *feedback_wire;    /**< Optional feedback wire base name (e.g., "clkfb"). NULL if not needed. */
 } JZChipClockGen;
 
 /**
@@ -162,8 +164,8 @@ typedef struct JZChipDifferential {
  * @brief Latch type support per resource block.
  */
 typedef struct JZChipLatchSupport {
-    int cfu_d;   /**< CFU supports D latches. */
-    int cfu_sr;  /**< CFU supports SR latches. */
+    int fab_d;   /**< Fabric supports D latches. */
+    int fab_sr;  /**< Fabric supports SR latches. */
     int iob_d;   /**< IOB supports D latches. */
     int iob_sr;  /**< IOB supports SR latches. */
 } JZChipLatchSupport;
@@ -299,7 +301,7 @@ const char *jz_chip_clock_gen_param_default(const JZChipData *data,
 int jz_chip_clock_gen_param_range(const JZChipData *data,
                                    const char *type,
                                    const char *param_name,
-                                   long *out_min, long *out_max);
+                                   double *out_min, double *out_max);
 
 /**
  * @brief Get the min/max range for a clock generator derived value.
@@ -531,6 +533,15 @@ size_t jz_chip_clock_gen_constraint_count(const JZChipData *data, const char *ty
  */
 const char *jz_chip_clock_gen_constraint_at(const JZChipData *data,
                                              const char *type, size_t index);
+
+/**
+ * @brief Get the feedback wire base name for a clock generator type.
+ * @param data Loaded chip data.
+ * @param type Generator type (e.g., "pll").
+ * @return Feedback wire base name (e.g., "clkfb"), or NULL if not specified.
+ */
+const char *jz_chip_clock_gen_feedback_wire(const JZChipData *data,
+                                             const char *type);
 
 /**
  * @brief Get the quantity of physical memory blocks for a given type.

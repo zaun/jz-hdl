@@ -320,6 +320,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "CLOCK_GEN_RULES", "CLOCK_EXTERNAL_NO_PERIOD",               0, JZ_RULE_MODE_ERR, "S6.4 External clock (IN_PINS) must have period declared in CLOCKS block" },
     { "CLOCK_GEN_RULES", "CLOCK_SOURCE_AMBIGUOUS",                 0, JZ_RULE_MODE_ERR, "S6.4 Clock declared as both IN_PINS and CLOCK_GEN output" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_PARAM_OUT_OF_RANGE",          0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN CONFIG parameter value outside valid chip-defined range" },
+    { "CLOCK_GEN_RULES", "CLOCK_GEN_PARAM_TYPE_MISMATCH",        0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN CONFIG parameter type mismatch (integer parameter given decimal value)" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_DERIVED_OUT_OF_RANGE",        0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN derived value (frequency/VCO) outside valid chip-defined range" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_NO_CHIP_DATA",               0, JZ_RULE_MODE_INF, "S6.4.1 No chip specified; CLOCK_GEN parameters and constraints cannot be validated" },
 

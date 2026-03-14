@@ -19,6 +19,9 @@
 #include "chip_data.h"
 #include "ir.h"
 
+/* Forward declaration for differential pin check (defined later in this file). */
+static int pin_has_diff_mapping(const IR_Project *proj, const IR_Pin *pin);
+
 /* Reuse Verilog backend helpers. */
 #include "backend/verilog-2005/verilog_internal.h"
 
@@ -250,6 +253,12 @@ static void emit_clock_gen_from_template(FILE *out,
 {
     if (!out || !unit || !template_text) return;
 
+    /* Look up the feedback wire base name from chip data (e.g., "clkfb"). */
+    const char *fb_wire_base = NULL;
+    if (chip_data && clock_gen_type) {
+        fb_wire_base = jz_chip_clock_gen_feedback_wire(chip_data, clock_gen_type);
+    }
+
     const char *p = template_text;
     while (*p) {
         /* Handle escape sequences */
@@ -288,7 +297,25 @@ static void emit_clock_gen_from_template(FILE *out,
                             }
                         }
                         if (input_sig) {
-                            fputs(input_sig, out);
+                            /* Check if input signal is a differential pin;
+                             * if so, use the jz_diff_ buffered wire instead. */
+                            int is_diff_input = 0;
+                            if (proj) {
+                                for (int pi = 0; pi < proj->num_pins; ++pi) {
+                                    const IR_Pin *pin = &proj->pins[pi];
+                                    if (pin->name && strcmp(pin->name, input_sig) == 0 &&
+                                        pin->kind == PIN_IN &&
+                                        pin_has_diff_mapping(proj, pin)) {
+                                        is_diff_input = 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (is_diff_input) {
+                                fprintf(out, "jz_diff_%s", input_sig);
+                            } else {
+                                fputs(input_sig, out);
+                            }
                         } else {
                         /* Check for _mhz or _period_ns suffix on input names */
                         int is_input_suffix = 0;
@@ -365,6 +392,11 @@ static void emit_clock_gen_from_template(FILE *out,
                             const char *out_name = find_clock_gen_output(unit, placeholder);
                             if (out_name && out_name[0] != '\0') {
                                 fputs(out_name, out);
+                            } else if (fb_wire_base &&
+                                       strcmp(placeholder, fb_wire_base) == 0) {
+                                /* Feedback path wire from chip data */
+                                fprintf(out, "%s_%d_%d",
+                                        fb_wire_base, cg_idx, unit_idx);
                             } else if (strcmp(placeholder, "LOCK") == 0 ||
                                        strcmp(placeholder, "BASE") == 0 ||
                                        strcmp(placeholder, "PHASE") == 0 ||
@@ -397,8 +429,9 @@ static void emit_clock_gen_from_template(FILE *out,
                                     if (param_default) {
                                         fputs(param_default, out);
                                     } else {
-                                        /* Unknown placeholder */
-                                        fprintf(out, "$unknown_%s", placeholder);
+                                        /* Unknown placeholder — use dummy wire */
+                                        fprintf(out, "jz_unused_pll_%s_cg%d_u%d",
+                                                placeholder, cg_idx, unit_idx);
                                     }
                                 }
                             }
@@ -650,6 +683,41 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
         }
     }
 
+    /* Pre-declare jz_diff_ wires for differential input pins used by clock generators.
+     * In RTLIL, wires must be declared before they are referenced.
+     * Deduplicate: multiple clock gen units may share the same input. */
+    {
+        const char *declared_diff[16];
+        int num_declared_diff = 0;
+        for (int cg = 0; cg < proj->num_clock_gens; ++cg) {
+            const IR_ClockGen *clock_gen = &proj->clock_gens[cg];
+            for (int u = 0; u < clock_gen->num_units; ++u) {
+                const IR_ClockGenUnit *unit = &clock_gen->units[u];
+                for (int ii = 0; ii < unit->num_inputs; ++ii) {
+                    const char *sig = unit->inputs[ii].signal_name;
+                    if (!sig) continue;
+                    /* Check if already declared */
+                    int already = 0;
+                    for (int d = 0; d < num_declared_diff; ++d) {
+                        if (strcmp(declared_diff[d], sig) == 0) { already = 1; break; }
+                    }
+                    if (already) continue;
+                    for (int pi = 0; pi < proj->num_pins; ++pi) {
+                        const IR_Pin *pin = &proj->pins[pi];
+                        if (pin->name && strcmp(pin->name, sig) == 0 &&
+                            pin->kind == PIN_IN && pin_has_diff_mapping(proj, pin)) {
+                            rtlil_indent(out, 1);
+                            fprintf(out, "wire width 1 \\jz_diff_%s\n", sig);
+                            if (num_declared_diff < 16)
+                                declared_diff[num_declared_diff++] = sig;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /* Emit clock gen instantiations using chip data templates. */
     for (int cg = 0; cg < proj->num_clock_gens; ++cg) {
         const IR_ClockGen *clock_gen = &proj->clock_gens[cg];
@@ -667,9 +735,13 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
             }
 
             if (template_text) {
-                /* Emit dummy wires for unused PLL outputs before the cell */
+                /* Emit dummy wires for unused PLL/MMCM outputs before the cell */
                 if (unit_type_str && strncmp(unit_type_str, "pll", 3) == 0) {
-                    static const char *pll_selectors[] = {"LOCK", "PHASE", "DIV", "DIV3", NULL};
+                    static const char *pll_selectors[] = {
+                        "LOCK", "PHASE", "DIV", "DIV3",
+                        "CLKOUT1", "CLKOUT2", "CLKOUT3", "CLKOUT4",
+                        "CLKOUT5", "CLKOUT6", NULL
+                    };
                     for (int si = 0; pll_selectors[si]; ++si) {
                         const char *out_name = find_clock_gen_output(unit, pll_selectors[si]);
                         if (!out_name || out_name[0] == '\0') {
@@ -677,6 +749,14 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
                             fprintf(out, "wire width 1 \\jz_unused_pll_%s_cg%d_u%d\n",
                                     pll_selectors[si], cg, u);
                         }
+                    }
+                    /* Feedback path wire (from chip data feedback_wire field) */
+                    const char *fb_name = effective_chip
+                        ? jz_chip_clock_gen_feedback_wire(effective_chip, unit_type_str)
+                        : NULL;
+                    if (fb_name) {
+                        rtlil_indent(out, 1);
+                        fprintf(out, "wire width 1 \\%s_%d_%d\n", fb_name, cg, u);
                     }
                 }
 
@@ -906,8 +986,25 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
 
                 char diff_wire[128];
                 snprintf(diff_wire, sizeof(diff_wire), "jz_diff_%s%s", name, suffix);
-                rtlil_indent(out, 1);
-                fprintf(out, "wire width 1 \\%s\n", diff_wire);
+
+                /* Skip wire declaration if already pre-declared for clock gen input */
+                int already_declared = 0;
+                for (int cg2 = 0; cg2 < proj->num_clock_gens && !already_declared; ++cg2) {
+                    const IR_ClockGen *cgen = &proj->clock_gens[cg2];
+                    for (int u2 = 0; u2 < cgen->num_units && !already_declared; ++u2) {
+                        for (int ii2 = 0; ii2 < cgen->units[u2].num_inputs; ++ii2) {
+                            const char *sig = cgen->units[u2].inputs[ii2].signal_name;
+                            if (sig && strcmp(sig, name) == 0) {
+                                already_declared = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!already_declared) {
+                    rtlil_indent(out, 1);
+                    fprintf(out, "wire width 1 \\%s\n", diff_wire);
+                }
 
                 char pin_p[128], pin_n[128];
                 if (pin->width > 1) {

@@ -58,13 +58,13 @@
     }
 
     @top blinkers {
-        IN  [1] clk1 = SCLK;
-        IN  [1] clk2 = CLK_A;
-        IN  [1] clk3 = CLK_B;
-        IN  [1] clk4 = CLK_C;
-        IN  [1] clk5 = CLK_D;
-        IN  [1] por = DONE;
+        IN  [1] clk1  = SCLK;
+        IN  [1] clk2  = CLK_A;
+        IN  [1] clk3  = CLK_B;
+        IN  [1] clk4  = CLK_C;
+        IN  [1] clk5  = CLK_D;
+        IN  [1] por   = DONE;
         IN  [1] rst_n = ~KEY[0];
-        OUT [5] leds = LED[4:0];
+        OUT [5] leds  = LED[4:0];
     }
 @endproj

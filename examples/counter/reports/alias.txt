@@ -1,9 +1,9 @@
-Input file: src/tang_nano_20k.jz
+Input file: src/pa35t-edu.jz
 Module: counter
 
 User-visible identifiers:  7
-Internal elaboration nodes:13
-Total identifiers:        20
+Internal elaboration nodes:19
+Total identifiers:        26
 Total alias statements:   1
 Resolved physical nets:   4
 Tri-state nets:           0
@@ -12,49 +12,49 @@ Extended-width aliases:   0
 PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@3
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@10
 
 Consumers:
-    SYNCHRONOUS block (CLK=clk) at line 23
+    SYNCHRONOUS block (CLK=clk) at line 30
 
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@4
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@11
 
 Members (Aliased Identifiers):
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@18: reset == por
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@18: reset == rst_n
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@25: reset == por
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@25: reset == rst_n
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@18: reset = por & rst_n;
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@23: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@25: reset = por & rst_n;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
 
 Top-level binding:
-    PORT binding: IN por -> DONE (IN_PINS)
+    PORT binding: IN por -> 1'b1
 
 PHYSICAL NET: NET_0003    Width: 6    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT OUT
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@6
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@13
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@20: leds <= ~counter[26:21];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@27: leds <= counter[LED_HIGH:LED_LOW];
 
 Top-level binding:
     PORT binding: OUT leds -> LED (OUT_PINS)
 
-PHYSICAL NET: NET_0005    Width: 27    Tri-state: No
+PHYSICAL NET: NET_0005    Width: 30    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@14
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@21
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@24: counter <= counter + 27'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@31: counter <= counter + COUNTER_WIDTH'b1;
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@20: leds <= ~counter[26:21];
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@24: counter <= counter + 27'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@27: leds <= counter[LED_HIGH:LED_LOW];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@31: counter <= counter + COUNTER_WIDTH'b1;
 
 ------------------------------------------------------------
 IDENTIFIER INDEX
@@ -86,12 +86,12 @@ counter                   4      1      1      0      1
 -------------------- ------ ------ ------ ------ ------
 TOTAL                     4      1      1      0      1
 ============================================================
-Input file: src/tang_nano_20k.jz
+Input file: src/pa35t-edu.jz
 Module: counter
 
 User-visible identifiers:  7
-Internal elaboration nodes:13
-Total identifiers:        20
+Internal elaboration nodes:19
+Total identifiers:        26
 Total alias statements:   1
 Resolved physical nets:   4
 Tri-state nets:           0
@@ -100,49 +100,49 @@ Extended-width aliases:   0
 PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@3
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@10
 
 Consumers:
-    SYNCHRONOUS block (CLK=clk) at line 23
+    SYNCHRONOUS block (CLK=clk) at line 30
 
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@4
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@11
 
 Members (Aliased Identifiers):
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@18: reset == por
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@18: reset == rst_n
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@25: reset == por
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@25: reset == rst_n
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@18: reset = por & rst_n;
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@23: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@25: reset = por & rst_n;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
 
 Top-level binding:
-    PORT binding: IN por -> DONE (IN_PINS)
+    PORT binding: IN por -> 1'b1
 
 PHYSICAL NET: NET_0003    Width: 6    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT OUT
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@6
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@13
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@20: leds <= ~counter[26:21];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@27: leds <= counter[LED_HIGH:LED_LOW];
 
 Top-level binding:
     PORT binding: OUT leds -> LED (OUT_PINS)
 
-PHYSICAL NET: NET_0005    Width: 27    Tri-state: No
+PHYSICAL NET: NET_0005    Width: 30    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@14
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@21
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@24: counter <= counter + 27'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@31: counter <= counter + COUNTER_WIDTH'b1;
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@20: leds <= ~counter[26:21];
-    /Users/justinzaun/Development/JZ-HDL/examples/counter/src/counter.jz@24: counter <= counter + 27'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@27: leds <= counter[LED_HIGH:LED_LOW];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@31: counter <= counter + COUNTER_WIDTH'b1;
 
 ------------------------------------------------------------
 IDENTIFIER INDEX

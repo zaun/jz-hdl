@@ -1,0 +1,71 @@
+@project(CHIP="XC7A35T-2FGG484") BLINKER
+    @import "blinkers.jz"
+
+    CLOCKS {
+        SCLK = { period=5 }; // 200MHz clock
+        CLK_A;
+        CLK_B;
+        CLK_C;
+        CLK_D;
+    }
+
+    IN_PINS {
+        SCLK    = { standard=LVDS25, mode=DIFFERENTIAL };
+        NRST   = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        // System Clock 200MHz differential
+        SCLK = { P=R4, N=T4 };
+
+        // Reset button (active low)
+        NRST = R14;
+
+        // User button
+        KEY[0] = W21;
+        KEY[1] = Y21;
+
+        // LEDs (active high)
+        LED[0] = J21;
+        LED[1] = J19;
+        LED[2] = H19;
+        LED[3] = K18;
+        LED[4] = K19;
+        LED[5] = L19;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN  REF_CLK SCLK;      // 200 MHz input
+            OUT BASE    CLK_A;     // 250 MHz
+            OUT CLKOUT1 CLK_B;     // 125 MHz
+            OUT CLKOUT2 CLK_C;     // 100 MHz
+            OUT CLKOUT3 CLK_D;     //  50 MHz
+
+            CONFIG {
+                DIVCLK_DIVIDE = 1;
+                CLKFBOUT_MULT = 5;
+                CLKOUT0_DIVIDE = 4;
+                CLKOUT1_DIVIDE = 8;
+                CLKOUT2_DIVIDE = 10;
+                CLKOUT3_DIVIDE = 20;
+            };
+        };
+    }
+
+    @top blinkers {
+        IN  [1] clk1  = SCLK;
+        IN  [1] clk2  = CLK_A;
+        IN  [1] clk3  = CLK_B;
+        IN  [1] clk4  = CLK_C;
+        IN  [1] clk5  = CLK_D;
+        IN  [1] por   = 1'b1;
+        IN  [1] rst_n = ~KEY[0];
+        OUT [5] leds  = LED[4:0];
+    }
+@endproj

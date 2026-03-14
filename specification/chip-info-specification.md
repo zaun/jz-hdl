@@ -73,15 +73,15 @@ An array of objects describing development boards that use this chip. May be emp
 
 An object mapping resource names to integer counts. Keys are uppercase identifiers. Common resources:
 
-| Key          | Description                          |
-|--------------|--------------------------------------|
-| `LUT4`       | 4-input lookup tables                |
-| `DFF`        | D flip-flops                         |
-| `ALU`        | Arithmetic logic units (Gowin only)  |
-| `IOB`        | I/O blocks (user-available pins)     |
-| `LVDS_PAIRS` | LVDS differential pair count         |
-| `DIFF_PAIRS` | Generic differential pair count      |
-| `GSR`        | Global set/reset                     |
+| Key          | Description                                  |
+|--------------|----------------------------------------------|
+| `LUT<N>`     | N-input lookup tables (e.g., `LUT4`, `LUT6`) |
+| `DFF`        | D flip-flops                                 |
+| `ALU`        | Arithmetic logic units (Gowin only)          |
+| `IOB`        | I/O blocks (user-available pins)             |
+| `LVDS_PAIRS` | LVDS differential pair count                 |
+| `DIFF_PAIRS` | Generic differential pair count              |
+| `GSR`        | Global set/reset                             |
 
 Not all keys are present on every device. Only include resources that exist on the chip.
 
@@ -104,10 +104,10 @@ An object describing latch support in different logic blocks. Contains a `source
 |----------|--------|----------|------------------------------------------------|
 | `source` | string | Yes      | Datasheet reference for latch information      |
 
-Each named block (e.g., `CFU`, `PLB`, `PFU`, `IOB`) is an object:
+Each named block (`FAB` for fabric logic, `IOB` for I/O blocks) is an object:
 
-| Key           | Type     | Required | Description                                       |
-|---------------|----------|----------|---------------------------------------------------|
+| Key           | Type     | Required | Description                                        |
+|---------------|----------|----------|----------------------------------------------------|
 | `description` | string   | Yes      | What this logic block is                           |
 | `D`           | boolean  | Yes      | Whether D-latch is supported                       |
 | `SR`          | boolean  | Yes      | Whether SR-latch is supported                      |
@@ -117,11 +117,11 @@ Each named block (e.g., `CFU`, `PLB`, `PFU`, `IOB`) is an object:
 ```json
 "latches": {
   "source": "DS226-2.6E, Section 2.1 (CFU Architecture)",
-  "CFU": {
+  "FAB": {
     "description": "Configurable Function Unit (General Logic)",
     "D": false,
     "SR": false,
-    "note": "CFU storage elements are strictly edge-triggered registers."
+    "note": "Fabric storage elements are strictly edge-triggered registers."
   },
   "IOB": {
     "description": "I/O Blocks (Input/Output Pins)",
@@ -244,7 +244,7 @@ These types share a common structure for block-based memory:
 
 | Key              | Type    | Required | Description                             |
 |------------------|---------|----------|-----------------------------------------|
-| `type`           | string  | Yes      | `"BLOCK"`, `"SPRAM"`, or `"FLASH"`     |
+| `type`           | string  | Yes      | `"BLOCK"`, `"SPRAM"`, or `"FLASH"`      |
 | `source`         | string  | Yes      | Datasheet reference                     |
 | `description`    | string  | Yes      | Human-readable description              |
 | `quantity`       | integer | Yes      | Number of memory blocks                 |
@@ -265,11 +265,11 @@ These types share a common structure for block-based memory:
 
 #### Port Object
 
-| Key     | Type    | Required | Description                    |
-|---------|---------|----------|--------------------------------|
+| Key     | Type    | Required | Description                      |
+|---------|---------|----------|----------------------------------|
 | `id`    | string  | Yes      | Port identifier (e.g., "A", "B") |
-| `read`  | boolean | Yes      | Whether port supports reads    |
-| `write` | boolean | Yes      | Whether port supports writes   |
+| `read`  | boolean | Yes      | Whether port supports reads      |
+| `write` | boolean | Yes      | Whether port supports writes     |
 
 #### Configuration Object
 
@@ -278,17 +278,20 @@ These types share a common structure for block-based memory:
 | `width` | integer | Yes      | Data width in bits  |
 | `depth` | integer | Yes      | Number of entries   |
 
-#### Standard Mode Names
+#### Mode Names
 
-| Name               | Description                                                |
-|--------------------|------------------------------------------------------------|
-| `Single Port`      | One port with both read and write                          |
-| `Dual Port`        | Two independent read/write ports (true dual port)          |
-| `Semi-Dual Port`   | Write on Port A, read on Port B (Gowin terminology)        |
-| `Pseudo-Dual Port` | Write on Port A, read on Port B (Lattice terminology)      |
-| `True Dual Port`   | Two independent read/write ports (Lattice terminology)     |
-| `Read Only Memory`  | Read-only with initialization                             |
-| `Read Only`        | Read-only (for flash)                                      |
+The `name` field is a human-readable description of the mode, not a machine-parsed type. The `ports` array defines the actual read/write capabilities. Any descriptive name may be used; prefer the vendor's terminology for the device. Common examples:
+
+| Name               | Vendor     | Typical Ports                              |
+|--------------------|------------|--------------------------------------------|
+| `Single Port`      | All        | 1 R/W port                                 |
+| `Dual Port`        | Generic    | 2 independent R/W ports                    |
+| `True Dual Port`   | Lattice, Xilinx | 2 independent R/W ports               |
+| `Simple Dual Port` | Xilinx     | Write on Port A, read on Port B            |
+| `Semi-Dual Port`   | Gowin      | Write on Port A, read on Port B            |
+| `Pseudo-Dual Port` | Lattice    | Write on Port A, read on Port B            |
+| `Read Only Memory` | All        | 1 read-only port                           |
+| `Read Only`        | All        | 1 read-only port (flash)                   |
 
 ```json
 {
@@ -322,10 +325,12 @@ An array of clock generator objects. Each describes one type of clock generation
 
 | Key           | Type    | Required | Description                                    |
 |---------------|---------|----------|------------------------------------------------|
-| `type`        | string  | Yes      | Generator type: `"pll"`, `"dll"`, `"clkdiv"`, `"osc"`, `"buf"`, or numbered variants (e.g., `"clkdiv2"`, `"buf2"`) |
+| `type`        | string  | Yes      | Generator type: `"pll"`, `"dll"`, `"clkdiv"`,  |
+|               |         |          | `"osc"`, `"buf"`, or numbered variants         |
+|               |         |          | (e.g., `"clkdiv2"`, `"buf2"`)                  |
 | `source`      | string  | Yes      | Datasheet reference                            |
 | `description` | string  | Yes      | Human-readable description                     |
-| `count`       | integer | Yes      | Number of instances available on chip           |
+| `count`       | integer | Yes      | Number of instances available on chip          |
 | `mode`        | string  | No       | Operating mode (e.g., `"local"` for clkdiv)    |
 | `chaining`    | boolean | No       | Whether PLLs can be chained (PLL only)         |
 | `map`         | object  | Yes      | Backend-specific instantiation templates       |
@@ -372,10 +377,10 @@ An object mapping parameter names to their definitions. Each parameter:
 | Key           | Type           | Required | Description                                |
 |---------------|----------------|----------|--------------------------------------------|
 | `description` | string         | Yes      | What this parameter controls               |
-| `type`        | string         | Yes      | `"int"` or `"string"`                      |
-| `default`     | int or string  | Yes      | Default value                              |
-| `min`         | number         | No       | Minimum value (for `"int"` with range)     |
-| `max`         | number         | No       | Maximum value (for `"int"` with range)     |
+| `type`        | string         | Yes      | `"int"`, `"double"`, or `"string"`         |
+| `default`     | number or string | Yes    | Default value                              |
+| `min`         | number         | No       | Minimum value (for `"int"` or `"double"` with range) |
+| `max`         | number         | No       | Maximum value (for `"int"` or `"double"` with range) |
 | `valid`       | array          | No       | Enumerated list of valid values            |
 
 A parameter uses either `min`/`max` (inclusive range) or `valid` (enumerated set), not both.
@@ -459,12 +464,12 @@ When `required` is `false` and `default` is provided, the JZ-HDL `IN` line for t
 
 An object mapping derived value names to their definitions. Derived values are computed from parameters and inputs and used in output frequency expressions and constraint checking.
 
-| Key           | Type   | Required | Description                                   |
-|---------------|--------|----------|-----------------------------------------------|
-| `description` | string | No       | What this derived value represents            |
+| Key           | Type   | Required | Description                                      |
+|---------------|--------|----------|--------------------------------------------------|
+| `description` | string | No       | What this derived value represents               |
 | `expr`        | string | Yes      | Expression to compute the value (see Section 11) |
-| `min`         | number | No       | Minimum valid value for range checking        |
-| `max`         | number | No       | Maximum valid value for range checking        |
+| `min`         | number | No       | Minimum valid value for range checking           |
+| `max`         | number | No       | Maximum valid value for range checking           |
 
 ```json
 "derived": {
@@ -700,7 +705,7 @@ Expressions in `frequency_mhz.expr`, `phase_deg.expr`, and `derived.expr` fields
 
 | Function    | Description                                  | Example                           |
 |-------------|----------------------------------------------|-----------------------------------|
-| `toString`  | Convert value to string in given base/width  | `toString(PHASESEL * 2, BIN, 4)` |
+| `toString`  | Convert value to string in given base/width  | `toString(PHASESEL * 2, BIN, 4)`  |
 
 The `toString` function takes three arguments:
 1. Value expression

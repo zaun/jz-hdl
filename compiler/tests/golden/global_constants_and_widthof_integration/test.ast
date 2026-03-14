@@ -3,7 +3,7 @@
     {"type": "ConstDecl", "name": "DATA_WIDTH", "text": "3", "loc": {"line": 17, "column": 9, "file": "test.jz"}}
   ]},
   {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 20, "column": 5, "file": "test.jz"}, "children": [
-    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10 . 0", "loc": {"line": 21, "column": 9, "file": "test.jz"}}
+    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10.0", "loc": {"line": 21, "column": 9, "file": "test.jz"}}
   ]},
   {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 24, "column": 5, "file": "test.jz"}, "children": [
     {"type": "PortDecl", "name": "SCLK", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 25, "column": 9, "file": "test.jz"}},

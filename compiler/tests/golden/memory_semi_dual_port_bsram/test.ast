@@ -68,7 +68,7 @@
     {"type": "ConstDecl", "name": "done_out", "text": "53", "loc": {"line": 76, "column": 5, "file": "test.jz"}}
   ]},
   {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 79, "column": 3, "file": "test.jz"}, "children": [
-    {"type": "ConstDecl", "name": "clk", "text": "period = 10 . 0 , edge = Rising", "loc": {"line": 80, "column": 5, "file": "test.jz"}}
+    {"type": "ConstDecl", "name": "clk", "text": "period = 10.0 , edge = Rising", "loc": {"line": 80, "column": 5, "file": "test.jz"}}
   ]},
   {"type": "BusBlock", "name": "PARALLEL_BUS", "block_kind": "BUS", "loc": {"line": 83, "column": 3, "file": "test.jz"}, "children": [
     {"type": "BusDecl", "name": "SEL", "block_kind": "OUT", "width": "3", "loc": {"line": 84, "column": 19, "file": "test.jz"}},

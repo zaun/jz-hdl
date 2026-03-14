@@ -1,0 +1,51 @@
+@project(CHIP="XC7A35T-2FGG484") type_mismatch_test
+
+    CLOCKS {
+        SCLK = { period=5 };
+        CLK_A;
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+        KEY[1] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[1] = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        SCLK = R4;
+        KEY[0] = W21;
+        LED[0] = J21;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN  REF_CLK SCLK;
+            OUT BASE    CLK_A;
+
+            CONFIG {
+                DIVCLK_DIVIDE = 1;
+                CLKFBOUT_MULT = 5.0;
+                CLKOUT0_DIVIDE = 4.0;
+            };
+        };
+    }
+
+    @top t {
+        IN  [1] c = CLK_A;
+        IN  [1] r = ~KEY[0];
+        OUT [1] l = LED[0];
+    }
+
+@endproj
+
+@module t
+    PORT { IN [1] c; IN [1] r; OUT [1] l; }
+    REGISTER { cnt [1] = 1'b0; }
+    ASYNCHRONOUS { l <= cnt; }
+    SYNCHRONOUS(CLK=c RESET=r RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        cnt <= ~cnt;
+    }
+@endmod

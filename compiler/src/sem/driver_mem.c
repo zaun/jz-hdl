@@ -1516,18 +1516,18 @@ void sem_check_module_latch_chip_support(const JZModuleScope *scope,
 
             int supported = 0;
             if (on_pin) {
-                /* Try IOB first, then fall back to CFU. */
+                /* Try IOB first, then fall back to fabric. */
                 if (strcmp(ltype, "D") == 0) {
-                    supported = chip->latches.iob_d || chip->latches.cfu_d;
+                    supported = chip->latches.iob_d || chip->latches.fab_d;
                 } else if (strcmp(ltype, "SR") == 0) {
-                    supported = chip->latches.iob_sr || chip->latches.cfu_sr;
+                    supported = chip->latches.iob_sr || chip->latches.fab_sr;
                 }
             } else {
-                /* Internal latch — CFU only. */
+                /* Internal latch — fabric only. */
                 if (strcmp(ltype, "D") == 0) {
-                    supported = chip->latches.cfu_d;
+                    supported = chip->latches.fab_d;
                 } else if (strcmp(ltype, "SR") == 0) {
-                    supported = chip->latches.cfu_sr;
+                    supported = chip->latches.fab_sr;
                 }
             }
 

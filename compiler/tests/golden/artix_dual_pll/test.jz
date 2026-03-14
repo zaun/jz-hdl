@@ -1,0 +1,126 @@
+// =============================================================================
+// TEST: Artix-7 Multiple PLLs (2x PLL + 1x PLL2)
+// Purpose: Verify that multiple PLL and PLL2 units can coexist in a single
+//          project with unique feedback wires, correct instance indices,
+//          and shared differential clock input.
+// =============================================================================
+
+@project(CHIP="XC7A35T-2FGG484") multi_pll_test
+
+    CLOCKS {
+        SCLK = { period=5 }; // 200MHz differential clock
+        CLK_A;
+        CLK_B;
+        CLK_C;
+        CLK_D;
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVDS25, mode=DIFFERENTIAL };
+        KEY[1] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[4] = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        SCLK = { P=R4, N=T4 };
+        KEY[0] = W21;
+        LED[0] = J21;
+        LED[1] = J19;
+        LED[2] = H19;
+        LED[3] = K18;
+    }
+
+    CLOCK_GEN {
+        // First PLL (PLLE2_BASE): 250 MHz
+        PLL {
+            IN  REF_CLK SCLK;
+            OUT BASE    CLK_A;
+
+            CONFIG {
+                DIVCLK_DIVIDE = 1;
+                CLKFBOUT_MULT = 5;
+                CLKOUT0_DIVIDE = 4;
+            };
+        };
+
+        // Second PLL (PLLE2_BASE): 100 MHz
+        PLL {
+            IN  REF_CLK SCLK;
+            OUT BASE    CLK_B;
+
+            CONFIG {
+                DIVCLK_DIVIDE = 1;
+                CLKFBOUT_MULT = 5;
+                CLKOUT0_DIVIDE = 10;
+            };
+        };
+
+        // PLL2 (MMCME2_BASE): fractional dividers
+        PLL2 {
+            IN  REF_CLK SCLK;
+            OUT BASE    CLK_C;
+            OUT CLKOUT1 CLK_D;
+
+            CONFIG {
+                DIVCLK_DIVIDE = 1;
+                CLKFBOUT_MULT_F = 5.125;
+                CLKOUT0_DIVIDE_F = 5.25;
+                CLKOUT1_DIVIDE = 8;
+            };
+        };
+    }
+
+    @top multi_pll_top {
+        IN  [1] clk_a  = CLK_A;
+        IN  [1] clk_b  = CLK_B;
+        IN  [1] clk_c  = CLK_C;
+        IN  [1] clk_d  = CLK_D;
+        IN  [1] rst_n  = ~KEY[0];
+        OUT [4] leds   = LED;
+    }
+
+@endproj
+
+@module multi_pll_top
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] clk_c;
+        IN  [1] clk_d;
+        IN  [1] rst_n;
+        OUT [4] leds;
+    }
+
+    REGISTER {
+        cnt_a [24] = 24'b0;
+        cnt_b [24] = 24'b0;
+        cnt_c [24] = 24'b0;
+        cnt_d [24] = 24'b0;
+    }
+
+    ASYNCHRONOUS {
+        leds[0] <= cnt_a[23];
+        leds[1] <= cnt_b[23];
+        leds[2] <= cnt_c[23];
+        leds[3] <= cnt_d[23];
+    }
+
+    SYNCHRONOUS(CLK=clk_a RESET=rst_n RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        cnt_a <= cnt_a + 24'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk_b RESET=rst_n RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        cnt_b <= cnt_b + 24'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk_c RESET=rst_n RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        cnt_c <= cnt_c + 24'b1;
+    }
+
+    SYNCHRONOUS(CLK=clk_d RESET=rst_n RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        cnt_d <= cnt_d + 24'b1;
+    }
+@endmod

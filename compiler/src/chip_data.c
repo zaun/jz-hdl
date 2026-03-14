@@ -21,6 +21,7 @@ typedef struct JZChipBuiltin {
 #include "data/ice40up-5k-sg.h"
 #include "data/ice40up-5k-uwg.h"
 #include "data/lfe5u-45f-6bg381.h"
+#include "data/xc7a35t-2fgg484.h"
 
 static const JZChipBuiltin k_builtin_chips[] = {
     { "GW1NR-9-QN88-C6-I5",  (const char *)gw1nr_9_qn88_c6_i5_json },
@@ -28,7 +29,8 @@ static const JZChipBuiltin k_builtin_chips[] = {
     { "GW2AR-18-QN88-C8-I7", (const char *)gw2ar_18_qn88_c8_i7_json },
     { "ICE40UP-5K-SG48",     (const char *)ice40up_5k_sg_json },
     { "ICE40UP-5K-UWG30",    (const char *)ice40up_5k_uwg_json },
-    { "LFE5U-45F-6BG381",    (const char *)lfe5u_45f_6bg381_json }
+    { "LFE5U-45F-6BG381",    (const char *)lfe5u_45f_6bg381_json },
+    { "XC7A35T-2FGG484",     (const char *)xc7a35t_2fgg484_json }
 };
 
 static int jz_strcasecmp(const char *a, const char *b)
@@ -702,18 +704,23 @@ static void jz_chip_parse_clock_gen_params(const char *json,
 
         char *name = jz_json_token_strdup(json, name_tok);
         char *default_val = NULL;
+        int p_is_double = 0;
         int p_has_min = 0, p_has_max = 0;
-        long p_min = 0, p_max = 0;
+        double p_min = 0, p_max = 0;
         char **valid_values = NULL;
         size_t valid_count = 0;
 
-        /* Scan inner object for "default", "min", "max", "valid" keys */
+        /* Scan inner object for "type", "default", "min", "max", "valid" keys */
         int inner = cur + 1;
         while (inner < count && toks[inner].start < val->end) {
             const jsmntok_t *ikey = &toks[inner++];
             if (inner >= count) break;
             const jsmntok_t *ival = &toks[inner];
-            if (jz_json_token_eq(json, ikey, "default")) {
+            if (jz_json_token_eq(json, ikey, "type")) {
+                if (jz_json_token_eq(json, ival, "double")) {
+                    p_is_double = 1;
+                }
+            } else if (jz_json_token_eq(json, ikey, "default")) {
                 /* Default can be a number (primitive) or string */
                 if (ival->type == JSMN_PRIMITIVE || ival->type == JSMN_STRING) {
                     size_t len = (size_t)(ival->end - ival->start);
@@ -731,7 +738,7 @@ static void jz_chip_parse_clock_gen_params(const char *json,
                         memcpy(buf, json + ival->start, len);
                         buf[len] = '\0';
                         char *endptr = NULL;
-                        p_min = strtol(buf, &endptr, 10);
+                        p_min = strtod(buf, &endptr);
                         if (endptr != buf) p_has_min = 1;
                     }
                 }
@@ -743,7 +750,7 @@ static void jz_chip_parse_clock_gen_params(const char *json,
                         memcpy(buf, json + ival->start, len);
                         buf[len] = '\0';
                         char *endptr = NULL;
-                        p_max = strtol(buf, &endptr, 10);
+                        p_max = strtod(buf, &endptr);
                         if (endptr != buf) p_has_max = 1;
                     }
                 }
@@ -777,6 +784,7 @@ static void jz_chip_parse_clock_gen_params(const char *json,
             JZChipClockGenParam p;
             p.name = name;
             p.default_value = default_val;
+            p.is_double = p_is_double;
             p.has_min = p_has_min;
             p.min = p_min;
             p.has_max = p_has_max;
@@ -885,6 +893,7 @@ static int jz_chip_parse_clock_gen_object(const char *json,
 
     char *type = NULL;
     char *mode = NULL;
+    char *feedback_wire = NULL;
     int map_idx = -1;
     int derived_idx = -1;
     int params_idx = -1;
@@ -927,6 +936,9 @@ static int jz_chip_parse_clock_gen_object(const char *json,
                 has_chaining = 1;
                 chaining = bval;
             }
+        } else if (jz_json_token_eq(json, key, "feedback_wire")) {
+            if (feedback_wire) free(feedback_wire);
+            feedback_wire = jz_json_token_strdup(json, val);
         }
         cur = jz_json_skip(toks, count, cur);
     }
@@ -936,6 +948,7 @@ static int jz_chip_parse_clock_gen_object(const char *json,
         memset(&cg, 0, sizeof(cg));
         cg.type = type;
         cg.mode = mode;
+        cg.feedback_wire = feedback_wire;
         jz_chip_parse_clock_gen_map(json, toks, count, map_idx, &cg);
         if (derived_idx >= 0) {
             jz_chip_parse_clock_gen_derived(json, toks, count, derived_idx, &cg);
@@ -1083,10 +1096,12 @@ static int jz_chip_parse_clock_gen_object(const char *json,
             jz_buf_free(&cg.constraints);
             free(type);
             free(mode);
+            free(feedback_wire);
         }
     } else {
         free(type);
         free(mode);
+        free(feedback_wire);
     }
 
     return jz_json_skip(toks, count, obj_index);
@@ -1335,11 +1350,10 @@ static void jz_chip_parse_latches(const char *json,
             continue;
         }
 
-        int is_cfu = jz_json_token_eq(json, block_key, "CFU") ||
-                     jz_json_token_eq(json, block_key, "PLB");
+        int is_fab = jz_json_token_eq(json, block_key, "FAB");
         int is_iob = jz_json_token_eq(json, block_key, "IOB");
 
-        if (is_cfu || is_iob) {
+        if (is_fab || is_iob) {
             int inner = cur + 1;
             while (inner < count && toks[inner].start < block_val->end) {
                 const jsmntok_t *fkey = &toks[inner++];
@@ -1349,13 +1363,13 @@ static void jz_chip_parse_latches(const char *json,
                     fval->type == JSMN_PRIMITIVE) {
                     size_t len = (size_t)(fval->end - fval->start);
                     if (len == 4 && strncmp(json + fval->start, "true", 4) == 0) bval = 1;
-                    if (is_cfu) out->latches.cfu_d = bval;
+                    if (is_fab) out->latches.fab_d = bval;
                     else        out->latches.iob_d = bval;
                 } else if (jz_json_token_eq(json, fkey, "SR") &&
                            fval->type == JSMN_PRIMITIVE) {
                     size_t len = (size_t)(fval->end - fval->start);
                     if (len == 4 && strncmp(json + fval->start, "true", 4) == 0) bval = 1;
-                    if (is_cfu) out->latches.cfu_sr = bval;
+                    if (is_fab) out->latches.fab_sr = bval;
                     else        out->latches.iob_sr = bval;
                 }
                 inner = jz_json_skip(toks, count, inner);
@@ -1531,6 +1545,7 @@ void jz_chip_data_free(JZChipData *data)
             free(cts[j2]);
         }
         jz_buf_free(&cgs[i].constraints);
+        free(cgs[i].feedback_wire);
     }
     jz_buf_free(&data->clock_gens);
 
@@ -1646,7 +1661,7 @@ static const JZChipClockGen *jz_chip_find_clock_gen(const JZChipData *data,
 int jz_chip_clock_gen_param_range(const JZChipData *data,
                                    const char *type,
                                    const char *param_name,
-                                   long *out_min, long *out_max)
+                                   double *out_min, double *out_max)
 {
     if (!data || !type || !param_name || !out_min || !out_max) return 0;
     const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
@@ -1919,6 +1934,15 @@ const char *jz_chip_clock_gen_constraint_at(const JZChipData *data,
     if (index >= ct_count) return NULL;
     const char **cts = (const char **)cg->constraints.data;
     return cts[index];
+}
+
+const char *jz_chip_clock_gen_feedback_wire(const JZChipData *data,
+                                             const char *type)
+{
+    if (!data || !type) return NULL;
+    const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
+    if (!cg) return NULL;
+    return cg->feedback_wire;
 }
 
 unsigned jz_chip_mem_quantity(const JZChipData *data, JZChipMemType type)

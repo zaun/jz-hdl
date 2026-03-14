@@ -2361,6 +2361,7 @@ int jz_ir_build_design(JZASTNode *root,
                                     }
                                     IR_TopBinding *tb = &bindings[bi++];
                                     tb->top_port_signal_id = port_id;
+                                    tb->inverted = invert;
                                     if (pm->bit_index >= 0) {
                                         tb->top_bit_index = pm->bit_index;
                                         tb->pin_id = pin_id;
@@ -2384,6 +2385,7 @@ int jz_ir_build_design(JZASTNode *root,
                                 tb->top_bit_index = -1;
                                 tb->pin_id = pin_id;
                                 tb->pin_bit_index = -1;
+                                tb->inverted = invert;
                             }
                         }
 

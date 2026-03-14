@@ -609,11 +609,40 @@ static void lex_one_token(LexerState *st) {
             st->pos++;
             st->column++;
         }
+
+        /* Check for a decimal point followed by a digit, making this a
+         * floating-point literal (e.g., 5.0, 5.125).  Only allow this
+         * for plain integers—not sized literals that contain a tick. */
+        int is_float = 0;
+        if (st->pos < st->len && st->src[st->pos] == '.' &&
+            st->pos + 1 < st->len && isdigit((unsigned char)st->src[st->pos + 1])) {
+            /* Verify no tick in what we scanned so far */
+            int has_tick = 0;
+            for (size_t ci = start_pos; ci < st->pos; ++ci) {
+                if (src[ci] == '\'') { has_tick = 1; break; }
+            }
+            if (!has_tick) {
+                is_float = 1;
+                st->pos++;  /* consume '.' */
+                st->column++;
+                while (st->pos < st->len && isdigit((unsigned char)st->src[st->pos])) {
+                    st->pos++;
+                    st->column++;
+                }
+            }
+        }
+
         size_t len = st->pos - start_pos;
         char *lex = (char *)malloc(len + 1);
         if (!lex) return;
         memcpy(lex, src + start_pos, len);
         lex[len] = '\0';
+
+        if (is_float) {
+            emit_token(st, JZ_TOK_NUMBER, lex, len, (JZLocation){ st->filename, line, col });
+            free(lex);
+            return;
+        }
 
         JZNumericInfo info;
         JZNumericErrorCause err = JZ_NUM_ERR_NONE;

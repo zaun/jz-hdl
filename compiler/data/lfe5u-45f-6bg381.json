@@ -19,7 +19,7 @@
 
   "latches": {
     "source": "FPGA-DS-02012-3.1, Section 2.3 (PFU Architecture)",
-    "PFU": {
+    "FAB": {
       "description": "Programmable Function Unit (General Logic)",
       "D": false,
       "SR": false,

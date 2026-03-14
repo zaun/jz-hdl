@@ -1,4 +1,4 @@
-Input file: src/tang_nano_20k.jz
+Input file: src/pa35t-edu.jz
 Module: latch_test
 
 User-visible identifiers:  8
@@ -12,7 +12,7 @@ Extended-width aliases:   0
 PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@3
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@3
 
 Consumers:
     SYNCHRONOUS block (CLK=clk) at line 30
@@ -20,38 +20,38 @@ Consumers:
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@4
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@4
 
 Members (Aliased Identifiers):
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@24: reset == por
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@24: reset == rst_n
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@24: reset == por
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@24: reset == rst_n
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@24: reset = por & rst_n;
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@24: reset = por & rst_n;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
 
 Top-level binding:
-    PORT binding: IN por -> DONE (IN_PINS)
+    PORT binding: IN por -> 1'b1
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@6
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@6
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
 
 Top-level binding:
-    PORT binding: IN btn -> KEY [ 1 ]
+    PORT binding: IN btn -> BTN (IN_PINS)
 
 PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT OUT
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@7
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@7
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
 
 Top-level binding:
     PORT binding: OUT leds -> LED (OUT_PINS)
@@ -59,25 +59,25 @@ Top-level binding:
 PHYSICAL NET: NET_0006    Width: 27    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@15
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@15
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@31: counter <= counter + 27'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@31: counter <= counter + 27'b1;
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@31: counter <= counter + 27'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@31: counter <= counter + 27'b1;
 
 PHYSICAL NET: NET_0007    Width: 6    Tri-state: No
 ------------------------------------------------------------
 Declared as: UNKNOWN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@20
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@20
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
 
 ------------------------------------------------------------
 IDENTIFIER INDEX
@@ -111,7 +111,7 @@ latch_test                6      1      1      0      1
 -------------------- ------ ------ ------ ------ ------
 TOTAL                     6      1      1      0      1
 ============================================================
-Input file: src/tang_nano_20k.jz
+Input file: src/pa35t-edu.jz
 Module: latch_test
 
 User-visible identifiers:  8
@@ -125,7 +125,7 @@ Extended-width aliases:   0
 PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@3
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@3
 
 Consumers:
     SYNCHRONOUS block (CLK=clk) at line 30
@@ -133,38 +133,38 @@ Consumers:
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@4
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@4
 
 Members (Aliased Identifiers):
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@24: reset == por
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@24: reset == rst_n
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@24: reset == por
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@24: reset == rst_n
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@24: reset = por & rst_n;
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@24: reset = por & rst_n;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
 
 Top-level binding:
-    PORT binding: IN por -> DONE (IN_PINS)
+    PORT binding: IN por -> 1'b1
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@6
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@6
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
 
 Top-level binding:
-    PORT binding: IN btn -> KEY [ 1 ]
+    PORT binding: IN btn -> BTN (IN_PINS)
 
 PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT OUT
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@7
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@7
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
 
 Top-level binding:
     PORT binding: OUT leds -> LED (OUT_PINS)
@@ -172,25 +172,25 @@ Top-level binding:
 PHYSICAL NET: NET_0006    Width: 27    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@15
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@15
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@31: counter <= counter + 27'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@31: counter <= counter + 27'b1;
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@31: counter <= counter + 27'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@31: counter <= counter + 27'b1;
 
 PHYSICAL NET: NET_0007    Width: 6    Tri-state: No
 ------------------------------------------------------------
 Declared as: UNKNOWN
-Declared at: /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@20
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@20
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@26: display_buffer <= btn : ~counter[26:21];
 
 Sinks:
-    /Users/justinzaun/Development/JZ-HDL/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
 
 ------------------------------------------------------------
 IDENTIFIER INDEX

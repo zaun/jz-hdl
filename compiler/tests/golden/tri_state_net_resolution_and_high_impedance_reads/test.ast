@@ -1,6 +1,6 @@
 {"type": "Project", "name": "tristate_resolution_test", "text": "GENERIC", "loc": {"line": 1, "column": 1, "file": "test.jz"}, "children": [
   {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 2, "column": 3, "file": "test.jz"}, "children": [
-    {"type": "ConstDecl", "name": "sys_clk", "text": "period = 10 . 0", "loc": {"line": 3, "column": 5, "file": "test.jz"}}
+    {"type": "ConstDecl", "name": "sys_clk", "text": "period = 10.0", "loc": {"line": 3, "column": 5, "file": "test.jz"}}
   ]},
   {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 6, "column": 3, "file": "test.jz"}, "children": [
     {"type": "PortDecl", "name": "sys_clk", "block_kind": "IN_PINS", "text": "standard = LVCMOS33 , drive = 8", "loc": {"line": 7, "column": 5, "file": "test.jz"}}

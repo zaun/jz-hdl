@@ -101,8 +101,8 @@ static int jz_json_param_minmax(const char *json,
                                 int count,
                                 int params_idx,
                                 const char *name,
-                                unsigned *min_out,
-                                unsigned *max_out)
+                                double *min_out,
+                                double *max_out)
 {
     if (!json || !toks || !name || !min_out || !max_out) return 0;
     int param_idx = jz_json_object_get(json, toks, count, params_idx, name);
@@ -110,8 +110,24 @@ static int jz_json_param_minmax(const char *json,
     int min_idx = jz_json_object_get(json, toks, count, param_idx, "min");
     int max_idx = jz_json_object_get(json, toks, count, param_idx, "max");
     if (min_idx < 0 || max_idx < 0) return 0;
-    if (!jz_json_token_to_uint(json, &toks[min_idx], min_out)) return 0;
-    if (!jz_json_token_to_uint(json, &toks[max_idx], max_out)) return 0;
+    const jsmntok_t *min_tok = &toks[min_idx];
+    const jsmntok_t *max_tok = &toks[max_idx];
+    if (min_tok->type != JSMN_PRIMITIVE || max_tok->type != JSMN_PRIMITIVE) return 0;
+    char buf[64];
+    size_t len;
+    char *endptr;
+    len = (size_t)(min_tok->end - min_tok->start);
+    if (len >= sizeof(buf)) return 0;
+    memcpy(buf, json + min_tok->start, len);
+    buf[len] = '\0';
+    *min_out = strtod(buf, &endptr);
+    if (endptr == buf) return 0;
+    len = (size_t)(max_tok->end - max_tok->start);
+    if (len >= sizeof(buf)) return 0;
+    memcpy(buf, json + max_tok->start, len);
+    buf[len] = '\0';
+    *max_out = strtod(buf, &endptr);
+    if (endptr == buf) return 0;
     return 1;
 }
 
@@ -538,23 +554,49 @@ static void jz_print_clock_gen_info(const char *json,
     if (!json || !toks || !out || clock_gen_idx < 0 || clock_gen_idx >= count) return;
     if (toks[clock_gen_idx].type != JSMN_ARRAY) return;
 
+    /* First pass: collect entry indices and type names for sorting */
     const jsmntok_t *arr = &toks[clock_gen_idx];
-    int cur = clock_gen_idx + 1;
-    while (cur < count && toks[cur].start < arr->end) {
-        const jsmntok_t *obj = &toks[cur];
-        if (obj->type != JSMN_OBJECT) {
+    struct { int idx; char type[32]; } entries[32];
+    size_t num_entries = 0;
+    {
+        int cur = clock_gen_idx + 1;
+        while (cur < count && toks[cur].start < arr->end) {
+            if (toks[cur].type == JSMN_OBJECT) {
+                int ti = jz_json_object_get(json, toks, count, cur, "type");
+                if (ti >= 0 && toks[ti].type == JSMN_STRING &&
+                    num_entries < sizeof(entries) / sizeof(entries[0])) {
+                    entries[num_entries].idx = cur;
+                    (void)jz_json_token_to_string(json, &toks[ti],
+                                                   entries[num_entries].type,
+                                                   sizeof(entries[num_entries].type));
+                    num_entries++;
+                }
+            }
             cur = jz_json_skip(toks, count, cur);
-            continue;
         }
+    }
 
-        int type_idx = jz_json_object_get(json, toks, count, cur, "type");
-        if (type_idx < 0 || toks[type_idx].type != JSMN_STRING) {
-            cur = jz_json_skip(toks, count, cur);
-            continue;
+    /* Sort entries alphabetically by type name (case-insensitive) */
+    for (size_t i = 0; i < num_entries; ++i) {
+        for (size_t j = i + 1; j < num_entries; ++j) {
+            if (jz_strcasecmp(entries[i].type, entries[j].type) > 0) {
+                int tmp_idx = entries[i].idx;
+                char tmp_type[32];
+                memcpy(tmp_type, entries[i].type, sizeof(tmp_type));
+                entries[i].idx = entries[j].idx;
+                memcpy(entries[i].type, entries[j].type, sizeof(entries[i].type));
+                entries[j].idx = tmp_idx;
+                memcpy(entries[j].type, tmp_type, sizeof(entries[j].type));
+            }
         }
+    }
+
+    /* Second pass: process entries in sorted order */
+    for (size_t entry_i = 0; entry_i < num_entries; ++entry_i) {
+        int cur = entries[entry_i].idx;
 
         char type_buf[32] = {0};
-        (void)jz_json_token_to_string(json, &toks[type_idx], type_buf, sizeof(type_buf));
+        memcpy(type_buf, entries[entry_i].type, sizeof(type_buf));
 
         /* Determine display name based on type (generic: supports numbered variants) */
         char type_display_buf[128];
@@ -620,8 +662,8 @@ static void jz_print_clock_gen_info(const char *json,
                 char name_buf[64] = {0};
                 char desc_buf[256] = {0};
                 char expr_buf[256] = {0};
-                unsigned min_val = 0;
-                unsigned max_val = 0;
+                double min_val = 0;
+                double max_val = 0;
                 int have_min = 0;
                 int have_max = 0;
                 if (key->type == JSMN_STRING) {
@@ -632,11 +674,27 @@ static void jz_print_clock_gen_info(const char *json,
                     int max_idx2 = jz_json_object_get(json, toks, count, didx, "max");
                     int expr_idx = jz_json_object_get(json, toks, count, didx, "expr");
                     int desc_idx = jz_json_object_get(json, toks, count, didx, "description");
-                    if (min_idx2 >= 0) {
-                        have_min = jz_json_token_to_uint(json, &toks[min_idx2], &min_val);
+                    if (min_idx2 >= 0 && toks[min_idx2].type == JSMN_PRIMITIVE) {
+                        size_t len = (size_t)(toks[min_idx2].end - toks[min_idx2].start);
+                        char buf[64];
+                        if (len < sizeof(buf)) {
+                            memcpy(buf, json + toks[min_idx2].start, len);
+                            buf[len] = '\0';
+                            char *ep;
+                            min_val = strtod(buf, &ep);
+                            if (ep != buf) have_min = 1;
+                        }
                     }
-                    if (max_idx2 >= 0) {
-                        have_max = jz_json_token_to_uint(json, &toks[max_idx2], &max_val);
+                    if (max_idx2 >= 0 && toks[max_idx2].type == JSMN_PRIMITIVE) {
+                        size_t len = (size_t)(toks[max_idx2].end - toks[max_idx2].start);
+                        char buf[64];
+                        if (len < sizeof(buf)) {
+                            memcpy(buf, json + toks[max_idx2].start, len);
+                            buf[len] = '\0';
+                            char *ep;
+                            max_val = strtod(buf, &ep);
+                            if (ep != buf) have_max = 1;
+                        }
                     }
                     if (expr_idx >= 0) {
                         (void)jz_json_token_to_string(json, &toks[expr_idx], expr_buf, sizeof(expr_buf));
@@ -655,12 +713,18 @@ static void jz_print_clock_gen_info(const char *json,
                     memset(&derived_rows[derived_count], 0, sizeof(derived_rows[derived_count]));
                     snprintf(derived_rows[derived_count].name, sizeof(derived_rows[derived_count].name), "%s", name_buf);
                     if (have_min) {
-                        snprintf(derived_rows[derived_count].min, sizeof(derived_rows[derived_count].min), "%u", min_val);
+                        if (min_val == (long)min_val)
+                            snprintf(derived_rows[derived_count].min, sizeof(derived_rows[derived_count].min), "%ld", (long)min_val);
+                        else
+                            snprintf(derived_rows[derived_count].min, sizeof(derived_rows[derived_count].min), "%g", min_val);
                     } else {
                         snprintf(derived_rows[derived_count].min, sizeof(derived_rows[derived_count].min), "N/A");
                     }
                     if (have_max) {
-                        snprintf(derived_rows[derived_count].max, sizeof(derived_rows[derived_count].max), "%u", max_val);
+                        if (max_val == (long)max_val)
+                            snprintf(derived_rows[derived_count].max, sizeof(derived_rows[derived_count].max), "%ld", (long)max_val);
+                        else
+                            snprintf(derived_rows[derived_count].max, sizeof(derived_rows[derived_count].max), "%g", max_val);
                     } else {
                         snprintf(derived_rows[derived_count].max, sizeof(derived_rows[derived_count].max), "N/A");
                     }
@@ -820,7 +884,7 @@ static void jz_print_clock_gen_info(const char *json,
                 char pdesc[256] = {0};
                 (void)jz_json_token_to_string(json, pkey, pname, sizeof(pname));
 
-                unsigned min_val = 0, max_val = 0;
+                double min_val = 0, max_val = 0;
                 int have_minmax = jz_json_param_minmax(json, toks, count, params_idx,
                                                        pname, &min_val, &max_val);
                 (void)jz_json_object_get_string(json, toks, count,
@@ -889,7 +953,12 @@ static void jz_print_clock_gen_info(const char *json,
                         range_buf[off] = '\0';
                     }
                 } else if (have_minmax) {
-                    snprintf(range_buf, sizeof(range_buf), "%u - %u", min_val, max_val);
+                    /* Use integer format if values are whole numbers */
+                    if (min_val == (long)min_val && max_val == (long)max_val) {
+                        snprintf(range_buf, sizeof(range_buf), "%ld - %ld", (long)min_val, (long)max_val);
+                    } else {
+                        snprintf(range_buf, sizeof(range_buf), "%g - %g", min_val, max_val);
+                    }
                 }
 
                 memset(&param_rows[param_count], 0, sizeof(param_rows[param_count]));
@@ -1077,7 +1146,6 @@ static void jz_print_clock_gen_info(const char *json,
         }
 
         fprintf(out, "\n");
-        cur = jz_json_skip(toks, count, cur);
     }
 }
 

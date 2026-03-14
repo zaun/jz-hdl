@@ -21,7 +21,7 @@
 
   "latches": {
     "source": "DS117-3.2.3E, Table 1-1 p.3 (GW1NR-2: FF+Latch=2304, FF=2016); SUG283-3.5E (Placement rule of FF, LATCH)",
-    "CFU": {
+    "FAB": {
       "description": "Configurable Function Unit (General Logic)",
       "D": true,
       "SR": false,

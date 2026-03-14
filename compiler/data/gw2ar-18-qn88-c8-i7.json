@@ -20,7 +20,7 @@
 
   "latches": {
     "source": "DS226-2.6E Table 1-1 (Product Resources), SUG283 v2.1E (Placement rule of FF, LATCH)",
-    "CFU": {
+    "FAB": {
       "description": "Configurable Function Unit (General Logic)",
       "D": true,
       "SR": false,

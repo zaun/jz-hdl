@@ -29,7 +29,7 @@
     {"type": "ConstDecl", "name": "result [ 7 ]", "text": "18", "loc": {"line": 37, "column": 5, "file": "test.jz"}}
   ]},
   {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 40, "column": 3, "file": "test.jz"}, "children": [
-    {"type": "ConstDecl", "name": "clk", "text": "period = 10 . 0 , edge = Rising", "loc": {"line": 41, "column": 5, "file": "test.jz"}}
+    {"type": "ConstDecl", "name": "clk", "text": "period = 10.0 , edge = Rising", "loc": {"line": 41, "column": 5, "file": "test.jz"}}
   ]},
   {"type": "ProjectTopInstance", "name": "mem_addr_cond_test", "loc": {"line": 44, "column": 3, "file": "test.jz"}, "children": [
     {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "clk", "width": "1", "loc": {"line": 45, "column": 13, "file": "test.jz"}},

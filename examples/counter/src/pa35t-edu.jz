@@ -1,0 +1,46 @@
+@project(CHIP="XC7A35T-2FGG484") COUNTER_TEST
+    @import "counter.jz"
+
+    CLOCKS {
+        SCLK = { period=5 }; // 200MHz clock
+    }
+
+    CONFIG {
+        CLK_MHZ = 200;
+    }
+
+    IN_PINS {
+        SCLK    = { standard=LVDS25, mode=DIFFERENTIAL };
+        NRST   = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        // System Clock 200MHz differential
+        SCLK = { P=R4, N=T4 };
+
+        // Reset button (active low)
+        NRST = R14;
+
+        // LEDs (active high)
+        LED[0] = J21;
+        LED[1] = J19;
+        LED[2] = H19;
+        LED[3] = K18;
+        LED[4] = K19;
+        LED[5] = L19;
+    }
+
+    @top counter {
+        OVERRIDE {
+            CLK_MHZ = CONFIG.CLK_MHZ;
+        }
+        IN  [1] clk   = SCLK;
+        IN  [1] por   = 1'b1;
+        IN  [1] rst_n = ~NRST;
+        OUT [6] leds  = LED;
+    }
+@endproj

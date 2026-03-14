@@ -1,6 +1,6 @@
 {"type": "Project", "name": "top_concat_test", "text": "GENERIC", "loc": {"line": 9, "column": 1, "file": "test.jz"}, "children": [
   {"type": "ClocksBlock", "block_kind": "CLOCKS", "loc": {"line": 11, "column": 5, "file": "test.jz"}, "children": [
-    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10 . 0", "loc": {"line": 12, "column": 9, "file": "test.jz"}}
+    {"type": "ConstDecl", "name": "SCLK", "text": "period = 10.0", "loc": {"line": 12, "column": 9, "file": "test.jz"}}
   ]},
   {"type": "InPinsBlock", "block_kind": "IN_PINS", "loc": {"line": 15, "column": 5, "file": "test.jz"}, "children": [
     {"type": "PortDecl", "name": "SCLK", "block_kind": "IN_PINS", "text": "standard = LVCMOS33", "loc": {"line": 16, "column": 9, "file": "test.jz"}},

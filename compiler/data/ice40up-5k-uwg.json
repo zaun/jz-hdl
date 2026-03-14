@@ -15,7 +15,7 @@
 
   "latches": {
     "source": "DS-ICE40-UltraPlus, Section: Logic Cells (PLBs)",
-    "PLB": {
+    "FAB": {
       "description": "Programmable Logic Block (General Logic)",
       "D": false,
       "SR": false,
