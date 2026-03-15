@@ -246,6 +246,11 @@ int jz_emit_xdc_constraints(const IR_Design *design,
                         p_port);
             }
 
+            /* SLEW FAST for differential output pins with serializers */
+            if (pin->kind == PIN_OUT && pin->fclk_name && pin->fclk_name[0]) {
+                fprintf(out, "set_property SLEW FAST [get_ports {%s}]\n", p_port);
+            }
+
             /* N pin constraints */
             fprintf(out, "set_property PACKAGE_PIN %s [get_ports {%s}]\n",
                     m->board_pin_n_id, n_port);
