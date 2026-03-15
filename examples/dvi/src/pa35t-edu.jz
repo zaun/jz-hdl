@@ -1,7 +1,8 @@
 @project(CHIP="XC7A35T-2FGG484") DVI_TEST
     @import "por.jz"
     @import "video_timing.jz"
-    @import "tmds_encoder.jz"
+    @import "tmds_encoder_10.jz"
+    @import "tmds_encoder_2.jz"
     @import "hbars.jz"
     @import "vbars.jz"
     @import "warp.jz"
@@ -10,7 +11,9 @@
 
     CONFIG {
         warp = 1;
+        serializer = 2;
     }
+    @check(CONFIG.serializer == 2 || CONFIG.serializer == 10, "Serialzer must be 2 or 10.");
 
     CLOCKS {
         SCLK       = { period=5 };    // 200MHz differential clock

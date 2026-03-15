@@ -1,0 +1,174 @@
+// DVI TMDS 8b/10b Encoder with internal 2-bit shift register
+// Same TMDS encoding and PORT as tmds_encoder_10. The 10-bit encoded
+// word is stored in a register and output on tmds_out[10] exactly like
+// the _10 variant. Internally, a parallel shift register also serializes
+// the word 2 bits at a time — this output is exposed as serial_d[2] for
+// connection to a 2:1 DDR primitive (e.g., ODDRX1F on ECP5).
+//
+// clk = 5x pixel clock (drives the shift register)
+// The TMDS encoding and disparity tracking run at pixel rate by gating
+// on shift_cnt == 0 (once every 5 serial clocks).
+@module tmds_encoder_2
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  rst_n;
+        IN  [8]  data_in;
+        IN  [1]  c0;
+        IN  [1]  c1;
+        IN  [1]  display_enable;
+        OUT [10] tmds_out;
+    }
+
+    WIRE {
+        // Popcount of data_in (adder tree)
+        d_p0 [2]; d_p1 [2]; d_p2 [2]; d_p3 [2];
+        d_s0 [3]; d_s1 [3];
+        n1_d [4];
+
+        // XOR/XNOR mode selection
+        use_xnor [1];
+
+        // Transition-minimized intermediate word q_m[8:0]
+        qm0 [1]; qm1 [1]; qm2 [1]; qm3 [1];
+        qm4 [1]; qm5 [1]; qm6 [1]; qm7 [1];
+        qm8 [1];
+
+        // Popcount of q_m[7:0] (adder tree)
+        q_p0 [2]; q_p1 [2]; q_p2 [2]; q_p3 [2];
+        q_s0 [3]; q_s1 [3];
+        n1_q [4];
+
+        // Disparity conditions
+        cnt_is_zero [1];
+        qm_balanced [1];
+        cond1       [1];
+        cnt_sign    [1];
+        cond_inv    [1];
+
+        // Arithmetic for disparity update (5-bit two's complement)
+        diff_n1n0 [5];
+        diff_n0n1 [5];
+        qm8_x2    [5];
+        nqm8_x2   [5];
+
+        // Combinational TMDS encoded word
+        tmds_data [10];
+        next_cnt  [5];
+    }
+
+    REGISTER {
+        cnt       [5]  = 5'b00000;
+        tmds_reg  [10] = 10'b0000000000;
+
+        // Internal shift register for 2-bit serialization
+        shift_reg [10] = 10'b0000000000;
+        shift_cnt [3]  = 3'b000;
+    }
+
+    ASYNCHRONOUS {
+        // Output the full 10-bit encoded word (same as tmds_encoder_10)
+        tmds_out <= tmds_reg;
+
+        // --- Popcount of data_in ---
+        d_p0 <= {1'b0, data_in[0]} + {1'b0, data_in[1]};
+        d_p1 <= {1'b0, data_in[2]} + {1'b0, data_in[3]};
+        d_p2 <= {1'b0, data_in[4]} + {1'b0, data_in[5]};
+        d_p3 <= {1'b0, data_in[6]} + {1'b0, data_in[7]};
+        d_s0 <= {1'b0, d_p0} + {1'b0, d_p1};
+        d_s1 <= {1'b0, d_p2} + {1'b0, d_p3};
+        n1_d <= {1'b0, d_s0} + {1'b0, d_s1};
+
+        // --- XOR/XNOR selection (DVI spec section 3.3.1) ---
+        use_xnor <= (n1_d > 4'd4 || (n1_d == 4'd4 && data_in[0] == 1'b0))
+                     ? 1'b1 : 1'b0;
+
+        // --- Build transition-minimized word q_m ---
+        qm0 <= data_in[0];
+        qm1 <= (use_xnor == 1'b1) ? ~(data_in[1] ^ qm0) : (data_in[1] ^ qm0);
+        qm2 <= (use_xnor == 1'b1) ? ~(data_in[2] ^ qm1) : (data_in[2] ^ qm1);
+        qm3 <= (use_xnor == 1'b1) ? ~(data_in[3] ^ qm2) : (data_in[3] ^ qm2);
+        qm4 <= (use_xnor == 1'b1) ? ~(data_in[4] ^ qm3) : (data_in[4] ^ qm3);
+        qm5 <= (use_xnor == 1'b1) ? ~(data_in[5] ^ qm4) : (data_in[5] ^ qm4);
+        qm6 <= (use_xnor == 1'b1) ? ~(data_in[6] ^ qm5) : (data_in[6] ^ qm5);
+        qm7 <= (use_xnor == 1'b1) ? ~(data_in[7] ^ qm6) : (data_in[7] ^ qm6);
+        qm8 <= (use_xnor == 1'b1) ? 1'b0 : 1'b1;
+
+        // --- Popcount of q_m[7:0] ---
+        q_p0 <= {1'b0, qm0} + {1'b0, qm1};
+        q_p1 <= {1'b0, qm2} + {1'b0, qm3};
+        q_p2 <= {1'b0, qm4} + {1'b0, qm5};
+        q_p3 <= {1'b0, qm6} + {1'b0, qm7};
+        q_s0 <= {1'b0, q_p0} + {1'b0, q_p1};
+        q_s1 <= {1'b0, q_p2} + {1'b0, q_p3};
+        n1_q <= {1'b0, q_s0} + {1'b0, q_s1};
+
+        // --- Disparity conditions ---
+        cnt_is_zero <= (cnt == 5'b00000) ? 1'b1 : 1'b0;
+        qm_balanced <= (n1_q == 4'd4) ? 1'b1 : 1'b0;
+        cond1       <= (cnt_is_zero == 1'b1 || qm_balanced == 1'b1)
+                        ? 1'b1 : 1'b0;
+        cnt_sign    <= cnt[4];
+        cond_inv    <= ((cnt_sign == 1'b0 && cnt_is_zero == 1'b0 && n1_q > 4'd4) ||
+                        (cnt_sign == 1'b1 && n1_q < 4'd4))
+                       ? 1'b1 : 1'b0;
+
+        // --- Arithmetic helpers (5-bit two's complement) ---
+        diff_n1n0 <= {n1_q, 1'b0} - 5'd8;
+        diff_n0n1 <= 5'd8 - {n1_q, 1'b0};
+        qm8_x2   <= {3'b000, qm8, 1'b0};
+        nqm8_x2  <= {3'b000, ~qm8, 1'b0};
+
+        // --- Output word and next disparity (DVI spec section 3.3.2) ---
+        IF (cond1 == 1'b1) {
+            IF (qm8 == 1'b0) {
+                tmds_data <= {1'b1, 1'b0, ~qm7, ~qm6, ~qm5, ~qm4,
+                              ~qm3, ~qm2, ~qm1, ~qm0};
+                next_cnt  <= cnt + diff_n0n1;
+            } ELSE {
+                tmds_data <= {1'b0, 1'b1, qm7, qm6, qm5, qm4,
+                              qm3, qm2, qm1, qm0};
+                next_cnt  <= cnt + diff_n1n0;
+            }
+        } ELIF (cond_inv == 1'b1) {
+            tmds_data <= {1'b1, qm8, ~qm7, ~qm6, ~qm5, ~qm4,
+                          ~qm3, ~qm2, ~qm1, ~qm0};
+            next_cnt  <= cnt + qm8_x2 + diff_n0n1;
+        } ELSE {
+            tmds_data <= {1'b0, qm8, qm7, qm6, qm5, qm4,
+                          qm3, qm2, qm1, qm0};
+            next_cnt  <= cnt - nqm8_x2 + diff_n1n0;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        IF (shift_cnt == 3'd4) {
+            // Every 5th serial clock: load new word, update encoding
+            shift_cnt <= 3'd0;
+
+            IF (display_enable == 1'b0) {
+                cnt <= 5'b00000;
+                IF (c0 == 1'b0 && c1 == 1'b0) {
+                    tmds_reg  <= 10'b1101010100;
+                    shift_reg <= 10'b1101010100;
+                } ELIF (c0 == 1'b1 && c1 == 1'b0) {
+                    tmds_reg  <= 10'b0010101011;
+                    shift_reg <= 10'b0010101011;
+                } ELIF (c0 == 1'b0 && c1 == 1'b1) {
+                    tmds_reg  <= 10'b0101010100;
+                    shift_reg <= 10'b0101010100;
+                } ELSE {
+                    tmds_reg  <= 10'b1010101011;
+                    shift_reg <= 10'b1010101011;
+                }
+            } ELSE {
+                tmds_reg  <= tmds_data;
+                shift_reg <= tmds_data;
+                cnt <= next_cnt;
+            }
+        } ELSE {
+            // Shift out 2 bits: shift right by 2
+            shift_reg <= {2'b00, shift_reg[9:2]};
+            shift_cnt <= shift_cnt + 3'd1;
+        }
+    }
+@endmod

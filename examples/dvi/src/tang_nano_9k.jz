@@ -1,7 +1,8 @@
 @project(CHIP="GW1NR-9-QN88-C6-I5") DVI_TEST
     @import "por.jz"
     @import "video_timing.jz"
-    @import "tmds_encoder.jz"
+    @import "tmds_encoder_10.jz"
+    @import "tmds_encoder_2.jz"
     @import "hbars.jz"
     @import "vbars.jz"
     @import "warp.jz"
@@ -10,7 +11,9 @@
 
     CONFIG {
         warp = 0;
+        serializer = 10;
     }
+    @check(CONFIG.serializer == 2 || CONFIG.serializer == 10, "Serialzer must be 2 or 10.");
 
     CLOCKS {
         SCLK       = { period=37.037 }; // 27MHz crystal
