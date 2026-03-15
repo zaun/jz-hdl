@@ -1438,13 +1438,10 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
                     char oser_inst[128];
                     snprintf(oser_inst, sizeof(oser_inst), "oser_%s%s", name, suffix);
 
-                    /* Build reset expression: ~<signal> if provided, else 1'b0 */
-                    char reset_expr_buf[128];
+                    /* Reset signal: pass through as-is (template handles polarity) */
                     const char *reset_expr = "1'b0";
                     if (pin->reset_name && pin->reset_name[0]) {
-                        snprintf(reset_expr_buf, sizeof(reset_expr_buf),
-                                 "~%s", pin->reset_name);
-                        reset_expr = reset_expr_buf;
+                        reset_expr = pin->reset_name;
                     }
 
                     DiffTemplateCtx ser_ctx = {

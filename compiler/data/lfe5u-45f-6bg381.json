@@ -514,7 +514,7 @@
               "    .D0(%%D0%%),\n",
               "    .D1(%%D1%%),\n",
               "    .SCLK(%%pclk%%),\n",
-              "    .RST(%%reset%%),\n",
+              "    .RST(~%%reset%%),\n",
               "    .Q(%%output%%)\n",
               ");\n"
             ],
@@ -541,7 +541,7 @@
               "    .D3(%%D3%%),\n",
               "    .ECLK(%%fclk%%),\n",
               "    .SCLK(%%pclk%%),\n",
-              "    .RST(%%reset%%),\n",
+              "    .RST(~%%reset%%),\n",
               "    .Q(%%output%%)\n",
               ");\n"
             ],
@@ -574,7 +574,7 @@
               "    .D6(%%D6%%),\n",
               "    .ECLK(%%fclk%%),\n",
               "    .SCLK(%%pclk%%),\n",
-              "    .RST(%%reset%%),\n",
+              "    .RST(~%%reset%%),\n",
               "    .Q(%%output%%)\n",
               ");\n"
             ],
@@ -626,7 +626,7 @@
               "IDDRX1F u_%%instance%% (\n",
               "    .D(%%input%%),\n",
               "    .SCLK(%%pclk%%),\n",
-              "    .RST(%%reset%%),\n",
+              "    .RST(~%%reset%%),\n",
               "    .Q0(%%Q0%%),\n",
               "    .Q1(%%Q1%%)\n",
               ");\n"
@@ -651,7 +651,7 @@
               "    .D(%%input%%),\n",
               "    .ECLK(%%fclk%%),\n",
               "    .SCLK(%%pclk%%),\n",
-              "    .RST(%%reset%%),\n",
+              "    .RST(~%%reset%%),\n",
               "    .ALIGNWD(1'b0),\n",
               "    .Q0(%%Q0%%),\n",
               "    .Q1(%%Q1%%),\n",
@@ -683,7 +683,7 @@
               "    .D(%%input%%),\n",
               "    .ECLK(%%fclk%%),\n",
               "    .SCLK(%%pclk%%),\n",
-              "    .RST(%%reset%%),\n",
+              "    .RST(~%%reset%%),\n",
               "    .ALIGNWD(1'b0),\n",
               "    .Q0(%%Q0%%),\n",
               "    .Q1(%%Q1%%),\n",

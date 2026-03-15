@@ -968,7 +968,8 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
                     char oser_inst[128];
                     snprintf(oser_inst, sizeof(oser_inst), "oser_%s%s", name, suffix);
 
-                    /* Build reset expression: inverted lock signal or constant 0 */
+                    /* Build reset: RTLIL can't express inline ~, so we emit a $not
+                     * cell to match the ~%%reset%% in the Verilog templates. */
                     char reset_wire_buf[128];
                     const char *reset_val = "1'0";
                     if (pin->reset_name && pin->reset_name[0]) {
