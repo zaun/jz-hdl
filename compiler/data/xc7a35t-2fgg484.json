@@ -791,6 +791,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSERDESE2 $auto$%%instance%%\n",
               "  parameter \\DATA_RATE_OQ \"DDR\"\n",
               "  parameter \\DATA_RATE_TQ \"SDR\"\n",
@@ -809,7 +817,7 @@
               "  connect \\D7 1'0\n",
               "  connect \\D8 1'0\n",
               "  connect \\OCE 1'1\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\TCE 1'0\n",
               "end\n"
             ]
@@ -857,6 +865,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSERDESE2 $auto$%%instance%%\n",
               "  parameter \\DATA_RATE_OQ \"DDR\"\n",
               "  parameter \\DATA_RATE_TQ \"SDR\"\n",
@@ -875,7 +891,7 @@
               "  connect \\D7 1'0\n",
               "  connect \\D8 1'0\n",
               "  connect \\OCE 1'1\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\TCE 1'0\n",
               "end\n"
             ]
@@ -923,6 +939,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSERDESE2 $auto$%%instance%%\n",
               "  parameter \\DATA_RATE_OQ \"DDR\"\n",
               "  parameter \\DATA_RATE_TQ \"SDR\"\n",
@@ -941,7 +965,7 @@
               "  connect \\D7 \\%%D6%%\n",
               "  connect \\D8 \\%%D7%%\n",
               "  connect \\OCE 1'1\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\TCE 1'0\n",
               "end\n"
             ]
@@ -1026,6 +1050,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSERDESE2 $auto$%%instance%%_slave\n",
               "  parameter \\DATA_RATE_OQ \"DDR\"\n",
               "  parameter \\DATA_RATE_TQ \"SDR\"\n",
@@ -1045,7 +1077,7 @@
               "  connect \\D7 1'0\n",
               "  connect \\D8 1'0\n",
               "  connect \\OCE 1'1\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\TCE 1'0\n",
               "end\n",
               "cell \\OSERDESE2 $auto$%%instance%%\n",
@@ -1066,7 +1098,7 @@
               "  connect \\D7 \\%%D6%%\n",
               "  connect \\D8 \\%%D7%%\n",
               "  connect \\OCE 1'1\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\SHIFTIN1 \\jz_shift1_%%instance%%\n",
               "  connect \\SHIFTIN2 \\jz_shift2_%%instance%%\n",
               "  connect \\TCE 1'0\n",
@@ -1153,6 +1185,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSERDESE2 $auto$%%instance%%_slave\n",
               "  parameter \\DATA_RATE_OQ \"DDR\"\n",
               "  parameter \\DATA_RATE_TQ \"SDR\"\n",
@@ -1172,7 +1212,7 @@
               "  connect \\D7 \\%%D12%%\n",
               "  connect \\D8 \\%%D13%%\n",
               "  connect \\OCE 1'1\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\TCE 1'0\n",
               "end\n",
               "cell \\OSERDESE2 $auto$%%instance%%\n",
@@ -1193,7 +1233,7 @@
               "  connect \\D7 \\%%D6%%\n",
               "  connect \\D8 \\%%D7%%\n",
               "  connect \\OCE 1'1\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\SHIFTIN1 \\jz_shift1_%%instance%%\n",
               "  connect \\SHIFTIN2 \\jz_shift2_%%instance%%\n",
               "  connect \\TCE 1'0\n",

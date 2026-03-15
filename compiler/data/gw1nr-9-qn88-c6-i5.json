@@ -640,6 +640,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSER4 $auto$%%instance%%\n",
               "  parameter \\GSREN \"FALSE\"\n",
               "  parameter \\LSREN \"TRUE\"\n",
@@ -653,7 +661,7 @@
               "  connect \\TX1 1'0\n",
               "  connect \\FCLK \\%%fclk%%\n",
               "  connect \\PCLK \\%%pclk%%\n",
-              "  connect \\RESET \\%%reset%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\Q0 \\%%output%%\n",
               "end\n"
             ]
@@ -690,6 +698,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSER8 $auto$%%instance%%\n",
               "  parameter \\GSREN \"FALSE\"\n",
               "  parameter \\LSREN \"TRUE\"\n",
@@ -709,7 +725,7 @@
               "  connect \\TX3 1'0\n",
               "  connect \\FCLK \\%%fclk%%\n",
               "  connect \\PCLK \\%%pclk%%\n",
-              "  connect \\RESET \\%%reset%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\Q0 \\%%output%%\n",
               "end\n"
             ]
@@ -741,6 +757,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSER10 $auto$%%instance%%\n",
               "  parameter \\GSREN \"FALSE\"\n",
               "  parameter \\LSREN \"TRUE\"\n",
@@ -756,7 +780,7 @@
               "  connect \\D9 \\%%D9%%\n",
               "  connect \\FCLK \\%%fclk%%\n",
               "  connect \\PCLK \\%%pclk%%\n",
-              "  connect \\RESET \\%%reset%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\Q \\%%output%%\n",
               "end\n"
             ]
@@ -794,6 +818,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\OSER16 $auto$%%instance%%\n",
               "  parameter \\GSREN \"FALSE\"\n",
               "  parameter \\LSREN \"TRUE\"\n",
@@ -815,7 +847,7 @@
               "  connect \\D15 \\%%D15%%\n",
               "  connect \\FCLK \\%%fclk%%\n",
               "  connect \\PCLK \\%%pclk%%\n",
-              "  connect \\RESET \\%%reset%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\Q \\%%output%%\n",
               "end\n"
             ]

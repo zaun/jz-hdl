@@ -519,11 +519,19 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\ODDRX1F $auto$%%instance%%\n",
               "  connect \\D0 \\%%D0%%\n",
               "  connect \\D1 \\%%D1%%\n",
               "  connect \\SCLK \\%%pclk%%\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\Q \\%%output%%\n",
               "end\n"
             ]
@@ -546,6 +554,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\ODDRX2F $auto$%%instance%%\n",
               "  connect \\D0 \\%%D0%%\n",
               "  connect \\D1 \\%%D1%%\n",
@@ -553,7 +569,7 @@
               "  connect \\D3 \\%%D3%%\n",
               "  connect \\ECLK \\%%fclk%%\n",
               "  connect \\SCLK \\%%pclk%%\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\Q \\%%output%%\n",
               "end\n"
             ]
@@ -579,6 +595,14 @@
               ");\n"
             ],
             "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
               "cell \\ODDR71B $auto$%%instance%%\n",
               "  connect \\D0 \\%%D0%%\n",
               "  connect \\D1 \\%%D1%%\n",
@@ -589,7 +613,7 @@
               "  connect \\D6 \\%%D6%%\n",
               "  connect \\ECLK \\%%fclk%%\n",
               "  connect \\SCLK \\%%pclk%%\n",
-              "  connect \\RST \\%%reset%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
               "  connect \\Q \\%%output%%\n",
               "end\n"
             ]
