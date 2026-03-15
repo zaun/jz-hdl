@@ -1740,8 +1740,22 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                 if (!stmt) continue;
 
                 if (stmt->type == JZ_AST_MODULE_INSTANCE) {
-                    /* Module instance OUT port driver. */
-                    if (instance_driver_count < 16) {
+                    /* Module instance OUT port driver.
+                     * Skip duplicate instance names — same-named instances only
+                     * exist in mutually exclusive @feature branches, so they
+                     * represent one logical driver, not two.
+                     */
+                    int is_dup = 0;
+                    if (stmt->name) {
+                        for (size_t di = 0; di < instance_driver_count; ++di) {
+                            if (instance_drivers[di]->name &&
+                                strcmp(instance_drivers[di]->name, stmt->name) == 0) {
+                                is_dup = 1;
+                                break;
+                            }
+                        }
+                    }
+                    if (!is_dup && instance_driver_count < 16) {
                         int can_z = (net_name && module_scopes &&
                                      sem_instance_driver_can_produce_z(stmt, net_name, module_scopes));
                         instance_drivers[instance_driver_count] = stmt;
