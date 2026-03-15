@@ -22,6 +22,8 @@
 #include "rules.h"
 #include "ast.h"
 #include "path_security.h"
+#include "ir_builder.h"
+#include "ir.h"
 
 #include "util.h"
 
@@ -35,6 +37,10 @@
 
 /* Workspace root path extracted from initialize request. */
 static char s_workspace_root[2048] = {0};
+
+/* Hover feature toggles (from initializationOptions). */
+static int s_hover_clocks = 1;
+static int s_hover_declarations = 1;
 
 /* ------------------------------------------------------------------ */
 /*  Project override map                                              */
@@ -86,6 +92,325 @@ static void set_project_override(const char *filepath, const char *project_path)
 
 static void handle_select_project(const char *msg, LspDocStore *store);
 
+/* ------------------------------------------------------------------ */
+/*  Clock info cache                                                  */
+/*                                                                    */
+/*  Populated from the IR during project compilation so that hover    */
+/*  can show clock properties.  Entries are indexed by both project   */
+/*  clock names AND module port names that are wired to clocks.       */
+/* ------------------------------------------------------------------ */
+
+#define LSP_MAX_CLOCKS 128
+
+typedef struct {
+    char name[128];           /* Lookup key (project clock name or port alias). */
+    char project_clock[128];  /* Canonical project-level clock name. */
+    double period_ns;         /* 0 if generated (no explicit period). */
+    char edge[16];            /* "Rising", "Falling", or empty. */
+    int is_external;          /* Has period → external pin clock. */
+    int is_generated;         /* Output of a CLOCK_GEN unit. */
+    char gen_type[16];        /* "PLL", "CLKDIV", "DLL", "OSC", "BUF", or empty. */
+    char gen_output[16];      /* "BASE", "PHASE", "DIV", "DIV3", or empty. */
+    char gen_input_clock[128]; /* Name of the reference clock feeding the generator. */
+} LspClockInfo;
+
+static LspClockInfo s_clock_cache[LSP_MAX_CLOCKS];
+static size_t s_clock_cache_count = 0;
+
+static const LspClockInfo *lookup_clock_info(const char *name);
+
+static LspClockInfo *add_clock_entry(const char *name) {
+    /* Deduplicate by name. */
+    for (size_t i = 0; i < s_clock_cache_count; ++i) {
+        if (strcmp(s_clock_cache[i].name, name) == 0) {
+            return &s_clock_cache[i];
+        }
+    }
+    if (s_clock_cache_count >= LSP_MAX_CLOCKS) return NULL;
+    LspClockInfo *info = &s_clock_cache[s_clock_cache_count++];
+    memset(info, 0, sizeof(*info));
+    strncpy(info->name, name, sizeof(info->name) - 1);
+    return info;
+}
+
+/**
+ * @brief Add a port alias that maps to an existing project clock entry.
+ */
+static void add_clock_alias(const char *alias_name, const LspClockInfo *src) {
+    if (!alias_name || !src) return;
+    if (strcmp(alias_name, src->name) == 0) return; /* already exists */
+    LspClockInfo *entry = add_clock_entry(alias_name);
+    if (!entry) return;
+    /* Copy all fields from source, then override the name. */
+    *entry = *src;
+    strncpy(entry->name, alias_name, sizeof(entry->name) - 1);
+}
+
+/**
+ * @brief Populate the clock cache from the IR.
+ *
+ * Uses IR_Clock, IR_ClockGen, IR_TopBinding, and IR_ClockDomain
+ * to build a comprehensive clock lookup table indexed by both
+ * project clock names and module port names.
+ */
+static void cache_clock_info_from_ir(const IR_Design *design) {
+    s_clock_cache_count = 0;
+    if (!design || !design->project) return;
+
+    const IR_Project *proj = design->project;
+
+    /* Step 1: Add project-level clocks. */
+    for (int i = 0; i < proj->num_clocks; ++i) {
+        const IR_Clock *clk = &proj->clocks[i];
+        if (!clk->name) continue;
+
+        LspClockInfo *info = add_clock_entry(clk->name);
+        if (!info) continue;
+
+        strncpy(info->project_clock, clk->name, sizeof(info->project_clock) - 1);
+        info->period_ns = clk->period_ns;
+        info->is_external = (clk->period_ns > 0.0 && !clk->is_generated);
+        info->is_generated = clk->is_generated;
+
+        switch (clk->edge) {
+        case EDGE_RISING:  strncpy(info->edge, "Rising", sizeof(info->edge) - 1); break;
+        case EDGE_FALLING: strncpy(info->edge, "Falling", sizeof(info->edge) - 1); break;
+        case EDGE_BOTH:    strncpy(info->edge, "Both", sizeof(info->edge) - 1); break;
+        default: break;
+        }
+    }
+
+    /* Step 2: Enrich generated clocks with CLOCK_GEN details. */
+    for (int i = 0; i < proj->num_clock_gens; ++i) {
+        const IR_ClockGen *gen = &proj->clock_gens[i];
+        for (int u = 0; u < gen->num_units; ++u) {
+            const IR_ClockGenUnit *unit = &gen->units[u];
+
+            /* Find the reference clock name. */
+            const char *ref_clock = NULL;
+            for (int inp = 0; inp < unit->num_inputs; ++inp) {
+                if (unit->inputs[inp].signal_name) {
+                    ref_clock = unit->inputs[inp].signal_name;
+                    break;
+                }
+            }
+
+            for (int out = 0; out < unit->num_outputs; ++out) {
+                const char *clock_name = unit->outputs[out].clock_name;
+                if (!clock_name) continue;
+
+                /* Find the existing entry. */
+                for (size_t ci = 0; ci < s_clock_cache_count; ++ci) {
+                    if (strcmp(s_clock_cache[ci].name, clock_name) == 0) {
+                        if (unit->type) {
+                            strncpy(s_clock_cache[ci].gen_type, unit->type,
+                                    sizeof(s_clock_cache[ci].gen_type) - 1);
+                        }
+                        if (unit->outputs[out].selector) {
+                            strncpy(s_clock_cache[ci].gen_output,
+                                    unit->outputs[out].selector,
+                                    sizeof(s_clock_cache[ci].gen_output) - 1);
+                        }
+                        if (ref_clock) {
+                            strncpy(s_clock_cache[ci].gen_input_clock, ref_clock,
+                                    sizeof(s_clock_cache[ci].gen_input_clock) - 1);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Step 3: Add aliases from @top bindings (port signal → clock).
+     * A top binding can reference a clock in two ways:
+     *   a) clock_name is set (for clock-gen outputs like PLL clocks)
+     *   b) pin_id is set and the pin name matches a project clock
+     *      (for external pin clocks like SCLK) */
+    {
+        const IR_Module *top_mod = NULL;
+        if (proj->top_module_id >= 0 && proj->top_module_id < design->num_modules) {
+            top_mod = &design->modules[proj->top_module_id];
+        }
+
+        for (int i = 0; i < proj->num_top_bindings; ++i) {
+            const IR_TopBinding *tb = &proj->top_bindings[i];
+
+            /* Determine the clock name from this binding. */
+            const char *bound_clock = tb->clock_name;
+
+            /* If no explicit clock_name, check if the pin is also a clock. */
+            if (!bound_clock && tb->pin_id >= 0 && tb->pin_id < proj->num_pins) {
+                const char *pin_name = proj->pins[tb->pin_id].name;
+                if (pin_name) {
+                    for (size_t ci = 0; ci < s_clock_cache_count; ++ci) {
+                        if (strcmp(s_clock_cache[ci].name, pin_name) == 0) {
+                            bound_clock = pin_name;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!bound_clock) continue;
+
+            /* Resolve top port signal ID to a name. */
+            const char *port_name = NULL;
+            if (top_mod && tb->top_port_signal_id >= 0) {
+                for (int si = 0; si < top_mod->num_signals; ++si) {
+                    if (top_mod->signals[si].id == tb->top_port_signal_id) {
+                        port_name = top_mod->signals[si].name;
+                        break;
+                    }
+                }
+            }
+
+            const LspClockInfo *src = NULL;
+            for (size_t ci = 0; ci < s_clock_cache_count; ++ci) {
+                if (strcmp(s_clock_cache[ci].name, bound_clock) == 0) {
+                    src = &s_clock_cache[ci];
+                    break;
+                }
+            }
+            if (src && port_name) {
+                add_clock_alias(port_name, src);
+            }
+        }
+    }
+
+    /* Step 4: Walk instance connections to propagate clock aliases down
+     * the hierarchy.  For each module that instantiates another, check
+     * if any connection wires a known clock signal to a child port.
+     * This lets us resolve e.g. module port "clk" → parent "sclk" →
+     * project "sys_clk". We iterate until no new aliases are added. */
+    {
+        int changed = 1;
+        int max_iters = 8; /* prevent infinite loops on pathological cases */
+        while (changed && max_iters-- > 0) {
+            changed = 0;
+            for (int mi = 0; mi < design->num_modules; ++mi) {
+                const IR_Module *parent = &design->modules[mi];
+                for (int ii = 0; ii < parent->num_instances; ++ii) {
+                    const IR_Instance *inst = &parent->instances[ii];
+                    if (inst->child_module_id < 0 ||
+                        inst->child_module_id >= design->num_modules) continue;
+                    const IR_Module *child = &design->modules[inst->child_module_id];
+
+                    for (int ci = 0; ci < inst->num_connections; ++ci) {
+                        const IR_InstanceConnection *conn = &inst->connections[ci];
+
+                        /* Find the parent signal name. */
+                        const char *parent_sig = NULL;
+                        for (int si = 0; si < parent->num_signals; ++si) {
+                            if (parent->signals[si].id == conn->parent_signal_id) {
+                                parent_sig = parent->signals[si].name;
+                                break;
+                            }
+                        }
+                        if (!parent_sig) continue;
+
+                        /* Is the parent signal a known clock? */
+                        const LspClockInfo *parent_clk = lookup_clock_info(parent_sig);
+                        if (!parent_clk) continue;
+
+                        /* Find the child port name. */
+                        const char *child_port = NULL;
+                        for (int si = 0; si < child->num_signals; ++si) {
+                            if (child->signals[si].id == conn->child_port_id) {
+                                child_port = child->signals[si].name;
+                                break;
+                            }
+                        }
+                        if (!child_port) continue;
+
+                        /* Add alias if not already known. */
+                        if (!lookup_clock_info(child_port)) {
+                            add_clock_alias(child_port, parent_clk);
+                            changed = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    lsp_log("clock cache: %zu entries", s_clock_cache_count);
+}
+
+/**
+ * @brief Populate the clock cache from the AST (fallback when IR is not available).
+ */
+static void cache_clock_info_from_ast(JZASTNode *ast) {
+    s_clock_cache_count = 0;
+    if (!ast) return;
+
+    JZASTNode *project = NULL;
+    for (size_t i = 0; i < ast->child_count; ++i) {
+        if (ast->children[i] && ast->children[i]->type == JZ_AST_PROJECT) {
+            project = ast->children[i];
+            break;
+        }
+    }
+    if (!project) return;
+
+    for (size_t i = 0; i < project->child_count; ++i) {
+        JZASTNode *child = project->children[i];
+        if (!child || child->type != JZ_AST_CLOCKS_BLOCK) continue;
+
+        for (size_t ci = 0; ci < child->child_count; ++ci) {
+            JZASTNode *decl = child->children[ci];
+            if (!decl || decl->type != JZ_AST_CONST_DECL || !decl->name) continue;
+
+            LspClockInfo *info = add_clock_entry(decl->name);
+            if (!info) continue;
+
+            strncpy(info->project_clock, decl->name, sizeof(info->project_clock) - 1);
+
+            if (decl->text) {
+                const char *p = strstr(decl->text, "period");
+                if (p) {
+                    p = strchr(p, '=');
+                    if (p) {
+                        p++;
+                        while (*p == ' ' || *p == '\t') p++;
+                        info->period_ns = strtod(p, NULL);
+                    }
+                }
+                const char *e = strstr(decl->text, "edge");
+                if (e) {
+                    e = strchr(e, '=');
+                    if (e) {
+                        e++;
+                        while (*e == ' ' || *e == '\t') e++;
+                        size_t len = 0;
+                        while (e[len] && e[len] != ',' && e[len] != ';' &&
+                               e[len] != '}' && e[len] != ' ' && e[len] != '\t')
+                            len++;
+                        if (len >= sizeof(info->edge)) len = sizeof(info->edge) - 1;
+                        memcpy(info->edge, e, len);
+                        info->edge[len] = '\0';
+                    }
+                }
+            }
+
+            info->is_external = (info->period_ns > 0.0);
+        }
+    }
+}
+
+/**
+ * @brief Look up a clock by name in the cache.
+ */
+static const LspClockInfo *lookup_clock_info(const char *name) {
+    for (size_t i = 0; i < s_clock_cache_count; ++i) {
+        if (strcmp(s_clock_cache[i].name, name) == 0) {
+            return &s_clock_cache[i];
+        }
+    }
+    return NULL;
+}
+
+static JZASTNode *find_declaration(JZASTNode *node, const char *name);
 static void handle_initialize(const char *msg, int id, LspDocStore *store);
 static void handle_initialized(void);
 static void handle_shutdown(int id);
@@ -237,6 +562,27 @@ static void handle_initialize(const char *msg, int id, LspDocStore *store) {
         lsp_log("workspace root: %s", s_workspace_root);
     }
 
+    /* Extract hover feature toggles from initializationOptions. */
+    char init_opts[4096] = {0};
+    if (lsp_json_get_object(params, "initializationOptions", init_opts,
+                            sizeof(init_opts)) == 0) {
+        char hover_opts[1024] = {0};
+        if (lsp_json_get_object(init_opts, "hover", hover_opts,
+                                sizeof(hover_opts)) == 0) {
+            /* JSON booleans: strstr for "false" after the key. */
+            if (strstr(hover_opts, "\"clocks\":false") ||
+                strstr(hover_opts, "\"clocks\": false")) {
+                s_hover_clocks = 0;
+            }
+            if (strstr(hover_opts, "\"declarations\":false") ||
+                strstr(hover_opts, "\"declarations\": false")) {
+                s_hover_declarations = 0;
+            }
+            lsp_log("hover config: clocks=%d declarations=%d",
+                    s_hover_clocks, s_hover_declarations);
+        }
+    }
+
     const char *result =
         "{"
             "\"capabilities\":{"
@@ -380,6 +726,34 @@ static void publish_diagnostics_via_project(const char *uri,
     if (ast) {
         jz_template_expand(ast, &compiler.diagnostics, project_path);
         jz_sem_run(ast, &compiler.diagnostics, project_path, 0);
+
+        /* Build IR for clock info extraction.  The IR gives us resolved
+         * clock properties and port-to-clock mappings that the AST alone
+         * cannot provide.  We always attempt this even if there are
+         * diagnostics (e.g. PATH_TRAVERSAL_FORBIDDEN from sandbox
+         * restrictions are not real semantic errors). */
+        {
+            IR_Design *ir = NULL;
+            JZArena ir_arena;
+            jz_arena_init(&ir_arena, 64 * 1024);
+            if (jz_ir_build_design(ast, &ir, &ir_arena, &compiler.diagnostics) == 0
+                && ir) {
+                lsp_log("IR build succeeded for project, using IR clock cache");
+                cache_clock_info_from_ir(ir);
+            } else {
+                lsp_log("IR build failed for project, falling back to AST clock cache");
+                cache_clock_info_from_ast(ast);
+            }
+            for (size_t dbg = 0; dbg < s_clock_cache_count; ++dbg) {
+                lsp_log("  clock[%zu]: name='%s' proj='%s' ext=%d gen=%d type='%s'",
+                        dbg, s_clock_cache[dbg].name,
+                        s_clock_cache[dbg].project_clock,
+                        s_clock_cache[dbg].is_external,
+                        s_clock_cache[dbg].is_generated,
+                        s_clock_cache[dbg].gen_type);
+            }
+            jz_arena_free(&ir_arena);
+        }
     }
 
     /* Build the JSON diagnostics array, filtering to only the current file. */
@@ -610,6 +984,20 @@ static void publish_diagnostics(const char *uri, LspDocStore *store) {
     if (ast) {
         jz_template_expand(ast, &compiler.diagnostics, filepath);
         jz_sem_run(ast, &compiler.diagnostics, filepath, 0);
+        if (has_project) {
+            {
+                IR_Design *ir = NULL;
+                JZArena ir_arena;
+                jz_arena_init(&ir_arena, 64 * 1024);
+                if (jz_ir_build_design(ast, &ir, &ir_arena,
+                                       &compiler.diagnostics) == 0 && ir) {
+                    cache_clock_info_from_ir(ir);
+                } else {
+                    cache_clock_info_from_ast(ast);
+                }
+                jz_arena_free(&ir_arena);
+            }
+        }
     }
 
     /* Build the JSON diagnostics array. */
@@ -972,7 +1360,7 @@ static void handle_text_document_hover(const char *msg, int id,
 
     if (rule) {
         snprintf(hover_buf, sizeof(hover_buf),
-                 "**%s** (%s)\\n\\n%s\\n\\nGroup: %s",
+                 "**%s** (%s)\n\n%s\n\nGroup: %s",
                  rule->id,
                  rule->mode == JZ_RULE_MODE_ERR ? "error" :
                  rule->mode == JZ_RULE_MODE_WRN ? "warning" : "info",
@@ -1017,6 +1405,166 @@ static void handle_text_document_hover(const char *msg, int id,
         hover_text = "**MUX** — Block for multiplexer-based signal selection.";
     } else if (strcmp(word, "CDC") == 0) {
         hover_text = "**CDC** — Clock Domain Crossing block for safe cross-domain signal transfer.";
+    }
+
+    /* Check if the word is a known clock name. */
+    if (!hover_text && s_hover_clocks) {
+        const LspClockInfo *clk = lookup_clock_info(word);
+        if (clk) {
+            char *p = hover_buf;
+            size_t rem = sizeof(hover_buf);
+            int n;
+
+            n = snprintf(p, rem, "**Clock: %s**\n\n", clk->name);
+            if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+
+            if (clk->is_external) {
+                n = snprintf(p, rem, "Source: External (input pin)\n");
+                if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+            } else if (clk->is_generated) {
+                n = snprintf(p, rem, "Source: %s", clk->gen_type);
+                if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+
+                if (clk->gen_output[0]) {
+                    n = snprintf(p, rem, " %s output", clk->gen_output);
+                    if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+                }
+                n = snprintf(p, rem, "\n");
+                if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+
+                if (clk->gen_input_clock[0]) {
+                    n = snprintf(p, rem, "Reference: %s\n", clk->gen_input_clock);
+                    if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+                }
+            } else {
+                n = snprintf(p, rem, "Source: Unknown\n");
+                if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+            }
+
+            if (clk->period_ns > 0.0) {
+                double freq_mhz = 1000.0 / clk->period_ns;
+                n = snprintf(p, rem, "Period: %.3f ns (%.3f MHz)\n",
+                             clk->period_ns, freq_mhz);
+                if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+            }
+
+            if (clk->edge[0]) {
+                n = snprintf(p, rem, "Edge: %s", clk->edge);
+                if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+            } else {
+                n = snprintf(p, rem, "Edge: Rising (default)");
+                if (n > 0 && (size_t)n < rem) { p += n; rem -= (size_t)n; }
+            }
+
+            hover_text = hover_buf;
+        }
+    }
+
+    /* Check if the word matches a declaration (register, wire, port, etc.)
+     * by parsing the current file's AST and searching for the name. */
+    if (!hover_text && s_hover_declarations) {
+        char hover_filepath[1024];
+        if (lsp_uri_to_path(uri, hover_filepath, sizeof(hover_filepath)) == 0) {
+            JZCompiler hover_compiler;
+            jz_compiler_init(&hover_compiler, JZ_COMPILER_MODE_LINT);
+
+            char *hover_expanded = jz_repeat_expand(doc->content, hover_filepath,
+                                                     &hover_compiler.diagnostics);
+            char *hover_src = hover_expanded ? hover_expanded : doc->content;
+
+            JZTokenStream hover_tokens;
+            memset(&hover_tokens, 0, sizeof(hover_tokens));
+            if (jz_lex_source(hover_filepath, hover_src, &hover_tokens,
+                              &hover_compiler.diagnostics) == 0) {
+                JZASTNode *hover_ast = jz_parse_file(hover_filepath, &hover_tokens,
+                                                      &hover_compiler.diagnostics);
+                if (hover_ast) {
+                    jz_template_expand(hover_ast, &hover_compiler.diagnostics,
+                                       hover_filepath);
+                    JZASTNode *decl = find_declaration(hover_ast, word);
+                    if (decl) {
+                        char *bp = hover_buf;
+                        size_t rem = sizeof(hover_buf);
+                        int n;
+
+                        const char *kind = "";
+                        switch (decl->type) {
+                        case JZ_AST_REGISTER_DECL: kind = "Register"; break;
+                        case JZ_AST_WIRE_DECL:     kind = "Wire"; break;
+                        case JZ_AST_PORT_DECL:     kind = "Port"; break;
+                        case JZ_AST_LATCH_DECL:    kind = "Latch"; break;
+                        case JZ_AST_MEM_DECL:      kind = "Memory"; break;
+                        case JZ_AST_CONST_DECL:    kind = "Constant"; break;
+                        default:                   kind = "Declaration"; break;
+                        }
+
+                        n = snprintf(bp, rem, "**%s: %s**\n\n",
+                                     kind, decl->name ? decl->name : word);
+                        if (n > 0 && (size_t)n < rem) { bp += n; rem -= (size_t)n; }
+
+                        /* Direction for ports. */
+                        if (decl->type == JZ_AST_PORT_DECL && decl->block_kind) {
+                            n = snprintf(bp, rem, "Direction: %s\n", decl->block_kind);
+                            if (n > 0 && (size_t)n < rem) { bp += n; rem -= (size_t)n; }
+                        }
+
+                        /* Width. */
+                        if (decl->width) {
+                            /* Trim trailing whitespace from width string. */
+                            char width_clean[128];
+                            strncpy(width_clean, decl->width, sizeof(width_clean) - 1);
+                            width_clean[sizeof(width_clean) - 1] = '\0';
+                            size_t wl = strlen(width_clean);
+                            while (wl > 0 && (width_clean[wl-1] == ' ' ||
+                                              width_clean[wl-1] == '\t')) {
+                                width_clean[--wl] = '\0';
+                            }
+                            n = snprintf(bp, rem, "Width: [%s]\n", width_clean);
+                            if (n > 0 && (size_t)n < rem) { bp += n; rem -= (size_t)n; }
+                        }
+
+                        /* Latch type. */
+                        if (decl->type == JZ_AST_LATCH_DECL && decl->block_kind) {
+                            n = snprintf(bp, rem, "Type: %s\n", decl->block_kind);
+                            if (n > 0 && (size_t)n < rem) { bp += n; rem -= (size_t)n; }
+                        }
+
+                        /* Reset value for registers (first child is init expr). */
+                        if (decl->type == JZ_AST_REGISTER_DECL &&
+                            decl->child_count > 0 && decl->children[0]) {
+                            JZASTNode *init = decl->children[0];
+                            const char *init_text = NULL;
+                            if (init->text) {
+                                init_text = init->text;
+                            } else if (init->name) {
+                                init_text = init->name;
+                            }
+                            if (init_text) {
+                                n = snprintf(bp, rem, "Reset: %s", init_text);
+                                if (n > 0 && (size_t)n < rem) { bp += n; rem -= (size_t)n; }
+                            }
+                        }
+
+                        /* Constant value (first child is value expr). */
+                        if (decl->type == JZ_AST_CONST_DECL &&
+                            decl->child_count > 0 && decl->children[0]) {
+                            JZASTNode *val = decl->children[0];
+                            const char *val_text = val->text ? val->text : val->name;
+                            if (val_text) {
+                                n = snprintf(bp, rem, "Value: %s", val_text);
+                                if (n > 0 && (size_t)n < rem) { bp += n; rem -= (size_t)n; }
+                            }
+                        }
+
+                        hover_text = hover_buf;
+                    }
+                }
+                jz_token_stream_free(&hover_tokens);
+            }
+            if (hover_expanded) free(hover_expanded);
+            jz_compiler_dispose(&hover_compiler);
+            jz_parser_free_imported_filenames();
+        }
     }
 
     if (!hover_text) {

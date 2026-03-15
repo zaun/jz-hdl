@@ -138,8 +138,16 @@ async function startClient(): Promise<void> {
         args: ['--lsp'],
     };
 
+    const config = vscode.workspace.getConfiguration('jz-hdl');
+
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'jz-hdl' }],
+        initializationOptions: {
+            hover: {
+                clocks: config.get<boolean>('hover.clocks', true),
+                declarations: config.get<boolean>('hover.declarations', true),
+            },
+        },
     };
 
     client = new LanguageClient(
