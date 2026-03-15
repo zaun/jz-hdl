@@ -606,8 +606,8 @@ Each contains:
 | Key            | Type   | Required | Description                            |
 |----------------|--------|----------|----------------------------------------|
 | `buffer`       | object | Yes      | Differential buffer primitive          |
-| `serializer`   | object | No       | Output serializer (output only)        |
-| `deserializer` | object | No       | Input deserializer (input only)        |
+| `serializer`   | array  | No       | Output serializer options (output only)|
+| `deserializer` | array  | No       | Input deserializer options (input only)|
 
 #### Buffer Object
 
@@ -616,13 +616,19 @@ Each contains:
 | `description` | string | Yes      | What this buffer does                  |
 | `map`         | object | Yes      | Backend templates (same format as clock_gen map) |
 
-#### Serializer / Deserializer Object
+#### Serializer / Deserializer Array
+
+An array of serializer (or deserializer) option objects, ordered by ascending ratio. Each chip lists all the serialization ratios it supports. The compiler selects the smallest ratio that is greater than or equal to the required data width.
+
+Each element:
 
 | Key           | Type    | Required | Description                           |
 |---------------|---------|----------|---------------------------------------|
 | `description` | string  | Yes      | What this primitive does              |
 | `ratio`       | integer | Yes      | Serialization/deserialization ratio   |
 | `map`         | object  | Yes      | Backend templates                     |
+
+When a chip supports multiple ratios using different hardware primitives (e.g., Gowin OSER4, OSER8, OSER10), each primitive gets its own entry with its own template. When a wider ratio requires cascading hardware (e.g., Xilinx OSERDESE2 master+slave for 10:1), the template is self-contained — it emits all necessary wire declarations and primitive instantiations. The compiler does not need to know whether a template uses one primitive or multiple; it simply picks the best-fit ratio and emits the template.
 
 ```json
 "differential": {
@@ -634,22 +640,46 @@ Each contains:
       "description": "True LVDS differential output buffer",
       "map": { ... }
     },
-    "serializer": {
-      "description": "10:1 output serializer for TMDS/LVDS",
-      "ratio": 10,
-      "map": { ... }
-    }
+    "serializer": [
+      {
+        "description": "4:1 output serializer",
+        "ratio": 4,
+        "map": { ... }
+      },
+      {
+        "description": "8:1 output serializer",
+        "ratio": 8,
+        "map": { ... }
+      },
+      {
+        "description": "10:1 output serializer (master+slave cascade)",
+        "ratio": 10,
+        "map": { ... }
+      }
+    ]
   },
   "input": {
     "buffer": {
       "description": "True LVDS differential input buffer",
       "map": { ... }
     },
-    "deserializer": {
-      "description": "1:10 input deserializer for TMDS/LVDS",
-      "ratio": 10,
-      "map": { ... }
-    }
+    "deserializer": [
+      {
+        "description": "1:4 input deserializer",
+        "ratio": 4,
+        "map": { ... }
+      },
+      {
+        "description": "1:8 input deserializer",
+        "ratio": 8,
+        "map": { ... }
+      },
+      {
+        "description": "1:10 input deserializer (master+slave cascade)",
+        "ratio": 10,
+        "map": { ... }
+      }
+    ]
   }
 }
 ```
@@ -715,11 +745,14 @@ Template strings in `map` arrays use `%%name%%` delimiters to mark substitution 
 - `%%output%%` - Single-ended output signal
 - `%%pin_p%%` - Positive differential pin
 - `%%pin_n%%` - Negative differential pin
-- `%%D0%%` through `%%D9%%` - Serializer data inputs
-- `%%Q0%%` through `%%Q9%%` - Deserializer data outputs
+- `%%D0%%` through `%%D13%%` - Serializer data inputs (indices beyond the selected ratio resolve to `1'b0`)
+- `%%Q0%%` through `%%Q13%%` - Deserializer data outputs (indices beyond the selected ratio resolve to `1'b0`)
 - `%%fclk%%` - Fast clock for serializer/deserializer
 - `%%pclk%%` - Parallel clock for serializer/deserializer
 - `%%reset%%` - Reset signal for serializer/deserializer
+- `%%data_width%%` - Serialization width (integer, e.g., `10`)
+- `%%shiftin1%%`, `%%shiftin2%%` - Cascade shift input wire names (for master+slave templates)
+- `%%shiftout1%%`, `%%shiftout2%%` - Cascade shift output wire names (for master+slave templates)
 
 ### 12.2 Placeholder Rules
 

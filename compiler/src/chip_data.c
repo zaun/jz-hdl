@@ -1108,13 +1108,13 @@ static int jz_chip_parse_clock_gen_object(const char *json,
 }
 
 /* Parse a differential primitive's map section (same format as clock_gen map). */
-static void jz_chip_parse_diff_map(const char *json,
-                                    const jsmntok_t *toks,
-                                    int count,
-                                    int map_obj_idx,
-                                    JZChipDiffPrimitive *prim)
+static void jz_chip_parse_diff_map_into(const char *json,
+                                         const jsmntok_t *toks,
+                                         int count,
+                                         int map_obj_idx,
+                                         JZBuffer *maps)
 {
-    if (!json || !toks || map_obj_idx < 0 || map_obj_idx >= count || !prim) return;
+    if (!json || !toks || map_obj_idx < 0 || map_obj_idx >= count || !maps) return;
     const jsmntok_t *map_obj = &toks[map_obj_idx];
     if (map_obj->type != JSMN_OBJECT) return;
 
@@ -1165,13 +1165,23 @@ static void jz_chip_parse_diff_map(const char *json,
             JZChipDiffMap map_entry;
             map_entry.backend = backend;
             map_entry.template_text = template_text;
-            jz_buf_append(&prim->maps, &map_entry, sizeof(map_entry));
+            jz_buf_append(maps, &map_entry, sizeof(map_entry));
         } else {
             free(backend);
         }
 
         cur = jz_json_skip(toks, count, cur);
     }
+}
+
+static void jz_chip_parse_diff_map(const char *json,
+                                    const jsmntok_t *toks,
+                                    int count,
+                                    int map_obj_idx,
+                                    JZChipDiffPrimitive *prim)
+{
+    if (!prim) return;
+    jz_chip_parse_diff_map_into(json, toks, count, map_obj_idx, &prim->maps);
 }
 
 /* Parse a differential primitive object (buffer or serializer). */
@@ -1256,27 +1266,61 @@ static void jz_chip_parse_differential(const char *json,
             while (inner < count && toks[inner].start < dir_val->end) {
                 const jsmntok_t *prim_key = &toks[inner++];
                 const jsmntok_t *prim_val = &toks[inner];
-                if (prim_val->type != JSMN_OBJECT) {
-                    inner = jz_json_skip(toks, count, inner);
-                    continue;
-                }
 
-                if (is_output && jz_json_token_eq(json, prim_key, "buffer")) {
+                if (is_output && jz_json_token_eq(json, prim_key, "buffer") &&
+                    prim_val->type == JSMN_OBJECT) {
                     jz_chip_parse_diff_primitive(json, toks, count, inner,
                                                   &out->differential.output_buffer);
                     out->differential.has_output_buffer = 1;
                 } else if (is_output && jz_json_token_eq(json, prim_key, "serializer")) {
-                    jz_chip_parse_diff_primitive(json, toks, count, inner,
-                                                  &out->differential.output_serializer);
-                    out->differential.has_output_serializer = 1;
-                } else if (is_input && jz_json_token_eq(json, prim_key, "buffer")) {
+                    if (prim_val->type == JSMN_ARRAY) {
+                        /* New format: array of serializer options */
+                        int arr_idx = inner + 1;
+                        for (int ai = 0; ai < prim_val->size && arr_idx < count; ++ai) {
+                            if (toks[arr_idx].type == JSMN_OBJECT) {
+                                JZChipDiffPrimitive ser;
+                                jz_chip_parse_diff_primitive(json, toks, count, arr_idx, &ser);
+                                jz_buf_append(&out->differential.output_serializers,
+                                              &ser, sizeof(ser));
+                            }
+                            arr_idx = jz_json_skip(toks, count, arr_idx);
+                        }
+                        out->differential.has_output_serializer = 1;
+                    } else if (prim_val->type == JSMN_OBJECT) {
+                        /* Legacy format: single serializer object */
+                        JZChipDiffPrimitive ser;
+                        jz_chip_parse_diff_primitive(json, toks, count, inner, &ser);
+                        jz_buf_append(&out->differential.output_serializers,
+                                      &ser, sizeof(ser));
+                        out->differential.has_output_serializer = 1;
+                    }
+                } else if (is_input && jz_json_token_eq(json, prim_key, "buffer") &&
+                           prim_val->type == JSMN_OBJECT) {
                     jz_chip_parse_diff_primitive(json, toks, count, inner,
                                                   &out->differential.input_buffer);
                     out->differential.has_input_buffer = 1;
                 } else if (is_input && jz_json_token_eq(json, prim_key, "deserializer")) {
-                    jz_chip_parse_diff_primitive(json, toks, count, inner,
-                                                  &out->differential.input_deserializer);
-                    out->differential.has_input_deserializer = 1;
+                    if (prim_val->type == JSMN_ARRAY) {
+                        /* New format: array of deserializer options */
+                        int arr_idx = inner + 1;
+                        for (int ai = 0; ai < prim_val->size && arr_idx < count; ++ai) {
+                            if (toks[arr_idx].type == JSMN_OBJECT) {
+                                JZChipDiffPrimitive deser;
+                                jz_chip_parse_diff_primitive(json, toks, count, arr_idx, &deser);
+                                jz_buf_append(&out->differential.input_deserializers,
+                                              &deser, sizeof(deser));
+                            }
+                            arr_idx = jz_json_skip(toks, count, arr_idx);
+                        }
+                        out->differential.has_input_deserializer = 1;
+                    } else if (prim_val->type == JSMN_OBJECT) {
+                        /* Legacy format: single deserializer object */
+                        JZChipDiffPrimitive deser;
+                        jz_chip_parse_diff_primitive(json, toks, count, inner, &deser);
+                        jz_buf_append(&out->differential.input_deserializers,
+                                      &deser, sizeof(deser));
+                        out->differential.has_input_deserializer = 1;
+                    }
                 }
 
                 inner = jz_json_skip(toks, count, inner);
@@ -1551,13 +1595,12 @@ void jz_chip_data_free(JZChipData *data)
 
     /* Free differential data */
     {
-        JZChipDiffPrimitive *prims[4] = {
+        /* Free non-array primitives */
+        JZChipDiffPrimitive *prims[2] = {
             &data->differential.output_buffer,
-            &data->differential.output_serializer,
-            &data->differential.input_buffer,
-            &data->differential.input_deserializer
+            &data->differential.input_buffer
         };
-        for (int pi2 = 0; pi2 < 4; ++pi2) {
+        for (int pi2 = 0; pi2 < 2; ++pi2) {
             size_t dm_count = prims[pi2]->maps.len / sizeof(JZChipDiffMap);
             JZChipDiffMap *dms = (JZChipDiffMap *)prims[pi2]->maps.data;
             for (size_t di = 0; di < dm_count; ++di) {
@@ -1565,6 +1608,38 @@ void jz_chip_data_free(JZChipData *data)
                 free(dms[di].template_text);
             }
             jz_buf_free(&prims[pi2]->maps);
+        }
+        /* Free serializer array */
+        {
+            size_t ns = data->differential.output_serializers.len / sizeof(JZChipDiffPrimitive);
+            JZChipDiffPrimitive *sers =
+                (JZChipDiffPrimitive *)data->differential.output_serializers.data;
+            for (size_t si = 0; si < ns; ++si) {
+                size_t dm_count = sers[si].maps.len / sizeof(JZChipDiffMap);
+                JZChipDiffMap *dms = (JZChipDiffMap *)sers[si].maps.data;
+                for (size_t di = 0; di < dm_count; ++di) {
+                    free(dms[di].backend);
+                    free(dms[di].template_text);
+                }
+                jz_buf_free(&sers[si].maps);
+            }
+            jz_buf_free(&data->differential.output_serializers);
+        }
+        /* Free deserializer array */
+        {
+            size_t nd = data->differential.input_deserializers.len / sizeof(JZChipDiffPrimitive);
+            JZChipDiffPrimitive *desers =
+                (JZChipDiffPrimitive *)data->differential.input_deserializers.data;
+            for (size_t di2 = 0; di2 < nd; ++di2) {
+                size_t dm_count = desers[di2].maps.len / sizeof(JZChipDiffMap);
+                JZChipDiffMap *dms = (JZChipDiffMap *)desers[di2].maps.data;
+                for (size_t di = 0; di < dm_count; ++di) {
+                    free(dms[di].backend);
+                    free(dms[di].template_text);
+                }
+                jz_buf_free(&desers[di2].maps);
+            }
+            jz_buf_free(&data->differential.input_deserializers);
         }
         free(data->differential.io_type);
         free(data->differential.diff_type);
@@ -1832,18 +1907,25 @@ const JZChipClockGenInput *jz_chip_clock_gen_input_at(
 }
 
 /* Helper to find a template in a JZChipDiffPrimitive by backend name. */
-static const char *jz_chip_diff_find_map(const JZChipDiffPrimitive *prim,
-                                          const char *backend)
+static const char *jz_chip_diff_find_map_in(const JZBuffer *maps_buf,
+                                              const char *backend)
 {
-    if (!prim || !backend) return NULL;
-    size_t map_count = prim->maps.len / sizeof(JZChipDiffMap);
-    const JZChipDiffMap *maps = (const JZChipDiffMap *)prim->maps.data;
+    if (!maps_buf || !backend) return NULL;
+    size_t map_count = maps_buf->len / sizeof(JZChipDiffMap);
+    const JZChipDiffMap *maps = (const JZChipDiffMap *)maps_buf->data;
     for (size_t i = 0; i < map_count; ++i) {
         if (maps[i].backend && jz_strcasecmp(maps[i].backend, backend) == 0) {
             return maps[i].template_text;
         }
     }
     return NULL;
+}
+
+static const char *jz_chip_diff_find_map(const JZChipDiffPrimitive *prim,
+                                          const char *backend)
+{
+    if (!prim || !backend) return NULL;
+    return jz_chip_diff_find_map_in(&prim->maps, backend);
 }
 
 const char *jz_chip_diff_output_buffer_map(const JZChipData *data,
@@ -1857,7 +1939,10 @@ const char *jz_chip_diff_output_serializer_map(const JZChipData *data,
                                                 const char *backend)
 {
     if (!data || !backend || !data->differential.has_output_serializer) return NULL;
-    return jz_chip_diff_find_map(&data->differential.output_serializer, backend);
+    /* Return the template for the smallest available serializer */
+    int ratio = jz_chip_diff_serializer_ratio(data);
+    if (ratio <= 0) return NULL;
+    return jz_chip_diff_best_serializer_map(data, 1, backend);
 }
 
 const char *jz_chip_diff_input_buffer_map(const JZChipData *data,
@@ -1870,20 +1955,133 @@ const char *jz_chip_diff_input_buffer_map(const JZChipData *data,
 int jz_chip_diff_serializer_ratio(const JZChipData *data)
 {
     if (!data || !data->differential.has_output_serializer) return 0;
-    return data->differential.output_serializer.ratio;
+    /* Return the smallest available ratio */
+    size_t n = data->differential.output_serializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *sers =
+        (const JZChipDiffPrimitive *)data->differential.output_serializers.data;
+    int best = 0;
+    for (size_t i = 0; i < n; ++i) {
+        if (best == 0 || sers[i].ratio < best) best = sers[i].ratio;
+    }
+    return best;
+}
+
+int jz_chip_diff_best_serializer_ratio(const JZChipData *data, int needed_width)
+{
+    if (!data || !data->differential.has_output_serializer || needed_width <= 0) return 0;
+    size_t n = data->differential.output_serializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *sers =
+        (const JZChipDiffPrimitive *)data->differential.output_serializers.data;
+    int best = 0;
+    for (size_t i = 0; i < n; ++i) {
+        if (sers[i].ratio >= needed_width) {
+            if (best == 0 || sers[i].ratio < best) best = sers[i].ratio;
+        }
+    }
+    return best;
+}
+
+const char *jz_chip_diff_best_serializer_map(const JZChipData *data,
+                                              int needed_width,
+                                              const char *backend)
+{
+    if (!data || !backend || !data->differential.has_output_serializer ||
+        needed_width <= 0) return NULL;
+    size_t n = data->differential.output_serializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *sers =
+        (const JZChipDiffPrimitive *)data->differential.output_serializers.data;
+    const JZChipDiffPrimitive *best = NULL;
+    for (size_t i = 0; i < n; ++i) {
+        if (sers[i].ratio >= needed_width) {
+            if (!best || sers[i].ratio < best->ratio) best = &sers[i];
+        }
+    }
+    if (!best) return NULL;
+    return jz_chip_diff_find_map_in(&best->maps, backend);
+}
+
+int jz_chip_diff_max_serializer_ratio(const JZChipData *data)
+{
+    if (!data || !data->differential.has_output_serializer) return 0;
+    size_t n = data->differential.output_serializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *sers =
+        (const JZChipDiffPrimitive *)data->differential.output_serializers.data;
+    int max_r = 0;
+    for (size_t i = 0; i < n; ++i) {
+        if (sers[i].ratio > max_r) max_r = sers[i].ratio;
+    }
+    return max_r;
 }
 
 const char *jz_chip_diff_input_deserializer_map(const JZChipData *data,
                                                   const char *backend)
 {
     if (!data || !backend || !data->differential.has_input_deserializer) return NULL;
-    return jz_chip_diff_find_map(&data->differential.input_deserializer, backend);
+    /* Return the template for the smallest available deserializer */
+    int ratio = jz_chip_diff_deserializer_ratio(data);
+    if (ratio <= 0) return NULL;
+    return jz_chip_diff_best_deserializer_map(data, 1, backend);
 }
 
 int jz_chip_diff_deserializer_ratio(const JZChipData *data)
 {
     if (!data || !data->differential.has_input_deserializer) return 0;
-    return data->differential.input_deserializer.ratio;
+    /* Return the smallest available ratio */
+    size_t n = data->differential.input_deserializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *desers =
+        (const JZChipDiffPrimitive *)data->differential.input_deserializers.data;
+    int best = 0;
+    for (size_t i = 0; i < n; ++i) {
+        if (best == 0 || desers[i].ratio < best) best = desers[i].ratio;
+    }
+    return best;
+}
+
+int jz_chip_diff_best_deserializer_ratio(const JZChipData *data, int needed_width)
+{
+    if (!data || !data->differential.has_input_deserializer || needed_width <= 0) return 0;
+    size_t n = data->differential.input_deserializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *desers =
+        (const JZChipDiffPrimitive *)data->differential.input_deserializers.data;
+    int best = 0;
+    for (size_t i = 0; i < n; ++i) {
+        if (desers[i].ratio >= needed_width) {
+            if (best == 0 || desers[i].ratio < best) best = desers[i].ratio;
+        }
+    }
+    return best;
+}
+
+const char *jz_chip_diff_best_deserializer_map(const JZChipData *data,
+                                                int needed_width,
+                                                const char *backend)
+{
+    if (!data || !backend || !data->differential.has_input_deserializer ||
+        needed_width <= 0) return NULL;
+    size_t n = data->differential.input_deserializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *desers =
+        (const JZChipDiffPrimitive *)data->differential.input_deserializers.data;
+    const JZChipDiffPrimitive *best = NULL;
+    for (size_t i = 0; i < n; ++i) {
+        if (desers[i].ratio >= needed_width) {
+            if (!best || desers[i].ratio < best->ratio) best = &desers[i];
+        }
+    }
+    if (!best) return NULL;
+    return jz_chip_diff_find_map_in(&best->maps, backend);
+}
+
+int jz_chip_diff_max_deserializer_ratio(const JZChipData *data)
+{
+    if (!data || !data->differential.has_input_deserializer) return 0;
+    size_t n = data->differential.input_deserializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *desers =
+        (const JZChipDiffPrimitive *)data->differential.input_deserializers.data;
+    int max_r = 0;
+    for (size_t i = 0; i < n; ++i) {
+        if (desers[i].ratio > max_r) max_r = desers[i].ratio;
+    }
+    return max_r;
 }
 
 const char *jz_chip_diff_io_type(const JZChipData *data)

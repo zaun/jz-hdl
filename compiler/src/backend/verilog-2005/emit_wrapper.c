@@ -886,10 +886,15 @@ typedef struct DiffTemplateCtx {
     const char *pin_p;     /* P pin port name */
     const char *pin_n;     /* N pin port name */
     const char *diff_wire; /* Diff wire base name (for D0..D9 indexing) */
-    int         ser_ratio; /* Serializer ratio (for D0..D9) */
+    int         ser_ratio; /* Serializer data width (for D0..D13 bounds check) */
     const char *fclk;      /* Fast clock name */
     const char *pclk;      /* Parallel clock name */
     const char *reset;     /* Reset signal */
+    const char *shiftin1;  /* Cascade: shift wire 1 from slave */
+    const char *shiftin2;  /* Cascade: shift wire 2 from slave */
+    const char *shiftout1; /* Cascade: shift wire 1 to master */
+    const char *shiftout2; /* Cascade: shift wire 2 to master */
+    int         data_width; /* Cascade: actual serialization width (e.g., 10) */
 } DiffTemplateCtx;
 
 static void emit_diff_from_template(FILE *out,
@@ -937,6 +942,16 @@ static void emit_diff_from_template(FILE *out,
                         fputs(ctx->pclk, out);
                     } else if (strcmp(ph, "reset") == 0 && ctx->reset) {
                         fputs(ctx->reset, out);
+                    } else if (strcmp(ph, "shiftin1") == 0 && ctx->shiftin1) {
+                        fputs(ctx->shiftin1, out);
+                    } else if (strcmp(ph, "shiftin2") == 0 && ctx->shiftin2) {
+                        fputs(ctx->shiftin2, out);
+                    } else if (strcmp(ph, "shiftout1") == 0 && ctx->shiftout1) {
+                        fputs(ctx->shiftout1, out);
+                    } else if (strcmp(ph, "shiftout2") == 0 && ctx->shiftout2) {
+                        fputs(ctx->shiftout2, out);
+                    } else if (strcmp(ph, "data_width") == 0 && ctx->data_width > 0) {
+                        fprintf(out, "%d", ctx->data_width);
                     } else if ((ph[0] == 'D' || ph[0] == 'Q') && ph[1] >= '0' && ph[1] <= '9' &&
                                (ph[2] == '\0' || (ph[2] >= '0' && ph[2] <= '9' && ph[3] == '\0'))) {
                         /* D0..D9 serializer data inputs / Q0..Q9 deserializer data outputs */
@@ -961,6 +976,44 @@ static void emit_diff_from_template(FILE *out,
     }
 }
 
+/* Find the data width of the top module signal bound to a pin/bit.
+ * Returns 0 if no binding found. */
+static int find_signal_width_for_pin(const IR_Design *design,
+                                      const IR_Project *proj,
+                                      int pin_idx, int pin_bit)
+{
+    if (!design || !proj) return 0;
+    const IR_Module *top_mod = NULL;
+    if (proj->top_module_id >= 0 && proj->top_module_id < design->num_modules) {
+        top_mod = &design->modules[proj->top_module_id];
+    }
+    if (!top_mod) return 0;
+
+    for (int t = 0; t < proj->num_top_bindings; ++t) {
+        const IR_TopBinding *tb = &proj->top_bindings[t];
+        if (tb->pin_id == pin_idx && tb->pin_bit_index == pin_bit) {
+            /* Found the binding - look up the signal width */
+            for (int s = 0; s < top_mod->num_signals; ++s) {
+                if (top_mod->signals[s].id == tb->top_port_signal_id) {
+                    return top_mod->signals[s].width;
+                }
+            }
+        }
+    }
+    /* Try scalar binding (pin_bit_index == -1) */
+    for (int t = 0; t < proj->num_top_bindings; ++t) {
+        const IR_TopBinding *tb = &proj->top_bindings[t];
+        if (tb->pin_id == pin_idx && tb->pin_bit_index == -1) {
+            for (int s = 0; s < top_mod->num_signals; ++s) {
+                if (top_mod->signals[s].id == tb->top_port_signal_id) {
+                    return top_mod->signals[s].width;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 /* Check if a differential pin has fclk/pclk (needs serializer). */
 static int pin_needs_serializer(const IR_Pin *pin)
 {
@@ -969,7 +1022,8 @@ static int pin_needs_serializer(const IR_Pin *pin)
 }
 
 
-void emit_project_wrapper(FILE *out, const IR_Design *design)
+void emit_project_wrapper(FILE *out, const IR_Design *design,
+                          JZDiagnosticList *diagnostics)
 {
     if (!out || !design || !design->project) {
         return;
@@ -1262,8 +1316,7 @@ void emit_project_wrapper(FILE *out, const IR_Design *design)
         ? jz_chip_diff_output_buffer_map(&proj_chip_data, "verilog-2005") : NULL;
     const char *ibuf_template = have_proj_chip
         ? jz_chip_diff_input_buffer_map(&proj_chip_data, "verilog-2005") : NULL;
-    const char *oser_template = have_proj_chip
-        ? jz_chip_diff_output_serializer_map(&proj_chip_data, "verilog-2005") : NULL;
+    /* Serializer template is now selected per-pin based on needed data width */
 
     /* Hardcoded fallbacks when no chip data is available */
     static const char fallback_obuf[] =
@@ -1301,7 +1354,6 @@ void emit_project_wrapper(FILE *out, const IR_Design *design)
 
     if (!obuf_template) obuf_template = fallback_obuf;
     if (!ibuf_template) ibuf_template = fallback_ibuf;
-    if (!oser_template) oser_template = fallback_oser;
 
     for (int i = 0; i < num_ports; ++i) {
         const IR_Pin *pin = &proj->pins[i];
@@ -1309,8 +1361,8 @@ void emit_project_wrapper(FILE *out, const IR_Design *design)
         const char *name = pin->name ? pin->name : "jz_pin";
 
         if (pin->kind == PIN_OUT) {
-            int ser_ratio = have_proj_chip ? jz_chip_diff_serializer_ratio(&proj_chip_data) : 0;
-            int needs_ser = pin_needs_serializer(pin) && ser_ratio > 0;
+            int has_any_ser = have_proj_chip && jz_chip_diff_serializer_ratio(&proj_chip_data) > 0;
+            int needs_ser = pin_needs_serializer(pin) && has_any_ser;
 
             for (int bit = 0; bit < pin->width; ++bit) {
                 char suffix[32];
@@ -1331,31 +1383,79 @@ void emit_project_wrapper(FILE *out, const IR_Design *design)
                 }
 
                 if (needs_ser) {
+                    /* Determine actual data width from the top module signal */
+                    int data_width = find_signal_width_for_pin(design, proj, i, bit);
+                    if (data_width <= 0) data_width = jz_chip_diff_serializer_ratio(&proj_chip_data);
+
+                    /* Find best serializer with ratio >= data_width */
+                    int sel_ratio = jz_chip_diff_best_serializer_ratio(&proj_chip_data, data_width);
+                    const char *sel_template = sel_ratio > 0
+                        ? jz_chip_diff_best_serializer_map(&proj_chip_data, data_width, "verilog-2005")
+                        : NULL;
+
+                    if (sel_ratio <= 0 || !sel_template) {
+                        /* No serializer supports this width - ERROR */
+                        if (!sel_template) sel_template = fallback_oser;
+                        if (diagnostics) {
+                            JZLocation loc = {0};
+                            char msg[256];
+                            int max_ratio = jz_chip_diff_max_serializer_ratio(&proj_chip_data);
+                            snprintf(msg, sizeof(msg),
+                                     "Port width %d exceeds maximum serializer ratio %d for pin %s%s",
+                                     data_width, max_ratio, name, suffix);
+                            jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_ERROR,
+                                                 "SERIALIZER_WIDTH_EXCEEDS_RATIO", msg);
+                        }
+                        /* Fall back to largest available */
+                        sel_ratio = jz_chip_diff_max_serializer_ratio(&proj_chip_data);
+                        if (sel_ratio <= 0) sel_ratio = 10; /* ultimate fallback */
+                        sel_template = jz_chip_diff_best_serializer_map(&proj_chip_data, 1, "verilog-2005");
+                        if (!sel_template) sel_template = fallback_oser;
+                    }
+
+                    int wire_width = sel_ratio;
+
+                    /* Emit INFO when selected ratio differs from data width */
+                    if (diagnostics && sel_ratio != data_width) {
+                        JZLocation loc = {0};
+                        char msg[256];
+                        snprintf(msg, sizeof(msg),
+                                 "Pin %s%s: using %d:1 serializer for %d-bit data",
+                                 name, suffix, sel_ratio, data_width);
+                        jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_NOTE,
+                                             "INFO_SERIALIZER_CASCADE", msg);
+                    }
+
                     /* Intermediate wire from top module → serializer */
                     char diff_wire[128], ser_wire[128];
                     snprintf(diff_wire, sizeof(diff_wire), "jz_diff_%s%s", name, suffix);
                     snprintf(ser_wire, sizeof(ser_wire), "jz_ser_%s%s", name, suffix);
 
-                    fprintf(out, "    wire [%d:0] %s;\n", ser_ratio - 1, diff_wire);
+                    fprintf(out, "    wire [%d:0] %s;\n", wire_width - 1, diff_wire);
                     fprintf(out, "    wire %s;\n", ser_wire);
 
-                    /* Serializer instance */
+                    /* Serializer instance (template handles everything) */
                     char oser_inst[128];
                     snprintf(oser_inst, sizeof(oser_inst), "oser_%s%s", name, suffix);
                     DiffTemplateCtx ser_ctx = {
-                        .instance  = oser_inst,
-                        .input     = NULL,
-                        .output    = ser_wire,
-                        .pin_p     = NULL,
-                        .pin_n     = NULL,
-                        .diff_wire = diff_wire,
-                        .ser_ratio = ser_ratio,
-                        .fclk      = pin->fclk_name,
-                        .pclk      = pin->pclk_name,
-                        .reset     = "1'b0",
+                        .instance   = oser_inst,
+                        .input      = NULL,
+                        .output     = ser_wire,
+                        .pin_p      = NULL,
+                        .pin_n      = NULL,
+                        .diff_wire  = diff_wire,
+                        .ser_ratio  = wire_width,
+                        .fclk       = pin->fclk_name,
+                        .pclk       = pin->pclk_name,
+                        .reset      = "1'b0",
+                        .shiftin1   = NULL,
+                        .shiftin2   = NULL,
+                        .shiftout1  = NULL,
+                        .shiftout2  = NULL,
+                        .data_width = wire_width,
                     };
                     fputs("    ", out);
-                    emit_diff_from_template(out, oser_template, &ser_ctx);
+                    emit_diff_from_template(out, sel_template, &ser_ctx);
 
                     /* Output buffer instance */
                     char obuf_inst[128];

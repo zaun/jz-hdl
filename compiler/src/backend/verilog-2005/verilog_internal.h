@@ -279,7 +279,8 @@ int design_has_module_named(const IR_Design *design, const char *name);
  */
 
 /* Emit the project-level wrapper module that exposes board pins. */
-void emit_project_wrapper(FILE *out, const IR_Design *design);
+void emit_project_wrapper(FILE *out, const IR_Design *design,
+                          JZDiagnosticList *diagnostics);
 
 /* -------------------------------------------------------------------------
  * Constraint file emission (constraints.c)

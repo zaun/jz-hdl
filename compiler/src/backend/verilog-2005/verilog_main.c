@@ -169,7 +169,7 @@ int jz_emit_verilog(const IR_Design *design,
 
     /* Emit project-level wrapper module. */
     if (design->project) {
-        emit_project_wrapper(out, design);
+        emit_project_wrapper(out, design, diagnostics);
     }
 
     if (close_out) {

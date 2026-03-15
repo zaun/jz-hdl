@@ -404,6 +404,10 @@ const JZRuleInfo jz_rule_table[] = {
     { "TRISTATE_TRANSFORM", "TRISTATE_TRANSFORM_UNUSED_DEFAULT",        0, JZ_RULE_MODE_WRN, "S11.7 --tristate-default specified but no internal tri-state nets found to transform" },
     { "TRISTATE_TRANSFORM", "INFO_TRISTATE_TRANSFORM",                  0, JZ_RULE_MODE_INF, "S11 Tri-state net transformed by --tristate-default" },
 
+    /* [SERIALIZER] */
+    { "SERIALIZER", "INFO_SERIALIZER_CASCADE",                         0, JZ_RULE_MODE_INF, "Differential output uses cascaded serializers (master+slave) for extended serialization ratio" },
+    { "SERIALIZER", "SERIALIZER_WIDTH_EXCEEDS_RATIO",                  0, JZ_RULE_MODE_ERR, "Differential output port width exceeds chip serializer ratio and cascade is not supported" },
+
     /* [TEMPLATE] */
     { "TEMPLATE", "TEMPLATE_UNDEFINED",              0, JZ_RULE_MODE_ERR, "S10.5 @apply references undefined template" },
     { "TEMPLATE", "TEMPLATE_ARG_COUNT_MISMATCH",     0, JZ_RULE_MODE_ERR, "S10.5 @apply argument count does not match template parameter count" },

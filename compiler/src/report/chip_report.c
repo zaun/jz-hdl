@@ -1613,19 +1613,43 @@ int jz_chip_print_info(const char *chip_id, FILE *out)
                 }
             }
             if (ser_idx >= 0) {
-                char ser_desc[256] = {0};
-                jz_json_object_get_string(json, toks, tok_count,
-                                          ser_idx, "description",
-                                          ser_desc, sizeof(ser_desc));
-                unsigned ratio = 0;
-                int ratio_idx = jz_json_object_get(json, toks, tok_count,
-                                                    ser_idx, "ratio");
-                int have_ratio = (ratio_idx >= 0 &&
-                                  jz_json_token_to_uint(json, &toks[ratio_idx], &ratio));
-                fprintf(out, "  Serializer:");
-                if (have_ratio) fprintf(out, " %u:1", ratio);
-                if (ser_desc[0]) fprintf(out, " (%s)", ser_desc);
-                fprintf(out, "\n");
+                if (toks[ser_idx].type == JSMN_ARRAY) {
+                    /* Array format: list all serializer options */
+                    int arr_cur = ser_idx + 1;
+                    for (int si = 0; si < toks[ser_idx].size && arr_cur < tok_count; ++si) {
+                        if (toks[arr_cur].type == JSMN_OBJECT) {
+                            char ser_desc[256] = {0};
+                            jz_json_object_get_string(json, toks, tok_count,
+                                                      arr_cur, "description",
+                                                      ser_desc, sizeof(ser_desc));
+                            unsigned ratio = 0;
+                            int ratio_idx2 = jz_json_object_get(json, toks, tok_count,
+                                                                arr_cur, "ratio");
+                            int have_ratio = (ratio_idx2 >= 0 &&
+                                              jz_json_token_to_uint(json, &toks[ratio_idx2], &ratio));
+                            fprintf(out, "  Serializer:");
+                            if (have_ratio) fprintf(out, " %u:1", ratio);
+                            if (ser_desc[0]) fprintf(out, " (%s)", ser_desc);
+                            fprintf(out, "\n");
+                        }
+                        arr_cur = jz_json_skip(toks, tok_count, arr_cur);
+                    }
+                } else if (toks[ser_idx].type == JSMN_OBJECT) {
+                    /* Legacy single-object format */
+                    char ser_desc[256] = {0};
+                    jz_json_object_get_string(json, toks, tok_count,
+                                              ser_idx, "description",
+                                              ser_desc, sizeof(ser_desc));
+                    unsigned ratio = 0;
+                    int ratio_idx2 = jz_json_object_get(json, toks, tok_count,
+                                                        ser_idx, "ratio");
+                    int have_ratio = (ratio_idx2 >= 0 &&
+                                      jz_json_token_to_uint(json, &toks[ratio_idx2], &ratio));
+                    fprintf(out, "  Serializer:");
+                    if (have_ratio) fprintf(out, " %u:1", ratio);
+                    if (ser_desc[0]) fprintf(out, " (%s)", ser_desc);
+                    fprintf(out, "\n");
+                }
             }
         }
 
@@ -1646,19 +1670,43 @@ int jz_chip_print_info(const char *chip_id, FILE *out)
                 }
             }
             if (deser_idx >= 0) {
-                char deser_desc[256] = {0};
-                jz_json_object_get_string(json, toks, tok_count,
-                                          deser_idx, "description",
-                                          deser_desc, sizeof(deser_desc));
-                unsigned ratio = 0;
-                int ratio_idx = jz_json_object_get(json, toks, tok_count,
-                                                    deser_idx, "ratio");
-                int have_ratio = (ratio_idx >= 0 &&
-                                  jz_json_token_to_uint(json, &toks[ratio_idx], &ratio));
-                fprintf(out, "  Deserializer:");
-                if (have_ratio) fprintf(out, " 1:%u", ratio);
-                if (deser_desc[0]) fprintf(out, " (%s)", deser_desc);
-                fprintf(out, "\n");
+                if (toks[deser_idx].type == JSMN_ARRAY) {
+                    /* Array format: list all deserializer options */
+                    int arr_cur = deser_idx + 1;
+                    for (int di = 0; di < toks[deser_idx].size && arr_cur < tok_count; ++di) {
+                        if (toks[arr_cur].type == JSMN_OBJECT) {
+                            char deser_desc[256] = {0};
+                            jz_json_object_get_string(json, toks, tok_count,
+                                                      arr_cur, "description",
+                                                      deser_desc, sizeof(deser_desc));
+                            unsigned ratio = 0;
+                            int ratio_idx2 = jz_json_object_get(json, toks, tok_count,
+                                                                arr_cur, "ratio");
+                            int have_ratio = (ratio_idx2 >= 0 &&
+                                              jz_json_token_to_uint(json, &toks[ratio_idx2], &ratio));
+                            fprintf(out, "  Deserializer:");
+                            if (have_ratio) fprintf(out, " 1:%u", ratio);
+                            if (deser_desc[0]) fprintf(out, " (%s)", deser_desc);
+                            fprintf(out, "\n");
+                        }
+                        arr_cur = jz_json_skip(toks, tok_count, arr_cur);
+                    }
+                } else if (toks[deser_idx].type == JSMN_OBJECT) {
+                    /* Legacy single-object format */
+                    char deser_desc[256] = {0};
+                    jz_json_object_get_string(json, toks, tok_count,
+                                              deser_idx, "description",
+                                              deser_desc, sizeof(deser_desc));
+                    unsigned ratio = 0;
+                    int ratio_idx = jz_json_object_get(json, toks, tok_count,
+                                                        deser_idx, "ratio");
+                    int have_ratio = (ratio_idx >= 0 &&
+                                      jz_json_token_to_uint(json, &toks[ratio_idx], &ratio));
+                    fprintf(out, "  Deserializer:");
+                    if (have_ratio) fprintf(out, " 1:%u", ratio);
+                    if (deser_desc[0]) fprintf(out, " (%s)", deser_desc);
+                    fprintf(out, "\n");
+                }
             }
         }
 
