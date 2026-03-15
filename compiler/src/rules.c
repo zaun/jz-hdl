@@ -298,6 +298,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "CLOCKS_PINS_MAP", "PIN_PULL_INVALID",                       0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Invalid pull value (must be UP, DOWN, or NONE)" },
     { "CLOCKS_PINS_MAP", "PIN_PULL_ON_OUTPUT",                     0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Pull resistor specified on output-only pin (OUT_PINS)" },
     { "CLOCKS_PINS_MAP", "PIN_TERM_INVALID",                       0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Invalid termination value (must be ON or OFF)" },
+    { "CLOCKS_PINS_MAP", "PIN_TERM_ON_OUTPUT",                     0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Termination specified on output-only pin (OUT_PINS)" },
     { "CLOCKS_PINS_MAP", "PIN_TERM_INVALID_FOR_STANDARD",          0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Termination not supported for this I/O standard" },
     { "CLOCKS_PINS_MAP", "PIN_DIFF_OUT_MISSING_FCLK",              0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Differential output pin missing required fclk attribute" },
     { "CLOCKS_PINS_MAP", "PIN_DIFF_OUT_MISSING_PCLK",              0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Differential output pin missing required pclk attribute" },

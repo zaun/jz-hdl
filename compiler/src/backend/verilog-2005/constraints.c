@@ -240,8 +240,8 @@ int jz_emit_xdc_constraints(const IR_Design *design,
                         pin->standard, p_port);
             }
 
-            /* Differential termination for input pins */
-            if (pin->kind == PIN_IN) {
+            /* Differential termination for input pins with term=ON */
+            if (pin->kind == PIN_IN && pin->term) {
                 fprintf(out, "set_property DIFF_TERM TRUE [get_ports {%s}]\n",
                         p_port);
             }
@@ -259,6 +259,11 @@ int jz_emit_xdc_constraints(const IR_Design *design,
             if (pin->standard && pin->standard[0] != '\0') {
                 fprintf(out, "set_property IOSTANDARD %s [get_ports {%s}]\n",
                         pin->standard, n_port);
+            }
+
+            /* SLEW FAST on N pin too (prjxray configures each IOB independently) */
+            if (pin->kind == PIN_OUT && pin->fclk_name && pin->fclk_name[0]) {
+                fprintf(out, "set_property SLEW FAST [get_ports {%s}]\n", n_port);
             }
         } else {
             /* Single-ended pin */

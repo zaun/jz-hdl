@@ -1202,6 +1202,11 @@ void sem_check_project_pins(JZASTNode *project,
                                     decl->loc,
                                     "PIN_TERM_INVALID",
                                     "termination must be ON or OFF");
+                } else if (strcmp(term_val, "ON") == 0 && is_out_block) {
+                    sem_report_rule(diagnostics,
+                                    decl->loc,
+                                    "PIN_TERM_ON_OUTPUT",
+                                    "termination not valid on output-only pins (OUT_PINS)");
                 } else if (strcmp(term_val, "ON") == 0 && standard_valid) {
                     /* term=ON only valid for differential standards or
                      * single-ended SSTL / HSTL standards. */
