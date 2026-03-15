@@ -1570,9 +1570,22 @@ void sem_check_unused_modules(JZASTNode *project,
         JZASTNode *mod = project->children[i];
         if (!mod || mod->type != JZ_AST_MODULE) continue;
         for (size_t j = 0; j < mod->child_count; ++j) {
-            JZASTNode *inst = mod->children[j];
-            if (!inst || inst->type != JZ_AST_MODULE_INSTANCE || !inst->text) continue;
-            sem_mark_module_used(&modules, inst->text);
+            JZASTNode *child = mod->children[j];
+            if (!child) continue;
+            if (child->type == JZ_AST_FEATURE_GUARD) {
+                for (size_t fi = 1; fi < child->child_count; ++fi) {
+                    JZASTNode *branch = child->children[fi];
+                    if (!branch) continue;
+                    for (size_t gi = 0; gi < branch->child_count; ++gi) {
+                        JZASTNode *inst = branch->children[gi];
+                        if (!inst || inst->type != JZ_AST_MODULE_INSTANCE || !inst->text) continue;
+                        sem_mark_module_used(&modules, inst->text);
+                    }
+                }
+                continue;
+            }
+            if (child->type != JZ_AST_MODULE_INSTANCE || !child->text) continue;
+            sem_mark_module_used(&modules, child->text);
         }
     }
 
