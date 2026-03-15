@@ -198,7 +198,7 @@
                 { "selector": "REF_CLK", "signal_name": "SCLK" }
               ],
               "outputs": [
-                { "selector": "BASE", "clock_name": "CLK_A" }
+                { "selector": "BASE", "clock_name": "CLK_A", "is_clock": true }
               ],
               "configs": [
                 { "param_name": "DIVCLK_DIVIDE", "param_value": "1" },
@@ -212,7 +212,7 @@
                 { "selector": "REF_CLK", "signal_name": "SCLK" }
               ],
               "outputs": [
-                { "selector": "BASE", "clock_name": "CLK_B" }
+                { "selector": "BASE", "clock_name": "CLK_B", "is_clock": true }
               ],
               "configs": [
                 { "param_name": "DIVCLK_DIVIDE", "param_value": "1" },
@@ -226,8 +226,8 @@
                 { "selector": "REF_CLK", "signal_name": "SCLK" }
               ],
               "outputs": [
-                { "selector": "BASE", "clock_name": "CLK_C" },
-                { "selector": "CLKOUT1", "clock_name": "CLK_D" }
+                { "selector": "BASE", "clock_name": "CLK_C", "is_clock": true },
+                { "selector": "CLKOUT1", "clock_name": "CLK_D", "is_clock": true }
               ],
               "configs": [
                 { "param_name": "DIVCLK_DIVIDE", "param_value": "1" },
