@@ -1,0 +1,5 @@
+File: PIN_DIFF_OUT_MISSING_PCLK.jz
+       5:5    error CLOCK_PERIOD_NONPOSITIVE S6.4/S6.9 Clock period <= 0
+       6:5    error CLOCK_PERIOD_NONPOSITIVE S6.4/S6.9 Clock period <= 0
+      14:5    error PIN_DIFF_OUT_MISSING_PCLK S6.5/S6.9 Differential output pin missing required pclk attribute
+      20:5    error MAP_DIFF_EXPECTED_PAIR S6.6/S6.9 Differential pin must use { P=<id>, N=<id> } MAP syntax

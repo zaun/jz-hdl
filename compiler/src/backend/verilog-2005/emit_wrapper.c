@@ -1437,6 +1437,16 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
                     /* Serializer instance (template handles everything) */
                     char oser_inst[128];
                     snprintf(oser_inst, sizeof(oser_inst), "oser_%s%s", name, suffix);
+
+                    /* Build reset expression: ~<signal> if provided, else 1'b0 */
+                    char reset_expr_buf[128];
+                    const char *reset_expr = "1'b0";
+                    if (pin->reset_name && pin->reset_name[0]) {
+                        snprintf(reset_expr_buf, sizeof(reset_expr_buf),
+                                 "~%s", pin->reset_name);
+                        reset_expr = reset_expr_buf;
+                    }
+
                     DiffTemplateCtx ser_ctx = {
                         .instance   = oser_inst,
                         .input      = NULL,
@@ -1447,7 +1457,7 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
                         .ser_ratio  = wire_width,
                         .fclk       = pin->fclk_name,
                         .pclk       = pin->pclk_name,
-                        .reset      = "1'b0",
+                        .reset      = reset_expr,
                         .shiftin1   = NULL,
                         .shiftin2   = NULL,
                         .shiftout1  = NULL,

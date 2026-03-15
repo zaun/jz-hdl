@@ -1006,10 +1006,11 @@ static void jz_print_clock_gen_info(const char *json,
         if (outputs_idx >= 0 && toks[outputs_idx].type == JSMN_OBJECT) {
             fprintf(out, "  %s Outputs\n", type_short);
             const char *output_headers[] = {
-                "Output", "Frequency Formula", "Description"
+                "Output", "Type", "Frequency Formula", "Description"
             };
             struct {
                 char name[16];
+                char type[8];
                 char formula[256];
                 char desc[256];
             } output_rows[8];
@@ -1042,8 +1043,20 @@ static void jz_print_clock_gen_info(const char *json,
                                                     oformula, sizeof(oformula));
                 }
 
+                /* Determine is_clock: explicit field, or infer from frequency_mhz presence */
+                int is_clock_val = (freq_idx >= 0) ? 1 : 0;
+                int is_clock_idx = jz_json_object_get(json, toks, count, oidx, "is_clock");
+                if (is_clock_idx >= 0) {
+                    int bv = 0;
+                    if (jz_json_token_to_bool(json, &toks[is_clock_idx], &bv)) {
+                        is_clock_val = bv;
+                    }
+                }
+
                 memset(&output_rows[output_count], 0, sizeof(output_rows[output_count]));
                 snprintf(output_rows[output_count].name, sizeof(output_rows[output_count].name), "%s", oname);
+                snprintf(output_rows[output_count].type, sizeof(output_rows[output_count].type), "%s",
+                         is_clock_val ? "clock" : "signal");
                 jz_sanitize_table_text(output_rows[output_count].formula,
                                        sizeof(output_rows[output_count].formula),
                                        oformula);
@@ -1054,30 +1067,34 @@ static void jz_print_clock_gen_info(const char *json,
                 oidx = jz_json_skip(toks, count, oidx);
             }
 
-            size_t output_widths[3] = {
+            size_t output_widths[4] = {
                 strlen(output_headers[0]),
                 strlen(output_headers[1]),
-                strlen(output_headers[2])
+                strlen(output_headers[2]),
+                strlen(output_headers[3])
             };
             for (size_t i = 0; i < output_count; ++i) {
                 size_t len0 = strlen(output_rows[i].name);
-                size_t len1 = strlen(output_rows[i].formula);
-                size_t len2 = strlen(output_rows[i].desc);
+                size_t len1 = strlen(output_rows[i].type);
+                size_t len2 = strlen(output_rows[i].formula);
+                size_t len3 = strlen(output_rows[i].desc);
                 if (len0 > output_widths[0]) output_widths[0] = len0;
                 if (len1 > output_widths[1]) output_widths[1] = len1;
                 if (len2 > output_widths[2]) output_widths[2] = len2;
+                if (len3 > output_widths[3]) output_widths[3] = len3;
             }
-            if (output_widths[2] > JZ_DESC_WRAP_LIMIT)
-                output_widths[2] = JZ_DESC_WRAP_LIMIT;
-            jz_print_table_header(out, output_headers, output_widths, 3);
-            jz_print_table_separator(out, output_widths, 3);
+            if (output_widths[3] > JZ_DESC_WRAP_LIMIT)
+                output_widths[3] = JZ_DESC_WRAP_LIMIT;
+            jz_print_table_header(out, output_headers, output_widths, 4);
+            jz_print_table_separator(out, output_widths, 4);
             for (size_t i = 0; i < output_count; ++i) {
                 const char *cols[] = {
                     output_rows[i].name,
+                    output_rows[i].type,
                     output_rows[i].formula,
                     output_rows[i].desc
                 };
-                jz_print_table_row(out, cols, output_widths, 3);
+                jz_print_table_row(out, cols, output_widths, 4);
             }
             fprintf(out, "\n");
         }

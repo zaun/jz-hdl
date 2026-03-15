@@ -194,6 +194,7 @@
       "outputs": {
         "BASE": {
           "port": "OSCOUT",
+          "is_clock": true,
           "frequency_mhz": { "expr": "250.0 / DIV" }
         }
       }
@@ -349,6 +350,7 @@
         "BASE": {
           "description": "Primary output",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the base output clock derived directly from the FVCO.",
             "expr": "FVCO / ODIV"
@@ -358,6 +360,7 @@
         "PHASE": {
           "description": "Primary output, Phase shifted. Requires PHASESEL",
           "port": "CLKOUTP",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the phased output clock. Identical to the base output frequency.",
             "expr": "FVCO / ODIV"
@@ -371,6 +374,7 @@
         "DIV": {
           "description": "Divided PLL output, Requires CLKOUTD_DIV",
           "port": "CLKOUTD",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the divided output clock after applying the post-divider.",
             "expr": "(FVCO / ODIV) / CLKOUTD_DIV"
@@ -380,10 +384,17 @@
         "DIV3": {
           "description": "Fixed divide-by-3 PLL output",
           "port": "CLKOUT3",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the fixed divide-by-3 output derived from the base output.",
             "expr": "(FVCO / ODIV) / 3"
           }
+        },
+
+        "LOCK": {
+          "description": "PLL lock indicator, high when PLL is locked",
+          "port": "LOCK",
+          "is_clock": false
         }
       },
 
@@ -452,6 +463,7 @@
         "BASE": {
           "description": "Divided clock output",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the divided output clock.",
             "expr": "(1000.0 / REF_CLK_period_ns) / DIV_MODE"
@@ -497,6 +509,7 @@
         "BASE": {
           "description": "Divided-by-2 clock output",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the fixed divide-by-2 output clock.",
             "expr": "(1000.0 / REF_CLK_period_ns) / 2"
@@ -548,6 +561,7 @@
         "BASE": {
           "description": "Buffered clock output on global network",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Same frequency as input (buffer, no division).",
             "expr": "(1000.0 / REF_CLK_period_ns)"
@@ -598,6 +612,7 @@
         "BASE": {
           "description": "Buffered clock output on HCLK network",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Same frequency as input (buffer, no division).",
             "expr": "(1000.0 / REF_CLK_period_ns)"

@@ -85,6 +85,7 @@ typedef struct JZChipClockGenOutput {
     char *selector;       /**< Output selector (e.g., "BASE", "PHASE", "DIV", "DIV3"). */
     char *frequency_expr; /**< Expression for frequency in MHz (e.g., "FVCO / ODIV"). */
     char *phase_deg_expr; /**< Expression for phase offset in degrees (e.g., "PHASESEL * 45"), or NULL. */
+    int   is_clock;       /**< 1 if this output is a clock signal, 0 if status/control (e.g., LOCK). */
 } JZChipClockGenOutput;
 
 /**
@@ -363,6 +364,22 @@ const JZChipClockGenParam *jz_chip_clock_gen_param_at(
 const char *jz_chip_clock_gen_output_freq_expr(const JZChipData *data,
                                                 const char *type,
                                                 const char *selector);
+
+/**
+ * @brief Check if an output selector is valid for a clock generator type.
+ * @return 1 if the selector exists in the chip's outputs, 0 otherwise.
+ */
+int jz_chip_clock_gen_output_valid(const JZChipData *data,
+                                   const char *type,
+                                   const char *selector);
+
+/**
+ * @brief Check if a clock generator output is a clock (vs a signal like LOCK).
+ * @return 1 if is_clock, 0 if not, -1 if selector not found.
+ */
+int jz_chip_clock_gen_output_is_clock(const JZChipData *data,
+                                      const char *type,
+                                      const char *selector);
 
 /**
  * @brief Get the phase offset expression for a clock generator output.

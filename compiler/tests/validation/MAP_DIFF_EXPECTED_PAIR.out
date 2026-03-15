@@ -1,2 +1,5 @@
 File: MAP_DIFF_EXPECTED_PAIR.jz
+       6:5    error PIN_DIFF_OUT_MISSING_FCLK S6.5/S6.9 Differential output pin missing required fclk attribute
+       6:5    error PIN_DIFF_OUT_MISSING_PCLK S6.5/S6.9 Differential output pin missing required pclk attribute
+       6:5    error PIN_DIFF_OUT_MISSING_RESET S6.5/S6.9 Differential output pin missing required reset attribute
       10:5    error MAP_DIFF_EXPECTED_PAIR S6.6/S6.9 Differential pin must use { P=<id>, N=<id> } MAP syntax

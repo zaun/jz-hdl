@@ -967,6 +967,34 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
                     /* Serializer cell */
                     char oser_inst[128];
                     snprintf(oser_inst, sizeof(oser_inst), "oser_%s%s", name, suffix);
+
+                    /* Build reset expression: inverted lock signal or constant 0 */
+                    char reset_wire_buf[128];
+                    const char *reset_val = "1'0";
+                    if (pin->reset_name && pin->reset_name[0]) {
+                        snprintf(reset_wire_buf, sizeof(reset_wire_buf),
+                                 "jz_rst_inv_%s%s", name, suffix);
+                        reset_val = reset_wire_buf;
+
+                        /* Emit inverted reset wire and NOT cell */
+                        rtlil_indent(out, 1);
+                        fprintf(out, "wire width 1 \\%s\n", reset_wire_buf);
+                        rtlil_indent(out, 1);
+                        fprintf(out, "cell $not $auto$rst_inv_%s%s\n", name, suffix);
+                        rtlil_indent(out, 2);
+                        fprintf(out, "parameter \\A_SIGNED 0\n");
+                        rtlil_indent(out, 2);
+                        fprintf(out, "parameter \\A_WIDTH 1\n");
+                        rtlil_indent(out, 2);
+                        fprintf(out, "parameter \\Y_WIDTH 1\n");
+                        rtlil_indent(out, 2);
+                        fprintf(out, "connect \\A \\%s\n", pin->reset_name);
+                        rtlil_indent(out, 2);
+                        fprintf(out, "connect \\Y \\%s\n", reset_wire_buf);
+                        rtlil_indent(out, 1);
+                        fprintf(out, "end\n");
+                    }
+
                     DiffTemplateCtx ser_ctx = {
                         .instance  = oser_inst,
                         .input     = NULL,
@@ -977,7 +1005,7 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
                         .ser_ratio = wire_width,
                         .fclk      = pin->fclk_name,
                         .pclk      = pin->pclk_name,
-                        .reset     = "1'b0",
+                        .reset     = reset_val,
                     };
                     rtlil_indent(out, 1);
                     emit_diff_from_template(out, sel_template, &ser_ctx);

@@ -68,7 +68,8 @@ typedef enum JZASTNodeType {
     JZ_AST_CLOCK_GEN_BLOCK,         /**< CLOCK_GEN declaration block. */
     JZ_AST_CLOCK_GEN_UNIT,          /**< Clock generator unit (PLL/DLL). */
     JZ_AST_CLOCK_GEN_IN,            /**< Clock generator input. */
-    JZ_AST_CLOCK_GEN_OUT,           /**< Clock generator output. */
+    JZ_AST_CLOCK_GEN_OUT,           /**< Clock generator clock output. */
+    JZ_AST_CLOCK_GEN_WIRE,          /**< Clock generator non-clock output (e.g., LOCK). */
     JZ_AST_CLOCK_GEN_CONFIG,        /**< Clock generator configuration. */
     JZ_AST_MODULE_INSTANCE,         /**< Module instance in parent module. */
     JZ_AST_PROJECT_TOP_INSTANCE,    /**< Top-level instance in project. */

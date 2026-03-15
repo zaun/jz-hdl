@@ -489,14 +489,17 @@ An object mapping derived value names to their definitions. Derived values are c
 
 ### 9.6 `outputs` Object
 
-An object mapping output names to their definitions. Each output represents a clock signal produced by the generator.
+An object mapping output names to their definitions. Each output represents either a clock signal or a status signal produced by the generator.
 
-| Key             | Type   | Required | Description                                |
-|-----------------|--------|----------|--------------------------------------------|
-| `description`   | string | Yes      | What this output is                        |
-| `port`          | string | Yes      | Physical port name on the primitive        |
-| `frequency_mhz` | object | No       | Frequency specification (absent for non-clock outputs like LOCK) |
+| Key             | Type    | Required | Description                                |
+|-----------------|---------|----------|--------------------------------------------|
+| `description`   | string  | Yes      | What this output is                        |
+| `port`          | string  | Yes      | Physical port name on the primitive        |
+| `is_clock`      | boolean | Yes      | `true` if this output is a clock signal, `false` if it is a status/control signal (e.g., LOCK) |
+| `frequency_mhz` | object | No       | Frequency specification (required when `is_clock` is `true`) |
 | `phase_deg`     | object | No       | Phase specification                        |
+
+The `is_clock` field distinguishes clock outputs (which must be declared in the `CLOCKS` block and have a computable frequency) from non-clock outputs (such as PLL lock indicators) which are status signals and do not represent clocks.
 
 The `frequency_mhz` object:
 
@@ -514,12 +517,13 @@ The `phase_deg` object:
 
 Every clock generator must have at least a `BASE` output. The `BASE` output is the primary clock output.
 
-Non-clock outputs (e.g., `LOCK`) omit `frequency_mhz`:
+Non-clock outputs (e.g., `LOCK`) set `is_clock` to `false` and omit `frequency_mhz`:
 
 ```json
 "LOCK": {
   "description": "PLL lock indicator, high when PLL is locked",
-  "port": "LOCK"
+  "port": "LOCK",
+  "is_clock": false
 }
 ```
 

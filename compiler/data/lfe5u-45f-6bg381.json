@@ -181,6 +181,7 @@
         "BASE": {
           "description": "Internal oscillator output",
           "port": "OSC",
+          "is_clock": true,
           "frequency_mhz": { "expr": "580.0 / DIV" }
         }
       }
@@ -371,6 +372,7 @@
         "BASE": {
           "description": "Primary PLL output (CLKOP)",
           "port": "CLKOP",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Primary output frequency: FVCO / CLKOP_DIV",
             "expr": "FVCO / CLKOP_DIV"
@@ -380,6 +382,7 @@
         "CLKOS": {
           "description": "Secondary PLL output",
           "port": "CLKOS",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Secondary output frequency: FVCO / CLKOS_DIV",
             "expr": "FVCO / CLKOS_DIV"
@@ -389,6 +392,7 @@
         "CLKOS2": {
           "description": "Tertiary PLL output",
           "port": "CLKOS2",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Tertiary output frequency: FVCO / CLKOS2_DIV",
             "expr": "FVCO / CLKOS2_DIV"
@@ -398,6 +402,7 @@
         "CLKOS3": {
           "description": "Quaternary PLL output",
           "port": "CLKOS3",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Quaternary output frequency: FVCO / CLKOS3_DIV",
             "expr": "FVCO / CLKOS3_DIV"
@@ -406,7 +411,8 @@
 
         "LOCK": {
           "description": "PLL lock indicator, high when PLL is locked",
-          "port": "LOCK"
+          "port": "LOCK",
+          "is_clock": false
         }
       },
 
@@ -464,6 +470,7 @@
         "BASE": {
           "description": "Buffered clock output on primary clock network",
           "port": "CLKO",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Same frequency as input (buffer, no division).",
             "expr": "(1000.0 / REF_CLK_period_ns)"

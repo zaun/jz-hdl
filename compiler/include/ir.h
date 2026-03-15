@@ -613,7 +613,8 @@ typedef struct IR_Clock {
  */
 typedef struct IR_ClockGenOutput {
     char *selector;    /**< PLL output name (e.g., "BASE", "PHASE", "DIV"). */
-    char *clock_name;  /**< Output clock name (must exist in clocks array). */
+    char *clock_name;  /**< Output signal name. */
+    int   is_clock;    /**< 1 if clock output (OUT), 0 if wire output (WIRE). */
 } IR_ClockGenOutput;
 
 /**
@@ -703,6 +704,7 @@ typedef struct IR_Pin {
     IR_PullMode pull;     /**< Pull resistor mode. */
     char      *fclk_name; /**< Fast (serializer) clock name; NULL if none. */
     char      *pclk_name; /**< Parallel data clock name; NULL if none. */
+    char      *reset_name; /**< Reset signal name for serializer; NULL if none. */
 } IR_Pin;
 
 /**

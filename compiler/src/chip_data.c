@@ -146,6 +146,22 @@ const char *jz_chip_builtin_json(const char *chip_id)
     return NULL;
 }
 
+int jz_json_token_to_bool(const char *json, const jsmntok_t *tok, int *out)
+{
+    if (!json || !tok || !out) return 0;
+    if (tok->type != JSMN_PRIMITIVE && tok->type != JSMN_STRING) return 0;
+    size_t len = (size_t)(tok->end - tok->start);
+    if (len == 4 && strncmp(json + tok->start, "true", 4) == 0) {
+        *out = 1;
+        return 1;
+    }
+    if (len == 5 && strncmp(json + tok->start, "false", 5) == 0) {
+        *out = 0;
+        return 1;
+    }
+    return 0;
+}
+
 int jz_json_token_eq(const char *json, const jsmntok_t *tok, const char *s)
 {
     if (!json || !tok || tok->type != JSMN_STRING || !s) return 0;
@@ -835,14 +851,21 @@ static void jz_chip_parse_clock_gen_outputs(const char *json,
         char *selector = jz_json_token_strdup(json, sel_tok);
         char *freq_expr = NULL;
         char *phase_expr = NULL;
+        int is_clock = -1; /* -1 = not specified */
 
-        /* Scan inner object for "frequency_mhz" -> "expr" and "phase_deg" -> "expr" */
+        /* Scan inner object for "frequency_mhz" -> "expr", "phase_deg" -> "expr", and "is_clock" */
         int inner = cur + 1;
         while (inner < count && toks[inner].start < val->end) {
             const jsmntok_t *ikey = &toks[inner++];
             if (inner >= count) break;
             const jsmntok_t *ival = &toks[inner];
-            if (ival->type == JSMN_OBJECT &&
+            if (jz_json_token_eq(json, ikey, "is_clock") &&
+                ival->type == JSMN_PRIMITIVE) {
+                int bval = 0;
+                if (jz_json_token_to_bool(json, ival, &bval)) {
+                    is_clock = bval;
+                }
+            } else if (ival->type == JSMN_OBJECT &&
                 (jz_json_token_eq(json, ikey, "frequency_mhz") ||
                  jz_json_token_eq(json, ikey, "phase_deg"))) {
                 int is_phase = jz_json_token_eq(json, ikey, "phase_deg");
@@ -870,6 +893,8 @@ static void jz_chip_parse_clock_gen_outputs(const char *json,
             out_entry.selector = selector;
             out_entry.frequency_expr = freq_expr;
             out_entry.phase_deg_expr = phase_expr;
+            /* If is_clock not explicitly set, infer from presence of frequency_mhz */
+            out_entry.is_clock = (is_clock >= 0) ? is_clock : (freq_expr != NULL);
             jz_buf_append(&cg->outputs, &out_entry, sizeof(out_entry));
         } else {
             free(selector);
@@ -1815,6 +1840,23 @@ const JZChipClockGenParam *jz_chip_clock_gen_param_at(
     return &ps[index];
 }
 
+int jz_chip_clock_gen_output_is_clock(const JZChipData *data,
+                                      const char *type,
+                                      const char *selector)
+{
+    if (!data || !type || !selector) return -1;
+    const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
+    if (!cg) return -1;
+    size_t o_count = cg->outputs.len / sizeof(JZChipClockGenOutput);
+    const JZChipClockGenOutput *os = (const JZChipClockGenOutput *)cg->outputs.data;
+    for (size_t j = 0; j < o_count; ++j) {
+        if (os[j].selector && strcmp(os[j].selector, selector) == 0) {
+            return os[j].is_clock;
+        }
+    }
+    return -1;
+}
+
 const char *jz_chip_clock_gen_output_freq_expr(const JZChipData *data,
                                                 const char *type,
                                                 const char *selector)
@@ -1830,6 +1872,23 @@ const char *jz_chip_clock_gen_output_freq_expr(const JZChipData *data,
         }
     }
     return NULL;
+}
+
+int jz_chip_clock_gen_output_valid(const JZChipData *data,
+                                   const char *type,
+                                   const char *selector)
+{
+    if (!data || !type || !selector) return 0;
+    const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
+    if (!cg) return 0;
+    size_t o_count = cg->outputs.len / sizeof(JZChipClockGenOutput);
+    const JZChipClockGenOutput *os = (const JZChipClockGenOutput *)cg->outputs.data;
+    for (size_t j = 0; j < o_count; ++j) {
+        if (os[j].selector && strcmp(os[j].selector, selector) == 0) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 const char *jz_chip_clock_gen_output_phase_expr(const JZChipData *data,

@@ -1,0 +1,2 @@
+File: CLOCK_EXTERNAL_NO_PERIOD.jz
+       5:5    error CLOCK_EXTERNAL_NO_PERIOD S6.4 External clock (IN_PINS) must have period declared in CLOCKS block

@@ -334,6 +334,7 @@
         "BASE": {
           "description": "Primary MMCM output (CLKOUT0)",
           "port": "CLKOUT0",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Primary output frequency: FVCO / CLKOUT0_DIVIDE_F",
             "expr": "FVCO / CLKOUT0_DIVIDE_F"
@@ -343,6 +344,7 @@
         "CLKOUT1": {
           "description": "Secondary MMCM output",
           "port": "CLKOUT1",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Secondary output frequency: FVCO / CLKOUT1_DIVIDE",
             "expr": "FVCO / CLKOUT1_DIVIDE"
@@ -352,6 +354,7 @@
         "CLKOUT2": {
           "description": "Tertiary MMCM output",
           "port": "CLKOUT2",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Tertiary output frequency: FVCO / CLKOUT2_DIVIDE",
             "expr": "FVCO / CLKOUT2_DIVIDE"
@@ -361,6 +364,7 @@
         "CLKOUT3": {
           "description": "Quaternary MMCM output",
           "port": "CLKOUT3",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Quaternary output frequency: FVCO / CLKOUT3_DIVIDE",
             "expr": "FVCO / CLKOUT3_DIVIDE"
@@ -370,6 +374,7 @@
         "CLKOUT4": {
           "description": "MMCM output 4",
           "port": "CLKOUT4",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Output 4 frequency: FVCO / CLKOUT4_DIVIDE",
             "expr": "FVCO / CLKOUT4_DIVIDE"
@@ -379,6 +384,7 @@
         "CLKOUT5": {
           "description": "MMCM output 5",
           "port": "CLKOUT5",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Output 5 frequency: FVCO / CLKOUT5_DIVIDE",
             "expr": "FVCO / CLKOUT5_DIVIDE"
@@ -388,6 +394,7 @@
         "CLKOUT6": {
           "description": "MMCM output 6",
           "port": "CLKOUT6",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Output 6 frequency: FVCO / CLKOUT6_DIVIDE",
             "expr": "FVCO / CLKOUT6_DIVIDE"
@@ -396,7 +403,8 @@
 
         "LOCK": {
           "description": "MMCM lock indicator, high when MMCM is locked",
-          "port": "LOCKED"
+          "port": "LOCKED",
+          "is_clock": false
         }
       },
 
@@ -448,6 +456,7 @@
         "BASE": {
           "description": "Buffered clock output on global clock network",
           "port": "O",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Same frequency as input (buffer, no division).",
             "expr": "(1000.0 / REF_CLK_period_ns)"
@@ -638,6 +647,7 @@
         "BASE": {
           "description": "Primary PLL output (CLKOUT0)",
           "port": "CLKOUT0",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Primary output frequency: FVCO / CLKOUT0_DIVIDE",
             "expr": "FVCO / CLKOUT0_DIVIDE"
@@ -647,6 +657,7 @@
         "CLKOUT1": {
           "description": "Secondary PLL output",
           "port": "CLKOUT1",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Secondary output frequency: FVCO / CLKOUT1_DIVIDE",
             "expr": "FVCO / CLKOUT1_DIVIDE"
@@ -656,6 +667,7 @@
         "CLKOUT2": {
           "description": "Tertiary PLL output",
           "port": "CLKOUT2",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Tertiary output frequency: FVCO / CLKOUT2_DIVIDE",
             "expr": "FVCO / CLKOUT2_DIVIDE"
@@ -665,6 +677,7 @@
         "CLKOUT3": {
           "description": "Quaternary PLL output",
           "port": "CLKOUT3",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Quaternary output frequency: FVCO / CLKOUT3_DIVIDE",
             "expr": "FVCO / CLKOUT3_DIVIDE"
@@ -674,6 +687,7 @@
         "CLKOUT4": {
           "description": "PLL output 4",
           "port": "CLKOUT4",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Output 4 frequency: FVCO / CLKOUT4_DIVIDE",
             "expr": "FVCO / CLKOUT4_DIVIDE"
@@ -683,6 +697,7 @@
         "CLKOUT5": {
           "description": "PLL output 5",
           "port": "CLKOUT5",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Output 5 frequency: FVCO / CLKOUT5_DIVIDE",
             "expr": "FVCO / CLKOUT5_DIVIDE"
@@ -691,7 +706,8 @@
 
         "LOCK": {
           "description": "PLL lock indicator, high when PLL is locked",
-          "port": "LOCKED"
+          "port": "LOCKED",
+          "is_clock": false
         }
       },
 

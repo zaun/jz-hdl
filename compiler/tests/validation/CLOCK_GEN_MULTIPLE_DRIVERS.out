@@ -1,0 +1,3 @@
+File: CLOCK_GEN_MULTIPLE_DRIVERS.jz
+      18:3    info  CLOCK_GEN_NO_CHIP_DATA S6.4.1 No chip specified; CLOCK_GEN parameters and constraints cannot be validated
+      28:7    error CLOCK_GEN_MULTIPLE_DRIVERS S6.4.1 Clock is driven by multiple CLOCK_GEN outputs

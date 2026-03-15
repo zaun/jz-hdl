@@ -3,7 +3,7 @@ Memory Report
 Project: src/tang_nano_20k.jz
 Chip: GW2AR-18-QN88-C8-I7
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/rom.jz@ 10 = BLOCK MEMORY 16384 Bytes (rom_mem) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/rom.jz@ 10 = BLOCK MEMORY 16384 Bytes (rom_mem) [ERROR]
     Mode:
     Requested | Read Only Memory
     Matched   | Read Only Memory
@@ -12,7 +12,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Requested | 32 bit | 12 bit (4096)
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/block_ram.jz@ 10 = BLOCK MEMORY 20480 Bytes (ram_mem) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/block_ram.jz@ 10 = BLOCK MEMORY 20480 Bytes (ram_mem) [ERROR]
     Mode:
     Requested | Semi-Dual Port
     Matched   | Semi-Dual Port
@@ -21,7 +21,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Requested | 32 bit | 13 bit (5120)
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@ 40 = BLOCK MEMORY 4096 Bytes (char_cpu) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/terminal.jz@ 40 = BLOCK MEMORY 4096 Bytes (char_cpu) [ERROR]
     Mode:
     Requested | Semi-Dual Port
     Matched   | Semi-Dual Port
@@ -30,7 +30,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Requested | 8 bit | 12 bit (4096)
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@ 47 = BLOCK MEMORY 16384 Bytes (attr_cpu) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/terminal.jz@ 47 = BLOCK MEMORY 16384 Bytes (attr_cpu) [ERROR]
     Mode:
     Requested | Semi-Dual Port
     Matched   | Semi-Dual Port
@@ -39,7 +39,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Requested | 32 bit | 12 bit (4096)
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@ 55 = BLOCK MEMORY 4096 Bytes (char_vid) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/terminal.jz@ 55 = BLOCK MEMORY 4096 Bytes (char_vid) [ERROR]
     Mode:
     Requested | Semi-Dual Port
     Matched   | Semi-Dual Port
@@ -48,7 +48,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Requested | 8 bit | 12 bit (4096)
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/terminal.jz@ 62 = BLOCK MEMORY 16384 Bytes (attr_vid) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/terminal.jz@ 62 = BLOCK MEMORY 16384 Bytes (attr_vid) [ERROR]
     Mode:
     Requested | Semi-Dual Port
     Matched   | Semi-Dual Port
@@ -57,7 +57,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Requested | 32 bit | 12 bit (4096)
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/video.jz@ 43 = BLOCK MEMORY 16384 Bytes (font_rom) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/video.jz@ 43 = BLOCK MEMORY 16384 Bytes (font_rom) [ERROR]
     Mode:
     Requested | Read Only Memory
     Matched   | Read Only Memory
@@ -66,7 +66,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Requested | 16 bit | 13 bit (8192)
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/sdcard.jz@ 89 = DISTRIBUTED MEMORY 512 Bytes (buffer)
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/sdcard.jz@ 89 = DISTRIBUTED MEMORY 512 Bytes (buffer)
     Mode:
     Requested | Ports (1R/1W)
     Matched   | Ports (1R/1W)
@@ -76,7 +76,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Matched   | 16 bit | 12 bit     
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@ 119 = DISTRIBUTED MEMORY 256 Bytes (buf_left)
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/audio.jz@ 119 = DISTRIBUTED MEMORY 256 Bytes (buf_left)
     Mode:
     Requested | Ports (1R/1W)
     Matched   | Ports (1R/1W)
@@ -86,7 +86,7 @@ Chip: GW2AR-18-QN88-C8-I7
     Matched   | 16 bit | 12 bit     
 
 
-/Users/justinzaun/Development/JZ-HDL/examples/soc/src/audio.jz@ 123 = DISTRIBUTED MEMORY 256 Bytes (buf_right)
+/Users/justinzaun/Development/jz-hdl-dev/examples/soc/src/audio.jz@ 123 = DISTRIBUTED MEMORY 256 Bytes (buf_right)
     Mode:
     Requested | Ports (1R/1W)
     Matched   | Ports (1R/1W)

@@ -83,8 +83,8 @@
         OUT [10] y_pos          = y_pos;
     }
 
-    // Blue channel (data channel 0) - carries sync signals
     @feature CONFIG.serializer == 10
+        // Blue channel (data channel 0) - carries sync signals
         @new enc0 tmds_encoder_10 {
             IN  [1]  clk            = clk;
             IN  [1]  rst_n          = reset;
@@ -93,6 +93,26 @@
             IN  [1]  c1             = vsync;
             IN  [1]  display_enable = de;
             OUT [10] tmds_out       = dvi_tmds_d0;
+        }
+        // Green channel (data channel 1)
+        @new enc1 tmds_encoder_10 {
+            IN  [1]  clk            = clk;
+            IN  [1]  rst_n          = reset;
+            IN  [8]  data_in        = green;
+            IN  [1]  c0             = 1'b0;
+            IN  [1]  c1             = 1'b0;
+            IN  [1]  display_enable = de;
+            OUT [10] tmds_out       = dvi_tmds_d1;
+        }
+        // Red channel (data channel 2)
+        @new enc2 tmds_encoder_10 {
+            IN  [1]  clk            = clk;
+            IN  [1]  rst_n          = reset;
+            IN  [8]  data_in        = red;
+            IN  [1]  c0             = 1'b0;
+            IN  [1]  c1             = 1'b0;
+            IN  [1]  display_enable = de;
+            OUT [10] tmds_out       = dvi_tmds_d2;
         }
     @else
         @new enc0 tmds_encoder_2 {
@@ -104,20 +124,6 @@
             IN  [1]  display_enable = de;
             OUT [10] tmds_out       = dvi_tmds_d0;
         }
-    @endfeat
-
-    // Green channel (data channel 1)
-    @feature CONFIG.serializer == 10
-        @new enc1 tmds_encoder_10 {
-            IN  [1]  clk            = clk;
-            IN  [1]  rst_n          = reset;
-            IN  [8]  data_in        = green;
-            IN  [1]  c0             = 1'b0;
-            IN  [1]  c1             = 1'b0;
-            IN  [1]  display_enable = de;
-            OUT [10] tmds_out       = dvi_tmds_d1;
-        }
-    @else
         @new enc1 tmds_encoder_2 {
             IN  [1]  clk            = clk;
             IN  [1]  rst_n          = reset;
@@ -127,20 +133,6 @@
             IN  [1]  display_enable = de;
             OUT [10] tmds_out       = dvi_tmds_d1;
         }
-    @endfeat
-
-    // Red channel (data channel 2)
-    @feature CONFIG.serializer == 10
-        @new enc2 tmds_encoder_10 {
-            IN  [1]  clk            = clk;
-            IN  [1]  rst_n          = reset;
-            IN  [8]  data_in        = red;
-            IN  [1]  c0             = 1'b0;
-            IN  [1]  c1             = 1'b0;
-            IN  [1]  display_enable = de;
-            OUT [10] tmds_out       = dvi_tmds_d2;
-        }
-    @else
         @new enc2 tmds_encoder_2 {
             IN  [1]  clk            = clk;
             IN  [1]  rst_n          = reset;
@@ -221,7 +213,7 @@
         }
 
         // LED status
-        leds <= ~{ heartbeat_led, 5'b00000 };
+        leds <= { heartbeat_led, 5'b00000 };
     }
 
     SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {

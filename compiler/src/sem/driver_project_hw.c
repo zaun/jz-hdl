@@ -164,7 +164,7 @@ static int is_clock_gen_output(JZASTNode *project, const char *clock_name) {
 
             for (size_t c = 0; c < unit->child_count; ++c) {
                 JZASTNode *out = unit->children[c];
-                if (!out || out->type != JZ_AST_CLOCK_GEN_OUT) continue;
+                if (!out || (out->type != JZ_AST_CLOCK_GEN_OUT && out->type != JZ_AST_CLOCK_GEN_WIRE)) continue;
                 if (out->name && strcmp(out->name, clock_name) == 0) {
                     return 1;
                 }
@@ -451,7 +451,7 @@ void sem_check_project_clock_gen(JZASTNode *project,
             JZBuffer this_unit_outputs = {0};
             for (size_t c = 0; c < unit->child_count; ++c) {
                 JZASTNode *elem = unit->children[c];
-                if (elem && elem->type == JZ_AST_CLOCK_GEN_OUT && elem->name) {
+                if (elem && (elem->type == JZ_AST_CLOCK_GEN_OUT || elem->type == JZ_AST_CLOCK_GEN_WIRE) && elem->name) {
                     const char *out_clk = elem->name;
                     jz_buf_append(&this_unit_outputs, &out_clk, sizeof(char *));
                 }
@@ -576,43 +576,95 @@ void sem_check_project_clock_gen(JZASTNode *project,
                     }
                 }
 
-                if (elem->type == JZ_AST_CLOCK_GEN_OUT) {
+                if (elem->type == JZ_AST_CLOCK_GEN_OUT || elem->type == JZ_AST_CLOCK_GEN_WIRE) {
                     has_output = 1;
+                    int is_wire = (elem->type == JZ_AST_CLOCK_GEN_WIRE);
                     const char *out_clk = elem->name;
                     if (!out_clk) continue;
 
-                    /* Validate output clock exists in CLOCKS */
-                    const JZSymbol *clk_sym = project_lookup(project_symbols, out_clk, JZ_SYM_CLOCK);
-                    if (!clk_sym) {
-                        sem_report_rule(diagnostics,
-                                        elem->loc,
-                                        "CLOCK_GEN_OUTPUT_NOT_DECLARED",
-                                        "CLOCK_GEN output clock not declared in CLOCKS block");
-                        continue;
+                    /* Validate output selector is valid for this chip's generator type */
+                    const char *out_selector = elem->block_kind;
+                    char tl[32] = {0};
+                    if (unit->name) {
+                        size_t tlen = strlen(unit->name);
+                        if (tlen >= sizeof(tl)) tlen = sizeof(tl) - 1;
+                        for (size_t t = 0; t < tlen; ++t)
+                            tl[t] = (char)tolower((unsigned char)unit->name[t]);
+                        tl[tlen] = '\0';
                     }
-
-                    /* Output clock must NOT have a period */
-                    JZASTNode *clk_decl = clk_sym->node;
-                    if (clk_decl) {
-                        double period = 0.0;
-                        char edge[32];
-                        sem_clock_parse_attrs(clk_decl->text, &period, edge, sizeof(edge));
-                        if (period > 0.0) {
-                            sem_report_rule(diagnostics,
-                                            elem->loc,
-                                            "CLOCK_GEN_OUTPUT_HAS_PERIOD",
-                                            "CLOCK_GEN output clock must not have period in CLOCKS");
+                    if (chip && tl[0] && out_selector) {
+                        if (!jz_chip_clock_gen_output_valid(chip, tl, out_selector)) {
+                            char msg[256];
+                            snprintf(msg, sizeof(msg),
+                                     "CLOCK_GEN output selector '%s' not valid for %s",
+                                     out_selector, unit->name);
+                            sem_report_rule(diagnostics, elem->loc,
+                                            "CLOCK_GEN_OUTPUT_INVALID_SELECTOR", msg);
+                        } else {
+                            /* Validate OUT vs WIRE matches chip data is_clock */
+                            int chip_is_clock = jz_chip_clock_gen_output_is_clock(chip, tl, out_selector);
+                            if (chip_is_clock >= 0) {
+                                if (!is_wire && !chip_is_clock) {
+                                    char msg[256];
+                                    snprintf(msg, sizeof(msg),
+                                             "'%s' is not a clock output; use WIRE instead of OUT",
+                                             out_selector);
+                                    sem_report_rule(diagnostics, elem->loc,
+                                                    "CLOCK_GEN_OUT_NOT_CLOCK", msg);
+                                } else if (is_wire && chip_is_clock) {
+                                    char msg[256];
+                                    snprintf(msg, sizeof(msg),
+                                             "'%s' is a clock output; use OUT instead of WIRE",
+                                             out_selector);
+                                    sem_report_rule(diagnostics, elem->loc,
+                                                    "CLOCK_GEN_WIRE_IS_CLOCK", msg);
+                                }
+                            }
                         }
                     }
 
-                    /* Output clock must NOT be an IN_PINS */
-                    const JZSymbol *pin_sym = project_lookup(project_symbols, out_clk, JZ_SYM_PIN);
-                    if (pin_sym && pin_sym->node && pin_sym->node->block_kind) {
-                        if (strcmp(pin_sym->node->block_kind, "IN_PINS") == 0) {
+                    if (is_wire) {
+                        /* WIRE outputs must NOT be in CLOCKS block */
+                        const JZSymbol *clk_sym = project_lookup(project_symbols, out_clk, JZ_SYM_CLOCK);
+                        if (clk_sym) {
+                            sem_report_rule(diagnostics, elem->loc,
+                                            "CLOCK_GEN_WIRE_IN_CLOCKS",
+                                            "CLOCK_GEN WIRE output must not be declared in CLOCKS block");
+                        }
+                    } else {
+                        /* OUT outputs must be in CLOCKS block */
+                        const JZSymbol *clk_sym = project_lookup(project_symbols, out_clk, JZ_SYM_CLOCK);
+                        if (!clk_sym) {
                             sem_report_rule(diagnostics,
                                             elem->loc,
-                                            "CLOCK_GEN_OUTPUT_IS_INPUT_PIN",
-                                            "CLOCK_GEN output clock must not be declared as IN_PINS");
+                                            "CLOCK_GEN_OUTPUT_NOT_DECLARED",
+                                            "CLOCK_GEN output clock not declared in CLOCKS block");
+                            continue;
+                        }
+
+                        /* Output clock must NOT have a period */
+                        JZASTNode *clk_decl = clk_sym->node;
+                        if (clk_decl) {
+                            double period = 0.0;
+                            char edge[32];
+                            sem_clock_parse_attrs(clk_decl->text, &period, edge, sizeof(edge));
+                            if (period > 0.0) {
+                                sem_report_rule(diagnostics,
+                                                elem->loc,
+                                                "CLOCK_GEN_OUTPUT_HAS_PERIOD",
+                                                "CLOCK_GEN output clock must not have period in CLOCKS");
+                            }
+                        }
+
+                        /* Output clock must NOT be an IN_PINS */
+                        const JZSymbol *pin_sym = project_lookup(project_symbols, out_clk, JZ_SYM_PIN);
+                        if (pin_sym && pin_sym->node && pin_sym->node->block_kind) {
+                            if (strcmp(pin_sym->node->block_kind, "IN_PINS") == 0) {
+                                sem_report_rule(diagnostics,
+                                                elem->loc,
+                                                "CLOCK_GEN_OUTPUT_IS_INPUT_PIN",
+                                                "CLOCK_GEN output clock must not be declared as IN_PINS");
+                            }
                         }
                     }
 
@@ -1159,6 +1211,29 @@ void sem_check_project_pins(JZASTNode *project,
                                         "PIN_TERM_INVALID_FOR_STANDARD",
                                         "termination only valid for differential or SSTL/HSTL standards");
                     }
+                }
+            }
+
+            /* --- fclk / pclk / reset required for differential output pins --- */
+            if (is_diff && is_out_block) {
+                char fclk_val[64], pclk_val[64], reset_val[64];
+                int has_fclk  = sem_extract_attr(attrs, "fclk",  fclk_val,  sizeof(fclk_val));
+                int has_pclk  = sem_extract_attr(attrs, "pclk",  pclk_val,  sizeof(pclk_val));
+                int has_reset = sem_extract_attr(attrs, "reset", reset_val, sizeof(reset_val));
+                if (!has_fclk) {
+                    sem_report_rule(diagnostics, decl->loc,
+                                    "PIN_DIFF_OUT_MISSING_FCLK",
+                                    "differential output pin requires fclk attribute");
+                }
+                if (!has_pclk) {
+                    sem_report_rule(diagnostics, decl->loc,
+                                    "PIN_DIFF_OUT_MISSING_PCLK",
+                                    "differential output pin requires pclk attribute");
+                }
+                if (!has_reset) {
+                    sem_report_rule(diagnostics, decl->loc,
+                                    "PIN_DIFF_OUT_MISSING_RESET",
+                                    "differential output pin requires reset attribute");
                 }
             }
         }

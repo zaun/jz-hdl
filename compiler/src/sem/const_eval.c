@@ -9,7 +9,9 @@
 /* Simple recursive-descent expression parser for integer constant expressions.
  * Grammar (roughly, with standard precedence):
  *
- *   expr        := equality
+ *   expr        := logical_or
+ *   logical_or  := logical_and ( "||" logical_and )*
+ *   logical_and := equality ( "&&" equality )*
  *   equality    := relational ( ("==" | "!=") relational )*
  *   relational  := shift ( ("<" | "<=" | ">" | ">=") shift )*
  *   shift       := additive ( ("<<" | ">>" | ">>>") additive )*
@@ -42,7 +44,9 @@ typedef enum TokenKind {
     TK_GE,
     TK_SHL,
     TK_SHR,
-    TK_ASHR
+    TK_ASHR,
+    TK_AND_AND,
+    TK_OR_OR
 } TokenKind;
 
 typedef struct Token {
@@ -186,6 +190,22 @@ static Token lex_one(Lexer *lx)
         if (*lx->p == '=') {
             lx->p++;
             t.kind = TK_NEQ;
+        } else {
+            t.kind = TK_EOF;
+        }
+        break;
+    case '&':
+        if (*lx->p == '&') {
+            lx->p++;
+            t.kind = TK_AND_AND;
+        } else {
+            t.kind = TK_EOF;
+        }
+        break;
+    case '|':
+        if (*lx->p == '|') {
+            lx->p++;
+            t.kind = TK_OR_OR;
         } else {
             t.kind = TK_EOF;
         }
@@ -427,9 +447,33 @@ static long long parse_equality(Parser *p)
     return left;
 }
 
+static long long parse_logical_and(Parser *p)
+{
+    long long left = parse_equality(p);
+    while (!p->error && p->cur.kind == TK_AND_AND) {
+        advance(p);
+        long long right = parse_equality(p);
+        if (p->error) return 0;
+        left = (left && right) ? 1 : 0;
+    }
+    return left;
+}
+
+static long long parse_logical_or(Parser *p)
+{
+    long long left = parse_logical_and(p);
+    while (!p->error && p->cur.kind == TK_OR_OR) {
+        advance(p);
+        long long right = parse_logical_and(p);
+        if (p->error) return 0;
+        left = (left || right) ? 1 : 0;
+    }
+    return left;
+}
+
 static long long parse_expr(Parser *p)
 {
-    return parse_equality(p);
+    return parse_logical_or(p);
 }
 
 int jz_const_eval_expr(const char *expr,
@@ -737,9 +781,33 @@ static long long env_parse_equality(EnvParser *p)
     return left;
 }
 
+static long long env_parse_logical_and(EnvParser *p)
+{
+    long long left = env_parse_equality(p);
+    while (!p->error && p->cur.kind == TK_AND_AND) {
+        env_advance(p);
+        long long right = env_parse_equality(p);
+        if (p->error) return 0;
+        left = (left && right) ? 1 : 0;
+    }
+    return left;
+}
+
+static long long env_parse_logical_or(EnvParser *p)
+{
+    long long left = env_parse_logical_and(p);
+    while (!p->error && p->cur.kind == TK_OR_OR) {
+        env_advance(p);
+        long long right = env_parse_logical_and(p);
+        if (p->error) return 0;
+        left = (left || right) ? 1 : 0;
+    }
+    return left;
+}
+
 static long long env_parse_expr(EnvParser *p)
 {
-    return env_parse_equality(p);
+    return env_parse_logical_or(p);
 }
 
 static int eval_one(EvalEnv *env, size_t index)
