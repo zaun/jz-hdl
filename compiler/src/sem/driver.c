@@ -206,6 +206,18 @@ int module_scope_add_symbol(JZModuleScope *scope,
                                    JZASTNode *decl,
                                    JZDiagnosticList *diagnostics)
 {
+    return module_scope_add_symbol_featured(scope, kind, name, decl,
+                                            NULL, NULL, diagnostics);
+}
+
+int module_scope_add_symbol_featured(JZModuleScope *scope,
+                                     JZSymbolKind kind,
+                                     const char *name,
+                                     JZASTNode *decl,
+                                     JZASTNode *feature_guard,
+                                     JZASTNode *feature_branch,
+                                     JZDiagnosticList *diagnostics)
+{
     if (!scope || !name || !*name) return 0;
 
     size_t count = scope->symbols.len / sizeof(JZSymbol);
@@ -215,6 +227,14 @@ int module_scope_add_symbol(JZModuleScope *scope,
         JZSymbol *existing = &syms[i];
         if (!existing->name) continue;
         if (strcmp(existing->name, name) != 0) continue;
+
+        /* Allow duplicate names in mutually exclusive @feature branches:
+         * same guard, different branch nodes. */
+        if (feature_guard && existing->feature_guard == feature_guard &&
+            feature_branch && existing->feature_branch &&
+            existing->feature_branch != feature_branch) {
+            continue;
+        }
 
         /* Handle instance-specific conflicts first. */
         if (existing->kind == JZ_SYM_INSTANCE && kind == JZ_SYM_INSTANCE) {
@@ -301,6 +321,8 @@ int module_scope_add_symbol(JZModuleScope *scope,
     sym.kind = kind;
     sym.node = decl;
     sym.can_be_z = 0;
+    sym.feature_guard = feature_guard;
+    sym.feature_branch = feature_branch;
     /* Assign stable IDs only for symbols that will become IR_Signal entries.
      * Other symbol kinds keep id = -1.
      */
