@@ -56,7 +56,12 @@ void emit_module_order(FILE *out, const IR_Design *design)
         emit_port_declarations(out, mod);
         emit_internal_signal_declarations(out, mod);
         emit_memory_declarations(out, mod);
-        emit_memory_initialization(out, mod);
+        if (emit_memory_initialization(out, mod) < 0) {
+            alias_ctx_clear();
+            free(canon);
+            free(is_repr);
+            return;
+        }
         emit_continuous_alias_assignments(out, mod);
         emit_wire_tieoff_assignments(out, mod);
         if (mod->num_instances > 0) {
@@ -91,7 +96,12 @@ void emit_module_order(FILE *out, const IR_Design *design)
         emit_port_declarations(out, top);
         emit_internal_signal_declarations(out, top);
         emit_memory_declarations(out, top);
-        emit_memory_initialization(out, top);
+        if (emit_memory_initialization(out, top) < 0) {
+            alias_ctx_clear();
+            free(canon);
+            free(is_repr);
+            return;
+        }
         emit_continuous_alias_assignments(out, top);
         if (top->num_instances > 0) {
             fputc('\n', out);

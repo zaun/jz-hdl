@@ -1019,9 +1019,32 @@ int jz_ir_build_design(JZASTNode *root,
                                         spec->overrides[oi].name &&
                                         strcmp(spec->overrides[oi].name,
                                                init_expr->name) == 0) {
-                                        m->init.file_path = ir_strdup_arena(
-                                            arena,
-                                            spec->overrides[oi].string_value);
+                                        /* Resolve the override path relative
+                                         * to the source file that contains the
+                                         * MEM declaration so the backend can
+                                         * open it from any CWD.
+                                         */
+                                        const char *ov_path = spec->overrides[oi].string_value;
+                                        if (ov_path[0] != '/' && mem_decl->loc.filename) {
+                                            const char *sl = strrchr(mem_decl->loc.filename, '/');
+                                            if (sl) {
+                                                size_t dlen = (size_t)(sl - mem_decl->loc.filename);
+                                                char rbuf[1024];
+                                                snprintf(rbuf, sizeof(rbuf), "%.*s/%s",
+                                                         (int)dlen, mem_decl->loc.filename, ov_path);
+                                                char *absp = realpath(rbuf, NULL);
+                                                if (absp) {
+                                                    m->init.file_path = ir_strdup_arena(arena, absp);
+                                                    free(absp);
+                                                } else {
+                                                    m->init.file_path = ir_strdup_arena(arena, ov_path);
+                                                }
+                                            } else {
+                                                m->init.file_path = ir_strdup_arena(arena, ov_path);
+                                            }
+                                        } else {
+                                            m->init.file_path = ir_strdup_arena(arena, ov_path);
+                                        }
                                         break;
                                     }
                                 }

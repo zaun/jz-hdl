@@ -217,8 +217,8 @@ void emit_internal_signal_declarations(FILE *out, const IR_Module *mod);
 /* Emit memory declarations as reg arrays. */
 void emit_memory_declarations(FILE *out, const IR_Module *mod);
 
-/* Emit memory initialization blocks. */
-void emit_memory_initialization(FILE *out, const IR_Module *mod);
+/* Emit memory initialization blocks.  Returns 0 on success, -1 on error. */
+int emit_memory_initialization(FILE *out, const IR_Module *mod);
 
 /* Helper: return non-zero if a given signal id is written in any
  * ASYNCHRONOUS or SYNCHRONOUS block of the module.

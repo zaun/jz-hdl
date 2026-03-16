@@ -1,0 +1,89 @@
+// Golden test: MEM @file() with relative path resolved correctly.
+// Verifies that the backend resolves "data/lut.bin" relative to the
+// source file's directory (not the compiler CWD), producing a valid
+// $readmemh call instead of silently dropping the init data.
+// Also tests OVERRIDE of DATA_FILE to a different relative path.
+
+@project(CHIP=GENERIC) mem_file_init_test
+
+    CLOCKS {
+    }
+
+    IN_PINS {
+        clk   [1] = { standard=LVCMOS33 };
+        rst_n [1] = { standard=LVCMOS33 };
+        addr  [3] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        dout [8] = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        clk = 1;
+        rst_n = 2;
+        addr[0] = 3; addr[1] = 4; addr[2] = 5;
+        dout[0] = 6; dout[1] = 7; dout[2] = 8; dout[3] = 9;
+        dout[4] = 10; dout[5] = 11; dout[6] = 12; dout[7] = 13;
+    }
+
+    @top mem_test_top {
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = rst_n;
+        IN  [3] addr  = addr;
+        OUT [8] dout  = dout;
+    }
+@endproj
+
+@module mem_reader
+    CONST {
+        DATA_FILE = "data/lut.bin";
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [3] addr;
+        OUT [8] dout;
+    }
+
+    MEM(TYPE=BLOCK) {
+        lut [8] [8] = @file(DATA_FILE) {
+            OUT read SYNC;
+        };
+    }
+
+    REGISTER {
+        out_r [8] = 8'd0;
+    }
+
+    ASYNCHRONOUS {
+        dout <= out_r;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        lut.read.addr <= addr;
+        out_r <= lut.read.data;
+    }
+@endmod
+
+@module mem_test_top
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        IN  [3] addr;
+        OUT [8] dout;
+    }
+
+    // Instance with OVERRIDE: tests that overridden @file() paths
+    // are also resolved relative to the source file directory.
+    @new rd0 mem_reader {
+        OVERRIDE {
+            DATA_FILE = "data/lut.bin";
+        }
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = rst_n;
+        IN  [3] addr  = addr;
+        OUT [8] dout  = dout;
+    }
+@endmod

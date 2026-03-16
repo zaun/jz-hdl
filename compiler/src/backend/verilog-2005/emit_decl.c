@@ -529,11 +529,12 @@ static const char *mem_init_convert_bin_to_hex(const char *bin_path,
     return hex_path;
 }
 
-void emit_memory_initialization(FILE *out, const IR_Module *mod)
+int emit_memory_initialization(FILE *out, const IR_Module *mod)
 {
     if (!out || !mod || mod->num_memories <= 0) {
-        return;
+        return 0;
     }
+    int errors = 0;
 
     for (int i = 0; i < mod->num_memories; ++i) {
         const IR_Memory *m = &mod->memories[i];
@@ -574,9 +575,10 @@ void emit_memory_initialization(FILE *out, const IR_Module *mod)
                             hex_path, name);
                     fprintf(out, "    end\n");
                 } else {
-                    fprintf(out, "    // WARNING: failed to convert binary "
-                            "file \"%s\" for memory %s\n",
-                            m->init.file_path, name);
+                    fprintf(stderr, "error: failed to load binary file "
+                            "\"%s\" for memory %s in module %s\n",
+                            m->init.file_path, name, mod->name ? mod->name : "?");
+                    errors++;
                 }
             }
             continue;
@@ -597,4 +599,5 @@ void emit_memory_initialization(FILE *out, const IR_Module *mod)
     }
 
     fputc('\n', out);
+    return errors ? -1 : 0;
 }
