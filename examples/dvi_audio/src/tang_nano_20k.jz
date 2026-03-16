@@ -1,7 +1,8 @@
 @project(CHIP="GW2AR-18-QN88-C8-I7") DVI_AUDIO_TEST
     @import "por.jz"
     @import "video_timing.jz"
-    @import "tmds_encoder.jz"
+    @import "tmds_encoder_2.jz"
+    @import "tmds_encoder_10.jz"
     @import "terc4_encoder.jz"
     @import "dvi_data_island.jz"
     @import "melodies.jz"
@@ -11,6 +12,11 @@
     @import "spectrum_display.jz"
     @import "debounce.jz"
     @import "dvi.jz"
+
+    CONFIG {
+        serializer = 10;
+    }
+    @check(CONFIG.serializer == 2 || CONFIG.serializer == 10, "Serialzer must be 2 or 10.");
 
     CLOCKS {
         SCLK       = { period=37.037 }; // 27MHz crystal
@@ -83,7 +89,7 @@
         IN   [1]  por       = DONE;
         IN   [1]  rst_n     = ~KEY[1];
         IN   [1]  next      = KEY[0];
-        OUT  [6]  leds      = LED;
+        OUT  [6]  leds      = ~LED;
         OUT  [10] tmds_clk  = TMDS_CLK;
         OUT  [10] tmds_d0   = TMDS_DATA[0];
         OUT  [10] tmds_d1   = TMDS_DATA[1];
