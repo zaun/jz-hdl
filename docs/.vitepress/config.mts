@@ -94,6 +94,8 @@ export default defineConfig({
           { text: 'DVI with Audio', link: '/examples/dvi-audio' },
           { text: 'Ascon-128 Crypto', link: '/examples/ascon' },
           { text: 'CPU Examples', link: '/examples/cpu' },
+          { text: 'Terminal', link: '/examples/terminal' },
+          { text: 'UART Audio', link: '/examples/uart-audio' },
           { text: 'SOC', link: '/examples/soc' },
         ]
       },
