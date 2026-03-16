@@ -131,7 +131,8 @@ The script produces `track0.bin` through `track3.bin` from musical notation, whi
 <<< @/../examples/dvi_audio/src/tang_nano_20k.jz[project.jz]
 <<< @/../examples/dvi_audio/src/dvi.jz
 <<< @/../examples/dvi_audio/src/video_timing.jz
-<<< @/../examples/dvi_audio/src/tmds_encoder.jz
+<<< @/../examples/dvi_audio/src/tmds_encoder_10.jz
+<<< @/../examples/dvi_audio/src/tmds_encoder_2.jz
 <<< @/../examples/dvi_audio/src/dvi_data_island.jz
 <<< @/../examples/dvi_audio/src/terc4_encoder.jz
 <<< @/../examples/dvi_audio/src/tone_gen.jz
