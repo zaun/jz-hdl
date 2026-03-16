@@ -78,7 +78,7 @@ Top-level integration. Instantiates all submodules and handles:
 
 ## Differential Output
 
-TMDS pins are declared with `mode=DIFFERENTIAL`, `standard=LVDS25`, and serialization clock bindings (`fclk = serial_clk`, `pclk = pixel_clk`). The compiler generates the OSER10 serializer and TLVDS_OBUF differential buffer from these attributes. Each channel shifts out a 10-bit word per pixel clock using DDR at 185.625 MHz.
+TMDS pins are declared with `mode=DIFFERENTIAL`, `standard=LVDS25`, serialization clock bindings (`fclk=serial_clk`, `pclk=pixel_clk`), and `reset=pll_lock`. The PLL's lock indicator is declared as a `WIRE LOCK pll_lock` output in the `CLOCK_GEN` block — this is a non-clock output that the compiler automatically declares as a wire in the generated Verilog. The `reset` attribute references this lock signal to hold the serializer in reset until the PLL is stable. The compiler automatically inverts the lock signal for the active-low serializer reset. The compiler generates the OSER10 serializer and TLVDS_OBUF differential buffer from these attributes. Each channel shifts out a 10-bit word per pixel clock using DDR at 185.625 MHz.
 
 ::: code-group
 
@@ -103,4 +103,4 @@ TMDS pins are declared with `mode=DIFFERENTIAL`, `standard=LVDS25`, and serializ
 
 **Conditional compilation.** `@feature` / `@endfeat` directives gate entire module instantiations and their associated wiring on project-level `CONFIG` values, enabling single-source multi-target builds.
 
-**Integrated differential I/O.** Pin declarations with `mode=DIFFERENTIAL` and clock bindings replace manual instantiation of vendor serializer primitives (OSER10, TLVDS_OBUF) and their associated constraint files.
+**Integrated differential I/O.** Pin declarations with `mode=DIFFERENTIAL`, clock bindings (`fclk`, `pclk`), and `reset` replace manual instantiation of vendor serializer primitives (OSER10, TLVDS_OBUF) and their associated constraint files. The `WIRE LOCK` output from `CLOCK_GEN` feeds the serializer reset automatically — the compiler inverts the lock signal so the serializer is held in reset until the PLL stabilizes.
