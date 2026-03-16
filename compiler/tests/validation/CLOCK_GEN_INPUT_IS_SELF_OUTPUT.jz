@@ -1,0 +1,46 @@
+// CLOCK_GEN_INPUT_IS_SELF_OUTPUT: CLOCK_GEN input clock is an output of the same CLOCK_GEN block.
+
+@project CLOCK_GEN_INPUT_IS_SELF_OUTPUT_TEST
+  CLOCKS {
+    fast_clk;
+  }
+
+  IN_PINS {
+    btn = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    led = { standard=LVCMOS33, drive=8 };
+  }
+
+  CLOCK_GEN {
+    PLL {
+      IN REF_CLK fast_clk;
+      OUT BASE fast_clk;
+      CONFIG {
+        IDIV = 1;
+      };
+    };
+  }
+
+  MAP {
+    btn = 1;
+    led = 2;
+  }
+
+  @top top {
+    IN  [1] a = btn;
+    OUT [1] out = led;
+  }
+@endproj
+
+@module top
+  PORT {
+    IN  [1] a;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = a;
+  }
+@endmod

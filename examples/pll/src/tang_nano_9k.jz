@@ -1,4 +1,4 @@
-@project(CHIP="GW1NR-9-QN88-C6-I5") DVI_AUDIO_TEST
+@project(CHIP="GW1NR-9-QN88-C6-I5") BLINKER
     @import "blinkers.jz"
 
     CLOCKS {

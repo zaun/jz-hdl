@@ -576,11 +576,16 @@ JZASTNode *parse_clock_gen_block(Parser *p, const JZToken *block_kw) {
             }
 
             /* OUT <pll_output_name> <clock>; */
-            if (ut->type == JZ_TOK_KW_OUT) {
+            /* WIRE <pll_output_name> <signal>; */
+            if (ut->type == JZ_TOK_KW_OUT || ut->type == JZ_TOK_KW_WIRE) {
+                int is_wire = (ut->type == JZ_TOK_KW_WIRE);
+                const char *kw_str = is_wire ? "WIRE" : "OUT";
                 advance(p);
                 const JZToken *pll_out_tok = peek(p);
                 if (!is_decl_identifier_token(pll_out_tok)) {
-                    parser_error(p, "expected PLL output name after OUT in CLOCK_GEN");
+                    parser_error(p, is_wire
+                        ? "expected output name after WIRE in CLOCK_GEN"
+                        : "expected PLL output name after OUT in CLOCK_GEN");
                     jz_ast_free(unit);
                     jz_ast_free(cgen);
                     return NULL;
@@ -589,14 +594,17 @@ JZASTNode *parse_clock_gen_block(Parser *p, const JZToken *block_kw) {
 
                 const JZToken *clk_tok = peek(p);
                 if (!is_decl_identifier_token(clk_tok)) {
-                    parser_error(p, "expected clock name after PLL output name in CLOCK_GEN OUT");
+                    parser_error(p, is_wire
+                        ? "expected signal name after output name in CLOCK_GEN WIRE"
+                        : "expected clock name after PLL output name in CLOCK_GEN OUT");
                     jz_ast_free(unit);
                     jz_ast_free(cgen);
                     return NULL;
                 }
                 advance(p);
 
-                JZASTNode *out_node = jz_ast_new(JZ_AST_CLOCK_GEN_OUT, ut->loc);
+                JZASTNodeType ntype = is_wire ? JZ_AST_CLOCK_GEN_WIRE : JZ_AST_CLOCK_GEN_OUT;
+                JZASTNode *out_node = jz_ast_new(ntype, ut->loc);
                 if (!out_node) {
                     jz_ast_free(unit);
                     jz_ast_free(cgen);
@@ -606,7 +614,9 @@ JZASTNode *parse_clock_gen_block(Parser *p, const JZToken *block_kw) {
                 jz_ast_set_block_kind(out_node, pll_out_tok->lexeme);  /* PLL output selector */
 
                 if (!match(p, JZ_TOK_SEMICOLON)) {
-                    parser_error(p, "expected ';' after OUT declaration in CLOCK_GEN");
+                    char msg[128];
+                    snprintf(msg, sizeof(msg), "expected ';' after %s declaration in CLOCK_GEN", kw_str);
+                    parser_error(p, msg);
                     jz_ast_free(out_node);
                     jz_ast_free(unit);
                     jz_ast_free(cgen);

@@ -1,0 +1,169 @@
+{
+  "ir_version": "0.1.0",
+  "design": {
+    "name": "serializer_reset_test",
+    "modules": [
+      {
+        "id": 0,
+        "name": "ser_top",
+        "base_module_id": -1,
+        "source_line": 67,
+        "source_file": "test.jz",
+      "signals": [
+        {
+          "id": 0,
+          "name": "clk",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 69,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "IN" }
+        },
+        {
+          "id": 1,
+          "name": "status",
+          "kind": "port",
+          "width": 1,
+          "owner_module_id": 0,
+          "source_line": 70,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 2,
+          "name": "tclk",
+          "kind": "port",
+          "width": 10,
+          "owner_module_id": 0,
+          "source_line": 71,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 3,
+          "name": "td0",
+          "kind": "port",
+          "width": 10,
+          "owner_module_id": 0,
+          "source_line": 72,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 4,
+          "name": "td1",
+          "kind": "port",
+          "width": 10,
+          "owner_module_id": 0,
+          "source_line": 73,
+          "can_be_z": false,
+          "iob": false,
+          "port": { "direction": "OUT" }
+        },
+        {
+          "id": 5,
+          "name": "cnt",
+          "kind": "register",
+          "width": 24,
+          "owner_module_id": 0,
+          "source_line": 77,
+          "can_be_z": false,
+          "iob": false,
+          "reg": { "reset_value": { "value": 0, "width": 24 }, "home_clock_domain_id": 0 }
+        }
+      ],
+        "clock_domains": [
+          {
+            "id": 0,
+            "clock_signal_id": 0,
+            "edge": "RISING",
+            "register_ids": [5],
+            "reset_signal_id": -1,
+            "reset_sync_signal_id": -1,
+            "reset_active": "ACTIVE_LOW",
+            "reset_type": "CLOCKED",
+            "sensitivity_list": [{ "signal_id": 0, "edge": "RISING" }],
+            "statements": { "kind": "block", "source_line": 87, "statements": [{ "kind": "assignment", "id": 0, "source_line": 88, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 5, "is_sliced": false, "rhs": { "kind": "binary_add", "width": 24, "source_line": 88, "left": { "kind": "signal_ref", "width": 24, "source_line": 88, "signal_id": 5 }, "right": { "kind": "literal", "width": 24, "source_line": 88, "literal": { "value": 1, "width": 24 } } } }] }
+          }
+        ],
+        "instances": [
+        ],
+        "memories": [
+        ],
+        "cdc_crossings": [
+        ],
+        "async_block": { "kind": "block", "source_line": 80, "statements": [{ "kind": "assignment", "id": 0, "source_line": 81, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 1, "is_sliced": false, "rhs": { "kind": "slice", "width": 1, "source_line": 81, "signal_id": 5, "msb": 23, "lsb": 23 } }, { "kind": "assignment", "id": 1, "source_line": 82, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 2, "is_sliced": false, "rhs": { "kind": "literal", "width": 10, "source_line": 82, "literal": { "value": 992, "width": 10 } } }, { "kind": "assignment", "id": 2, "source_line": 83, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "literal", "width": 10, "source_line": 83, "literal": { "value": 0, "width": 10 } } }, { "kind": "assignment", "id": 3, "source_line": 84, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "literal", "width": 10, "source_line": 84, "literal": { "value": 0, "width": 10 } } }] }
+      }
+    ],
+    "project": {
+      "name": "serializer_reset_test",
+      "clocks": [
+        { "name": "SCLK", "period_ns": 37.037, "edge": "RISING" },
+        { "name": "serial_clk", "period_ns": 5.3872, "edge": "RISING" },
+        { "name": "pixel_clk", "period_ns": 26.936, "edge": "RISING" }
+      ],
+      "clock_gens": [
+        {
+          "units": [
+            {
+              "type": "PLL",
+              "inputs": [
+                { "selector": "REF_CLK", "signal_name": "SCLK" }
+              ],
+              "outputs": [
+                { "selector": "BASE", "clock_name": "serial_clk", "is_clock": true },
+                { "selector": "LOCK", "clock_name": "pll_lock", "is_clock": false }
+              ],
+              "configs": [
+                { "param_name": "IDIV", "param_value": "7" },
+                { "param_name": "FBDIV", "param_value": "54" },
+                { "param_name": "ODIV", "param_value": "4" }
+              ]
+            },
+            {
+              "type": "CLKDIV",
+              "inputs": [
+                { "selector": "REF_CLK", "signal_name": "serial_clk" }
+              ],
+              "outputs": [
+                { "selector": "BASE", "clock_name": "pixel_clk", "is_clock": true }
+              ],
+              "configs": [
+                { "param_name": "DIV_MODE", "param_value": "5" }
+              ]
+            }
+          ]
+        }
+      ],
+      "pins": [
+        { "id": 0, "name": "SCLK", "kind": "IN", "width": 1, "standard": "LVCMOS33", "drive_ma": -1, "drive": -1, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 1, "name": "led", "kind": "OUT", "width": 1, "standard": "LVCMOS18", "drive_ma": 8, "drive": 8, "mode": "SINGLE", "term": false, "pull": "NONE" },
+        { "id": 2, "name": "TMDS_CLK", "kind": "OUT", "width": 1, "standard": "LVDS25", "drive_ma": 3, "drive": 3.5, "mode": "DIFFERENTIAL", "term": false, "pull": "NONE", "fclk": "serial_clk", "pclk": "pixel_clk", "reset": "pll_lock" },
+        { "id": 3, "name": "TMDS_D", "kind": "OUT", "width": 2, "standard": "LVDS25", "drive_ma": 3, "drive": 3.5, "mode": "DIFFERENTIAL", "term": false, "pull": "NONE", "fclk": "serial_clk", "pclk": "pixel_clk", "reset": "pll_lock" }
+      ],
+      "mappings": [
+        { "logical_pin_name": "SCLK", "bit_index": -1, "board_pin_id": "52" },
+        { "logical_pin_name": "led", "bit_index": -1, "board_pin_id": "10" },
+        { "logical_pin_name": "TMDS_CLK", "bit_index": -1, "board_pin_id": "69", "board_pin_n_id": "68" },
+        { "logical_pin_name": "TMDS_D", "bit_index": 0, "board_pin_id": "71", "board_pin_n_id": "70" },
+        { "logical_pin_name": "TMDS_D", "bit_index": 1, "board_pin_id": "73", "board_pin_n_id": "72" }
+      ],
+      "top_module_id": 0,
+      "top_bindings": [
+        { "top_port_signal_id": 0, "top_bit_index": -1, "pin_id": -1, "pin_bit_index": -1, "const_value": 0 },
+        { "top_port_signal_id": 1, "top_bit_index": -1, "pin_id": 1, "pin_bit_index": -1 },
+        { "top_port_signal_id": 2, "top_bit_index": -1, "pin_id": 2, "pin_bit_index": -1 },
+        { "top_port_signal_id": 3, "top_bit_index": -1, "pin_id": 3, "pin_bit_index": 0 },
+        { "top_port_signal_id": 4, "top_bit_index": -1, "pin_id": 3, "pin_bit_index": 1 }
+      ]
+    },
+    "source_files": [
+      { "path": "test.jz", "line_count": 90 }
+    ]
+  }
+}

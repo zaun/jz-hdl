@@ -85,6 +85,7 @@ typedef struct JZChipClockGenOutput {
     char *selector;       /**< Output selector (e.g., "BASE", "PHASE", "DIV", "DIV3"). */
     char *frequency_expr; /**< Expression for frequency in MHz (e.g., "FVCO / ODIV"). */
     char *phase_deg_expr; /**< Expression for phase offset in degrees (e.g., "PHASESEL * 45"), or NULL. */
+    int   is_clock;       /**< 1 if this output is a clock signal, 0 if status/control (e.g., LOCK). */
 } JZChipClockGenOutput;
 
 /**
@@ -148,11 +149,11 @@ typedef struct JZChipDiffPrimitive {
  */
 typedef struct JZChipDifferential {
     JZChipDiffPrimitive output_buffer;     /**< Differential output buffer (e.g., ELVDS_OBUF). */
-    JZChipDiffPrimitive output_serializer; /**< Output serializer (e.g., OSER10). */
+    JZBuffer output_serializers;           /**< Array of JZChipDiffPrimitive serializer options, sorted by ratio. */
     JZChipDiffPrimitive input_buffer;        /**< Differential input buffer (e.g., ELVDS_IBUF). */
-    JZChipDiffPrimitive input_deserializer; /**< Input deserializer (e.g., IDES10). */
+    JZBuffer input_deserializers;            /**< Array of JZChipDiffPrimitive deserializer options, sorted by ratio. */
     int has_output_buffer;       /**< Non-zero if output buffer is defined. */
-    int has_output_serializer;   /**< Non-zero if output serializer is defined. */
+    int has_output_serializer;   /**< Non-zero if any output serializers are defined. */
     int has_input_buffer;        /**< Non-zero if input buffer is defined. */
     int has_input_deserializer;  /**< Non-zero if input deserializer is defined. */
     char *io_type;               /**< CST IO_TYPE for differential pins (e.g., "LVDS25", "LVCMOS33D"). */
@@ -365,6 +366,22 @@ const char *jz_chip_clock_gen_output_freq_expr(const JZChipData *data,
                                                 const char *selector);
 
 /**
+ * @brief Check if an output selector is valid for a clock generator type.
+ * @return 1 if the selector exists in the chip's outputs, 0 otherwise.
+ */
+int jz_chip_clock_gen_output_valid(const JZChipData *data,
+                                   const char *type,
+                                   const char *selector);
+
+/**
+ * @brief Check if a clock generator output is a clock (vs a signal like LOCK).
+ * @return 1 if is_clock, 0 if not, -1 if selector not found.
+ */
+int jz_chip_clock_gen_output_is_clock(const JZChipData *data,
+                                      const char *type,
+                                      const char *selector);
+
+/**
  * @brief Get the phase offset expression for a clock generator output.
  * @return Phase expression in degrees (e.g., "PHASESEL * 45"), or NULL.
  */
@@ -452,11 +469,38 @@ const char *jz_chip_diff_input_buffer_map(const JZChipData *data,
                                            const char *backend);
 
 /**
- * @brief Get the serializer ratio for differential output.
+ * @brief Get the serializer ratio for differential output (smallest available).
  * @param data Loaded chip data.
- * @return Serializer ratio (e.g., 10), or 0 if no serializer defined.
+ * @return Smallest serializer ratio (e.g., 8), or 0 if no serializer defined.
  */
 int jz_chip_diff_serializer_ratio(const JZChipData *data);
+
+/**
+ * @brief Find the best serializer ratio >= needed_width.
+ * @param data         Loaded chip data.
+ * @param needed_width Required parallel data width.
+ * @return Ratio of best matching serializer, or 0 if none found.
+ */
+int jz_chip_diff_best_serializer_ratio(const JZChipData *data,
+                                        int needed_width);
+
+/**
+ * @brief Find the best serializer template for a needed width.
+ * @param data         Loaded chip data.
+ * @param needed_width Required parallel data width.
+ * @param backend      Backend name (e.g., "verilog-2005").
+ * @return Template string for best matching serializer, or NULL if none found.
+ */
+const char *jz_chip_diff_best_serializer_map(const JZChipData *data,
+                                              int needed_width,
+                                              const char *backend);
+
+/**
+ * @brief Get the maximum serializer ratio available.
+ * @param data Loaded chip data.
+ * @return Largest serializer ratio, or 0 if no serializer defined.
+ */
+int jz_chip_diff_max_serializer_ratio(const JZChipData *data);
 
 /**
  * @brief Get the differential input deserializer template for a backend.
@@ -468,11 +512,38 @@ const char *jz_chip_diff_input_deserializer_map(const JZChipData *data,
                                                   const char *backend);
 
 /**
- * @brief Get the deserializer ratio for differential input.
+ * @brief Get the deserializer ratio for differential input (smallest available).
  * @param data Loaded chip data.
- * @return Deserializer ratio (e.g., 10), or 0 if no deserializer defined.
+ * @return Smallest deserializer ratio (e.g., 8), or 0 if no deserializer defined.
  */
 int jz_chip_diff_deserializer_ratio(const JZChipData *data);
+
+/**
+ * @brief Find the best deserializer ratio >= needed_width.
+ * @param data         Loaded chip data.
+ * @param needed_width Required parallel data width.
+ * @return Ratio of best matching deserializer, or 0 if none found.
+ */
+int jz_chip_diff_best_deserializer_ratio(const JZChipData *data,
+                                          int needed_width);
+
+/**
+ * @brief Find the best deserializer template for a needed width.
+ * @param data         Loaded chip data.
+ * @param needed_width Required parallel data width.
+ * @param backend      Backend name (e.g., "verilog-2005").
+ * @return Template string for best matching deserializer, or NULL if none found.
+ */
+const char *jz_chip_diff_best_deserializer_map(const JZChipData *data,
+                                                int needed_width,
+                                                const char *backend);
+
+/**
+ * @brief Get the maximum deserializer ratio available.
+ * @param data Loaded chip data.
+ * @return Largest deserializer ratio, or 0 if no deserializer defined.
+ */
+int jz_chip_diff_max_deserializer_ratio(const JZChipData *data);
 
 /**
  * @brief Get the CST IO_TYPE override for differential pins.

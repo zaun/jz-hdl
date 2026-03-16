@@ -29,8 +29,8 @@
 
     OUT_PINS {
         LED[6]       = { standard=LVCMOS33, drive=8 };
-        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk = serial_clk, pclk = pixel_clk };
-        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk = serial_clk, pclk = pixel_clk };
+        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
         UART_TX      = { standard=LVCMOS33, drive=8 };
         EDID_CLK     = { standard=LVCMOS33, drive=4 };
 
@@ -144,7 +144,8 @@
     CLOCK_GEN {
         PLL {
             IN REF_CLK SCLK;
-            OUT BASE  serial_clk;  // 371.25 MHz (5x pixel clock)
+            OUT BASE   serial_clk;  // 371.25 MHz (5x pixel clock)
+            WIRE LOCK  pll_lock;
 
             CONFIG {
                 IDIV = 3;           // divider = 4

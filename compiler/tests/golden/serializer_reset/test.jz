@@ -1,0 +1,90 @@
+// =============================================================================
+// TEST: Serializer Reset from PLL LOCK
+// Purpose: Verify that differential output pins with fclk, pclk, and reset
+//          attributes produce serializer primitives with the reset signal
+//          wired from the PLL LOCK output. The reset polarity (~) comes from
+//          the chip data template, not from the backend.
+// =============================================================================
+
+@project(CHIP="GW1NR-9-QN88-C6-I5") serializer_reset_test
+
+    CLOCKS {
+        SCLK       = { period=37.037 }; // 27 MHz
+        serial_clk;                      // from PLL
+        pixel_clk;                       // from CLKDIV
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        led        = { standard=LVCMOS18, drive=8 };
+        TMDS_CLK   = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+        TMDS_D[2]  = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+    }
+
+    MAP {
+        SCLK = 52;
+        led  = 10;
+        TMDS_CLK  = { P=69, N=68 };
+        TMDS_D[0] = { P=71, N=70 };
+        TMDS_D[1] = { P=73, N=72 };
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN   REF_CLK SCLK;
+            OUT  BASE    serial_clk;
+            WIRE LOCK    pll_lock;
+
+            CONFIG {
+                IDIV  = 7;
+                FBDIV = 54;
+                ODIV  = 4;
+            };
+        };
+        CLKDIV {
+            IN  REF_CLK serial_clk;
+            OUT BASE    pixel_clk;
+
+            CONFIG {
+                DIV_MODE = 5;
+            };
+        };
+    }
+
+    @top ser_top {
+        IN  [1]  clk    = pixel_clk;
+        OUT [1]  status = led;
+        OUT [10] tclk   = TMDS_CLK;
+        OUT [10] td0    = TMDS_D[0];
+        OUT [10] td1    = TMDS_D[1];
+    }
+
+@endproj
+
+@module ser_top
+    PORT {
+        IN  [1]  clk;
+        OUT [1]  status;
+        OUT [10] tclk;
+        OUT [10] td0;
+        OUT [10] td1;
+    }
+
+    REGISTER {
+        cnt [24] = 24'b0;
+    }
+
+    ASYNCHRONOUS {
+        status <= cnt[23];
+        tclk   <= 10'b1111100000;
+        td0    <= 10'b0000000000;
+        td1    <= 10'b0000000000;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        cnt <= cnt + 24'b1;
+    }
+@endmod

@@ -149,38 +149,41 @@
         OUT [10] y_pos          = y_pos;
     }
 
-    // Blue channel (data channel 0) - carries sync signals
-    @new enc0 tmds_encoder {
-        IN  [1]  clk            = clk;
-        IN  [1]  rst_n          = reset;
-        IN  [8]  data_in        = blue;
-        IN  [1]  c0             = hsync;
-        IN  [1]  c1             = vsync;
-        IN  [1]  display_enable = de;
-        OUT [10] tmds_out       = dvi_tmds_d0;
-    }
+    @feature CONFIG.serializer == 10
+        // Blue channel (data channel 0) - carries sync signals
+        @new enc0 tmds_encoder_10 {
+            IN  [1]  clk            = clk;
+            IN  [1]  rst_n          = reset;
+            IN  [8]  data_in        = blue;
+            IN  [1]  c0             = hsync;
+            IN  [1]  c1             = vsync;
+            IN  [1]  display_enable = de;
+            OUT [10] tmds_out       = dvi_tmds_d0;
+        }
 
-    // Green channel (data channel 1) - preamble CTL on c0/c1
-    @new enc1 tmds_encoder {
-        IN  [1]  clk            = clk;
-        IN  [1]  rst_n          = reset;
-        IN  [8]  data_in        = green;
-        IN  [1]  c0             = enc1_c0;
-        IN  [1]  c1             = enc1_c1;
-        IN  [1]  display_enable = de;
-        OUT [10] tmds_out       = dvi_tmds_d1;
-    }
+        // Green channel (data channel 1) - preamble CTL on c0/c1
+        @new enc1 tmds_encoder_10 {
+            IN  [1]  clk            = clk;
+            IN  [1]  rst_n          = reset;
+            IN  [8]  data_in        = green;
+            IN  [1]  c0             = enc1_c0;
+            IN  [1]  c1             = enc1_c1;
+            IN  [1]  display_enable = de;
+            OUT [10] tmds_out       = dvi_tmds_d1;
+        }
 
-    // Red channel (data channel 2) - preamble CTL on c0/c1
-    @new enc2 tmds_encoder {
-        IN  [1]  clk            = clk;
-        IN  [1]  rst_n          = reset;
-        IN  [8]  data_in        = red;
-        IN  [1]  c0             = enc2_c0;
-        IN  [1]  c1             = enc2_c1;
-        IN  [1]  display_enable = de;
-        OUT [10] tmds_out       = dvi_tmds_d2;
-    }
+        // Red channel (data channel 2) - preamble CTL on c0/c1
+        @new enc2 tmds_encoder_10 {
+            IN  [1]  clk            = clk;
+            IN  [1]  rst_n          = reset;
+            IN  [8]  data_in        = red;
+            IN  [1]  c0             = enc2_c0;
+            IN  [1]  c1             = enc2_c1;
+            IN  [1]  display_enable = de;
+            OUT [10] tmds_out       = dvi_tmds_d2;
+        }
+    @else
+    @endfeat
 
     // TERC4 encoders for data island period
     @new t4_0 terc4_encoder {
@@ -365,7 +368,7 @@
         ) ? 1'b1 : 1'b0;
 
         // LED status
-        leds <= ~{ heartbeat_led, 5'b00000 };
+        leds <= { heartbeat_led, 5'b00000 };
     }
 
     SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {

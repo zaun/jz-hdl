@@ -194,6 +194,7 @@
       "outputs": {
         "BASE": {
           "port": "OSCOUT",
+          "is_clock": true,
           "frequency_mhz": { "expr": "250.0 / DIV" }
         }
       }
@@ -349,6 +350,7 @@
         "BASE": {
           "description": "Primary output",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the base output clock derived directly from the FVCO.",
             "expr": "FVCO / ODIV"
@@ -358,6 +360,7 @@
         "PHASE": {
           "description": "Primary output, Phase shifted. Requires PHASESEL",
           "port": "CLKOUTP",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the phased output clock. Identical to the base output frequency.",
             "expr": "FVCO / ODIV"
@@ -371,6 +374,7 @@
         "DIV": {
           "description": "Divided PLL output, Requires CLKOUTD_DIV",
           "port": "CLKOUTD",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the divided output clock after applying the post-divider.",
             "expr": "(FVCO / ODIV) / CLKOUTD_DIV"
@@ -380,10 +384,17 @@
         "DIV3": {
           "description": "Fixed divide-by-3 PLL output",
           "port": "CLKOUT3",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the fixed divide-by-3 output derived from the base output.",
             "expr": "(FVCO / ODIV) / 3"
           }
+        },
+
+        "LOCK": {
+          "description": "PLL lock indicator, high when PLL is locked",
+          "port": "LOCK",
+          "is_clock": false
         }
       },
 
@@ -452,6 +463,7 @@
         "BASE": {
           "description": "Divided clock output",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the divided output clock.",
             "expr": "(1000.0 / REF_CLK_period_ns) / DIV_MODE"
@@ -497,6 +509,7 @@
         "BASE": {
           "description": "Divided-by-2 clock output",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Frequency of the fixed divide-by-2 output clock.",
             "expr": "(1000.0 / REF_CLK_period_ns) / 2"
@@ -548,6 +561,7 @@
         "BASE": {
           "description": "Buffered clock output on global network",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Same frequency as input (buffer, no division).",
             "expr": "(1000.0 / REF_CLK_period_ns)"
@@ -598,6 +612,7 @@
         "BASE": {
           "description": "Buffered clock output on HCLK network",
           "port": "CLKOUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Same frequency as input (buffer, no division).",
             "expr": "(1000.0 / REF_CLK_period_ns)"
@@ -631,53 +646,179 @@
           ]
         }
       },
-      "serializer": {
-        "description": "10:1 output serializer for TMDS/LVDS",
-        "ratio": 10,
-        "map": {
-          "verilog-2005": [
-            "OSER10 #(\n",
-            "    .GSREN(\"FALSE\"),\n",
-            "    .LSREN(\"TRUE\")\n",
-            ") u_%%instance%% (\n",
-            "    .D0(%%D0%%),\n",
-            "    .D1(%%D1%%),\n",
-            "    .D2(%%D2%%),\n",
-            "    .D3(%%D3%%),\n",
-            "    .D4(%%D4%%),\n",
-            "    .D5(%%D5%%),\n",
-            "    .D6(%%D6%%),\n",
-            "    .D7(%%D7%%),\n",
-            "    .D8(%%D8%%),\n",
-            "    .D9(%%D9%%),\n",
-            "    .FCLK(%%fclk%%),\n",
-            "    .PCLK(%%pclk%%),\n",
-            "    .RESET(%%reset%%),\n",
-            "    .Q(%%output%%)\n",
-            ");\n"
-          ],
-          "rtlil": [
-            "cell \\OSER10 $auto$%%instance%%\n",
-            "  parameter \\GSREN \"FALSE\"\n",
-            "  parameter \\LSREN \"TRUE\"\n",
-            "  connect \\D0 \\%%D0%%\n",
-            "  connect \\D1 \\%%D1%%\n",
-            "  connect \\D2 \\%%D2%%\n",
-            "  connect \\D3 \\%%D3%%\n",
-            "  connect \\D4 \\%%D4%%\n",
-            "  connect \\D5 \\%%D5%%\n",
-            "  connect \\D6 \\%%D6%%\n",
-            "  connect \\D7 \\%%D7%%\n",
-            "  connect \\D8 \\%%D8%%\n",
-            "  connect \\D9 \\%%D9%%\n",
-            "  connect \\FCLK \\%%fclk%%\n",
-            "  connect \\PCLK \\%%pclk%%\n",
-            "  connect \\RESET \\%%reset%%\n",
-            "  connect \\Q \\%%output%%\n",
-            "end\n"
-          ]
+      "serializer": [
+        {
+          "description": "4:1 output serializer for LVDS",
+          "ratio": 4,
+          "map": {
+            "verilog-2005": [
+              "OSER4 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\"),\n",
+              "    .HWL(\"false\"),\n",
+              "    .TXCLK_POL(1'b0)\n",
+              ") u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .TX0(1'b0),\n",
+              "    .TX1(1'b0),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q0(%%output%%),\n",
+              "    .Q1()\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\OSER4 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  parameter \\HWL \"false\"\n",
+              "  parameter \\TXCLK_POL 1'0\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\TX0 1'0\n",
+              "  connect \\TX1 1'0\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q0 \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "8:1 output serializer for LVDS",
+          "ratio": 8,
+          "map": {
+            "verilog-2005": [
+              "OSER8 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\"),\n",
+              "    .HWL(\"false\"),\n",
+              "    .TXCLK_POL(1'b0)\n",
+              ") u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .D4(%%D4%%),\n",
+              "    .D5(%%D5%%),\n",
+              "    .D6(%%D6%%),\n",
+              "    .D7(%%D7%%),\n",
+              "    .TX0(1'b0),\n",
+              "    .TX1(1'b0),\n",
+              "    .TX2(1'b0),\n",
+              "    .TX3(1'b0),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q0(%%output%%),\n",
+              "    .Q1()\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\OSER8 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  parameter \\HWL \"false\"\n",
+              "  parameter \\TXCLK_POL 1'0\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\D4 \\%%D4%%\n",
+              "  connect \\D5 \\%%D5%%\n",
+              "  connect \\D6 \\%%D6%%\n",
+              "  connect \\D7 \\%%D7%%\n",
+              "  connect \\TX0 1'0\n",
+              "  connect \\TX1 1'0\n",
+              "  connect \\TX2 1'0\n",
+              "  connect \\TX3 1'0\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q0 \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "10:1 output serializer for TMDS/LVDS",
+          "ratio": 10,
+          "map": {
+            "verilog-2005": [
+              "OSER10 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\")\n",
+              ") u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .D4(%%D4%%),\n",
+              "    .D5(%%D5%%),\n",
+              "    .D6(%%D6%%),\n",
+              "    .D7(%%D7%%),\n",
+              "    .D8(%%D8%%),\n",
+              "    .D9(%%D9%%),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q(%%output%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\OSER10 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\D4 \\%%D4%%\n",
+              "  connect \\D5 \\%%D5%%\n",
+              "  connect \\D6 \\%%D6%%\n",
+              "  connect \\D7 \\%%D7%%\n",
+              "  connect \\D8 \\%%D8%%\n",
+              "  connect \\D9 \\%%D9%%\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q \\%%output%%\n",
+              "end\n"
+            ]
+          }
         }
-      }
+      ]
     },
     "input": {
       "buffer": {
@@ -699,55 +840,139 @@
           ]
         }
       },
-      "deserializer": {
-        "description": "1:10 input deserializer for TMDS/LVDS",
-        "ratio": 10,
-        "map": {
-          "verilog-2005": [
-            "IDES10 #(\n",
-            "    .GSREN(\"FALSE\"),\n",
-            "    .LSREN(\"TRUE\")\n",
-            ") u_%%instance%% (\n",
-            "    .D(%%input%%),\n",
-            "    .FCLK(%%fclk%%),\n",
-            "    .PCLK(%%pclk%%),\n",
-            "    .CALIB(1'b0),\n",
-            "    .RESET(%%reset%%),\n",
-            "    .Q0(%%Q0%%),\n",
-            "    .Q1(%%Q1%%),\n",
-            "    .Q2(%%Q2%%),\n",
-            "    .Q3(%%Q3%%),\n",
-            "    .Q4(%%Q4%%),\n",
-            "    .Q5(%%Q5%%),\n",
-            "    .Q6(%%Q6%%),\n",
-            "    .Q7(%%Q7%%),\n",
-            "    .Q8(%%Q8%%),\n",
-            "    .Q9(%%Q9%%)\n",
-            ");\n"
-          ],
-          "rtlil": [
-            "cell \\IDES10 $auto$%%instance%%\n",
-            "  parameter \\GSREN \"FALSE\"\n",
-            "  parameter \\LSREN \"TRUE\"\n",
-            "  connect \\D \\%%input%%\n",
-            "  connect \\FCLK \\%%fclk%%\n",
-            "  connect \\PCLK \\%%pclk%%\n",
-            "  connect \\CALIB 1'0\n",
-            "  connect \\RESET \\%%reset%%\n",
-            "  connect \\Q0 \\%%Q0%%\n",
-            "  connect \\Q1 \\%%Q1%%\n",
-            "  connect \\Q2 \\%%Q2%%\n",
-            "  connect \\Q3 \\%%Q3%%\n",
-            "  connect \\Q4 \\%%Q4%%\n",
-            "  connect \\Q5 \\%%Q5%%\n",
-            "  connect \\Q6 \\%%Q6%%\n",
-            "  connect \\Q7 \\%%Q7%%\n",
-            "  connect \\Q8 \\%%Q8%%\n",
-            "  connect \\Q9 \\%%Q9%%\n",
-            "end\n"
-          ]
+      "deserializer": [
+        {
+          "description": "1:4 input deserializer for LVDS",
+          "ratio": 4,
+          "map": {
+            "verilog-2005": [
+              "IDES4 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\")\n",
+              ") u_%%instance%% (\n",
+              "    .D(%%input%%),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .CALIB(1'b0),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q0(%%Q0%%),\n",
+              "    .Q1(%%Q1%%),\n",
+              "    .Q2(%%Q2%%),\n",
+              "    .Q3(%%Q3%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\IDES4 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  connect \\D \\%%input%%\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\CALIB 1'0\n",
+              "  connect \\RESET \\%%reset%%\n",
+              "  connect \\Q0 \\%%Q0%%\n",
+              "  connect \\Q1 \\%%Q1%%\n",
+              "  connect \\Q2 \\%%Q2%%\n",
+              "  connect \\Q3 \\%%Q3%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "1:8 input deserializer for LVDS",
+          "ratio": 8,
+          "map": {
+            "verilog-2005": [
+              "IDES8 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\")\n",
+              ") u_%%instance%% (\n",
+              "    .D(%%input%%),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .CALIB(1'b0),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q0(%%Q0%%),\n",
+              "    .Q1(%%Q1%%),\n",
+              "    .Q2(%%Q2%%),\n",
+              "    .Q3(%%Q3%%),\n",
+              "    .Q4(%%Q4%%),\n",
+              "    .Q5(%%Q5%%),\n",
+              "    .Q6(%%Q6%%),\n",
+              "    .Q7(%%Q7%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\IDES8 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  connect \\D \\%%input%%\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\CALIB 1'0\n",
+              "  connect \\RESET \\%%reset%%\n",
+              "  connect \\Q0 \\%%Q0%%\n",
+              "  connect \\Q1 \\%%Q1%%\n",
+              "  connect \\Q2 \\%%Q2%%\n",
+              "  connect \\Q3 \\%%Q3%%\n",
+              "  connect \\Q4 \\%%Q4%%\n",
+              "  connect \\Q5 \\%%Q5%%\n",
+              "  connect \\Q6 \\%%Q6%%\n",
+              "  connect \\Q7 \\%%Q7%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "1:10 input deserializer for TMDS/LVDS",
+          "ratio": 10,
+          "map": {
+            "verilog-2005": [
+              "IDES10 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\")\n",
+              ") u_%%instance%% (\n",
+              "    .D(%%input%%),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .CALIB(1'b0),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q0(%%Q0%%),\n",
+              "    .Q1(%%Q1%%),\n",
+              "    .Q2(%%Q2%%),\n",
+              "    .Q3(%%Q3%%),\n",
+              "    .Q4(%%Q4%%),\n",
+              "    .Q5(%%Q5%%),\n",
+              "    .Q6(%%Q6%%),\n",
+              "    .Q7(%%Q7%%),\n",
+              "    .Q8(%%Q8%%),\n",
+              "    .Q9(%%Q9%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\IDES10 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  connect \\D \\%%input%%\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\CALIB 1'0\n",
+              "  connect \\RESET \\%%reset%%\n",
+              "  connect \\Q0 \\%%Q0%%\n",
+              "  connect \\Q1 \\%%Q1%%\n",
+              "  connect \\Q2 \\%%Q2%%\n",
+              "  connect \\Q3 \\%%Q3%%\n",
+              "  connect \\Q4 \\%%Q4%%\n",
+              "  connect \\Q5 \\%%Q5%%\n",
+              "  connect \\Q6 \\%%Q6%%\n",
+              "  connect \\Q7 \\%%Q7%%\n",
+              "  connect \\Q8 \\%%Q8%%\n",
+              "  connect \\Q9 \\%%Q9%%\n",
+              "end\n"
+            ]
+          }
         }
-      }
+      ]
     }
   },
 

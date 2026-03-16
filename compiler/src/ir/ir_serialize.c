@@ -866,6 +866,8 @@ static void json_write_project(FILE *out, const IR_Design *design)
                 } else {
                     fputs("null", out);
                 }
+                fputs(", \"is_clock\": ", out);
+                fprintf(out, "%s", out_clk->is_clock ? "true" : "false");
                 fputs(" }", out);
                 if (o + 1 < unit->num_outputs) {
                     fputs(",\n", out);
@@ -948,6 +950,18 @@ static void json_write_project(FILE *out, const IR_Design *design)
         fputs(", ", out);
         fputs("\"pull\": ", out);
         json_write_string(out, p->pull == PULL_UP ? "UP" : p->pull == PULL_DOWN ? "DOWN" : "NONE");
+        if (p->fclk_name && p->fclk_name[0]) {
+            fputs(", \"fclk\": ", out);
+            json_write_string(out, p->fclk_name);
+        }
+        if (p->pclk_name && p->pclk_name[0]) {
+            fputs(", \"pclk\": ", out);
+            json_write_string(out, p->pclk_name);
+        }
+        if (p->reset_name && p->reset_name[0]) {
+            fputs(", \"reset\": ", out);
+            json_write_string(out, p->reset_name);
+        }
         fputs(" }", out);
         if (i + 1 < proj->num_pins) {
             fputs(",\n", out);

@@ -1,0 +1,39 @@
+// PIN_DIFF_OUT_MISSING_FCLK: Differential output pin missing required fclk attribute.
+
+@project PIN_DIFF_OUT_MISSING_FCLK_TEST
+  CLOCKS {
+    pclk;
+    rst;
+  }
+
+  IN_PINS {
+    btn = { standard=LVCMOS33 };
+  }
+
+  OUT_PINS {
+    tmds = { mode=DIFFERENTIAL, standard=LVDS25, drive=4, pclk=pclk, reset=rst };
+    led = { standard=LVCMOS33, drive=8 };
+  }
+
+  MAP {
+    btn = 1;
+    tmds = 2;
+    led = 3;
+  }
+
+  @top top {
+    IN  [1] a = btn;
+    OUT [1] out = led;
+  }
+@endproj
+
+@module top
+  PORT {
+    IN  [1] a;
+    OUT [1] out;
+  }
+
+  ASYNCHRONOUS {
+    out = a;
+  }
+@endmod
