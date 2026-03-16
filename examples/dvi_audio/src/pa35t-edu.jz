@@ -20,8 +20,8 @@
 
     CLOCKS {
         SCLK = { period=5 };    // 200MHz differential clock
-        serial_clk;             // 375MHz (5x pixel, from PLL)
-        pixel_clk;              // 75MHz (from PLL)
+        serial_clk;             // 185.625MHz (5x pixel, from PLL)
+        pixel_clk;              // 37.125MHz (from PLL)
     }
 
     IN_PINS {
@@ -63,17 +63,17 @@
     }
 
     CLOCK_GEN {
-        PLL {
+        PLL2 {
             IN   REF_CLK SCLK;          // 200 MHz input
-            OUT  BASE    serial_clk;    // 375 MHz (5x pixel clock)
-            OUT  CLKOUT1 pixel_clk;     //  75 MHz
+            OUT  BASE    serial_clk;    // 185.625 MHz (5x pixel clock)
+            OUT  CLKOUT1 pixel_clk;     //  37.125 MHz
             WIRE LOCK    pll_lock;
 
             CONFIG {
-                DIVCLK_DIVIDE  = 2;
-                CLKFBOUT_MULT  = 15;
-                CLKOUT0_DIVIDE = 4;
-                CLKOUT1_DIVIDE = 20;
+                DIVCLK_DIVIDE    = 8;
+                CLKFBOUT_MULT_F  = 37.125;
+                CLKOUT0_DIVIDE_F = 5.0;
+                CLKOUT1_DIVIDE   = 25;
             };
         };
     }
