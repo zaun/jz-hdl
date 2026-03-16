@@ -37,6 +37,8 @@ typedef struct JZSymbol {
     JZASTNode    *node;  /* declaration node */
     int           id;    /* stable integer ID for IR_Signal binding; -1 if not a signal */
     int           can_be_z; /* non-zero if any driver can assign 'z' to this signal */
+    JZASTNode    *feature_guard;  /* owning @feature guard (NULL if unconditional) */
+    JZASTNode    *feature_branch; /* THEN/ELSE branch node within the guard */
 } JZSymbol;
 
 typedef struct JZModuleScope {
@@ -217,6 +219,14 @@ int module_scope_add_symbol(JZModuleScope *scope,
                             const char *name,
                             JZASTNode *decl,
                             JZDiagnosticList *diagnostics);
+
+int module_scope_add_symbol_featured(JZModuleScope *scope,
+                                     JZSymbolKind kind,
+                                     const char *name,
+                                     JZASTNode *decl,
+                                     JZASTNode *feature_guard,
+                                     JZASTNode *feature_branch,
+                                     JZDiagnosticList *diagnostics);
 
 const JZSymbol *module_scope_lookup(const JZModuleScope *scope,
                                     const char *name);

@@ -586,6 +586,41 @@ static int pin_needs_serializer(const IR_Pin *pin)
            pin->pclk_name && pin->pclk_name[0] != '\0';
 }
 
+/* Find the data width of the top module signal bound to a pin/bit. */
+static int find_signal_width_for_pin(const IR_Design *design,
+                                      const IR_Project *proj,
+                                      int pin_idx, int pin_bit)
+{
+    if (!design || !proj) return 0;
+    const IR_Module *top_mod = NULL;
+    if (proj->top_module_id >= 0 && proj->top_module_id < design->num_modules) {
+        top_mod = &design->modules[proj->top_module_id];
+    }
+    if (!top_mod) return 0;
+
+    for (int t = 0; t < proj->num_top_bindings; ++t) {
+        const IR_TopBinding *tb = &proj->top_bindings[t];
+        if (tb->pin_id == pin_idx && tb->pin_bit_index == pin_bit) {
+            for (int s = 0; s < top_mod->num_signals; ++s) {
+                if (top_mod->signals[s].id == tb->top_port_signal_id) {
+                    return top_mod->signals[s].width;
+                }
+            }
+        }
+    }
+    for (int t = 0; t < proj->num_top_bindings; ++t) {
+        const IR_TopBinding *tb = &proj->top_bindings[t];
+        if (tb->pin_id == pin_idx && tb->pin_bit_index == -1) {
+            for (int s = 0; s < top_mod->num_signals; ++s) {
+                if (top_mod->signals[s].id == tb->top_port_signal_id) {
+                    return top_mod->signals[s].width;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 /* -------------------------------------------------------------------------
  * Project wrapper emission
  * -------------------------------------------------------------------------
@@ -832,8 +867,7 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
         ? jz_chip_diff_output_buffer_map(&chip_data, "rtlil") : NULL;
     const char *ibuf_template = have_chip_data
         ? jz_chip_diff_input_buffer_map(&chip_data, "rtlil") : NULL;
-    const char *oser_template = have_chip_data
-        ? jz_chip_diff_output_serializer_map(&chip_data, "rtlil") : NULL;
+    /* Serializer template is now selected per-pin based on needed data width */
 
     /* Hardcoded RTLIL fallbacks (Gowin TLVDS primitives).
      * The template engine interprets \n as newline and \\ as literal backslash.
@@ -872,7 +906,6 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
 
     if (!obuf_template) obuf_template = fallback_obuf;
     if (!ibuf_template) ibuf_template = fallback_ibuf;
-    if (!oser_template) oser_template = fallback_oser;
 
     for (int i = 0; i < num_pins; ++i) {
         const IR_Pin *pin = &proj->pins[i];
@@ -880,8 +913,8 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
         const char *name = pin->name ? pin->name : "jz_pin";
 
         if (pin->kind == PIN_OUT) {
-            int ser_ratio = have_chip_data ? jz_chip_diff_serializer_ratio(&chip_data) : 0;
-            int needs_ser = pin_needs_serializer(pin) && ser_ratio > 0 && oser_template;
+            int has_any_ser = have_chip_data && jz_chip_diff_serializer_ratio(&chip_data) > 0;
+            int needs_ser = pin_needs_serializer(pin) && has_any_ser;
 
             for (int bit = 0; bit < pin->width; ++bit) {
                 char suffix[32];
@@ -901,19 +934,47 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
                 }
 
                 if (needs_ser) {
+                    /* Determine actual data width from the top module signal */
+                    int data_width = find_signal_width_for_pin(design, proj, i, bit);
+                    if (data_width <= 0) data_width = jz_chip_diff_serializer_ratio(&chip_data);
+
+                    /* Find best serializer with ratio >= data_width */
+                    int sel_ratio = jz_chip_diff_best_serializer_ratio(&chip_data, data_width);
+                    const char *sel_template = sel_ratio > 0
+                        ? jz_chip_diff_best_serializer_map(&chip_data, data_width, "rtlil")
+                        : NULL;
+
+                    if (sel_ratio <= 0 || !sel_template) {
+                        sel_template = fallback_oser;
+                        sel_ratio = jz_chip_diff_max_serializer_ratio(&chip_data);
+                        if (sel_ratio <= 0) sel_ratio = 10;
+                        sel_template = jz_chip_diff_best_serializer_map(&chip_data, 1, "rtlil");
+                        if (!sel_template) sel_template = fallback_oser;
+                    }
+
+                    int wire_width = sel_ratio;
+
                     /* Intermediate wires */
                     char diff_wire[128], ser_wire[128];
                     snprintf(diff_wire, sizeof(diff_wire), "jz_diff_%s%s", name, suffix);
                     snprintf(ser_wire, sizeof(ser_wire), "jz_ser_%s%s", name, suffix);
 
                     rtlil_indent(out, 1);
-                    fprintf(out, "wire width %d \\%s\n", ser_ratio, diff_wire);
+                    fprintf(out, "wire width %d \\%s\n", wire_width, diff_wire);
                     rtlil_indent(out, 1);
                     fprintf(out, "wire width 1 \\%s\n", ser_wire);
 
                     /* Serializer cell */
                     char oser_inst[128];
                     snprintf(oser_inst, sizeof(oser_inst), "oser_%s%s", name, suffix);
+
+                    /* Reset: pass raw signal name. The RTLIL template contains
+                     * the $not cell and ~%%reset%% references. */
+                    const char *reset_val = "1'0";
+                    if (pin->reset_name && pin->reset_name[0]) {
+                        reset_val = pin->reset_name;
+                    }
+
                     DiffTemplateCtx ser_ctx = {
                         .instance  = oser_inst,
                         .input     = NULL,
@@ -921,13 +982,13 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
                         .pin_p     = NULL,
                         .pin_n     = NULL,
                         .diff_wire = diff_wire,
-                        .ser_ratio = ser_ratio,
+                        .ser_ratio = wire_width,
                         .fclk      = pin->fclk_name,
                         .pclk      = pin->pclk_name,
-                        .reset     = "1'b0",
+                        .reset     = reset_val,
                     };
                     rtlil_indent(out, 1);
-                    emit_diff_from_template(out, oser_template, &ser_ctx);
+                    emit_diff_from_template(out, sel_template, &ser_ctx);
 
                     /* Output buffer cell */
                     char obuf_inst[128];

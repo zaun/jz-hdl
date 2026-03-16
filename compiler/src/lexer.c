@@ -749,7 +749,8 @@ static void lex_one_token(LexerState *st) {
             emit_token(st, JZ_TOK_OP_EQ, lex, 2, loc);
         } else if (st->pos + 1 < st->len && src[st->pos + 1] == '>') {
             /* '=>' or '=>z' / '=>s' */
-            if (st->pos + 2 < st->len && (src[st->pos + 2] == 'z' || src[st->pos + 2] == 's')) {
+            if (st->pos + 2 < st->len && (src[st->pos + 2] == 'z' || src[st->pos + 2] == 's') &&
+                !(st->pos + 3 < st->len && (isalnum((unsigned char)src[st->pos + 3]) || src[st->pos + 3] == '_'))) {
                 JZTokenType ttype = (src[st->pos + 2] == 'z') ? JZ_TOK_OP_DRIVE_Z : JZ_TOK_OP_DRIVE_S;
                 st->pos += 3; st->column += 3;
                 const char *lex = (ttype == JZ_TOK_OP_DRIVE_Z) ? "=>z" : "=>s";
@@ -759,8 +760,9 @@ static void lex_one_token(LexerState *st) {
                 const char *lex = "=>";
                 emit_token(st, JZ_TOK_OP_DRIVE, lex, 2, loc);
             }
-        } else if (st->pos + 1 < st->len && (src[st->pos + 1] == 'z' || src[st->pos + 1] == 's')) {
-            /* =z or =s */
+        } else if (st->pos + 1 < st->len && (src[st->pos + 1] == 'z' || src[st->pos + 1] == 's') &&
+                   !(st->pos + 2 < st->len && (isalnum((unsigned char)src[st->pos + 2]) || src[st->pos + 2] == '_'))) {
+            /* =z or =s (only if not followed by identifier chars) */
             JZTokenType ttype = (src[st->pos + 1] == 'z') ? JZ_TOK_OP_ASSIGN_Z : JZ_TOK_OP_ASSIGN_S;
             st->pos += 2; st->column += 2;
             const char *lex = (ttype == JZ_TOK_OP_ASSIGN_Z) ? "=z" : "=s";

@@ -113,7 +113,7 @@
 @endmod
 
 // DVI TMDS 8b/10b Encoder
-@module tmds_encoder
+@module tmds_encoder_10
     PORT {
         IN  [1]  clk;
         IN  [1]  rst_n;
@@ -411,7 +411,7 @@
         OUT [10] y_pos          = y_pos;
     }
 
-    @new enc0 tmds_encoder {
+    @new enc0 tmds_encoder_10 {
         IN  [1]  clk            = clk;
         IN  [1]  rst_n          = reset;
         IN  [8]  data_in        = blue;
@@ -421,7 +421,7 @@
         OUT [10] tmds_out       = dvi_tmds_d0;
     }
 
-    @new enc1 tmds_encoder {
+    @new enc1 tmds_encoder_10 {
         IN  [1]  clk            = clk;
         IN  [1]  rst_n          = reset;
         IN  [8]  data_in        = green;
@@ -431,7 +431,7 @@
         OUT [10] tmds_out       = dvi_tmds_d1;
     }
 
-    @new enc2 tmds_encoder {
+    @new enc2 tmds_encoder_10 {
         IN  [1]  clk            = clk;
         IN  [1]  rst_n          = reset;
         IN  [8]  data_in        = red;

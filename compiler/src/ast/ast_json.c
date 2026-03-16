@@ -62,6 +62,7 @@ static const char *node_type_name(JZASTNodeType t) {
     case JZ_AST_CLOCK_GEN_UNIT:        return "ClockGenUnit";
     case JZ_AST_CLOCK_GEN_IN:          return "ClockGenIn";
     case JZ_AST_CLOCK_GEN_OUT:         return "ClockGenOut";
+    case JZ_AST_CLOCK_GEN_WIRE:        return "ClockGenWire";
     case JZ_AST_CLOCK_GEN_CONFIG:      return "ClockGenConfig";
     case JZ_AST_MODULE_INSTANCE:       return "ModuleInstance";
     case JZ_AST_PROJECT_TOP_INSTANCE:  return "ProjectTopInstance";

@@ -181,6 +181,7 @@
         "BASE": {
           "description": "Internal oscillator output",
           "port": "OSC",
+          "is_clock": true,
           "frequency_mhz": { "expr": "580.0 / DIV" }
         }
       }
@@ -371,6 +372,7 @@
         "BASE": {
           "description": "Primary PLL output (CLKOP)",
           "port": "CLKOP",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Primary output frequency: FVCO / CLKOP_DIV",
             "expr": "FVCO / CLKOP_DIV"
@@ -380,6 +382,7 @@
         "CLKOS": {
           "description": "Secondary PLL output",
           "port": "CLKOS",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Secondary output frequency: FVCO / CLKOS_DIV",
             "expr": "FVCO / CLKOS_DIV"
@@ -389,6 +392,7 @@
         "CLKOS2": {
           "description": "Tertiary PLL output",
           "port": "CLKOS2",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Tertiary output frequency: FVCO / CLKOS2_DIV",
             "expr": "FVCO / CLKOS2_DIV"
@@ -398,6 +402,7 @@
         "CLKOS3": {
           "description": "Quaternary PLL output",
           "port": "CLKOS3",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Quaternary output frequency: FVCO / CLKOS3_DIV",
             "expr": "FVCO / CLKOS3_DIV"
@@ -406,7 +411,8 @@
 
         "LOCK": {
           "description": "PLL lock indicator, high when PLL is locked",
-          "port": "LOCK"
+          "port": "LOCK",
+          "is_clock": false
         }
       },
 
@@ -464,6 +470,7 @@
         "BASE": {
           "description": "Buffered clock output on primary clock network",
           "port": "CLKO",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Same frequency as input (buffer, no division).",
             "expr": "(1000.0 / REF_CLK_period_ns)"
@@ -496,7 +503,123 @@
             "end\n"
           ]
         }
-      }
+      },
+      "serializer": [
+        {
+          "description": "2:1 output DDR serializer",
+          "ratio": 2,
+          "map": {
+            "verilog-2005": [
+              "ODDRX1F u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .SCLK(%%pclk%%),\n",
+              "    .RST(~%%reset%%),\n",
+              "    .Q(%%output%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\ODDRX1F $auto$%%instance%%\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\SCLK \\%%pclk%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "4:1 output DDR serializer with 2x gearing",
+          "ratio": 4,
+          "map": {
+            "verilog-2005": [
+              "ODDRX2F u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .ECLK(%%fclk%%),\n",
+              "    .SCLK(%%pclk%%),\n",
+              "    .RST(~%%reset%%),\n",
+              "    .Q(%%output%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\ODDRX2F $auto$%%instance%%\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\ECLK \\%%fclk%%\n",
+              "  connect \\SCLK \\%%pclk%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "7:1 LVDS output DDR serializer",
+          "ratio": 7,
+          "map": {
+            "verilog-2005": [
+              "ODDR71B u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .D4(%%D4%%),\n",
+              "    .D5(%%D5%%),\n",
+              "    .D6(%%D6%%),\n",
+              "    .ECLK(%%fclk%%),\n",
+              "    .SCLK(%%pclk%%),\n",
+              "    .RST(~%%reset%%),\n",
+              "    .Q(%%output%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\ODDR71B $auto$%%instance%%\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\D4 \\%%D4%%\n",
+              "  connect \\D5 \\%%D5%%\n",
+              "  connect \\D6 \\%%D6%%\n",
+              "  connect \\ECLK \\%%fclk%%\n",
+              "  connect \\SCLK \\%%pclk%%\n",
+              "  connect \\RST \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        }
+      ]
     },
     "input": {
       "buffer": {
@@ -517,7 +640,103 @@
             "end\n"
           ]
         }
-      }
+      },
+      "deserializer": [
+        {
+          "description": "1:2 input DDR deserializer",
+          "ratio": 2,
+          "map": {
+            "verilog-2005": [
+              "IDDRX1F u_%%instance%% (\n",
+              "    .D(%%input%%),\n",
+              "    .SCLK(%%pclk%%),\n",
+              "    .RST(~%%reset%%),\n",
+              "    .Q0(%%Q0%%),\n",
+              "    .Q1(%%Q1%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\IDDRX1F $auto$%%instance%%\n",
+              "  connect \\D \\%%input%%\n",
+              "  connect \\SCLK \\%%pclk%%\n",
+              "  connect \\RST \\%%reset%%\n",
+              "  connect \\Q0 \\%%Q0%%\n",
+              "  connect \\Q1 \\%%Q1%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "1:4 input DDR deserializer with 2x gearing",
+          "ratio": 4,
+          "map": {
+            "verilog-2005": [
+              "IDDRX2F u_%%instance%% (\n",
+              "    .D(%%input%%),\n",
+              "    .ECLK(%%fclk%%),\n",
+              "    .SCLK(%%pclk%%),\n",
+              "    .RST(~%%reset%%),\n",
+              "    .ALIGNWD(1'b0),\n",
+              "    .Q0(%%Q0%%),\n",
+              "    .Q1(%%Q1%%),\n",
+              "    .Q2(%%Q2%%),\n",
+              "    .Q3(%%Q3%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\IDDRX2F $auto$%%instance%%\n",
+              "  connect \\D \\%%input%%\n",
+              "  connect \\ECLK \\%%fclk%%\n",
+              "  connect \\SCLK \\%%pclk%%\n",
+              "  connect \\RST \\%%reset%%\n",
+              "  connect \\ALIGNWD 1'0\n",
+              "  connect \\Q0 \\%%Q0%%\n",
+              "  connect \\Q1 \\%%Q1%%\n",
+              "  connect \\Q2 \\%%Q2%%\n",
+              "  connect \\Q3 \\%%Q3%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "1:7 LVDS input DDR deserializer",
+          "ratio": 7,
+          "map": {
+            "verilog-2005": [
+              "IDDR71B u_%%instance%% (\n",
+              "    .D(%%input%%),\n",
+              "    .ECLK(%%fclk%%),\n",
+              "    .SCLK(%%pclk%%),\n",
+              "    .RST(~%%reset%%),\n",
+              "    .ALIGNWD(1'b0),\n",
+              "    .Q0(%%Q0%%),\n",
+              "    .Q1(%%Q1%%),\n",
+              "    .Q2(%%Q2%%),\n",
+              "    .Q3(%%Q3%%),\n",
+              "    .Q4(%%Q4%%),\n",
+              "    .Q5(%%Q5%%),\n",
+              "    .Q6(%%Q6%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\IDDR71B $auto$%%instance%%\n",
+              "  connect \\D \\%%input%%\n",
+              "  connect \\ECLK \\%%fclk%%\n",
+              "  connect \\SCLK \\%%pclk%%\n",
+              "  connect \\RST \\%%reset%%\n",
+              "  connect \\ALIGNWD 1'0\n",
+              "  connect \\Q0 \\%%Q0%%\n",
+              "  connect \\Q1 \\%%Q1%%\n",
+              "  connect \\Q2 \\%%Q2%%\n",
+              "  connect \\Q3 \\%%Q3%%\n",
+              "  connect \\Q4 \\%%Q4%%\n",
+              "  connect \\Q5 \\%%Q5%%\n",
+              "  connect \\Q6 \\%%Q6%%\n",
+              "end\n"
+            ]
+          }
+        }
+      ]
     }
   },
 

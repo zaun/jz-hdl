@@ -1,7 +1,8 @@
 @project(CHIP="GW1NR-9-QN88-C6-I5") DVI_TEST
     @import "por.jz"
     @import "video_timing.jz"
-    @import "tmds_encoder.jz"
+    @import "tmds_encoder_10.jz"
+    @import "tmds_encoder_2.jz"
     @import "hbars.jz"
     @import "vbars.jz"
     @import "warp.jz"
@@ -10,7 +11,9 @@
 
     CONFIG {
         warp = 0;
+        serializer = 10;
     }
+    @check(CONFIG.serializer == 2 || CONFIG.serializer == 10, "Serialzer must be 2 or 10.");
 
     CLOCKS {
         SCLK       = { period=37.037 }; // 27MHz crystal
@@ -26,8 +29,8 @@
 
     OUT_PINS {
         LED[6]       = { standard=LVCMOS18, drive=8 };
-        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk = serial_clk, pclk = pixel_clk };
-        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk = serial_clk, pclk = pixel_clk };
+        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
     }
 
     MAP {
@@ -60,6 +63,7 @@
         PLL {
             IN REF_CLK SCLK;
             OUT BASE  serial_clk;  // 185.625 MHz (5x pixel clock)
+            WIRE LOCK pll_lock;
 
             CONFIG {
                 IDIV = 7;           // divider = 8
@@ -82,7 +86,7 @@
         IN   [1]  por       = DONE;
         IN   [1]  rst_n     = KEY[0];
         IN   [1]  next      = KEY[1];
-        OUT  [6]  leds      = LED;
+        OUT  [6]  leds      = ~LED;
         OUT  [10] tmds_clk  = TMDS_CLK;
         OUT  [10] tmds_d0   = TMDS_DATA[0];
         OUT  [10] tmds_d1   = TMDS_DATA[1];

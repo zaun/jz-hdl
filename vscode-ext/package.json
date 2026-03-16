@@ -36,6 +36,12 @@
                 "path": "./syntaxes/jz-hdl.tmLanguage.json"
             }
         ],
+        "commands": [
+            {
+                "command": "jz-hdl.selectProject",
+                "title": "JZ-HDL: Select Project"
+            }
+        ],
         "configuration": {
             "title": "JZ-HDL",
             "properties": {
@@ -48,6 +54,16 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Enable the JZ-HDL Language Server for diagnostics, hover, completion, and go-to-definition."
+                },
+                "jz-hdl.hover.clocks": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show clock properties (period, frequency, source) on hover."
+                },
+                "jz-hdl.hover.declarations": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show declaration info (type, width, reset value) on hover."
                 }
             }
         }

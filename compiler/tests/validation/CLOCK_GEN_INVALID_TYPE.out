@@ -1,0 +1,2 @@
+File: CLOCK_GEN_INVALID_TYPE.jz
+      19:5    error PARSE000 parse error near token 'FOOBAR': CLOCK_GEN generator must be PLL, DLL, CLKDIV, OSC, or BUF (with optional numeric suffix) (orig: PARSE000)

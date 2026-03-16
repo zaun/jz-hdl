@@ -1,0 +1,92 @@
+@project(CHIP="XC7A35T-2FGG484") DVI_AUDIO_TEST
+    @import "por.jz"
+    @import "video_timing.jz"
+    @import "tmds_encoder_2.jz"
+    @import "tmds_encoder_10.jz"
+    @import "terc4_encoder.jz"
+    @import "dvi_data_island.jz"
+    @import "melodies.jz"
+    @import "tone_gen.jz"
+    @import "mixer.jz"
+    @import "spectrum_analyzer.jz"
+    @import "spectrum_display.jz"
+    @import "debounce.jz"
+    @import "dvi.jz"
+
+    CONFIG {
+        serializer = 10;
+    }
+    @check(CONFIG.serializer == 2 || CONFIG.serializer == 10, "Serialzer must be 2 or 10.");
+
+    CLOCKS {
+        SCLK = { period=5 };    // 200MHz differential clock
+        serial_clk;             // 185.625MHz (5x pixel, from PLL)
+        pixel_clk;              // 37.125MHz (from PLL)
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVDS25, mode=DIFFERENTIAL };
+        NRST   = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6]       = { standard=LVCMOS33, drive=4 };
+        TMDS_CLK     = { mode=DIFFERENTIAL, standard=TMDS33, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=TMDS33, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+    }
+
+    MAP {
+        // System Clock 200MHz differential
+        SCLK = { P=R4, N=T4 };
+
+        // Reset button (active low)
+        NRST = R14;
+
+        // User buttons
+        KEY[0] = W21;
+        KEY[1] = Y21;
+
+        // LEDs (active high)
+        LED[0] = J21;
+        LED[1] = J19;
+        LED[2] = H19;
+        LED[3] = K18;
+        LED[4] = K19;
+        LED[5] = L19;
+
+        // HDMI TMDS differential pairs
+        TMDS_CLK     = { P=Y18,  N=Y19 };
+        TMDS_DATA[0] = { P=V18,  N=V19 };
+        TMDS_DATA[1] = { P=AA19, N=AB20 };
+        TMDS_DATA[2] = { P=V17,  N=W17 };
+    }
+
+    CLOCK_GEN {
+        PLL2 {
+            IN   REF_CLK SCLK;          // 200 MHz input
+            OUT  BASE    serial_clk;    // 185.625 MHz (5x pixel clock)
+            OUT  CLKOUT1 pixel_clk;     //  37.125 MHz
+            WIRE LOCK    pll_lock;
+
+            CONFIG {
+                DIVCLK_DIVIDE    = 8;
+                CLKFBOUT_MULT_F  = 37.125;
+                CLKOUT0_DIVIDE_F = 5.0;
+                CLKOUT1_DIVIDE   = 25;
+            };
+        };
+    }
+
+    @top dvi_top {
+        IN   [1]  clk       = pixel_clk;
+        IN   [1]  por       = 1'b1;
+        IN   [1]  rst_n     = ~NRST;
+        IN   [1]  next      = KEY[0];
+        OUT  [6]  leds      = LED;
+        OUT  [10] tmds_clk  = TMDS_CLK;
+        OUT  [10] tmds_d0   = TMDS_DATA[0];
+        OUT  [10] tmds_d1   = TMDS_DATA[1];
+        OUT  [10] tmds_d2   = TMDS_DATA[2];
+    }
+@endproj

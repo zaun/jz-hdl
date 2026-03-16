@@ -1,12 +1,12 @@
 @project(CHIP="XC7A35T-2FGG484") COUNTER_TEST
     @import "counter.jz"
 
-    CLOCKS {
-        SCLK = { period=5 }; // 200MHz clock
-    }
-
     CONFIG {
         CLK_MHZ = 200;
+    }
+
+    CLOCKS {
+        SCLK = { period=5 }; // 200MHz clock
     }
 
     IN_PINS {

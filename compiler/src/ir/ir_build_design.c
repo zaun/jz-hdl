@@ -1019,9 +1019,32 @@ int jz_ir_build_design(JZASTNode *root,
                                         spec->overrides[oi].name &&
                                         strcmp(spec->overrides[oi].name,
                                                init_expr->name) == 0) {
-                                        m->init.file_path = ir_strdup_arena(
-                                            arena,
-                                            spec->overrides[oi].string_value);
+                                        /* Resolve the override path relative
+                                         * to the source file that contains the
+                                         * MEM declaration so the backend can
+                                         * open it from any CWD.
+                                         */
+                                        const char *ov_path = spec->overrides[oi].string_value;
+                                        if (ov_path[0] != '/' && mem_decl->loc.filename) {
+                                            const char *sl = strrchr(mem_decl->loc.filename, '/');
+                                            if (sl) {
+                                                size_t dlen = (size_t)(sl - mem_decl->loc.filename);
+                                                char rbuf[1024];
+                                                snprintf(rbuf, sizeof(rbuf), "%.*s/%s",
+                                                         (int)dlen, mem_decl->loc.filename, ov_path);
+                                                char *absp = realpath(rbuf, NULL);
+                                                if (absp) {
+                                                    m->init.file_path = ir_strdup_arena(arena, absp);
+                                                    free(absp);
+                                                } else {
+                                                    m->init.file_path = ir_strdup_arena(arena, ov_path);
+                                                }
+                                            } else {
+                                                m->init.file_path = ir_strdup_arena(arena, ov_path);
+                                            }
+                                        } else {
+                                            m->init.file_path = ir_strdup_arena(arena, ov_path);
+                                        }
                                         break;
                                     }
                                 }
@@ -1344,7 +1367,7 @@ int jz_ir_build_design(JZASTNode *root,
                             if (!elem) continue;
                             if (elem->type == JZ_AST_CLOCK_GEN_IN) {
                                 input_count++;
-                            } else if (elem->type == JZ_AST_CLOCK_GEN_OUT) {
+                            } else if (elem->type == JZ_AST_CLOCK_GEN_OUT || elem->type == JZ_AST_CLOCK_GEN_WIRE) {
                                 output_count++;
                             } else if (elem->type == JZ_AST_CLOCK_GEN_CONFIG) {
                                 for (size_t p = 0; p < elem->child_count; ++p) {
@@ -1386,12 +1409,14 @@ int jz_ir_build_design(JZASTNode *root,
                             int oi = 0;
                             for (size_t c = 0; c < unit_ast->child_count && oi < output_count; ++c) {
                                 JZASTNode *out_ast = unit_ast->children[c];
-                                if (!out_ast || out_ast->type != JZ_AST_CLOCK_GEN_OUT) continue;
+                                if (!out_ast || (out_ast->type != JZ_AST_CLOCK_GEN_OUT &&
+                                                 out_ast->type != JZ_AST_CLOCK_GEN_WIRE)) continue;
                                 IR_ClockGenOutput *out = &outputs[oi++];
                                 out->selector = out_ast->block_kind
                                               ? ir_strdup_arena(arena, out_ast->block_kind) : NULL;
                                 out->clock_name = out_ast->name
                                                 ? ir_strdup_arena(arena, out_ast->name) : NULL;
+                                out->is_clock = (out_ast->type == JZ_AST_CLOCK_GEN_OUT) ? 1 : 0;
                             }
                             unit->outputs = outputs;
                             unit->num_outputs = output_count;
@@ -1778,6 +1803,30 @@ int jz_ir_build_design(JZASTNode *root,
                                     memcpy(val, pc_attr, len2);
                                     val[len2] = '\0';
                                     p->pclk_name = ir_strdup_arena(arena, val);
+                                }
+                            }
+                        }
+                    }
+
+                    /* reset (serializer reset signal, typically PLL lock) */
+                    p->reset_name = NULL;
+                    {
+                        const char *rs_attr = strstr(attrs, "reset");
+                        if (rs_attr) {
+                            rs_attr = strchr(rs_attr, '=');
+                            if (rs_attr) {
+                                ++rs_attr;
+                                while (*rs_attr && isspace((unsigned char)*rs_attr)) ++rs_attr;
+                                char val[64];
+                                size_t len2 = 0;
+                                while (rs_attr[len2] && !isspace((unsigned char)rs_attr[len2]) &&
+                                       rs_attr[len2] != ',' && rs_attr[len2] != ';' && rs_attr[len2] != '}') {
+                                    ++len2;
+                                }
+                                if (len2 > 0 && len2 < sizeof(val)) {
+                                    memcpy(val, rs_attr, len2);
+                                    val[len2] = '\0';
+                                    p->reset_name = ir_strdup_arena(arena, val);
                                 }
                             }
                         }

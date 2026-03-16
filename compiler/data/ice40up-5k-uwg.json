@@ -156,6 +156,7 @@
         "BASE": {
           "description": "High-frequency oscillator output",
           "port": "CLKHF",
+          "is_clock": true,
           "frequency_mhz": { "expr": "48.0 / (1 << CLKHF_DIV)" }
         }
       }
@@ -193,6 +194,7 @@
         "BASE": {
           "description": "Low-frequency oscillator output (10 kHz)",
           "port": "CLKLF",
+          "is_clock": true,
           "frequency_mhz": { "expr": "0.01" }
         }
       }
@@ -304,6 +306,7 @@
         "BASE": {
           "description": "Primary PLL output (PLLOUTGLOBAL)",
           "port": "PLLOUTGLOBAL",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Output frequency: F_VCO / 2^DIVQ",
             "expr": "FVCO / (1 << DIVQ)"
@@ -312,7 +315,8 @@
 
         "LOCK": {
           "description": "PLL lock indicator, high when PLL is locked",
-          "port": "LOCK"
+          "port": "LOCK",
+          "is_clock": false
         }
       },
 
@@ -358,6 +362,7 @@
         "BASE": {
           "description": "Buffered clock output on global network",
           "port": "GLOBAL_BUFFER_OUTPUT",
+          "is_clock": true,
           "frequency_mhz": {
             "description": "Same frequency as input (buffer, no division).",
             "expr": "(1000.0 / REF_CLK_period_ns)"

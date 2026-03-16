@@ -5,10 +5,10 @@
   IN_PINS {
     clk = { standard=LVCMOS33 };
     ddr_in = { standard=SSTL15, term=ON };
+    tmds_in = { mode=DIFFERENTIAL, standard=LVDS25 };
   }
 
   OUT_PINS {
-    tmds_clk = { mode=DIFFERENTIAL, standard=LVDS25, drive=4 };
     led = { standard=LVCMOS18, drive=4 };
     ddr_out = { standard=SSTL25_I, drive=8, term=ON };
   }
@@ -20,7 +20,7 @@
   MAP {
     clk = 4;
     ddr_in = 20;
-    tmds_clk = { P=33, N=34 };
+    tmds_in = { P=33, N=34 };
     led = 15;
     ddr_out = 21;
     sda = 52;

@@ -526,7 +526,7 @@
                 { "selector": "REF_CLK", "signal_name": "SCLK" }
               ],
               "outputs": [
-                { "selector": "BASE", "clock_name": "FAST_CLK" }
+                { "selector": "BASE", "clock_name": "FAST_CLK", "is_clock": true }
               ],
               "configs": [
                 { "param_name": "IDIV", "param_value": "3" },

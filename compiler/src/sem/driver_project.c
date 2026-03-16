@@ -36,6 +36,8 @@ JZModuleScope *find_module_scope_for_node(JZBuffer *scopes,
  */
 static int collect_decls_from_feature_block(JZASTNode *block,
                                              JZModuleScope *scope,
+                                             JZASTNode *feature_guard,
+                                             JZASTNode *feature_branch,
                                              JZDiagnosticList *diagnostics);
 
 static int collect_decls_from_feature(JZASTNode *guard,
@@ -47,7 +49,7 @@ static int collect_decls_from_feature(JZASTNode *guard,
     for (size_t bi = 1; bi < guard->child_count; ++bi) {
         JZASTNode *branch = guard->children[bi];
         if (!branch) continue;
-        if (collect_decls_from_feature_block(branch, scope, diagnostics) != 0) {
+        if (collect_decls_from_feature_block(branch, scope, guard, branch, diagnostics) != 0) {
             return -1;
         }
     }
@@ -56,6 +58,8 @@ static int collect_decls_from_feature(JZASTNode *guard,
 
 static int collect_decls_from_feature_block(JZASTNode *block,
                                              JZModuleScope *scope,
+                                             JZASTNode *feature_guard,
+                                             JZASTNode *feature_branch,
                                              JZDiagnosticList *diagnostics)
 {
     if (!block) return 0;
@@ -73,42 +77,42 @@ static int collect_decls_from_feature_block(JZASTNode *block,
         /* Handle raw declarations directly inside feature branches
          * (e.g., WIRE_DECL inside a WIRE block's feature guard) */
         if (child->type == JZ_AST_WIRE_DECL && child->name) {
-            if (module_scope_add_symbol(scope, JZ_SYM_WIRE, child->name, child, diagnostics) != 0)
+            if (module_scope_add_symbol_featured(scope, JZ_SYM_WIRE, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                 return -1;
             continue;
         }
         if (child->type == JZ_AST_REGISTER_DECL && child->name) {
-            if (module_scope_add_symbol(scope, JZ_SYM_REGISTER, child->name, child, diagnostics) != 0)
+            if (module_scope_add_symbol_featured(scope, JZ_SYM_REGISTER, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                 return -1;
             continue;
         }
         if (child->type == JZ_AST_LATCH_DECL && child->name) {
-            if (module_scope_add_symbol(scope, JZ_SYM_LATCH, child->name, child, diagnostics) != 0)
+            if (module_scope_add_symbol_featured(scope, JZ_SYM_LATCH, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                 return -1;
             continue;
         }
         if (child->type == JZ_AST_PORT_DECL && child->name) {
-            if (module_scope_add_symbol(scope, JZ_SYM_PORT, child->name, child, diagnostics) != 0)
+            if (module_scope_add_symbol_featured(scope, JZ_SYM_PORT, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                 return -1;
             continue;
         }
         if (child->type == JZ_AST_CONST_DECL && child->name) {
-            if (module_scope_add_symbol(scope, JZ_SYM_CONST, child->name, child, diagnostics) != 0)
+            if (module_scope_add_symbol_featured(scope, JZ_SYM_CONST, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                 return -1;
             continue;
         }
         if (child->type == JZ_AST_MEM_DECL && child->name) {
-            if (module_scope_add_symbol(scope, JZ_SYM_MEM, child->name, child, diagnostics) != 0)
+            if (module_scope_add_symbol_featured(scope, JZ_SYM_MEM, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                 return -1;
             continue;
         }
         if (child->type == JZ_AST_MUX_DECL && child->name) {
-            if (module_scope_add_symbol(scope, JZ_SYM_MUX, child->name, child, diagnostics) != 0)
+            if (module_scope_add_symbol_featured(scope, JZ_SYM_MUX, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                 return -1;
             continue;
         }
         if (child->type == JZ_AST_MODULE_INSTANCE && child->name) {
-            if (module_scope_add_symbol(scope, JZ_SYM_INSTANCE, child->name, child, diagnostics) != 0)
+            if (module_scope_add_symbol_featured(scope, JZ_SYM_INSTANCE, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                 return -1;
             continue;
         }
@@ -119,7 +123,7 @@ static int collect_decls_from_feature_block(JZASTNode *block,
             for (size_t k = 0; k < child->child_count; ++k) {
                 JZASTNode *decl = child->children[k];
                 if (decl && decl->type == JZ_AST_CONST_DECL && decl->name) {
-                    if (module_scope_add_symbol(scope, JZ_SYM_CONST, decl->name, decl, diagnostics) != 0)
+                    if (module_scope_add_symbol_featured(scope, JZ_SYM_CONST, decl->name, decl, feature_guard, feature_branch, diagnostics) != 0)
                         return -1;
                 } else if (decl && decl->type == JZ_AST_FEATURE_GUARD) {
                     if (collect_decls_from_feature(decl, scope, diagnostics) != 0)
@@ -131,7 +135,7 @@ static int collect_decls_from_feature_block(JZASTNode *block,
             for (size_t k = 0; k < child->child_count; ++k) {
                 JZASTNode *decl = child->children[k];
                 if (decl && decl->type == JZ_AST_PORT_DECL && decl->name) {
-                    if (module_scope_add_symbol(scope, JZ_SYM_PORT, decl->name, decl, diagnostics) != 0)
+                    if (module_scope_add_symbol_featured(scope, JZ_SYM_PORT, decl->name, decl, feature_guard, feature_branch, diagnostics) != 0)
                         return -1;
                 } else if (decl && decl->type == JZ_AST_FEATURE_GUARD) {
                     if (collect_decls_from_feature(decl, scope, diagnostics) != 0)
@@ -143,7 +147,7 @@ static int collect_decls_from_feature_block(JZASTNode *block,
             for (size_t k = 0; k < child->child_count; ++k) {
                 JZASTNode *decl = child->children[k];
                 if (decl && decl->type == JZ_AST_WIRE_DECL && decl->name) {
-                    if (module_scope_add_symbol(scope, JZ_SYM_WIRE, decl->name, decl, diagnostics) != 0)
+                    if (module_scope_add_symbol_featured(scope, JZ_SYM_WIRE, decl->name, decl, feature_guard, feature_branch, diagnostics) != 0)
                         return -1;
                 } else if (decl && decl->type == JZ_AST_FEATURE_GUARD) {
                     if (collect_decls_from_feature(decl, scope, diagnostics) != 0)
@@ -155,7 +159,7 @@ static int collect_decls_from_feature_block(JZASTNode *block,
             for (size_t k = 0; k < child->child_count; ++k) {
                 JZASTNode *decl = child->children[k];
                 if (decl && decl->type == JZ_AST_REGISTER_DECL && decl->name) {
-                    if (module_scope_add_symbol(scope, JZ_SYM_REGISTER, decl->name, decl, diagnostics) != 0)
+                    if (module_scope_add_symbol_featured(scope, JZ_SYM_REGISTER, decl->name, decl, feature_guard, feature_branch, diagnostics) != 0)
                         return -1;
                 } else if (decl && decl->type == JZ_AST_FEATURE_GUARD) {
                     if (collect_decls_from_feature(decl, scope, diagnostics) != 0)
@@ -167,7 +171,7 @@ static int collect_decls_from_feature_block(JZASTNode *block,
             for (size_t k = 0; k < child->child_count; ++k) {
                 JZASTNode *decl = child->children[k];
                 if (decl && decl->type == JZ_AST_LATCH_DECL && decl->name) {
-                    if (module_scope_add_symbol(scope, JZ_SYM_LATCH, decl->name, decl, diagnostics) != 0)
+                    if (module_scope_add_symbol_featured(scope, JZ_SYM_LATCH, decl->name, decl, feature_guard, feature_branch, diagnostics) != 0)
                         return -1;
                 } else if (decl && decl->type == JZ_AST_FEATURE_GUARD) {
                     if (collect_decls_from_feature(decl, scope, diagnostics) != 0)
@@ -179,7 +183,7 @@ static int collect_decls_from_feature_block(JZASTNode *block,
             for (size_t k = 0; k < child->child_count; ++k) {
                 JZASTNode *decl = child->children[k];
                 if (decl && decl->type == JZ_AST_MEM_DECL && decl->name) {
-                    if (module_scope_add_symbol(scope, JZ_SYM_MEM, decl->name, decl, diagnostics) != 0)
+                    if (module_scope_add_symbol_featured(scope, JZ_SYM_MEM, decl->name, decl, feature_guard, feature_branch, diagnostics) != 0)
                         return -1;
                 } else if (decl && decl->type == JZ_AST_FEATURE_GUARD) {
                     if (collect_decls_from_feature(decl, scope, diagnostics) != 0)
@@ -191,7 +195,7 @@ static int collect_decls_from_feature_block(JZASTNode *block,
             for (size_t k = 0; k < child->child_count; ++k) {
                 JZASTNode *decl = child->children[k];
                 if (decl && decl->type == JZ_AST_MUX_DECL && decl->name) {
-                    if (module_scope_add_symbol(scope, JZ_SYM_MUX, decl->name, decl, diagnostics) != 0)
+                    if (module_scope_add_symbol_featured(scope, JZ_SYM_MUX, decl->name, decl, feature_guard, feature_branch, diagnostics) != 0)
                         return -1;
                 } else if (decl && decl->type == JZ_AST_FEATURE_GUARD) {
                     if (collect_decls_from_feature(decl, scope, diagnostics) != 0)
@@ -201,7 +205,7 @@ static int collect_decls_from_feature_block(JZASTNode *block,
             break;
         case JZ_AST_MODULE_INSTANCE:
             if (child->name) {
-                if (module_scope_add_symbol(scope, JZ_SYM_INSTANCE, child->name, child, diagnostics) != 0)
+                if (module_scope_add_symbol_featured(scope, JZ_SYM_INSTANCE, child->name, child, feature_guard, feature_branch, diagnostics) != 0)
                     return -1;
             }
             break;
@@ -1566,9 +1570,22 @@ void sem_check_unused_modules(JZASTNode *project,
         JZASTNode *mod = project->children[i];
         if (!mod || mod->type != JZ_AST_MODULE) continue;
         for (size_t j = 0; j < mod->child_count; ++j) {
-            JZASTNode *inst = mod->children[j];
-            if (!inst || inst->type != JZ_AST_MODULE_INSTANCE || !inst->text) continue;
-            sem_mark_module_used(&modules, inst->text);
+            JZASTNode *child = mod->children[j];
+            if (!child) continue;
+            if (child->type == JZ_AST_FEATURE_GUARD) {
+                for (size_t fi = 1; fi < child->child_count; ++fi) {
+                    JZASTNode *branch = child->children[fi];
+                    if (!branch) continue;
+                    for (size_t gi = 0; gi < branch->child_count; ++gi) {
+                        JZASTNode *inst = branch->children[gi];
+                        if (!inst || inst->type != JZ_AST_MODULE_INSTANCE || !inst->text) continue;
+                        sem_mark_module_used(&modules, inst->text);
+                    }
+                }
+                continue;
+            }
+            if (child->type != JZ_AST_MODULE_INSTANCE || !child->text) continue;
+            sem_mark_module_used(&modules, child->text);
         }
     }
 

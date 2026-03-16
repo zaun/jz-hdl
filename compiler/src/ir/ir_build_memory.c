@@ -12,6 +12,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include "../../include/ast.h"
 #include "../../include/ir_mem_bind.h"
@@ -974,15 +975,14 @@ int ir_build_memories_for_module(const JZModuleScope *scope,
             }
 
             if (init_expr) {
+                const char *raw_file_path = NULL;
+
                 if (init_expr->block_kind &&
                     strcmp(init_expr->block_kind, "FILE_REF") == 0 &&
                     init_expr->name) {
                     /* @file(CONST/CONFIG reference) — the semantic pass has
                      * already resolved the string and stored it in text. */
-                    if (init_expr->text) {
-                        ir_mem->init_is_file = true;
-                        ir_mem->init.file_path = ir_strdup_arena(arena, init_expr->text);
-                    }
+                    raw_file_path = init_expr->text;
                 } else if (init_expr->type == JZ_AST_EXPR_LITERAL &&
                            init_expr->text) {
                     IR_Literal lit;
@@ -993,8 +993,33 @@ int ir_build_memories_for_module(const JZModuleScope *scope,
                         ir_mem->init.literal = lit;
                         ir_mem->init_is_file = false;
                     } else {
-                        ir_mem->init_is_file = true;
-                        ir_mem->init.file_path = ir_strdup_arena(arena, init_expr->text);
+                        raw_file_path = init_expr->text;
+                    }
+                }
+
+                if (raw_file_path) {
+                    ir_mem->init_is_file = true;
+                    /* Resolve relative path against the source file's
+                     * directory so the backend can open it from any CWD. */
+                    if (raw_file_path[0] != '/' && mem_decl->loc.filename) {
+                        const char *slash = strrchr(mem_decl->loc.filename, '/');
+                        if (slash) {
+                            size_t dir_len = (size_t)(slash - mem_decl->loc.filename);
+                            char rel_buf[1024];
+                            snprintf(rel_buf, sizeof(rel_buf), "%.*s/%s",
+                                     (int)dir_len, mem_decl->loc.filename, raw_file_path);
+                            char *abs = realpath(rel_buf, NULL);
+                            if (abs) {
+                                ir_mem->init.file_path = ir_strdup_arena(arena, abs);
+                                free(abs);
+                            } else {
+                                ir_mem->init.file_path = ir_strdup_arena(arena, raw_file_path);
+                            }
+                        } else {
+                            ir_mem->init.file_path = ir_strdup_arena(arena, raw_file_path);
+                        }
+                    } else {
+                        ir_mem->init.file_path = ir_strdup_arena(arena, raw_file_path);
                     }
                 }
             }

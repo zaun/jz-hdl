@@ -12,6 +12,32 @@
 #include "chip_data.h"
 
 /* -------------------------------------------------------------------------
+ * Xilinx IOSTANDARD name mapping
+ *
+ * JZ-HDL uses compact names (e.g. TMDS33, LVDS25) but Xilinx XDC requires
+ * underscored forms (e.g. TMDS_33, LVDS_25) for certain standards.
+ * -------------------------------------------------------------------------
+ */
+static const struct { const char *jz; const char *xilinx; } xdc_std_map[] = {
+    { "TMDS33",   "TMDS_33"   },
+    { "LVDS25",   "LVDS_25"   },
+    { "LVDS33",   "LVDS_33"   },
+    { "BLVDS25",  "BLVDS_25"  },
+    { "LVPECL33", "LVPECL_33" },
+    { NULL, NULL }
+};
+
+static const char *xdc_iostandard(const char *std)
+{
+    if (!std) return std;
+    for (int i = 0; xdc_std_map[i].jz; ++i) {
+        if (strcmp(std, xdc_std_map[i].jz) == 0)
+            return xdc_std_map[i].xilinx;
+    }
+    return std;
+}
+
+/* -------------------------------------------------------------------------
  * Backend output helpers
  * -------------------------------------------------------------------------
  */
@@ -237,13 +263,18 @@ int jz_emit_xdc_constraints(const IR_Design *design,
                     m->board_pin_id, p_port);
             if (pin->standard && pin->standard[0] != '\0') {
                 fprintf(out, "set_property IOSTANDARD %s [get_ports {%s}]\n",
-                        pin->standard, p_port);
+                        xdc_iostandard(pin->standard), p_port);
             }
 
-            /* Differential termination for input pins */
-            if (pin->kind == PIN_IN) {
+            /* Differential termination for input pins with term=ON */
+            if (pin->kind == PIN_IN && pin->term) {
                 fprintf(out, "set_property DIFF_TERM TRUE [get_ports {%s}]\n",
                         p_port);
+            }
+
+            /* SLEW FAST for differential output pins with serializers */
+            if (pin->kind == PIN_OUT && pin->fclk_name && pin->fclk_name[0]) {
+                fprintf(out, "set_property SLEW FAST [get_ports {%s}]\n", p_port);
             }
 
             /* N pin constraints */
@@ -253,7 +284,12 @@ int jz_emit_xdc_constraints(const IR_Design *design,
                     m->board_pin_n_id, n_port);
             if (pin->standard && pin->standard[0] != '\0') {
                 fprintf(out, "set_property IOSTANDARD %s [get_ports {%s}]\n",
-                        pin->standard, n_port);
+                        xdc_iostandard(pin->standard), n_port);
+            }
+
+            /* SLEW FAST on N pin too (prjxray configures each IOB independently) */
+            if (pin->kind == PIN_OUT && pin->fclk_name && pin->fclk_name[0]) {
+                fprintf(out, "set_property SLEW FAST [get_ports {%s}]\n", n_port);
             }
         } else {
             /* Single-ended pin */
@@ -272,7 +308,7 @@ int jz_emit_xdc_constraints(const IR_Design *design,
 
             if (pin->standard && pin->standard[0] != '\0') {
                 fprintf(out, "set_property IOSTANDARD %s [get_ports {%s",
-                        pin->standard, port_name);
+                        xdc_iostandard(pin->standard), port_name);
                 if (m->bit_index >= 0) {
                     fprintf(out, "[%d]", m->bit_index);
                 }
