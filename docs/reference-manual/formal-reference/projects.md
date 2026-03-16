@@ -105,8 +105,9 @@ All user-specified file paths — `@import` directives, `@file()` MEM initialize
 
 - Declares on-chip clock generators (PLL, DLL, CLKDIV, OSC, BUF, or numbered variants like PLL2).
 - `<gen_type>` is one of: `PLL`, `DLL`, `CLKDIV`, `OSC`, `BUF`, or a numbered variant (e.g., `PLL2`).
-- Input clock must have a period in CLOCKS (or be driven by a prior generator in the same block).
-- Output clocks must not have a period in CLOCKS (derived automatically).
+- Syntax: `IN <input_name> <signal>` — input name is chip-defined (e.g., `REF_CLK`), signal must be a clock with a period in CLOCKS (or driven by a prior generator in the same block).
+- **`OUT <output_name> <clock_signal>`** — declares a clock output. Output clocks must not have a period in CLOCKS (derived automatically). Only valid for outputs with `is_clock: true` in the chip data.
+- **`WIRE <output_name> <signal>`** — declares a non-clock output (e.g., PLL lock indicator). The signal must not be declared in the CLOCKS block. The compiler automatically declares it as a wire in the generated output. Only valid for outputs with `is_clock: false` in the chip data (e.g., `LOCK`).
 - Parameters are chip-specific and validated against chip data. Integer parameters reject decimal values; double parameters accept both.
 - A single CLOCK_GEN block may contain multiple generators for chaining (e.g., PLL + CLKDIV).
 - CLOCK_GEN chaining is permitted only if explicitly supported by the project `CHIP`.
@@ -141,6 +142,10 @@ CLOCK_GEN {
 - `mode` optional: `SINGLE` (default) or `DIFFERENTIAL`. Must be consistent with standard.
 - `term` optional: `ON` or `OFF` (default `OFF`). Valid for `mode=DIFFERENTIAL` and single-ended SSTL/HSTL standards.
 - `pull` optional: `UP`, `DOWN`, or `NONE` (default `NONE`). Not valid on `OUT_PINS`.
+- `fclk`, `pclk`, `reset`: required when `mode=DIFFERENTIAL` on output pins.
+  - `fclk`: fast serialization clock (must be an integer multiple of `pclk` matching the chip's serializer ratio).
+  - `pclk`: parallel data clock at which the module produces data.
+  - `reset`: serializer reset signal, typically a `CLOCK_GEN` `LOCK` wire output. The compiler automatically inverts this signal — the serializer is held in reset while the lock signal is low (PLL not locked) and released when it goes high.
 - All declared pins must be mapped in `MAP`.
 - Pin names must be unique across all PIN blocks.
 

@@ -48,6 +48,6 @@ Both Tang Nano 20K and 9K project files use identical PLL configuration. The `CL
 
 ## JZ-HDL Language Features
 
-**PLL in the source.** The `CLOCK_GEN` block declares the PLL's input, outputs, and divider parameters directly in the project file. The compiler validates VCO range and divider ratios against the target chip's constraints. Traditional FPGA flows configure PLLs through vendor GUI tools that generate opaque wrapper modules disconnected from the HDL.
+**PLL in the source.** The `CLOCK_GEN` block declares the PLL's input, outputs, and divider parameters directly in the project file. Clock outputs use `OUT` (e.g., `OUT BASE CLK_A`), while non-clock outputs like the lock indicator use `WIRE` (e.g., `WIRE LOCK pll_lock`). The compiler validates VCO range and divider ratios against the target chip's constraints. Traditional FPGA flows configure PLLs through vendor GUI tools that generate opaque wrapper modules disconnected from the HDL.
 
 **Multi-clock enforcement.** Each `SYNCHRONOUS` block names its clock explicitly. The compiler tracks which registers belong to which domain. Reading a register from `clk1` inside a `clk2` synchronous block would be a compile-time error, catching cross-domain violations before they become metastability bugs on hardware. Verilog has no such check — nothing prevents reading a `clk1` register inside an `always @(posedge clk2)` block.
