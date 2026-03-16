@@ -169,12 +169,12 @@ if [[ -d "${GOLDEN_DIR}" ]] && [[ -n "${YOSYS_BIN}" ]]; then
       if [[ -f "${verilog_file}" ]]; then
         # Generate fresh Verilog output
         (cd "$(dirname "${file}")" && "${JZ_HDL_BIN}" --verilog -o "${tmp_out}" "$(basename "${file}")") 2>/dev/null || true
-        if "${YOSYS_BIN}" -p "read_verilog ${tmp_out}" >/dev/null 2>&1; then
+        if (cd "$(dirname "${file}")" && "${YOSYS_BIN}" -p "read_verilog ${tmp_out}") >/dev/null 2>&1; then
           echo "PASS ${rel_path} (yosys read_verilog)"
           ((yosys_pass++))
         else
           echo "FAIL ${rel_path} (yosys read_verilog)"
-          "${YOSYS_BIN}" -p "read_verilog ${tmp_out}" 2>&1 | grep -i error || true
+          (cd "$(dirname "${file}")" && "${YOSYS_BIN}" -p "read_verilog ${tmp_out}") 2>&1 | grep -i error || true
           ((yosys_fail++))
         fi
       fi
@@ -184,12 +184,12 @@ if [[ -d "${GOLDEN_DIR}" ]] && [[ -n "${YOSYS_BIN}" ]]; then
       if [[ -f "${rtlil_file}" ]]; then
         # Generate fresh RTLIL output
         (cd "$(dirname "${file}")" && "${JZ_HDL_BIN}" --rtlil -o "${tmp_out}" "$(basename "${file}")") 2>/dev/null || true
-        if "${YOSYS_BIN}" -p "read_rtlil ${tmp_out}" >/dev/null 2>&1; then
+        if (cd "$(dirname "${file}")" && "${YOSYS_BIN}" -p "read_rtlil ${tmp_out}") >/dev/null 2>&1; then
           echo "PASS ${rel_path} (yosys read_rtlil)"
           ((yosys_pass++))
         else
           echo "FAIL ${rel_path} (yosys read_rtlil)"
-          "${YOSYS_BIN}" -p "read_rtlil ${tmp_out}" 2>&1 | grep -i error || true
+          (cd "$(dirname "${file}")" && "${YOSYS_BIN}" -p "read_rtlil ${tmp_out}") 2>&1 | grep -i error || true
           ((yosys_fail++))
         fi
       fi
