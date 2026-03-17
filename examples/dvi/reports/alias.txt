@@ -2881,7 +2881,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi/src/dvi.jz@70: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> pll_lock
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -2892,7 +2892,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi/src/dvi.jz@182: reset <= rst_n & por_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> ~ NRST
+    PORT binding: IN rst_n -> NRST (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -6313,7 +6313,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi/src/dvi.jz@70: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> pll_lock
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -6324,7 +6324,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi/src/dvi.jz@182: reset <= rst_n & por_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> ~ NRST
+    PORT binding: IN rst_n -> NRST (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------

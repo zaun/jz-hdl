@@ -1,0 +1,59 @@
+@project(CHIP="GW2AR-18-QN88-C8-I7") UART_ECHO
+    @import "por.jz"
+    @import "uart_rx.jz"
+    @import "uart_tx.jz"
+    @import "echo.jz"
+
+    CONFIG {
+        CLK_MHZ = 27;
+    }
+
+    CLOCKS {
+        SCLK = { period=37.04 }; // 27MHz clock
+    }
+
+    IN_PINS {
+        SCLK    = { standard=LVCMOS33 };
+        DONE    = { standard=LVCMOS33 };
+        KEY[2]  = { standard=LVCMOS33 };
+        UART_RX = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6]  = { standard=LVCMOS33, drive=8 };
+        UART_TX = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock 27MHz
+        SCLK = 4;
+
+        // Buttons
+        KEY[0] = 87;
+        KEY[1] = 88;
+
+        // LEDs (active low)
+        LED[0] = 15;
+        LED[1] = 16;
+        LED[2] = 17;
+        LED[3] = 18;
+        LED[4] = 19;
+        LED[5] = 20;
+
+        // DONE (POR)
+        DONE = IOR32B;
+
+        // UART
+        UART_RX = 70;
+        UART_TX = 69;
+    }
+
+    @top echo_top {
+        IN  [1] clk     = SCLK;
+        IN  [1] por     = DONE;
+        IN  [1] rst_n   = ~KEY[0];
+        IN  [1] uart_rx = UART_RX;
+        OUT [1] uart_tx = UART_TX;
+        OUT [6] leds    = ~LED;
+    }
+@endproj

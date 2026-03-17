@@ -6,7 +6,7 @@
     }
 
     IN_PINS {
-        SCLK    = { standard=LVDS25, mode=DIFFERENTIAL };
+        SCLK   = { standard=DIFF_SSTL15, mode=DIFFERENTIAL };
         NRST   = { standard=LVCMOS33 };
         BTN    = { standard=LVCMOS33 };
     }
@@ -37,7 +37,7 @@
     @top latch_test {
         IN  [1] clk   = SCLK;
         IN  [1] por   = 1'b1;
-        IN  [1] rst_n = ~NRST;
+        IN  [1] rst_n = NRST;
         IN  [1] btn   = BTN;
         OUT [6] leds  = LED;
     }

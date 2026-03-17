@@ -10,7 +10,7 @@
     }
 
     IN_PINS {
-        SCLK    = { standard=LVDS25, mode=DIFFERENTIAL };
+        SCLK   = { standard=DIFF_SSTL15, mode=DIFFERENTIAL };
         NRST   = { standard=LVCMOS33 };
     }
 
@@ -40,7 +40,7 @@
         }
         IN  [1] clk   = SCLK;
         IN  [1] por   = 1'b1;
-        IN  [1] rst_n = ~NRST;
+        IN  [1] rst_n = NRST;
         OUT [6] leds  = LED;
     }
 @endproj

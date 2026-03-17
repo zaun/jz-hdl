@@ -10,7 +10,7 @@
     }
 
     IN_PINS {
-        SCLK    = { standard=LVDS25, mode=DIFFERENTIAL };
+        SCLK   = { standard=DIFF_SSTL15, mode=DIFFERENTIAL };
         NRST   = { standard=LVCMOS33 };
         KEY[2] = { standard=LVCMOS33 };
     }
@@ -65,7 +65,7 @@
         IN  [1] clk4  = CLK_C;
         IN  [1] clk5  = CLK_D;
         IN  [1] por   = 1'b1;
-        IN  [1] rst_n = ~KEY[0];
+        IN  [1] rst_n = KEY[0];
         OUT [5] leds  = LED[4:0];
     }
 @endproj

@@ -30,7 +30,7 @@ import wave
 import serial
 
 
-BAUD_DEFAULT = 1_485_000  # Must match FPGA UART config (~1.5 Mbaud)
+BAUD_DEFAULT = 1_200_000  # Must match FPGA UART config (~1.5 Mbaud)
 SAMPLES_PER_PACKET = 64   # 64 samples = 128 data bytes per packet
 SAMPLE_RATE = 48_000      # FPGA playback rate
 HIGH_WATER = 100          # buffer fill level (0-127) to pause sending

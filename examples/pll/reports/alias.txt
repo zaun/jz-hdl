@@ -69,7 +69,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> ~ KEY [ 0 ]
+    PORT binding: IN rst_n -> KEY [ 0 ]
 
 PHYSICAL NET: NET_0007    Width: 5    Tri-state: No
 ------------------------------------------------------------
@@ -270,7 +270,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> ~ KEY [ 0 ]
+    PORT binding: IN rst_n -> KEY [ 0 ]
 
 PHYSICAL NET: NET_0007    Width: 5    Tri-state: No
 ------------------------------------------------------------

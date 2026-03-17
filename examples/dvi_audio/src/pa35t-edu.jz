@@ -25,7 +25,7 @@
     }
 
     IN_PINS {
-        SCLK   = { standard=LVDS25, mode=DIFFERENTIAL };
+        SCLK   = { standard=DIFF_SSTL15, mode=DIFFERENTIAL };
         NRST   = { standard=LVCMOS33 };
         KEY[2] = { standard=LVCMOS33 };
     }
@@ -80,8 +80,8 @@
 
     @top dvi_top {
         IN   [1]  clk       = pixel_clk;
-        IN   [1]  por       = 1'b1;
-        IN   [1]  rst_n     = ~NRST;
+        IN   [1]  por       = pll_lock;
+        IN   [1]  rst_n     = NRST;
         IN   [1]  next      = KEY[0];
         OUT  [6]  leds      = LED;
         OUT  [10] tmds_clk  = TMDS_CLK;

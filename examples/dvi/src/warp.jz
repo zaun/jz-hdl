@@ -69,17 +69,17 @@
         } ELSE {
             IF (sx[IDX*11+10:IDX*11] >= 11'd640) {
                 nx[IDX*11+10:IDX*11] <= sx[IDX*11+10:IDX*11]
-                    + (dx[IDX*11+10:IDX*11] >> 5) + 11'd1;
+                    + (dx[IDX*11+10:IDX*11] >> 11'd5) + 11'd1;
             } ELSE {
                 nx[IDX*11+10:IDX*11] <= sx[IDX*11+10:IDX*11]
-                    - (dx[IDX*11+10:IDX*11] >> 5) - 11'd1;
+                    - (dx[IDX*11+10:IDX*11] >> 11'd5) - 11'd1;
             }
             IF (sy[IDX*10+9:IDX*10] >= 10'd360) {
                 ny[IDX*10+9:IDX*10] <= sy[IDX*10+9:IDX*10]
-                    + (dy[IDX*10+9:IDX*10] >> 5) + 10'd1;
+                    + (dy[IDX*10+9:IDX*10] >> 11'd5) + 10'd1;
             } ELSE {
                 ny[IDX*10+9:IDX*10] <= sy[IDX*10+9:IDX*10]
-                    - (dy[IDX*10+9:IDX*10] >> 5) - 10'd1;
+                    - (dy[IDX*10+9:IDX*10] >> 11'd5) - 10'd1;
             }
         }
     @endtemplate

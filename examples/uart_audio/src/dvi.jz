@@ -181,6 +181,10 @@
 
     // --- UART ---
     @new urx0 uart_rx {
+        OVERRIDE {
+            CLK_HZ = CONFIG.CLK_HZ;
+            BAUD_RATE = CONFIG.BAUD_RATE;
+        }
         IN  [1] clk   = clk;
         IN  [1] rst_n = reset;
         IN  [1] rx    = uart_rx_pin;
@@ -189,6 +193,10 @@
     }
 
     @new utx0 uart_tx {
+        OVERRIDE {
+            CLK_HZ = CONFIG.CLK_HZ;
+            BAUD_RATE = CONFIG.BAUD_RATE;
+        }
         IN  [1] clk   = clk;
         IN  [1] rst_n = reset;
         IN  [8] data  = tx_data;
@@ -322,7 +330,7 @@
         ) ? 1'b1 : 1'b0;
 
         // LED status: LED[0]=heartbeat, LED[1]=RX activity
-        leds <= ~{ heartbeat_led, rx_led, 4'b0000 };
+        leds <= { heartbeat_led, rx_led, 4'b0000 };
     }
 
     SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
