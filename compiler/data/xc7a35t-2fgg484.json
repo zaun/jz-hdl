@@ -1722,11 +1722,11 @@
     },
     "clock": {
       "buffer": {
-        "description": "LVDS_25 differential clock input buffer (IBUFGDS + BUFG) — routes to global clock network via clock-capable input",
+        "description": "LVDS_25 differential clock input buffer (IBUFDS + BUFG) — routes to global clock network via clock-capable input",
         "map": {
           "verilog-2005": [
             "wire jz_ibuf_%%instance%%;\n",
-            "IBUFGDS #(\n",
+            "IBUFDS #(\n",
             "    .DIFF_TERM(\"FALSE\"),\n",
             "    .IBUF_LOW_PWR(\"FALSE\")\n",
             ") u_%%instance%% (\n",
@@ -1741,7 +1741,7 @@
           ],
           "rtlil": [
             "wire width 1 \\jz_ibuf_%%instance%%\n",
-            "cell \\IBUFGDS $auto$%%instance%%\n",
+            "cell \\IBUFDS $auto$%%instance%%\n",
             "  parameter \\DIFF_TERM \"FALSE\"\n",
             "  parameter \\IBUF_LOW_PWR \"FALSE\"\n",
             "  connect \\I \\%%pin_p%%\n",
