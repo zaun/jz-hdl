@@ -2,7 +2,7 @@
 mainfont: "Helvetica Neue"
 monofont: "Menlo"
 title: "JZ-HDL WAVEFORM FORMAT SPECIFICATION (JZW)"
-subtitle: "State: Draft — Version: 0.1.4"
+subtitle: "State: Draft — Version: 0.1.5"
 toc: true
 header-includes:
   - \usepackage{titling}
