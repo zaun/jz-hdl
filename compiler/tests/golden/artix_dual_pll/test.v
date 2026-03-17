@@ -244,7 +244,7 @@ module top (
 
     wire jz_diff_SCLK;
     wire jz_ibuf_ibuf_SCLK;
-IBUFGDS #(
+IBUFDS #(
     .DIFF_TERM("FALSE"),
     .IBUF_LOW_PWR("FALSE")
 ) u_ibuf_SCLK (
