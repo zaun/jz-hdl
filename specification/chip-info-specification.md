@@ -602,6 +602,7 @@ An object describing differential I/O support. Optional; omit if the device has 
 | `io_type`| string | Yes      | I/O standard name (e.g., `"LVDS25"`, `"LVCMOS33D"`) |
 | `output` | object | Yes      | Output differential support                         |
 | `input`  | object | Yes      | Input differential support                          |
+| `clock`  | object | No       | Differential clock input support (see §10.3)        |
 
 ### 10.2 `output` / `input` Objects
 
@@ -631,6 +632,18 @@ Each element:
 | `description` | string  | Yes      | What this primitive does              |
 | `ratio`       | integer | Yes      | Serialization/deserialization ratio   |
 | `map`         | object  | Yes      | Backend templates                     |
+
+### 10.3 `clock` Object
+
+Optional. When present, the compiler uses this buffer primitive instead of `input.buffer` for differential pins that drive clock domains. On some architectures (e.g., Xilinx 7-series) the clock input buffer routes directly to the global clock network (`IBUFGDS`) rather than through general fabric interconnect (`IBUFDS`). If `clock` is omitted, clock inputs use the regular `input.buffer`.
+
+| Key      | Type   | Required | Description                            |
+|----------|--------|----------|----------------------------------------|
+| `buffer` | object | Yes      | Differential clock buffer primitive    |
+
+The `buffer` object has the same structure as `input.buffer` / `output.buffer` (a `description` string and a `map` object with backend templates).
+
+### 10.4 Serializer / Deserializer Arrays
 
 When a chip supports multiple ratios using different hardware primitives (e.g., Gowin OSER4, OSER8, OSER10), each primitive gets its own entry with its own template. When a wider ratio requires cascading hardware (e.g., Xilinx OSERDESE2 master+slave for 10:1), the template is self-contained — it emits all necessary wire declarations and primitive instantiations. The compiler does not need to know whether a template uses one primitive or multiple; it simply picks the best-fit ratio and emits the template.
 
@@ -684,6 +697,12 @@ When a chip supports multiple ratios using different hardware primitives (e.g., 
         "map": { ... }
       }
     ]
+  },
+  "clock": {
+    "buffer": {
+      "description": "Differential clock input buffer (global clock network)",
+      "map": { ... }
+    }
   }
 }
 ```

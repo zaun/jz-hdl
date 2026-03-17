@@ -1,5 +1,5 @@
 // This Verilog was transpiled from JZ-HDL.
-// jz-hdl version: Version 0.1.1 (24742c6)
+// jz-hdl version: Version 0.1.4 (b8646b5)
 // Intended for use with yosys.
 
 `default_nettype none
@@ -243,9 +243,17 @@ module top (
 );
 
     wire jz_diff_SCLK;
-    IBUFDS u_ibuf_SCLK (
+    wire jz_ibuf_ibuf_SCLK;
+IBUFGDS #(
+    .DIFF_TERM("FALSE"),
+    .IBUF_LOW_PWR("FALSE")
+) u_ibuf_SCLK (
     .I(SCLK_p),
     .IB(SCLK_n),
+    .O(jz_ibuf_ibuf_SCLK)
+);
+BUFG u_bufg_ibuf_SCLK (
+    .I(jz_ibuf_ibuf_SCLK),
     .O(jz_diff_SCLK)
 );
 

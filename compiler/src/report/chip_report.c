@@ -1727,6 +1727,22 @@ int jz_chip_print_info(const char *chip_id, FILE *out)
             }
         }
 
+        int clock_idx = jz_json_object_get(json, toks, tok_count,
+                                            differential_idx, "clock");
+        if (clock_idx >= 0 && toks[clock_idx].type == JSMN_OBJECT) {
+            int clkbuf_idx = jz_json_object_get(json, toks, tok_count,
+                                                  clock_idx, "buffer");
+            if (clkbuf_idx >= 0) {
+                char clkbuf_desc[256] = {0};
+                jz_json_object_get_string(json, toks, tok_count,
+                                          clkbuf_idx, "description",
+                                          clkbuf_desc, sizeof(clkbuf_desc));
+                if (clkbuf_desc[0]) {
+                    fprintf(out, "  Clock:    %s\n", clkbuf_desc);
+                }
+            }
+        }
+
         fprintf(out, "\n");
     }
 

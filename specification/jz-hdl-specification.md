@@ -559,7 +559,7 @@ All arithmetic operators operate on fixed-width bit-vectors. The result width is
 
 **Shift (`<<`, `>>`, `>>>`)**
 - LHS (value): Any width
-- RHS (amount): Any width (bit count)
+- RHS (amount): Any width (bit count). "Any width" still requires an explicit width — the RHS must be a sized literal, signal, or expression with a known width. Bare integers are not permitted (S2.1).
 - Result width: LHS width
 - `<<`: Logical left shift; vacated LSB bits filled with `0`, shifted-out MSBs discarded.
 - `>>`: Logical right shift; vacated MSB bits filled with `0`, shifted-out LSBs discarded.
@@ -621,8 +621,8 @@ negated = 8'h00 - input_val;  // Two's complement via subtraction
 **Arithmetic vs. logical right shift:**
 ```text
 // Assume value [8] = 8'b1000_0001 (MSB=1)
-logical = value >> 1;   // 8'b0100_0000 (zero-filled from left)
-arith   = value >>> 1;  // 8'b1100_0000 (MSB replicated)
+logical = value >> 1'b1;   // 8'b0100_0000 (zero-filled from left)
+arith   = value >>> 1'b1;  // 8'b1100_0000 (MSB replicated)
 ```
 
 **Overflow prevention via concatenation and arithmetic:**
@@ -2162,7 +2162,7 @@ Each register or register bit-range can be assigned at most once per execution p
   IF (load) {
     data <= input_value;
   } ELIF (shift) {
-    data <= data << 1;
+    data <= data << 1'b1;
   } ELSE {
     // No assignment: data holds current value at next clock
   }
@@ -6122,7 +6122,7 @@ ASYNCHRONOUS {
 @template XOR_THEN_SHIFT(a, b, out)
   @scratch t [widthof(a)];
   t <= a ^ b;
-  out <= t << 1;
+  out <= t << 1'b1;
 @endtemplate
 ```
 

@@ -35,7 +35,7 @@
   }
 
   SYNCHRONOUS(CLK=clk) {
-    mem0.rd.addr <= 1;
+    mem0.rd.addr <= 4'd1;
     r <= mem0.rd.data;
     mem0.wr_bad[1] <= din;
   }

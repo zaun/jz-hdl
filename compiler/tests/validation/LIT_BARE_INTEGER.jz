@@ -1,0 +1,35 @@
+// LIT_BARE_INTEGER: bare integer literals (no width) in runtime expressions.
+// S2.1: unsized literals are not permitted in runtime expressions.
+// Bare integers remain valid in compile-time contexts (CONST, widths, etc.).
+
+@project LIT_BARE_INTEGER_EXAMPLE
+    @top M_BARE {
+        IN  [1] clk   = _;
+        IN  [1] rst_n = _;
+        OUT [8] data  = _;
+    }
+@endproj
+
+@module M_BARE
+    CONST {
+        WIDTH = 8;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        r <= r << 1;
+    }
+@endmod

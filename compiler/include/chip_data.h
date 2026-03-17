@@ -156,6 +156,8 @@ typedef struct JZChipDifferential {
     int has_output_serializer;   /**< Non-zero if any output serializers are defined. */
     int has_input_buffer;        /**< Non-zero if input buffer is defined. */
     int has_input_deserializer;  /**< Non-zero if input deserializer is defined. */
+    JZChipDiffPrimitive clock_buffer;    /**< Differential clock input buffer (e.g., IBUFGDS). */
+    int has_clock_buffer;        /**< Non-zero if clock buffer is defined. */
     char *io_type;               /**< CST IO_TYPE for differential pins (e.g., "LVDS25", "LVCMOS33D"). */
     char *diff_type;             /**< Differential type ("true" or "emulated"). */
 } JZChipDifferential;
@@ -466,6 +468,18 @@ const char *jz_chip_diff_output_serializer_map(const JZChipData *data,
  * @return Template string, or NULL if not available.
  */
 const char *jz_chip_diff_input_buffer_map(const JZChipData *data,
+                                           const char *backend);
+
+/**
+ * @brief Get the differential clock input buffer template for a backend.
+ *
+ * Returns the clock-specific buffer (e.g., IBUFGDS) that routes directly to
+ * the global clock network. Falls back to NULL if not defined in chip data.
+ * @param data    Loaded chip data.
+ * @param backend Backend name (e.g., "verilog-2005").
+ * @return Template string, or NULL if not available.
+ */
+const char *jz_chip_diff_clock_buffer_map(const JZChipData *data,
                                            const char *backend);
 
 /**

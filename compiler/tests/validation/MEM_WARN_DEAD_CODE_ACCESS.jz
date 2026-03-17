@@ -30,7 +30,7 @@
   }
 
   SYNCHRONOUS(CLK=clk) {
-    IF (0) {
+    IF (1'b0) {
       r <= m.rd[0]; // unreachable MEM access
     }
   }

@@ -1285,6 +1285,24 @@ static void jz_chip_parse_differential(const char *json,
 
         int is_output = jz_json_token_eq(json, dir_key, "output");
         int is_input = jz_json_token_eq(json, dir_key, "input");
+        int is_clock = jz_json_token_eq(json, dir_key, "clock");
+
+        if (is_clock) {
+            int inner = cur + 1;
+            while (inner < count && toks[inner].start < dir_val->end) {
+                const jsmntok_t *prim_key = &toks[inner++];
+                const jsmntok_t *prim_val = &toks[inner];
+
+                if (jz_json_token_eq(json, prim_key, "buffer") &&
+                    prim_val->type == JSMN_OBJECT) {
+                    jz_chip_parse_diff_primitive(json, toks, count, inner,
+                                                  &out->differential.clock_buffer);
+                    out->differential.has_clock_buffer = 1;
+                }
+
+                inner = jz_json_skip(toks, count, inner);
+            }
+        }
 
         if (is_output || is_input) {
             int inner = cur + 1;
@@ -2009,6 +2027,13 @@ const char *jz_chip_diff_input_buffer_map(const JZChipData *data,
 {
     if (!data || !backend || !data->differential.has_input_buffer) return NULL;
     return jz_chip_diff_find_map(&data->differential.input_buffer, backend);
+}
+
+const char *jz_chip_diff_clock_buffer_map(const JZChipData *data,
+                                           const char *backend)
+{
+    if (!data || !backend || !data->differential.has_clock_buffer) return NULL;
+    return jz_chip_diff_find_map(&data->differential.clock_buffer, backend);
 }
 
 int jz_chip_diff_serializer_ratio(const JZChipData *data)

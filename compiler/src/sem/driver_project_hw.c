@@ -1934,7 +1934,11 @@ void sem_check_project_top_new(JZASTNode *project,
             clk_sym = project_lookup(project_symbols, target_expr, JZ_SYM_CLOCK);
         }
 
-        if (!complex_target && !pin_sym && !clk_sym) {
+        int is_cg_wire = (!complex_target && target_expr[0] != '\0')
+                       ? is_clock_gen_output(project, target_expr)
+                       : 0;
+
+        if (!complex_target && !pin_sym && !clk_sym && !is_cg_wire) {
             sem_report_rule(diagnostics,
                             b->loc,
                             "TOP_PORT_PIN_DECL_MISSING",
@@ -1951,11 +1955,11 @@ void sem_check_project_top_new(JZASTNode *project,
                                     "TOP_PORT_PIN_DIRECTION_MISMATCH",
                                     "module IN port connected to non-input PIN category");
                 }
-            } else if (!clk_sym && !complex_target) {
+            } else if (!clk_sym && !is_cg_wire && !complex_target) {
                 sem_report_rule(diagnostics,
                                 b->loc,
                                 "TOP_PORT_PIN_DECL_MISSING",
-                                "IN port must connect to IN_PINS, INOUT_PINS, or CLOCKS");
+                                "IN port must connect to IN_PINS, INOUT_PINS, CLOCKS, or CLOCK_GEN WIRE");
             }
         } else if (strcmp(dir, "OUT") == 0) {
             if (!complex_target && (!pin_sym || !pin_sym->node || !pin_sym->node->block_kind)) {
