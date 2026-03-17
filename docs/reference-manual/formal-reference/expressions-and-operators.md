@@ -30,7 +30,7 @@ outline: deep
 - `/` and `%` require equal widths; result width equals dividend width. Compile-time zero divisor is an error; runtime zero is indeterminate (implementation-defined). See [Division by zero](#division-by-zero).
 - Bitwise and comparison operators require equal widths.
 - Logical operators (`&&`, `||`, `!`) require width-1 operands.
-- Shifts keep LHS width; shift amount can be any width.
+- Shifts keep LHS width; shift amount can be any width but must have an explicit width — bare integers are not permitted (S2.1).
 - `>>>` is arithmetic right shift (sign-extends from MSB).
 - Ternary requires width-1 condition and equal-width branches.
 - Concatenation order is MSB-first.

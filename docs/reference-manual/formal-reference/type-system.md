@@ -16,7 +16,7 @@ outline: deep
 - **base**: `b`, `d`, or `h`
 - Binary allows `0`, `1`, `x`, `z` (underscore `_` for readability)
 - Decimal/hex do not allow `x` or `z`
-- Unsized literals are not permitted
+- Unsized literals are not permitted — this includes both missing-width literals (`'hFF`) and bare decimal integers (`1`, `42`) in runtime expressions
 - `CONFIG.NAME` and `CONST` identifiers are compile-time integers and are not literals
 
 **Intrinsic width rules:**
@@ -52,6 +52,7 @@ Overflow (intrinsic width > declared width) is a compile error.
 
 **Error conditions:**
 - Unsized literals (`'hFF`) → error
+- Bare integer in runtime expression (`data <= data << 1`) → error; use `1'b1`
 - Decimal with `x`/`z` (`8'd10x`) → error
 - Hex with `x`/`z` (`8'hFx`, `8'hz0`) → error
 - Undefined CONST in width → error

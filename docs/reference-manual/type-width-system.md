@@ -37,7 +37,7 @@ Examples:
 - `d` (decimal): digits `0–9`, `_` only (no `x`/`z`)
 - `h` (hex): digits `0–9`, `A–F`/`a–f`, `_` only (no `x`/`z`)
 
-Unsized literals (e.g., `'hFF`) are illegal and cause compile errors.
+Unsized literals (e.g., `'hFF`) are illegal and cause compile errors. Bare decimal integers (e.g., `1`, `42`) are also unsized and are not permitted in runtime expressions — use a sized literal (`1'b1`, `8'd42`) or `lit(width, value)`. Bare integers remain valid in compile-time contexts such as `CONST`/`CONFIG` values, width brackets, slice indices, and `CASE` labels.
 
 ### Intrinsic bit‑width and extension
 - Intrinsic width:
