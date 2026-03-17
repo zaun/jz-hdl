@@ -332,7 +332,7 @@ Three blocks declare the chip's electrical I/O: IN_PINS, OUT_PINS and INOUT_PINS
 | `standard` | Yes (all pins) | See I/O standards below | — | Electrical I/O standard |
 | `drive` | Yes (OUT, INOUT) | Integer or fractional (e.g., `8`, `3.5`) | — | Drive strength in milliamps |
 | `mode` | No | `SINGLE`, `DIFFERENTIAL` | `SINGLE` | Single-ended or differential signaling |
-| `term` | No | `ON`, `OFF` | `OFF` | On-die termination resistor |
+| `term` | No | `ON`, `OFF` | `OFF` | On-die termination resistor. Always emitted explicitly in constraints (e.g., `IN_TERM NONE` in XDC when `OFF`). |
 | `pull` | No | `UP`, `DOWN`, `NONE` | `NONE` | Pull-up/pull-down resistor |
 | `fclk` | No | clock name | — | Serialization clock for differential output (fast clock) |
 | `pclk` | No | clock name | — | Parallel clock for differential output (pixel/data clock) |

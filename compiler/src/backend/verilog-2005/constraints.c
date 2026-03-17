@@ -266,10 +266,15 @@ int jz_emit_xdc_constraints(const IR_Design *design,
                         xdc_iostandard(pin->standard), p_port);
             }
 
-            /* Differential termination for input pins with term=ON */
-            if (pin->kind == PIN_IN && pin->term) {
-                fprintf(out, "set_property DIFF_TERM TRUE [get_ports {%s}]\n",
-                        p_port);
+            /* Differential termination */
+            if (pin->kind == PIN_IN || pin->kind == PIN_INOUT) {
+                if (pin->term) {
+                    fprintf(out, "set_property DIFF_TERM TRUE [get_ports {%s}]\n",
+                            p_port);
+                } else {
+                    fprintf(out, "set_property DIFF_TERM FALSE [get_ports {%s}]\n",
+                            p_port);
+                }
             }
 
             /* SLEW FAST for differential output pins with serializers */
@@ -332,6 +337,17 @@ int jz_emit_xdc_constraints(const IR_Design *design,
             } else if (pin->pull == PULL_DOWN) {
                 fprintf(out, "set_property PULLTYPE PULLDOWN [get_ports {%s",
                         port_name);
+                if (m->bit_index >= 0) {
+                    fprintf(out, "[%d]", m->bit_index);
+                }
+                fprintf(out, "}]\n");
+            }
+
+            /* Input termination: always emit IN_TERM for input pins */
+            if (pin->kind == PIN_IN || pin->kind == PIN_INOUT) {
+                const char *in_term = pin->term ? "UNTUNED_SPLIT_50" : "NONE";
+                fprintf(out, "set_property IN_TERM %s [get_ports {%s",
+                        in_term, port_name);
                 if (m->bit_index >= 0) {
                     fprintf(out, "[%d]", m->bit_index);
                 }

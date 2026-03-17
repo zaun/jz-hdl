@@ -508,12 +508,24 @@ typedef struct IR_InstanceConnection {
  * @struct IR_Instance
  * @brief A module instantiation within a parent module.
  */
+/**
+ * @struct IR_InstanceParam
+ * @brief A parameter override for a blackbox instance.
+ */
+typedef struct IR_InstanceParam {
+    char *name;          /**< Parameter name (e.g., "CLK_FRE"). */
+    long long value;     /**< Evaluated integer value. */
+    char *string_value;  /**< String value, or NULL for integer params. */
+} IR_InstanceParam;
+
 typedef struct IR_Instance {
     int                   id;               /**< Unique within owning module. */
     char                 *name;             /**< Instance name. */
     int                   child_module_id;  /**< Specialized child module ID. */
     IR_InstanceConnection *connections;     /**< Port binding array. */
     int                   num_connections;  /**< Number of port bindings. */
+    IR_InstanceParam     *params;           /**< Blackbox parameter overrides. */
+    int                   num_params;       /**< Number of parameter overrides. */
 } IR_Instance;
 
 /**
