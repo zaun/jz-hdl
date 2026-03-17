@@ -559,7 +559,7 @@ All arithmetic operators operate on fixed-width bit-vectors. The result width is
 
 **Shift (`<<`, `>>`, `>>>`)**
 - LHS (value): Any width
-- RHS (amount): Any width (bit count)
+- RHS (amount): Any width (bit count). "Any width" still requires an explicit width — the RHS must be a sized literal, signal, or expression with a known width. Bare integers are not permitted (S2.1).
 - Result width: LHS width
 - `<<`: Logical left shift; vacated LSB bits filled with `0`, shifted-out MSBs discarded.
 - `>>`: Logical right shift; vacated MSB bits filled with `0`, shifted-out LSBs discarded.
@@ -621,8 +621,8 @@ negated = 8'h00 - input_val;  // Two's complement via subtraction
 **Arithmetic vs. logical right shift:**
 ```text
 // Assume value [8] = 8'b1000_0001 (MSB=1)
-logical = value >> 1;   // 8'b0100_0000 (zero-filled from left)
-arith   = value >>> 1;  // 8'b1100_0000 (MSB replicated)
+logical = value >> 1'b1;   // 8'b0100_0000 (zero-filled from left)
+arith   = value >>> 1'b1;  // 8'b1100_0000 (MSB replicated)
 ```
 
 **Overflow prevention via concatenation and arithmetic:**
@@ -2162,7 +2162,7 @@ Each register or register bit-range can be assigned at most once per execution p
   IF (load) {
     data <= input_value;
   } ELIF (shift) {
-    data <= data << 1;
+    data <= data << 1'b1;
   } ELSE {
     // No assignment: data holds current value at next clock
   }
@@ -4042,7 +4042,7 @@ The electrical configuration of a pin includes a `mode` attribute which determin
 1.  **Logical Width vs. Physical Pins:** If a signal is declared with width `[W]` and `mode=DIFFERENTIAL`, the compiler expects exactly `W` pairs of pins (total $2W$ physical pins) to be defined in the `MAP` block.
 2.  **Standard Compatibility:** If `mode=DIFFERENTIAL` is specified, the `standard` must be a valid differential standard supported by the target `CHIP` (e.g., `LVDS25`, `MINI_LVDS`, `TMDS33`).
 3.  **Drive Strength:** For differential standards, the `drive` attribute is optional and may be ignored if the chip uses fixed current-mode logic (CML) for that standard.
-4. **Termination:** Valid for `mode=DIFFERENTIAL` and for single-ended SSTL/HSTL standards; OFF by default. When ON, termination resistors will be active (100 Ohm differential or on-die termination for SSTL/HSTL, if supported by your chip).
+4. **Termination:** Valid for `mode=DIFFERENTIAL` and for single-ended SSTL/HSTL standards; OFF by default. When ON, termination resistors will be active (100 Ohm differential or on-die termination for SSTL/HSTL, if supported by your chip). The compiler always emits the termination setting explicitly in constraints output (e.g., `IN_TERM NONE` in Xilinx XDC when OFF, `DIFF_TERM FALSE` for differential inputs) to ensure deterministic IOB configuration.
 5. **PULL Mode:** The `pull` setting is not valid on `OUT` pins.
   - none: No internal resistor (default).
   - up: Internal pull-up resistor to VCC.
@@ -6122,7 +6122,7 @@ ASYNCHRONOUS {
 @template XOR_THEN_SHIFT(a, b, out)
   @scratch t [widthof(a)];
   t <= a ^ b;
-  out <= t << 1;
+  out <= t << 1'b1;
 @endtemplate
 ```
 

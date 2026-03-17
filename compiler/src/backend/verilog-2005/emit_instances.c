@@ -112,7 +112,21 @@ void emit_instances(FILE *out, const IR_Design *design, const IR_Module *mod)
                               ? inst->name
                               : "jz_inst";
 
-        fprintf(out, "    %s %s (\n", child_name, inst_name);
+        if (inst->num_params > 0 && inst->params) {
+            fprintf(out, "    %s #(\n", child_name);
+            for (int p = 0; p < inst->num_params; ++p) {
+                const IR_InstanceParam *param = &inst->params[p];
+                if (param->string_value) {
+                    fprintf(out, "        .%s(\"%s\")", param->name, param->string_value);
+                } else {
+                    fprintf(out, "        .%s(%lld)", param->name, param->value);
+                }
+                fprintf(out, "%s\n", (p + 1 < inst->num_params) ? "," : "");
+            }
+            fprintf(out, "    ) %s (\n", inst_name);
+        } else {
+            fprintf(out, "    %s %s (\n", child_name, inst_name);
+        }
 
         for (int c = 0; c < inst->num_connections; ++c) {
             const IR_InstanceConnection *conn = &inst->connections[c];

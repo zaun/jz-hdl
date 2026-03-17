@@ -37,11 +37,12 @@
     }
 
     CONST {
-        // Watchdog timeout: ~200us at 37.125 MHz = 7425 cycles
-        WD_TIMEOUT = 7424;
+        // Watchdog timeout: ~5ms at 37.125 MHz = 185625 cycles
+        // Must tolerate USB Full Speed frame gaps (~1ms for CH340E)
+        WD_TIMEOUT = 185624;
 
-        // Periodic fill report interval: ~1ms at 37.125 MHz
-        FILL_INTERVAL = 37124;
+        // Periodic fill report interval: ~10ms at 37.125 MHz
+        FILL_INTERVAL = 371249;
     }
 
     REGISTER {
@@ -63,10 +64,10 @@
         flush_idx   [6]  = 6'd0;       // index during flush to audio buffer
 
         // Watchdog timer: resets to IDLE on timeout during RX_DATA/RX_PARITY
-        wd_cnt      [13] = 13'd0;
+        wd_cnt      [18] = 18'd0;
 
         // Periodic fill-level report timer (counts down in IDLE)
-        fill_timer  [16] = 16'd0;
+        fill_timer  [19] = 19'd0;
 
         // Output registers
         wr_data_r   [16] = 16'h0000;
@@ -94,18 +95,18 @@
                     byte_cnt   <= 8'd0;
                     parity_acc <= 8'h00;
                     samp_cnt   <= 6'd0;
-                    wd_cnt     <= 13'd0;
+                    wd_cnt     <= 18'd0;
                     tx_valid_r <= 1'b0;
                     state      <= 3'd1;
-                } ELIF (fill_timer == 16'd0 && tx_ready == 1'b1) {
+                } ELIF (fill_timer == 19'd0 && tx_ready == 1'b1) {
                     // Timer expired: send unsolicited fill-level report
                     tx_data_r  <= { buf_fill, 1'b0 };
                     tx_valid_r <= 1'b1;
-                    fill_timer <= lit(16, FILL_INTERVAL);
+                    fill_timer <= lit(19, FILL_INTERVAL);
                 } ELSE {
                     tx_valid_r <= 1'b0;
-                    IF (fill_timer != 16'd0) {
-                        fill_timer <= fill_timer - 16'd1;
+                    IF (fill_timer != 19'd0) {
+                        fill_timer <= fill_timer - 19'd1;
                     }
                 }
             }
@@ -114,13 +115,13 @@
                 // RX_DATA: receive pkt_len data bytes, buffer samples locally
                 tx_valid_r <= 1'b0;
                 wr_valid_r <= 1'b0;
-                IF (wd_cnt == lit(13, WD_TIMEOUT)) {
+                IF (wd_cnt == lit(18, WD_TIMEOUT)) {
                     // Watchdog timeout: no byte for ~200us, resync
                     state  <= 3'd0;
-                    wd_cnt <= 13'd0;
+                    wd_cnt <= 18'd0;
                 } ELIF (rx_valid == 1'b1) {
                     // Reset watchdog on each received byte
-                    wd_cnt <= 13'd0;
+                    wd_cnt <= 18'd0;
 
                     // Accumulate parity
                     parity_acc <= parity_acc ^ rx_data;
@@ -145,7 +146,7 @@
                         byte_cnt <= byte_cnt + 8'd1;
                     }
                 } ELSE {
-                    wd_cnt <= wd_cnt + 13'd1;
+                    wd_cnt <= wd_cnt + 18'd1;
                 }
             }
 
@@ -153,12 +154,12 @@
                 // RX_PARITY: receive and check parity byte
                 wr_valid_r <= 1'b0;
                 tx_valid_r <= 1'b0;
-                IF (wd_cnt == lit(13, WD_TIMEOUT)) {
+                IF (wd_cnt == lit(18, WD_TIMEOUT)) {
                     // Watchdog timeout: resync
                     state  <= 3'd0;
-                    wd_cnt <= 13'd0;
+                    wd_cnt <= 18'd0;
                 } ELIF (rx_valid == 1'b1) {
-                    wd_cnt <= 13'd0;
+                    wd_cnt <= 18'd0;
                     IF (parity_acc == rx_data) {
                         parity_ok <= 1'b1;
                         // Parity OK: flush buffered samples to audio buffer
@@ -170,7 +171,7 @@
                         state <= 3'd4;
                     }
                 } ELSE {
-                    wd_cnt <= wd_cnt + 13'd1;
+                    wd_cnt <= wd_cnt + 18'd1;
                 }
             }
 

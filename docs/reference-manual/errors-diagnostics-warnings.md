@@ -101,6 +101,11 @@ The sections below list all diagnostic rules organized by category. Each entry s
 - Cause: Literal missing width (e.g., `'hFF`).
 - Fix: Provide explicit width: `8'hFF`.
 
+### LITERALS_AND_TYPES.LIT_BARE_INTEGER — Bare integer in runtime expression
+- Severity: ERROR
+- Cause: An unsized decimal integer (e.g., `1`, `42`) appears in a runtime expression such as an assignment, condition, or operator operand inside an `ASYNCHRONOUS` or `SYNCHRONOUS` block. JZ-HDL requires all runtime values to have an explicit bit width (S2.1).
+- Fix: Use a sized literal (`1'b1`, `8'd42`), `lit(width, value)`, or a signal. Bare integers remain valid in compile-time contexts: `CONST`/`CONFIG` values, width brackets, slice indices, `CASE` labels, and builtin arguments.
+
 ### LITERALS_AND_TYPES.LIT_OVERFLOW — Literal intrinsic width > declared width
 - Severity: ERROR
 - Cause: Value requires more bits than declared.

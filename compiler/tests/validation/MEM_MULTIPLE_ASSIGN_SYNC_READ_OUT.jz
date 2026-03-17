@@ -31,9 +31,9 @@
   }
 
   SYNCHRONOUS(clk=clk) {
-    m.rd.addr <= 0;
+    m.rd.addr <= 2'd0;
     ra <= m.rd.data;
-    m.rd.addr <= 1; // second read address on same port in single cycle
+    m.rd.addr <= 2'd1; // second read address on same port in single cycle
     rb <= m.rd.data;
   }
 @endmod

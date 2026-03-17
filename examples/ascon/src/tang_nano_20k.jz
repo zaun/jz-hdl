@@ -5,6 +5,10 @@
     @import "ascon.jz"
     @import "top.jz"
 
+    CONFIG {
+        CLK_MHZ = 27;
+    }
+
     CLOCKS {
         SCLK = { period=37.04 }; // 27MHz clock
     }
@@ -51,6 +55,6 @@
         IN  [1] rst_n   = ~KEY[0];
         IN  [1] uart_rx = UART_RX;
         OUT [1] uart_tx = UART_TX;
-        OUT [6] leds    = LED;
+        OUT [6] leds    = ~LED;
     }
 @endproj

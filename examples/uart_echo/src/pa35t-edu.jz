@@ -1,0 +1,67 @@
+@project(CHIP="XC7A35T-2FGG484") UART_ECHO
+    @import "por.jz"
+    @import "uart_rx.jz"
+    @import "uart_tx.jz"
+    @import "echo.jz"
+
+    CONFIG {
+        CLK_MHZ = 200;
+    }
+
+    CLOCKS {
+        SCLK = { period=5 };   // 200MHz differential clock
+        sys_clk;                // 200MHz buffered
+    }
+
+    IN_PINS {
+        SCLK    = { standard=DIFF_SSTL15, mode=DIFFERENTIAL };
+        NRST    = { standard=LVCMOS33 };
+        KEY[2]  = { standard=LVCMOS33 };
+        UART_RX = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6]  = { standard=LVCMOS33, drive=4 };
+        UART_TX = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        // System Clock 200MHz differential
+        SCLK = { P=R4, N=T4 };
+
+        // Reset button (active low)
+        NRST = R14;
+
+        // User buttons
+        KEY[0] = W21;
+        KEY[1] = Y21;
+
+        // LEDs (active high)
+        LED[0] = J21;
+        LED[1] = J19;
+        LED[2] = H19;
+        LED[3] = K18;
+        LED[4] = K19;
+        LED[5] = L19;
+
+        // UART (CH340E: TXD→P14=FPGA_RX, RXD→P15=FPGA_TX)
+        UART_RX = P14;
+        UART_TX = P15;
+    }
+
+    CLOCK_GEN {
+        BUF {
+            IN  REF_CLK SCLK;
+            OUT BASE    sys_clk;
+        };
+    }
+
+    @top echo_top {
+        IN  [1] clk     = sys_clk;
+        IN  [1] por     = 1'b1;
+        IN  [1] rst_n   = NRST;
+        IN  [1] uart_rx = UART_RX;
+        OUT [1] uart_tx = UART_TX;
+        OUT [6] leds    = LED;
+    }
+@endproj

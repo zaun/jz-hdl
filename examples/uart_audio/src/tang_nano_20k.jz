@@ -13,6 +13,11 @@
     @import "spectrum_display.jz"
     @import "dvi.jz"
 
+    CONFIG {
+        CLK_HZ = 37125000;
+        BAUD_RATE = 1200000;
+    }
+
     CLOCKS {
         SCLK       = { period=37.037 }; // 27MHz crystal
         serial_clk;                      // 185.625MHz (5x pixel, from PLL)
@@ -91,7 +96,7 @@
         IN   [1]  rst_n       = ~KEY[1];
         IN   [1]  uart_rx_pin = UART_RX;
         OUT  [1]  uart_tx_pin = UART_TX;
-        OUT  [6]  leds        = LED;
+        OUT  [6]  leds        = ~LED;
         OUT  [10] tmds_clk    = TMDS_CLK;
         OUT  [10] tmds_d0     = TMDS_DATA[0];
         OUT  [10] tmds_d1     = TMDS_DATA[1];

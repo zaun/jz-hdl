@@ -5,12 +5,17 @@
     @import "ascon.jz"
     @import "top.jz"
 
+    CONFIG {
+        CLK_MHZ = 27;
+    }
+
     CLOCKS {
-        SCLK = { period=5 }; // 200MHz clock
+        SCLK = { period=5 };   // 200MHz differential clock
+        sys_clk;                // 27MHz (from PLL)
     }
 
     IN_PINS {
-        SCLK    = { standard=LVDS25, mode=DIFFERENTIAL };
+        SCLK    = { standard=DIFF_SSTL15, mode=DIFFERENTIAL };
         NRST    = { standard=LVCMOS33 };
         KEY[2]  = { standard=LVCMOS33 };
         UART_RX = { standard=LVCMOS33 };
@@ -40,15 +45,29 @@
         LED[4] = K19;
         LED[5] = L19;
 
-        // UART
-        UART_RX = P15;
-        UART_TX = P14;
+        // UART (CH340E: TXD→P14=FPGA_RX, RXD→P15=FPGA_TX)
+        UART_RX = P14;
+        UART_TX = P15;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN   REF_CLK SCLK;          // 200 MHz input
+            OUT  BASE    sys_clk;       //  27 MHz
+            WIRE LOCK    pll_lock;
+
+            CONFIG {
+                DIVCLK_DIVIDE  = 5;
+                CLKFBOUT_MULT  = 27;
+                CLKOUT0_DIVIDE = 40;
+            };
+        };
     }
 
     @top ascon_top {
-        IN  [1] clk     = SCLK;
+        IN  [1] clk     = sys_clk;
         IN  [1] por     = 1'b1;
-        IN  [1] rst_n   = ~NRST;
+        IN  [1] rst_n   = NRST;
         IN  [1] uart_rx = UART_RX;
         OUT [1] uart_tx = UART_TX;
         OUT [6] leds    = LED;

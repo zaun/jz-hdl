@@ -83,8 +83,8 @@ Input file: src/pa35t-edu.jz
 Module: uart_rx
 
 User-visible identifiers:  14
-Internal elaboration nodes:62
-Total identifiers:        76
+Internal elaboration nodes:63
+Total identifiers:        77
 Total alias statements:   0
 Resolved physical nets:   13
 Tri-state nets:           0
@@ -170,27 +170,27 @@ SYNCHRONOUS(CLK=clk) Drivers:
 Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@44: SELECT (state) {
 
-PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0008    Width: 16    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@25
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@49: baud_cnt <= lit(8, HALF_BAUD);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@59: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@68: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@78: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@82: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@85: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@97: baud_cnt <= baud_cnt - 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@49: baud_cnt <= lit(16, HALF_BAUD);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@59: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@68: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@78: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@82: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@85: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@97: baud_cnt <= baud_cnt - 16'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@57: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@68: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@75: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@85: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@91: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@97: baud_cnt <= baud_cnt - 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@57: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@68: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@75: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@85: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@91: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@97: baud_cnt <= baud_cnt - 16'd1;
 
 PHYSICAL NET: NET_0009    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -275,8 +275,8 @@ Input file: src/pa35t-edu.jz
 Module: uart_tx
 
 User-visible identifiers:  13
-Internal elaboration nodes:60
-Total identifiers:        73
+Internal elaboration nodes:61
+Total identifiers:        74
 Total alias statements:   0
 Resolved physical nets:   12
 Tri-state nets:           0
@@ -345,27 +345,27 @@ SYNCHRONOUS(CLK=clk) Drivers:
 Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@36: SELECT (state) {
 
-PHYSICAL NET: NET_0007    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0007    Width: 16    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@21
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@42: baud_cnt  <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@55: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@59: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@70: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@74: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@77: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@89: baud_cnt  <= baud_cnt - 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@42: baud_cnt  <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@55: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@59: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@70: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@74: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@77: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@89: baud_cnt  <= baud_cnt - 16'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@54: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@59: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@67: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@77: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@84: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@89: baud_cnt  <= baud_cnt - 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@54: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@59: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@67: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@77: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@84: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@89: baud_cnt  <= baud_cnt - 16'd1;
 
 PHYSICAL NET: NET_0008    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -1027,8 +1027,8 @@ Input file: src/pa35t-edu.jz
 Module: ascon_top
 
 User-visible identifiers:  78
-Internal elaboration nodes:430
-Total identifiers:        508
+Internal elaboration nodes:432
+Total identifiers:        510
 Total alias statements:   1
 Resolved physical nets:   43
 Tri-state nets:           0
@@ -1040,7 +1040,7 @@ Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@21
 
 Consumers:
-    SYNCHRONOUS block (CLK=clk) at line 162
+    SYNCHRONOUS block (CLK=clk) at line 168
 
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1067,13 +1067,13 @@ Drivers:
 
 Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@114: reset = por_n & rst_n;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@162: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@168: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@124: @new urx0 uart_rx {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Top-level binding:
-    PORT binding: IN rst_n -> ~ NRST
+    PORT binding: IN rst_n -> NRST (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1092,7 +1092,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@25
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
 
 Top-level binding:
     PORT binding: OUT uart_tx -> UART_TX (OUT_PINS)
@@ -1117,14 +1117,14 @@ Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@124: @new urx0 uart_rx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@173: IF (rx_data == 8'h45) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@177: } ELIF (rx_data == 8'h44) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@194: key_sr <= { key_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@212: nonce_sr <= { nonce_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@229: data_len <= rx_data;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@233: partial_len <= rx_data[2:0];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@277: blk_acc <= { blk_acc[55:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@446: tag_in_sr <= { tag_in_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@179: IF (rx_data == 8'h45) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@183: } ELIF (rx_data == 8'h44) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@200: key_sr <= { key_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@218: nonce_sr <= { nonce_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@235: data_len <= rx_data;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@239: partial_len <= rx_data[2:0];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_acc <= { blk_acc[55:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@452: tag_in_sr <= { tag_in_sr[119:0], rx_data };
 
 PHYSICAL NET: NET_0009    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1135,12 +1135,12 @@ Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@124: @new urx0 uart_rx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@172: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@193: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@211: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@228: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@276: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@445: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@178: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@199: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@217: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@234: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@282: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@451: IF (rx_valid == 1'b1) {
 
 PHYSICAL NET: NET_0010    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1148,12 +1148,12 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@34
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@375: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@485: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@508: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@381: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@491: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@514: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
 
 PHYSICAL NET: NET_0011    Width: 64    Tri-state: No
 ------------------------------------------------------------
@@ -1161,10 +1161,10 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@35
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@364: tx_shift <= ac_dout;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@370: tx_shift <= ac_dout;
 
 PHYSICAL NET: NET_0012    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1172,10 +1172,10 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@36
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@363: IF (ac_dout_v == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@369: IF (ac_dout_v == 1'b1) {
 
 PHYSICAL NET: NET_0013    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -1183,11 +1183,11 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@37
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@465: tag_result <= ac_tag_out;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@471: tag_result <= ac_tag_out;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@477: tag_result <= ac_tag_out;
 
 PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1195,11 +1195,11 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@38
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@466: tag_ok_reg <= ac_tag_ok;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@472: tag_ok_reg <= ac_tag_ok;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@478: tag_ok_reg <= ac_tag_ok;
 
 PHYSICAL NET: NET_0015    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1207,13 +1207,13 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@39
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@379: IF (ac_done == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@407: IF (ac_done == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@442: IF (ac_done == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@470: } ELIF (ac_done == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@385: IF (ac_done == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@413: IF (ac_done == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@448: IF (ac_done == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@476: } ELIF (ac_done == 1'b1) {
 
 PHYSICAL NET: NET_0016    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1221,11 +1221,11 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@40
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@258: IF (ac_ready == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@417: IF (ac_ready == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@264: IF (ac_ready == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@423: IF (ac_ready == 1'b1) {
 
 PHYSICAL NET: NET_0017    Width: 4    Tri-state: No
 ------------------------------------------------------------
@@ -1233,37 +1233,37 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@63
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@176: state <= lit(4, S_RX_KEY);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@180: state <= lit(4, S_RX_KEY);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@197: state <= lit(4, S_RX_NONCE);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@214: state <= lit(4, S_RX_LEN);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@234: state <= lit(4, S_INIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@248: state <= lit(4, S_INIT_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@261: state <= lit(4, S_EMPTY_FEED);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@264: state <= lit(4, S_RX_BLK);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@284: state <= lit(4, S_FEED);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@289: state <= lit(4, S_FEED);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@334: state <= lit(4, S_ASCON_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@343: state <= lit(4, S_ASCON_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@352: state <= lit(4, S_ASCON_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@365: state <= lit(4, S_TX_BLK);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@389: state <= lit(4, S_RX_TAG);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@391: state <= lit(4, S_DONE_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@395: state <= lit(4, S_EMPTY_FEED);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@400: state <= lit(4, S_RX_BLK);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@424: state <= lit(4, S_RX_TAG);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@426: state <= lit(4, S_DONE_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@448: state <= lit(4, S_DONE_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@469: state <= lit(4, S_TX_STATUS);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@474: state <= lit(4, S_TX_STATUS);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@493: state <= lit(4, S_TX_TAG);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@495: state <= lit(4, S_TX_DONE);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@513: state <= lit(4, S_TX_DONE);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@530: state <= lit(4, S_RX_CMD);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@539: state <= lit(4, S_RX_CMD);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@182: state <= lit(4, S_RX_KEY);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@186: state <= lit(4, S_RX_KEY);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@203: state <= lit(4, S_RX_NONCE);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@220: state <= lit(4, S_RX_LEN);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@240: state <= lit(4, S_INIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@254: state <= lit(4, S_INIT_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@267: state <= lit(4, S_EMPTY_FEED);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@270: state <= lit(4, S_RX_BLK);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@290: state <= lit(4, S_FEED);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@295: state <= lit(4, S_FEED);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@340: state <= lit(4, S_ASCON_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@349: state <= lit(4, S_ASCON_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@358: state <= lit(4, S_ASCON_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@371: state <= lit(4, S_TX_BLK);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@395: state <= lit(4, S_RX_TAG);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@397: state <= lit(4, S_DONE_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@401: state <= lit(4, S_EMPTY_FEED);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@406: state <= lit(4, S_RX_BLK);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@430: state <= lit(4, S_RX_TAG);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@432: state <= lit(4, S_DONE_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@454: state <= lit(4, S_DONE_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@475: state <= lit(4, S_TX_STATUS);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@480: state <= lit(4, S_TX_STATUS);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@499: state <= lit(4, S_TX_TAG);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@501: state <= lit(4, S_TX_DONE);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@519: state <= lit(4, S_TX_DONE);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@536: state <= lit(4, S_RX_CMD);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@545: state <= lit(4, S_RX_CMD);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@163: SELECT (state) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@169: SELECT (state) {
 
 PHYSICAL NET: NET_0018    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1271,15 +1271,15 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@64
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@174: cmd_reg <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@178: cmd_reg <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@180: cmd_reg <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@184: cmd_reg <= 1'b1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@242: ac_cmd_r <= cmd_reg;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@387: IF (cmd_reg == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@422: IF (cmd_reg == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@486: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@492: IF (cmd_reg == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@248: ac_cmd_r <= cmd_reg;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@393: IF (cmd_reg == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@428: IF (cmd_reg == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@492: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@498: IF (cmd_reg == 1'b0) {
 
 PHYSICAL NET: NET_0019    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -1287,11 +1287,11 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@67
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@194: key_sr <= { key_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@200: key_sr <= { key_sr[119:0], rx_data };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@194: key_sr <= { key_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@200: key_sr <= { key_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0020    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -1299,11 +1299,11 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@68
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@212: nonce_sr <= { nonce_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@218: nonce_sr <= { nonce_sr[119:0], rx_data };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@212: nonce_sr <= { nonce_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@218: nonce_sr <= { nonce_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0021    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -1311,11 +1311,11 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@71
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@229: data_len <= rx_data;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@235: data_len <= rx_data;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@259: IF (data_len == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@280: IF (bytes_done + 8'd1 == data_len) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@265: IF (data_len == 8'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@286: IF (bytes_done + 8'd1 == data_len) {
 
 PHYSICAL NET: NET_0022    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -1323,12 +1323,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@72
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@230: bytes_done <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@278: bytes_done <= bytes_done + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@236: bytes_done <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@284: bytes_done <= bytes_done + 8'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@278: bytes_done <= bytes_done + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@280: IF (bytes_done + 8'd1 == data_len) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@284: bytes_done <= bytes_done + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@286: IF (bytes_done + 8'd1 == data_len) {
 
 PHYSICAL NET: NET_0023    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -1336,22 +1336,22 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@73
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@175: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@179: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@196: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@199: byte_cnt <= byte_cnt + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@216: byte_cnt <= byte_cnt + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@388: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@423: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@450: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@181: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@185: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@202: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@205: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@222: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@394: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@429: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@456: byte_cnt <= byte_cnt + 8'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@195: IF (byte_cnt == 8'd15) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@199: byte_cnt <= byte_cnt + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@213: IF (byte_cnt == 8'd15) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@216: byte_cnt <= byte_cnt + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@447: IF (byte_cnt == 8'd15) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@450: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@201: IF (byte_cnt == 8'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@205: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@219: IF (byte_cnt == 8'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@222: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@453: IF (byte_cnt == 8'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@456: byte_cnt <= byte_cnt + 8'd1;
 
 PHYSICAL NET: NET_0024    Width: 64    Tri-state: No
 ------------------------------------------------------------
@@ -1359,21 +1359,21 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@76
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@232: blk_acc <= 64'h0000000000000000;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@277: blk_acc <= { blk_acc[55:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@399: blk_acc <= 64'h0000000000000000;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@238: blk_acc <= 64'h0000000000000000;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_acc <= { blk_acc[55:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@405: blk_acc <= 64'h0000000000000000;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@277: blk_acc <= { blk_acc[55:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@304: ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@307: ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@310: ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@313: ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@316: ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@319: ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@322: ac_din_r <= { blk_acc[55:0],  8'h80 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@337: ac_din_r <= blk_acc;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@346: ac_din_r <= blk_acc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_acc <= { blk_acc[55:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@310: ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@313: ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@316: ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@319: ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@322: ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@325: ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@328: ac_din_r <= { blk_acc[55:0],  8'h80 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@343: ac_din_r <= blk_acc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@352: ac_din_r <= blk_acc;
 
 PHYSICAL NET: NET_0025    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -1381,18 +1381,18 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@77
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@231: blk_pos <= 3'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_pos <= blk_pos + 3'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@287: blk_pos <= 3'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@291: blk_pos <= blk_pos + 3'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@398: blk_pos <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@237: blk_pos <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@289: blk_pos <= blk_pos + 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@293: blk_pos <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@297: blk_pos <= blk_pos + 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@404: blk_pos <= 3'd0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_pos <= blk_pos + 3'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@285: } ELIF (blk_pos == 3'd7) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@291: blk_pos <= blk_pos + 3'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@300: IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@302: SELECT (blk_pos) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@289: blk_pos <= blk_pos + 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@291: } ELIF (blk_pos == 3'd7) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@297: blk_pos <= blk_pos + 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@306: IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@308: SELECT (blk_pos) {
 
 PHYSICAL NET: NET_0026    Width: 64    Tri-state: No
 ------------------------------------------------------------
@@ -1400,12 +1400,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@80
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@364: tx_shift <= ac_dout;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@377: tx_shift <= { tx_shift[55:0], 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@370: tx_shift <= ac_dout;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@383: tx_shift <= { tx_shift[55:0], 8'h00 };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@376: tx_byte_r <= tx_shift[63:56];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@377: tx_shift <= { tx_shift[55:0], 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@382: tx_byte_r <= tx_shift[63:56];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@383: tx_shift <= { tx_shift[55:0], 8'h00 };
 
 PHYSICAL NET: NET_0027    Width: 4    Tri-state: No
 ------------------------------------------------------------
@@ -1413,14 +1413,14 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@81
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@332: tx_cnt <= { 1'b0, partial_len };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@342: tx_cnt <= 4'd8;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@351: tx_cnt <= 4'd8;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@403: tx_cnt <= tx_cnt - 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@338: tx_cnt <= { 1'b0, partial_len };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@348: tx_cnt <= 4'd8;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@357: tx_cnt <= 4'd8;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@409: tx_cnt <= tx_cnt - 4'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@382: IF (tx_cnt == 4'd1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@403: tx_cnt <= tx_cnt - 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@388: IF (tx_cnt == 4'd1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@409: tx_cnt <= tx_cnt - 4'd1;
 
 PHYSICAL NET: NET_0028    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1428,26 +1428,26 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@84
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@167: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@188: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@206: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@223: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@241: ac_start_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@253: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@271: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@298: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@358: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@371: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@415: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@437: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@457: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@481: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@504: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@525: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@534: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@173: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@194: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@212: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@229: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@247: ac_start_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@259: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@277: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@304: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@364: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@377: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@421: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@443: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@463: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@487: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@510: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@531: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@540: ac_start_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0029    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1455,10 +1455,10 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@85
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@242: ac_cmd_r <= cmd_reg;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@248: ac_cmd_r <= cmd_reg;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0030    Width: 64    Tri-state: No
 ------------------------------------------------------------
@@ -1466,20 +1466,20 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@86
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@304: ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@307: ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@310: ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@313: ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@316: ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@319: ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@322: ac_din_r <= { blk_acc[55:0],  8'h80 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@325: ac_din_r <= 64'h8000000000000000;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@337: ac_din_r <= blk_acc;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@346: ac_din_r <= blk_acc;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@418: ac_din_r <= 64'h0000000000000000;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@310: ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@313: ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@316: ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@319: ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@322: ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@325: ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@328: ac_din_r <= { blk_acc[55:0],  8'h80 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@331: ac_din_r <= 64'h8000000000000000;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@343: ac_din_r <= blk_acc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@352: ac_din_r <= blk_acc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@424: ac_din_r <= 64'h0000000000000000;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0031    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1487,29 +1487,29 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@87
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@168: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@189: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@207: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@224: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@243: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@254: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@272: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@328: ac_din_v_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@338: ac_din_v_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@347: ac_din_v_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@359: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@372: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@419: ac_din_v_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@429: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@438: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@458: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@482: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@505: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@526: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@535: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@174: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@195: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@213: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@230: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@249: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@260: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@278: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@334: ac_din_v_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@344: ac_din_v_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@353: ac_din_v_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@365: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@378: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@425: ac_din_v_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@435: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@444: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@464: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@488: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@511: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@532: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@541: ac_din_v_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0032    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1517,29 +1517,29 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@88
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@169: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@190: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@208: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@225: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@244: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@255: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@273: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@329: ac_din_last_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@339: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@348: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@360: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@373: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@420: ac_din_last_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@430: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@439: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@459: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@483: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@506: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@527: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@536: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@175: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@196: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@214: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@231: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@250: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@261: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@279: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@335: ac_din_last_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@345: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@354: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@366: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@379: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@426: ac_din_last_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@436: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@445: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@465: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@489: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@512: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@533: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@542: ac_din_last_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0033    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1547,29 +1547,29 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@89
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@170: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@191: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@209: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@226: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@245: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@256: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@274: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@330: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@340: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@349: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@361: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@374: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@421: ac_din_empty_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@431: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@440: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@460: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@484: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@507: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@528: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@537: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@176: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@197: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@215: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@232: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@251: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@262: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@280: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@336: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@346: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@355: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@367: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@380: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@427: ac_din_empty_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@437: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@446: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@466: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@490: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@513: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@534: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@543: ac_din_empty_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0034    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -1577,12 +1577,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@90
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@333: ac_din_plen_r <= partial_len;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@341: ac_din_plen_r <= 3'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@350: ac_din_plen_r <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@339: ac_din_plen_r <= partial_len;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@347: ac_din_plen_r <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@356: ac_din_plen_r <= 3'd0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0035    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -1590,12 +1590,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@93
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@446: tag_in_sr <= { tag_in_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@452: tag_in_sr <= { tag_in_sr[119:0], rx_data };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@446: tag_in_sr <= { tag_in_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@486: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@452: tag_in_sr <= { tag_in_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@492: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0036    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -1603,14 +1603,14 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@94
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@465: tag_result <= ac_tag_out;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@471: tag_result <= ac_tag_out;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@510: tag_result <= { tag_result[119:0], 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@477: tag_result <= ac_tag_out;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@516: tag_result <= { tag_result[119:0], 8'h00 };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@486: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@509: tx_byte_r <= tag_result[127:120];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@510: tag_result <= { tag_result[119:0], 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@492: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@515: tx_byte_r <= tag_result[127:120];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@516: tag_result <= { tag_result[119:0], 8'h00 };
 
 PHYSICAL NET: NET_0037    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1618,8 +1618,8 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@95
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@466: tag_ok_reg <= ac_tag_ok;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@472: tag_ok_reg <= ac_tag_ok;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@478: tag_ok_reg <= ac_tag_ok;
 
 PHYSICAL NET: NET_0038    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -1627,13 +1627,13 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@98
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@376: tx_byte_r <= tx_shift[63:56];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@487: tx_byte_r <= 8'h46;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@489: tx_byte_r <= 8'h4B;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@509: tx_byte_r <= tag_result[127:120];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@382: tx_byte_r <= tx_shift[63:56];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@493: tx_byte_r <= 8'h46;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@495: tx_byte_r <= 8'h4B;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@515: tx_byte_r <= tag_result[127:120];
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
 
 PHYSICAL NET: NET_0039    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1641,32 +1641,32 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@99
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@171: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@192: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@210: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@227: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@246: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@257: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@275: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@299: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@362: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@378: tx_send_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@406: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@416: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@441: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@461: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@491: tx_send_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@498: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@511: tx_send_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@518: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@529: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@538: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@177: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@198: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@216: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@233: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@252: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@263: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@281: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@305: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@368: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@384: tx_send_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@412: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@422: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@447: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@467: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@497: tx_send_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@504: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@517: tx_send_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@524: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@535: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@544: tx_send_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@375: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@485: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@508: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@381: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@491: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@514: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
 
 PHYSICAL NET: NET_0040    Width: 5    Tri-state: No
 ------------------------------------------------------------
@@ -1674,13 +1674,13 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@100
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@467: tx_tag_cnt <= 5'd0;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@473: tx_tag_cnt <= 5'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@515: tx_tag_cnt <= tx_tag_cnt + 5'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@479: tx_tag_cnt <= 5'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@521: tx_tag_cnt <= tx_tag_cnt + 5'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@512: IF (tx_tag_cnt == 5'd15) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@515: tx_tag_cnt <= tx_tag_cnt + 5'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@518: IF (tx_tag_cnt == 5'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@521: tx_tag_cnt <= tx_tag_cnt + 5'd1;
 
 PHYSICAL NET: NET_0041    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1688,14 +1688,14 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@103
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@282: is_last_blk <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@288: is_last_blk <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@288: is_last_blk <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@294: is_last_blk <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@300: IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@335: } ELIF (is_last_blk == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@384: IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@393: } ELIF (is_last_blk == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@306: IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@341: } ELIF (is_last_blk == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@390: IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@399: } ELIF (is_last_blk == 1'b1) {
 
 PHYSICAL NET: NET_0042    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -1703,12 +1703,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@104
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@233: partial_len <= rx_data[2:0];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@239: partial_len <= rx_data[2:0];
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@332: tx_cnt <= { 1'b0, partial_len };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@333: ac_din_plen_r <= partial_len;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@384: IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@338: tx_cnt <= { 1'b0, partial_len };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@339: ac_din_plen_r <= partial_len;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@390: IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
 
 PHYSICAL NET: NET_0043    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1716,14 +1716,14 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@107
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@247: done_latch <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@380: done_latch <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@408: done_latch <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@443: done_latch <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@468: done_latch <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@253: done_latch <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@386: done_latch <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@414: done_latch <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@449: done_latch <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@474: done_latch <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@462: IF (done_latch == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@468: IF (done_latch == 1'b1) {
 
 PHYSICAL NET: NET_0044    Width: 6    Tri-state: No
 ------------------------------------------------------------
@@ -1731,11 +1731,11 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@110
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@166: led_reg <= 6'b111110;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@187: led_reg <= 6'b111100;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@240: led_reg <= 6'b110000;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@480: led_reg <= 6'b100000;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@524: led_reg <= 6'b111111;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@172: led_reg <= 6'b000001;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@193: led_reg <= 6'b000011;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@246: led_reg <= 6'b001111;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@486: led_reg <= 6'b011111;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@530: led_reg <= 6'b000000;
 
 Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@115: leds <= led_reg;
@@ -1898,8 +1898,8 @@ Input file: src/pa35t-edu.jz
 Module: uart_rx
 
 User-visible identifiers:  14
-Internal elaboration nodes:62
-Total identifiers:        76
+Internal elaboration nodes:63
+Total identifiers:        77
 Total alias statements:   0
 Resolved physical nets:   13
 Tri-state nets:           0
@@ -1985,27 +1985,27 @@ SYNCHRONOUS(CLK=clk) Drivers:
 Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@44: SELECT (state) {
 
-PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0008    Width: 16    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@25
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@49: baud_cnt <= lit(8, HALF_BAUD);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@59: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@68: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@78: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@82: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@85: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@97: baud_cnt <= baud_cnt - 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@49: baud_cnt <= lit(16, HALF_BAUD);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@59: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@68: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@78: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@82: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@85: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@97: baud_cnt <= baud_cnt - 16'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@57: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@68: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@75: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@85: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@91: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@97: baud_cnt <= baud_cnt - 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@57: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@68: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@75: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@85: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@91: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_rx.jz@97: baud_cnt <= baud_cnt - 16'd1;
 
 PHYSICAL NET: NET_0009    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -2090,8 +2090,8 @@ Input file: src/pa35t-edu.jz
 Module: uart_tx
 
 User-visible identifiers:  13
-Internal elaboration nodes:60
-Total identifiers:        73
+Internal elaboration nodes:61
+Total identifiers:        74
 Total alias statements:   0
 Resolved physical nets:   12
 Tri-state nets:           0
@@ -2160,27 +2160,27 @@ SYNCHRONOUS(CLK=clk) Drivers:
 Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@36: SELECT (state) {
 
-PHYSICAL NET: NET_0007    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0007    Width: 16    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@21
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@42: baud_cnt  <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@55: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@59: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@70: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@74: baud_cnt <= lit(8, BAUD_DIV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@77: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@89: baud_cnt  <= baud_cnt - 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@42: baud_cnt  <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@55: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@59: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@70: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@74: baud_cnt <= lit(16, BAUD_DIV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@77: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@89: baud_cnt  <= baud_cnt - 16'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@54: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@59: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@67: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@77: baud_cnt <= baud_cnt - 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@84: IF (baud_cnt == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@89: baud_cnt  <= baud_cnt - 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@54: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@59: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@67: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@77: baud_cnt <= baud_cnt - 16'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@84: IF (baud_cnt == 16'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/uart_tx.jz@89: baud_cnt  <= baud_cnt - 16'd1;
 
 PHYSICAL NET: NET_0008    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -2842,8 +2842,8 @@ Input file: src/pa35t-edu.jz
 Module: ascon_top
 
 User-visible identifiers:  78
-Internal elaboration nodes:430
-Total identifiers:        508
+Internal elaboration nodes:432
+Total identifiers:        510
 Total alias statements:   1
 Resolved physical nets:   43
 Tri-state nets:           0
@@ -2855,7 +2855,7 @@ Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@21
 
 Consumers:
-    SYNCHRONOUS block (CLK=clk) at line 162
+    SYNCHRONOUS block (CLK=clk) at line 168
 
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -2882,13 +2882,13 @@ Drivers:
 
 Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@114: reset = por_n & rst_n;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@162: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@168: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@124: @new urx0 uart_rx {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Top-level binding:
-    PORT binding: IN rst_n -> ~ NRST
+    PORT binding: IN rst_n -> NRST (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -2907,7 +2907,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@25
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
 
 Top-level binding:
     PORT binding: OUT uart_tx -> UART_TX (OUT_PINS)
@@ -2932,14 +2932,14 @@ Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@124: @new urx0 uart_rx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@173: IF (rx_data == 8'h45) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@177: } ELIF (rx_data == 8'h44) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@194: key_sr <= { key_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@212: nonce_sr <= { nonce_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@229: data_len <= rx_data;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@233: partial_len <= rx_data[2:0];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@277: blk_acc <= { blk_acc[55:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@446: tag_in_sr <= { tag_in_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@179: IF (rx_data == 8'h45) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@183: } ELIF (rx_data == 8'h44) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@200: key_sr <= { key_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@218: nonce_sr <= { nonce_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@235: data_len <= rx_data;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@239: partial_len <= rx_data[2:0];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_acc <= { blk_acc[55:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@452: tag_in_sr <= { tag_in_sr[119:0], rx_data };
 
 PHYSICAL NET: NET_0009    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -2950,12 +2950,12 @@ Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@124: @new urx0 uart_rx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@172: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@193: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@211: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@228: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@276: IF (rx_valid == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@445: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@178: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@199: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@217: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@234: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@282: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@451: IF (rx_valid == 1'b1) {
 
 PHYSICAL NET: NET_0010    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -2963,12 +2963,12 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@34
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@375: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@485: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@508: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@381: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@491: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@514: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
 
 PHYSICAL NET: NET_0011    Width: 64    Tri-state: No
 ------------------------------------------------------------
@@ -2976,10 +2976,10 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@35
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@364: tx_shift <= ac_dout;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@370: tx_shift <= ac_dout;
 
 PHYSICAL NET: NET_0012    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -2987,10 +2987,10 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@36
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@363: IF (ac_dout_v == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@369: IF (ac_dout_v == 1'b1) {
 
 PHYSICAL NET: NET_0013    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -2998,11 +2998,11 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@37
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@465: tag_result <= ac_tag_out;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@471: tag_result <= ac_tag_out;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@477: tag_result <= ac_tag_out;
 
 PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3010,11 +3010,11 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@38
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@466: tag_ok_reg <= ac_tag_ok;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@472: tag_ok_reg <= ac_tag_ok;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@478: tag_ok_reg <= ac_tag_ok;
 
 PHYSICAL NET: NET_0015    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3022,13 +3022,13 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@39
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@379: IF (ac_done == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@407: IF (ac_done == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@442: IF (ac_done == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@470: } ELIF (ac_done == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@385: IF (ac_done == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@413: IF (ac_done == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@448: IF (ac_done == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@476: } ELIF (ac_done == 1'b1) {
 
 PHYSICAL NET: NET_0016    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3036,11 +3036,11 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@40
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@258: IF (ac_ready == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@417: IF (ac_ready == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@264: IF (ac_ready == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@423: IF (ac_ready == 1'b1) {
 
 PHYSICAL NET: NET_0017    Width: 4    Tri-state: No
 ------------------------------------------------------------
@@ -3048,37 +3048,37 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@63
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@176: state <= lit(4, S_RX_KEY);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@180: state <= lit(4, S_RX_KEY);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@197: state <= lit(4, S_RX_NONCE);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@214: state <= lit(4, S_RX_LEN);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@234: state <= lit(4, S_INIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@248: state <= lit(4, S_INIT_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@261: state <= lit(4, S_EMPTY_FEED);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@264: state <= lit(4, S_RX_BLK);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@284: state <= lit(4, S_FEED);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@289: state <= lit(4, S_FEED);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@334: state <= lit(4, S_ASCON_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@343: state <= lit(4, S_ASCON_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@352: state <= lit(4, S_ASCON_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@365: state <= lit(4, S_TX_BLK);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@389: state <= lit(4, S_RX_TAG);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@391: state <= lit(4, S_DONE_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@395: state <= lit(4, S_EMPTY_FEED);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@400: state <= lit(4, S_RX_BLK);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@424: state <= lit(4, S_RX_TAG);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@426: state <= lit(4, S_DONE_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@448: state <= lit(4, S_DONE_WAIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@469: state <= lit(4, S_TX_STATUS);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@474: state <= lit(4, S_TX_STATUS);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@493: state <= lit(4, S_TX_TAG);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@495: state <= lit(4, S_TX_DONE);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@513: state <= lit(4, S_TX_DONE);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@530: state <= lit(4, S_RX_CMD);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@539: state <= lit(4, S_RX_CMD);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@182: state <= lit(4, S_RX_KEY);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@186: state <= lit(4, S_RX_KEY);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@203: state <= lit(4, S_RX_NONCE);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@220: state <= lit(4, S_RX_LEN);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@240: state <= lit(4, S_INIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@254: state <= lit(4, S_INIT_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@267: state <= lit(4, S_EMPTY_FEED);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@270: state <= lit(4, S_RX_BLK);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@290: state <= lit(4, S_FEED);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@295: state <= lit(4, S_FEED);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@340: state <= lit(4, S_ASCON_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@349: state <= lit(4, S_ASCON_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@358: state <= lit(4, S_ASCON_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@371: state <= lit(4, S_TX_BLK);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@395: state <= lit(4, S_RX_TAG);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@397: state <= lit(4, S_DONE_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@401: state <= lit(4, S_EMPTY_FEED);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@406: state <= lit(4, S_RX_BLK);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@430: state <= lit(4, S_RX_TAG);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@432: state <= lit(4, S_DONE_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@454: state <= lit(4, S_DONE_WAIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@475: state <= lit(4, S_TX_STATUS);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@480: state <= lit(4, S_TX_STATUS);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@499: state <= lit(4, S_TX_TAG);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@501: state <= lit(4, S_TX_DONE);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@519: state <= lit(4, S_TX_DONE);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@536: state <= lit(4, S_RX_CMD);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@545: state <= lit(4, S_RX_CMD);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@163: SELECT (state) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@169: SELECT (state) {
 
 PHYSICAL NET: NET_0018    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3086,15 +3086,15 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@64
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@174: cmd_reg <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@178: cmd_reg <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@180: cmd_reg <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@184: cmd_reg <= 1'b1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@242: ac_cmd_r <= cmd_reg;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@387: IF (cmd_reg == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@422: IF (cmd_reg == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@486: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@492: IF (cmd_reg == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@248: ac_cmd_r <= cmd_reg;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@393: IF (cmd_reg == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@428: IF (cmd_reg == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@492: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@498: IF (cmd_reg == 1'b0) {
 
 PHYSICAL NET: NET_0019    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -3102,11 +3102,11 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@67
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@194: key_sr <= { key_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@200: key_sr <= { key_sr[119:0], rx_data };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@194: key_sr <= { key_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@200: key_sr <= { key_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0020    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -3114,11 +3114,11 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@68
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@212: nonce_sr <= { nonce_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@218: nonce_sr <= { nonce_sr[119:0], rx_data };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@212: nonce_sr <= { nonce_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@218: nonce_sr <= { nonce_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0021    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -3126,11 +3126,11 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@71
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@229: data_len <= rx_data;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@235: data_len <= rx_data;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@259: IF (data_len == 8'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@280: IF (bytes_done + 8'd1 == data_len) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@265: IF (data_len == 8'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@286: IF (bytes_done + 8'd1 == data_len) {
 
 PHYSICAL NET: NET_0022    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -3138,12 +3138,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@72
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@230: bytes_done <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@278: bytes_done <= bytes_done + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@236: bytes_done <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@284: bytes_done <= bytes_done + 8'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@278: bytes_done <= bytes_done + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@280: IF (bytes_done + 8'd1 == data_len) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@284: bytes_done <= bytes_done + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@286: IF (bytes_done + 8'd1 == data_len) {
 
 PHYSICAL NET: NET_0023    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -3151,22 +3151,22 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@73
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@175: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@179: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@196: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@199: byte_cnt <= byte_cnt + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@216: byte_cnt <= byte_cnt + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@388: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@423: byte_cnt <= 8'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@450: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@181: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@185: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@202: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@205: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@222: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@394: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@429: byte_cnt <= 8'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@456: byte_cnt <= byte_cnt + 8'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@195: IF (byte_cnt == 8'd15) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@199: byte_cnt <= byte_cnt + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@213: IF (byte_cnt == 8'd15) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@216: byte_cnt <= byte_cnt + 8'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@447: IF (byte_cnt == 8'd15) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@450: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@201: IF (byte_cnt == 8'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@205: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@219: IF (byte_cnt == 8'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@222: byte_cnt <= byte_cnt + 8'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@453: IF (byte_cnt == 8'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@456: byte_cnt <= byte_cnt + 8'd1;
 
 PHYSICAL NET: NET_0024    Width: 64    Tri-state: No
 ------------------------------------------------------------
@@ -3174,21 +3174,21 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@76
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@232: blk_acc <= 64'h0000000000000000;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@277: blk_acc <= { blk_acc[55:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@399: blk_acc <= 64'h0000000000000000;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@238: blk_acc <= 64'h0000000000000000;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_acc <= { blk_acc[55:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@405: blk_acc <= 64'h0000000000000000;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@277: blk_acc <= { blk_acc[55:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@304: ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@307: ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@310: ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@313: ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@316: ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@319: ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@322: ac_din_r <= { blk_acc[55:0],  8'h80 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@337: ac_din_r <= blk_acc;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@346: ac_din_r <= blk_acc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_acc <= { blk_acc[55:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@310: ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@313: ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@316: ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@319: ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@322: ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@325: ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@328: ac_din_r <= { blk_acc[55:0],  8'h80 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@343: ac_din_r <= blk_acc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@352: ac_din_r <= blk_acc;
 
 PHYSICAL NET: NET_0025    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -3196,18 +3196,18 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@77
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@231: blk_pos <= 3'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_pos <= blk_pos + 3'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@287: blk_pos <= 3'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@291: blk_pos <= blk_pos + 3'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@398: blk_pos <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@237: blk_pos <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@289: blk_pos <= blk_pos + 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@293: blk_pos <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@297: blk_pos <= blk_pos + 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@404: blk_pos <= 3'd0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@283: blk_pos <= blk_pos + 3'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@285: } ELIF (blk_pos == 3'd7) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@291: blk_pos <= blk_pos + 3'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@300: IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@302: SELECT (blk_pos) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@289: blk_pos <= blk_pos + 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@291: } ELIF (blk_pos == 3'd7) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@297: blk_pos <= blk_pos + 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@306: IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@308: SELECT (blk_pos) {
 
 PHYSICAL NET: NET_0026    Width: 64    Tri-state: No
 ------------------------------------------------------------
@@ -3215,12 +3215,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@80
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@364: tx_shift <= ac_dout;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@377: tx_shift <= { tx_shift[55:0], 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@370: tx_shift <= ac_dout;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@383: tx_shift <= { tx_shift[55:0], 8'h00 };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@376: tx_byte_r <= tx_shift[63:56];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@377: tx_shift <= { tx_shift[55:0], 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@382: tx_byte_r <= tx_shift[63:56];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@383: tx_shift <= { tx_shift[55:0], 8'h00 };
 
 PHYSICAL NET: NET_0027    Width: 4    Tri-state: No
 ------------------------------------------------------------
@@ -3228,14 +3228,14 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@81
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@332: tx_cnt <= { 1'b0, partial_len };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@342: tx_cnt <= 4'd8;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@351: tx_cnt <= 4'd8;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@403: tx_cnt <= tx_cnt - 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@338: tx_cnt <= { 1'b0, partial_len };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@348: tx_cnt <= 4'd8;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@357: tx_cnt <= 4'd8;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@409: tx_cnt <= tx_cnt - 4'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@382: IF (tx_cnt == 4'd1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@403: tx_cnt <= tx_cnt - 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@388: IF (tx_cnt == 4'd1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@409: tx_cnt <= tx_cnt - 4'd1;
 
 PHYSICAL NET: NET_0028    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3243,26 +3243,26 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@84
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@167: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@188: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@206: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@223: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@241: ac_start_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@253: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@271: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@298: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@358: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@371: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@415: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@437: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@457: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@481: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@504: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@525: ac_start_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@534: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@173: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@194: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@212: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@229: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@247: ac_start_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@259: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@277: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@304: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@364: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@377: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@421: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@443: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@463: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@487: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@510: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@531: ac_start_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@540: ac_start_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0029    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3270,10 +3270,10 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@85
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@242: ac_cmd_r <= cmd_reg;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@248: ac_cmd_r <= cmd_reg;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0030    Width: 64    Tri-state: No
 ------------------------------------------------------------
@@ -3281,20 +3281,20 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@86
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@304: ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@307: ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@310: ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@313: ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@316: ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@319: ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@322: ac_din_r <= { blk_acc[55:0],  8'h80 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@325: ac_din_r <= 64'h8000000000000000;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@337: ac_din_r <= blk_acc;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@346: ac_din_r <= blk_acc;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@418: ac_din_r <= 64'h0000000000000000;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@310: ac_din_r <= { blk_acc[7:0],   8'h80, 48'h000000000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@313: ac_din_r <= { blk_acc[15:0],  8'h80, 40'h0000000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@316: ac_din_r <= { blk_acc[23:0],  8'h80, 32'h00000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@319: ac_din_r <= { blk_acc[31:0],  8'h80, 24'h000000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@322: ac_din_r <= { blk_acc[39:0],  8'h80, 16'h0000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@325: ac_din_r <= { blk_acc[47:0],  8'h80, 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@328: ac_din_r <= { blk_acc[55:0],  8'h80 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@331: ac_din_r <= 64'h8000000000000000;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@343: ac_din_r <= blk_acc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@352: ac_din_r <= blk_acc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@424: ac_din_r <= 64'h0000000000000000;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0031    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3302,29 +3302,29 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@87
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@168: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@189: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@207: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@224: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@243: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@254: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@272: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@328: ac_din_v_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@338: ac_din_v_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@347: ac_din_v_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@359: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@372: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@419: ac_din_v_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@429: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@438: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@458: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@482: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@505: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@526: ac_din_v_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@535: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@174: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@195: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@213: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@230: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@249: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@260: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@278: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@334: ac_din_v_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@344: ac_din_v_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@353: ac_din_v_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@365: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@378: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@425: ac_din_v_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@435: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@444: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@464: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@488: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@511: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@532: ac_din_v_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@541: ac_din_v_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0032    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3332,29 +3332,29 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@88
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@169: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@190: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@208: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@225: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@244: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@255: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@273: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@329: ac_din_last_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@339: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@348: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@360: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@373: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@420: ac_din_last_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@430: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@439: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@459: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@483: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@506: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@527: ac_din_last_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@536: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@175: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@196: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@214: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@231: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@250: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@261: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@279: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@335: ac_din_last_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@345: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@354: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@366: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@379: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@426: ac_din_last_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@436: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@445: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@465: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@489: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@512: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@533: ac_din_last_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@542: ac_din_last_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0033    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3362,29 +3362,29 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@89
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@170: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@191: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@209: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@226: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@245: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@256: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@274: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@330: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@340: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@349: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@361: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@374: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@421: ac_din_empty_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@431: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@440: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@460: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@484: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@507: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@528: ac_din_empty_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@537: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@176: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@197: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@215: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@232: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@251: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@262: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@280: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@336: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@346: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@355: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@367: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@380: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@427: ac_din_empty_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@437: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@446: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@466: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@490: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@513: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@534: ac_din_empty_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@543: ac_din_empty_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0034    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -3392,12 +3392,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@90
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@333: ac_din_plen_r <= partial_len;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@341: ac_din_plen_r <= 3'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@350: ac_din_plen_r <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@339: ac_din_plen_r <= partial_len;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@347: ac_din_plen_r <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@356: ac_din_plen_r <= 3'd0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0035    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -3405,12 +3405,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@93
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@446: tag_in_sr <= { tag_in_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@452: tag_in_sr <= { tag_in_sr[119:0], rx_data };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@446: tag_in_sr <= { tag_in_sr[119:0], rx_data };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@486: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@141: @new ac0 ascon {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@452: tag_in_sr <= { tag_in_sr[119:0], rx_data };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@492: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 PHYSICAL NET: NET_0036    Width: 128    Tri-state: No
 ------------------------------------------------------------
@@ -3418,14 +3418,14 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@94
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@465: tag_result <= ac_tag_out;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@471: tag_result <= ac_tag_out;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@510: tag_result <= { tag_result[119:0], 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@477: tag_result <= ac_tag_out;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@516: tag_result <= { tag_result[119:0], 8'h00 };
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@486: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@509: tx_byte_r <= tag_result[127:120];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@510: tag_result <= { tag_result[119:0], 8'h00 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@492: IF (cmd_reg == 1'b1 && tag_result != tag_in_sr) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@515: tx_byte_r <= tag_result[127:120];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@516: tag_result <= { tag_result[119:0], 8'h00 };
 
 PHYSICAL NET: NET_0037    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3433,8 +3433,8 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@95
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@466: tag_ok_reg <= ac_tag_ok;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@472: tag_ok_reg <= ac_tag_ok;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@478: tag_ok_reg <= ac_tag_ok;
 
 PHYSICAL NET: NET_0038    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -3442,13 +3442,13 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@98
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@376: tx_byte_r <= tx_shift[63:56];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@487: tx_byte_r <= 8'h46;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@489: tx_byte_r <= 8'h4B;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@509: tx_byte_r <= tag_result[127:120];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@382: tx_byte_r <= tx_shift[63:56];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@493: tx_byte_r <= 8'h46;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@495: tx_byte_r <= 8'h4B;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@515: tx_byte_r <= tag_result[127:120];
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
 
 PHYSICAL NET: NET_0039    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3456,32 +3456,32 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@99
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@171: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@192: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@210: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@227: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@246: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@257: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@275: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@299: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@362: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@378: tx_send_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@406: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@416: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@441: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@461: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@491: tx_send_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@498: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@511: tx_send_r <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@518: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@529: tx_send_r <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@538: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@177: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@198: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@216: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@233: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@252: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@263: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@281: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@305: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@368: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@384: tx_send_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@412: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@422: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@447: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@467: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@497: tx_send_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@504: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@517: tx_send_r <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@524: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@535: tx_send_r <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@544: tx_send_r <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@375: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@485: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@508: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@132: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@381: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@491: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@514: IF (tx_ready == 1'b1 && tx_send_r == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@135: @new utx0 uart_tx {
 
 PHYSICAL NET: NET_0040    Width: 5    Tri-state: No
 ------------------------------------------------------------
@@ -3489,13 +3489,13 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@100
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@467: tx_tag_cnt <= 5'd0;
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@473: tx_tag_cnt <= 5'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@515: tx_tag_cnt <= tx_tag_cnt + 5'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@479: tx_tag_cnt <= 5'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@521: tx_tag_cnt <= tx_tag_cnt + 5'd1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@512: IF (tx_tag_cnt == 5'd15) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@515: tx_tag_cnt <= tx_tag_cnt + 5'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@518: IF (tx_tag_cnt == 5'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@521: tx_tag_cnt <= tx_tag_cnt + 5'd1;
 
 PHYSICAL NET: NET_0041    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3503,14 +3503,14 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@103
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@282: is_last_blk <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@288: is_last_blk <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@288: is_last_blk <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@294: is_last_blk <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@300: IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@335: } ELIF (is_last_blk == 1'b1) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@384: IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@393: } ELIF (is_last_blk == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@306: IF (is_last_blk == 1'b1 && blk_pos != 3'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@341: } ELIF (is_last_blk == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@390: IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@399: } ELIF (is_last_blk == 1'b1) {
 
 PHYSICAL NET: NET_0042    Width: 3    Tri-state: No
 ------------------------------------------------------------
@@ -3518,12 +3518,12 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@104
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@233: partial_len <= rx_data[2:0];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@239: partial_len <= rx_data[2:0];
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@332: tx_cnt <= { 1'b0, partial_len };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@333: ac_din_plen_r <= partial_len;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@384: IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@338: tx_cnt <= { 1'b0, partial_len };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@339: ac_din_plen_r <= partial_len;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@390: IF (is_last_blk == 1'b1 && partial_len != 3'd0) {
 
 PHYSICAL NET: NET_0043    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -3531,14 +3531,14 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@107
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@247: done_latch <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@380: done_latch <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@408: done_latch <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@443: done_latch <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@468: done_latch <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@253: done_latch <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@386: done_latch <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@414: done_latch <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@449: done_latch <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@474: done_latch <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@462: IF (done_latch == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@468: IF (done_latch == 1'b1) {
 
 PHYSICAL NET: NET_0044    Width: 6    Tri-state: No
 ------------------------------------------------------------
@@ -3546,11 +3546,11 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@110
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@166: led_reg <= 6'b111110;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@187: led_reg <= 6'b111100;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@240: led_reg <= 6'b110000;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@480: led_reg <= 6'b100000;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@524: led_reg <= 6'b111111;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@172: led_reg <= 6'b000001;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@193: led_reg <= 6'b000011;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@246: led_reg <= 6'b001111;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@486: led_reg <= 6'b011111;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@530: led_reg <= 6'b000000;
 
 Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@115: leds <= led_reg;

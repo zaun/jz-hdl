@@ -1,11 +1,11 @@
-// Simple UART Receiver — 8N1
-// Pulses valid for 1 cycle when a byte is received.
-// Configured for ~1.5 Mbaud at 37.125 MHz pixel clock.
+// Simple UART Receiver — 8N1, no FIFO
+// Pulses valid for 1 cycle when a byte is received
 @module uart_rx
     CONST {
-        // 37.125 MHz / 1_485_000 baud = 25 cycles per bit
-        BAUD_DIV  = 24;
-        HALF_BAUD = 12;
+        CLK_HZ = 27000000;
+        BAUD_RATE = 115200;
+        BAUD_DIV = (CLK_HZ / BAUD_RATE) - 1;
+        HALF_BAUD = BAUD_DIV / 2;
     }
 
     PORT {
@@ -23,7 +23,7 @@
 
         // State machine (0=IDLE, 1=START, 2=DATA, 3=STOP)
         state       [2] = 2'd0;
-        baud_cnt    [5] = 5'd0;
+        baud_cnt    [16] = 16'd0;
         bit_cnt     [3] = 3'd0;
         shift       [8] = 8'h00;
 
@@ -47,7 +47,7 @@
                 // IDLE: wait for start bit (falling edge)
                 valid_out <= 1'b0;
                 IF (rx_sync2 == 1'b0) {
-                    baud_cnt <= lit(5, HALF_BAUD);
+                    baud_cnt <= lit(16, HALF_BAUD);
                     state <= 2'd1;
                 }
             }
@@ -55,9 +55,9 @@
             CASE (2'd1) {
                 // START: verify start bit at mid-point
                 valid_out <= 1'b0;
-                IF (baud_cnt == 5'd0) {
+                IF (baud_cnt == 16'd0) {
                     IF (rx_sync2 == 1'b0) {
-                        baud_cnt <= lit(5, BAUD_DIV);
+                        baud_cnt <= lit(16, BAUD_DIV);
                         bit_cnt <= 3'd0;
                         shift <= 8'h00;
                         state <= 2'd2;
@@ -66,36 +66,36 @@
                         state <= 2'd0;
                     }
                 } ELSE {
-                    baud_cnt <= baud_cnt - 5'd1;
+                    baud_cnt <= baud_cnt - 16'd1;
                 }
             }
 
             CASE (2'd2) {
                 // DATA: sample 8 bits at mid-bit
                 valid_out <= 1'b0;
-                IF (baud_cnt == 5'd0) {
+                IF (baud_cnt == 16'd0) {
                     shift <= { rx_sync2, shift[7:1] };
                     IF (bit_cnt == 3'd7) {
-                        baud_cnt <= lit(5, BAUD_DIV);
+                        baud_cnt <= lit(16, BAUD_DIV);
                         state <= 2'd3;
                     } ELSE {
                         bit_cnt <= bit_cnt + 3'd1;
-                        baud_cnt <= lit(5, BAUD_DIV);
+                        baud_cnt <= lit(16, BAUD_DIV);
                     }
                 } ELSE {
-                    baud_cnt <= baud_cnt - 5'd1;
+                    baud_cnt <= baud_cnt - 16'd1;
                 }
             }
 
             CASE (2'd3) {
                 // STOP: wait for stop bit, output byte
-                IF (baud_cnt == 5'd0) {
+                IF (baud_cnt == 16'd0) {
                     data_out <= shift;
                     valid_out <= 1'b1;
                     state <= 2'd0;
                 } ELSE {
                     valid_out <= 1'b0;
-                    baud_cnt <= baud_cnt - 5'd1;
+                    baud_cnt <= baud_cnt - 16'd1;
                 }
             }
 

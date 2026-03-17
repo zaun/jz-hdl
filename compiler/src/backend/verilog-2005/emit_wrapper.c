@@ -1316,6 +1316,8 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
         ? jz_chip_diff_output_buffer_map(&proj_chip_data, "verilog-2005") : NULL;
     const char *ibuf_template = have_proj_chip
         ? jz_chip_diff_input_buffer_map(&proj_chip_data, "verilog-2005") : NULL;
+    const char *clkbuf_template = have_proj_chip
+        ? jz_chip_diff_clock_buffer_map(&proj_chip_data, "verilog-2005") : NULL;
     /* Serializer template is now selected per-pin based on needed data width */
 
     /* Hardcoded fallbacks when no chip data is available */
@@ -1528,6 +1530,18 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
                     snprintf(pin_n, sizeof(pin_n), "%s_n", name);
                 }
 
+                /* Check if this differential input is a clock */
+                int is_clock_pin = 0;
+                for (int ci = 0; ci < proj->num_clocks; ++ci) {
+                    if (proj->clocks[ci].name && pin->name &&
+                        strcmp(proj->clocks[ci].name, pin->name) == 0) {
+                        is_clock_pin = 1;
+                        break;
+                    }
+                }
+                const char *selected_ibuf = (is_clock_pin && clkbuf_template)
+                    ? clkbuf_template : ibuf_template;
+
                 char ibuf_inst[128];
                 snprintf(ibuf_inst, sizeof(ibuf_inst), "ibuf_%s%s", name, suffix);
                 DiffTemplateCtx buf_ctx = {
@@ -1543,7 +1557,7 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
                     .reset     = NULL,
                 };
                 fputs("    ", out);
-                emit_diff_from_template(out, ibuf_template, &buf_ctx);
+                emit_diff_from_template(out, selected_ibuf, &buf_ctx);
             }
             fputc('\n', out);
         }

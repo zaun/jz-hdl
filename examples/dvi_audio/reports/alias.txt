@@ -5928,7 +5928,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@129: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> pll_lock
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -5939,7 +5939,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@325: reset <= rst_n & por_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> ~ NRST
+    PORT binding: IN rst_n -> NRST (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -5958,7 +5958,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@15
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= ~{ heartbeat_led, 5'b00000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= { heartbeat_led, 5'b00000 };
 
 Top-level binding:
     PORT binding: OUT leds -> LED (OUT_PINS)
@@ -6660,7 +6660,7 @@ SYNCHRONOUS(CLK=clk) Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@417: heartbeat_led <= ~heartbeat_led;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= ~{ heartbeat_led, 5'b00000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= { heartbeat_led, 5'b00000 };
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@417: heartbeat_led <= ~heartbeat_led;
 
 PHYSICAL NET: NET_0066    Width: 1    Tri-state: No
@@ -12861,7 +12861,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@129: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> pll_lock
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -12872,7 +12872,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@325: reset <= rst_n & por_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> ~ NRST
+    PORT binding: IN rst_n -> NRST (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -12891,7 +12891,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@15
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= ~{ heartbeat_led, 5'b00000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= { heartbeat_led, 5'b00000 };
 
 Top-level binding:
     PORT binding: OUT leds -> LED (OUT_PINS)
@@ -13593,7 +13593,7 @@ SYNCHRONOUS(CLK=clk) Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@417: heartbeat_led <= ~heartbeat_led;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= ~{ heartbeat_led, 5'b00000 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= { heartbeat_led, 5'b00000 };
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@417: heartbeat_led <= ~heartbeat_led;
 
 PHYSICAL NET: NET_0066    Width: 1    Tri-state: No

@@ -130,6 +130,90 @@ static void sem_check_runtime_const_config_expr(const JZASTNode *node,
     }
 }
 
+/* ---------------------------------------------------------------------------
+ * Bare integer literal check: reject unsized decimal integers (e.g. 1, 42)
+ * in runtime expression contexts.  Bare integers are valid in compile-time
+ * contexts (CONST, CONFIG, widths, slice indices, replication counts, lit()
+ * arguments) but not in ASYNCHRONOUS/SYNCHRONOUS block expressions.
+ * ---------------------------------------------------------------------------
+ */
+static void sem_check_bare_integer_in_expr(const JZASTNode *node,
+                                           JZDiagnosticList *diagnostics)
+{
+    if (!node) return;
+
+    /* Builtin call arguments may include compile-time integer parameters
+     * (e.g. lit(width, value), b2oh(idx, width), gbit, sbit, gslice, etc.).
+     * Each builtin validates its own arguments via dedicated rules; skip all
+     * builtin children to avoid false LIT_BARE_INTEGER on compile-time args.
+     */
+    if (node->type == JZ_AST_EXPR_BUILTIN_CALL) {
+        return;
+    }
+
+    /* Bus array indices (link[2].tx) are compile-time; skip children. */
+    if (node->type == JZ_AST_EXPR_BUS_ACCESS) {
+        return;
+    }
+
+    /* CASE label values (CASE 0 { ... }) are compile-time pattern constants;
+     * skip children[0] (the value), recurse into children[1+] (the body).
+     */
+    if (node->type == JZ_AST_STMT_CASE) {
+        for (size_t i = 1; i < node->child_count; ++i) {
+            if (node->children[i]) {
+                sem_check_bare_integer_in_expr(node->children[i], diagnostics);
+            }
+        }
+        return;
+    }
+
+    /* @feature conditions are compile-time; skip entirely. */
+    if (node->type == JZ_AST_FEATURE_GUARD) {
+        return;
+    }
+
+    /* Check: if this is a literal node whose text has no tick, it's bare. */
+    if (node->type == JZ_AST_EXPR_LITERAL && node->text) {
+        const char *tick = strchr(node->text, '\'');
+        if (!tick) {
+            char explain[256];
+            snprintf(explain, sizeof(explain),
+                     "bare integer '%s' is not permitted in runtime expressions; "
+                     "use a sized literal (e.g. %s'd%s) or lit(width, %s)",
+                     node->text, node->text, node->text, node->text);
+            sem_report_rule(diagnostics,
+                            node->loc,
+                            "LIT_BARE_INTEGER",
+                            explain);
+        }
+    }
+
+    /* Slice indices (children[1], children[2]) are compile-time; skip them. */
+    if (node->type == JZ_AST_EXPR_SLICE) {
+        if (node->child_count > 0 && node->children[0]) {
+            sem_check_bare_integer_in_expr(node->children[0], diagnostics);
+        }
+        return;
+    }
+
+    /* For assignments, only check RHS (children[1+]). */
+    if (node->type == JZ_AST_STMT_ASSIGN && node->child_count > 0) {
+        for (size_t i = 1; i < node->child_count; ++i) {
+            if (node->children[i]) {
+                sem_check_bare_integer_in_expr(node->children[i], diagnostics);
+            }
+        }
+        return;
+    }
+
+    for (size_t i = 0; i < node->child_count; ++i) {
+        if (node->children[i]) {
+            sem_check_bare_integer_in_expr(node->children[i], diagnostics);
+        }
+    }
+}
+
 /*
  * Feature Guard helpers: validate @feature condition expressions and recursively
  * analyze their guarded bodies.
@@ -754,6 +838,11 @@ static void sem_check_block_expressions_inner(JZASTNode *block,
          * in this executable statement subtree.
          */
         sem_check_runtime_const_config_expr(stmt, mod_scope, diagnostics);
+
+        /* Reject bare integer literals (e.g. 1, 42) in runtime expressions.
+         * S2.1: unsized literals are not permitted.
+         */
+        sem_check_bare_integer_in_expr(stmt, diagnostics);
 
         if (stmt->type == JZ_AST_STMT_ASSIGN && stmt->child_count >= 2) {
             JZASTNode *lhs = stmt->children[0];

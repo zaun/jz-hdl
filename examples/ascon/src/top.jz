@@ -107,7 +107,7 @@
         done_latch  [1]   = 1'b0;
 
         // LED
-        led_reg     [6]   = 6'b111111;
+        led_reg     [6]   = 6'b000000;
     }
 
     ASYNCHRONOUS {
@@ -122,6 +122,9 @@
     }
 
     @new urx0 uart_rx {
+        OVERRIDE {
+            CLK_MHZ = CONFIG.CLK_MHZ;
+        }
         IN  [1] clk   = clk;
         IN  [1] rst_n = reset;
         IN  [1] rx    = uart_rx;
@@ -130,6 +133,9 @@
     }
 
     @new utx0 uart_tx {
+        OVERRIDE {
+            CLK_MHZ = CONFIG.CLK_MHZ;
+        }
         IN  [1] clk   = clk;
         IN  [1] rst_n = reset;
         IN  [8] data  = tx_byte_r;
@@ -163,7 +169,7 @@
         SELECT (state) {
             // ---- Receive command byte ----
             CASE (lit(4, S_RX_CMD)) {
-                led_reg <= 6'b111110;
+                led_reg <= 6'b000001;
                 ac_start_r <= 1'b0;
                 ac_din_v_r <= 1'b0;
                 ac_din_last_r <= 1'b0;
@@ -184,7 +190,7 @@
 
             // ---- Receive 16-byte key ----
             CASE (lit(4, S_RX_KEY)) {
-                led_reg <= 6'b111100;
+                led_reg <= 6'b000011;
                 ac_start_r <= 1'b0;
                 ac_din_v_r <= 1'b0;
                 ac_din_last_r <= 1'b0;
@@ -237,7 +243,7 @@
 
             // ---- Start Ascon init ----
             CASE (lit(4, S_INIT)) {
-                led_reg <= 6'b110000;
+                led_reg <= 6'b001111;
                 ac_start_r <= 1'b1;
                 ac_cmd_r <= cmd_reg;
                 ac_din_v_r <= 1'b0;
@@ -477,7 +483,7 @@
 
             // ---- TX: send status byte ----
             CASE (lit(4, S_TX_STATUS)) {
-                led_reg <= 6'b100000;
+                led_reg <= 6'b011111;
                 ac_start_r <= 1'b0;
                 ac_din_v_r <= 1'b0;
                 ac_din_last_r <= 1'b0;
@@ -521,7 +527,7 @@
 
             // ---- Done, return to idle ----
             CASE (lit(4, S_TX_DONE)) {
-                led_reg <= 6'b111111;
+                led_reg <= 6'b000000;
                 ac_start_r <= 1'b0;
                 ac_din_v_r <= 1'b0;
                 ac_din_last_r <= 1'b0;

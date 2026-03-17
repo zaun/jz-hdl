@@ -1528,6 +1528,36 @@ int ir_build_instances_for_module(const JZModuleScope *scope,
             ir_inst->child_module_id = effective_child_mod_id >= 0 ? effective_child_mod_id : -1;
             ir_inst->connections = NULL;
             ir_inst->num_connections = 0;
+            ir_inst->params = NULL;
+            ir_inst->num_params = 0;
+
+            /* For blackbox instances, collect OVERRIDE parameters and store
+             * them directly on the IR_Instance for Verilog parameter emission.
+             */
+            if (child_sym && child_sym->kind == JZ_SYM_BLACKBOX) {
+                IR_ModuleSpecOverride *ov = NULL;
+                int ov_count = 0;
+                if (ir_collect_instance_overrides(inst_node,
+                                                  scope,
+                                                  project_symbols,
+                                                  &ov,
+                                                  &ov_count) == 0 &&
+                    ov && ov_count > 0) {
+                    IR_InstanceParam *params = (IR_InstanceParam *)jz_arena_alloc(
+                        arena, sizeof(IR_InstanceParam) * (size_t)ov_count);
+                    if (params) {
+                        for (int k = 0; k < ov_count; ++k) {
+                            params[k].name = ir_strdup_arena(arena, ov[k].name ? ov[k].name : "");
+                            params[k].value = ov[k].value;
+                            params[k].string_value = ov[k].string_value
+                                ? ir_strdup_arena(arena, ov[k].string_value) : NULL;
+                        }
+                        ir_inst->params = params;
+                        ir_inst->num_params = ov_count;
+                    }
+                }
+                if (ov) free(ov);
+            }
 
             if (template_conn_count > 0) {
                 IR_InstanceConnection *conns = (IR_InstanceConnection *)jz_arena_alloc(

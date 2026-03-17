@@ -1,0 +1,73 @@
+// UART Echo — receives a byte and sends it back
+@module echo_top
+    PORT {
+        IN  [1] clk;
+        IN  [1] por;
+        IN  [1] rst_n;
+        IN  [1] uart_rx;
+        OUT [1] uart_tx;
+        OUT [6] leds;
+    }
+
+    WIRE {
+        reset    [1];
+        por_n    [1];
+        rx_data  [8];
+        rx_valid [1];
+        tx_ready [1];
+    }
+
+    REGISTER {
+        saved    [8] = 8'h00;
+        tx_send  [1] = 1'b0;
+        led_reg  [6] = 6'b000001;
+        has_byte [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        reset = por_n & rst_n;
+        leds <= led_reg;
+    }
+
+    @new por0 por {
+        IN  [1] clk   = clk;
+        IN  [1] done  = por;
+        OUT [1] por_n = por_n;
+    }
+
+    @new urx0 uart_rx {
+        OVERRIDE {
+            CLK_MHZ = CONFIG.CLK_MHZ;
+        }
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = reset;
+        IN  [1] rx    = uart_rx;
+        OUT [8] data  = rx_data;
+        OUT [1] valid = rx_valid;
+    }
+
+    @new utx0 uart_tx {
+        OVERRIDE {
+            CLK_MHZ = CONFIG.CLK_MHZ;
+        }
+        IN  [1] clk   = clk;
+        IN  [1] rst_n = reset;
+        IN  [8] data  = saved;
+        IN  [1] valid = tx_send;
+        OUT [1] ready = tx_ready;
+        OUT [1] tx    = uart_tx;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        IF (rx_valid == 1'b1) {
+            saved <= rx_data;
+            has_byte <= 1'b1;
+            led_reg <= rx_data[5:0];
+        } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
+            tx_send <= 1'b1;
+            has_byte <= 1'b0;
+        } ELSE {
+            tx_send <= 1'b0;
+        }
+    }
+@endmod

@@ -31,6 +31,7 @@ const JZRuleInfo jz_rule_table[] = {
 
     /* [LITERALS_AND_TYPES] */
     { "LITERALS_AND_TYPES", "LIT_UNSIZED",                          0, JZ_RULE_MODE_ERR, "S2.1 Unsized literal (e.g. 'hFF) is not permitted" },
+    { "LITERALS_AND_TYPES", "LIT_BARE_INTEGER",                     0, JZ_RULE_MODE_ERR, "S2.1 Bare integer literal in runtime expression; use a sized literal (e.g. 4'd1) or lit(width, value)" },
     { "LITERALS_AND_TYPES", "LIT_UNDERSCORE_AT_EDGES",              0, JZ_RULE_MODE_ERR, "S2.1 Literal has underscore as first or last character of value" },
     { "LITERALS_AND_TYPES", "LIT_UNDEFINED_CONST_WIDTH",            0, JZ_RULE_MODE_ERR, "S2.1 Width uses undefined CONST name" },
     { "LITERALS_AND_TYPES", "LIT_WIDTH_NOT_POSITIVE",               1, JZ_RULE_MODE_ERR, "S2.1 Literal width is non-positive or non-integer" },
