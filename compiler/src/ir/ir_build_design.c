@@ -2113,9 +2113,8 @@ int jz_ir_build_design(JZASTNode *root,
                              * assigned to top-port bits from MSB downwards in
                              * left-to-right order.
                              *
-                             * A leading '~' is not interpreted for
-                             * concatenations; such expressions are currently
-                             * ignored for inversion semantics.
+                             * Each element may also be prefixed with '~' for
+                             * per-element inversion, or '_' for no-connect.
                              */
                             if (target_expr[0] == '{') {
                                 const char *lbrace = strchr(target_expr, '{');
@@ -2182,6 +2181,24 @@ int jz_ir_build_design(JZASTNode *root,
                                             continue;
                                         }
 
+                                        /* Handle no-connect element '_'. */
+                                        if (elem_trim[0] == '_' && elem_trim[1] == '\0') {
+                                            top_bit_cursor--;
+                                            continue;
+                                        }
+
+                                        /* Strip leading '~' for per-element inversion. */
+                                        int elem_invert = 0;
+                                        {
+                                            const char *ep = elem_trim;
+                                            if (*ep == '~') {
+                                                elem_invert = 1;
+                                                ++ep;
+                                                while (*ep && isspace((unsigned char)*ep)) ++ep;
+                                                memmove(elem_trim, ep, strlen(ep) + 1);
+                                            }
+                                        }
+
                                         /* Otherwise treat as a pin reference. */
                                         char pin_name[128];
                                         int pin_bit_index = -1;
@@ -2210,6 +2227,7 @@ int jz_ir_build_design(JZASTNode *root,
                                                 tb->pin_id = pin_id;
                                                 tb->pin_bit_index = pin_bit_index;
                                                 tb->const_value = 0;
+                                                tb->inverted = elem_invert;
                                                 top_bit_cursor--;
                                             }
                                         } else {
@@ -2226,6 +2244,7 @@ int jz_ir_build_design(JZASTNode *root,
                                                 tb->pin_id = pin_id;
                                                 tb->pin_bit_index = (pin_width - 1) - bidx;
                                                 tb->const_value = 0;
+                                                tb->inverted = elem_invert;
                                                 top_bit_cursor--;
                                             }
                                         }
