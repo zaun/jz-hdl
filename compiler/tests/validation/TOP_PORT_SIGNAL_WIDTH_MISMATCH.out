@@ -1,0 +1,5 @@
+File: TOP_PORT_SIGNAL_WIDTH_MISMATCH.jz
+      32:13   error TOP_PORT_SIGNAL_WIDTH_MISMATCH S6.9/S6.10 Binding width does not match connected pin/signal width
+      33:13   error TOP_PORT_SIGNAL_WIDTH_MISMATCH S6.9/S6.10 Binding width does not match connected pin/signal width
+      39:13   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      45:5    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly

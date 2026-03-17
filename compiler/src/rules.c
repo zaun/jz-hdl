@@ -345,6 +345,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "TOP_LEVEL_INSTANTIATION", "TOP_PORT_PIN_DIRECTION_MISMATCH", 0, JZ_RULE_MODE_ERR, "S6.9/S6.10 Module IN/OUT/INOUT direction incompatible with pin category" },
     { "TOP_LEVEL_INSTANTIATION", "TOP_OUT_LITERAL_BINDING",         0, JZ_RULE_MODE_ERR, "S6.9 OUT ports may not be bound to literal values in project-level @top" },
     { "TOP_LEVEL_INSTANTIATION", "TOP_NO_CONNECT_WITHOUT_WIDTH",    0, JZ_RULE_MODE_ERR, "S6.9 Port bound to `_` but missing explicit width in top-level @top list" },
+    { "TOP_LEVEL_INSTANTIATION", "TOP_PORT_SIGNAL_WIDTH_MISMATCH", 0, JZ_RULE_MODE_ERR, "S6.9/S6.10 Binding width does not match connected pin/signal width" },
 
     /* [MEM_DECLARATION] */
     { "MEM_DECLARATION", "MEM_UNDEFINED_NAME",                      0, JZ_RULE_MODE_ERR, "S7.7.1 Access to MEM name not declared in module" },

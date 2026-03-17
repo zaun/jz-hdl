@@ -1,2 +1,3 @@
 File: TOP_PORT_WIDTH_MISMATCH.jz
       14:13   error TOP_PORT_PIN_DIRECTION_MISMATCH S6.9/S6.10 Module IN/OUT/INOUT direction incompatible with pin category
+      14:13   error TOP_PORT_SIGNAL_WIDTH_MISMATCH S6.9/S6.10 Binding width does not match connected pin/signal width

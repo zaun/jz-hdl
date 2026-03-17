@@ -1985,6 +1985,26 @@ void sem_check_project_top_new(JZASTNode *project,
                                 "module INOUT port must connect to INOUT_PINS");
             }
         }
+
+        /* Check that the binding width matches the connected pin/signal width.
+         * For simple (non-complex) targets bound to a declared pin, compare
+         * the @top binding width against the pin declaration width.
+         */
+        if (!complex_target && pin_sym && pin_sym->node && b->width) {
+            unsigned bind_w = 0;
+            int bind_rc = eval_simple_positive_decl_int(b->width, &bind_w);
+            unsigned pin_w = 1; /* default scalar */
+            int pin_rc = 1;
+            if (pin_sym->node->width) {
+                pin_rc = eval_simple_positive_decl_int(pin_sym->node->width, &pin_w);
+            }
+            if (bind_rc == 1 && pin_rc == 1 && bind_w != pin_w) {
+                sem_report_rule(diagnostics,
+                                b->loc,
+                                "TOP_PORT_SIGNAL_WIDTH_MISMATCH",
+                                "binding width does not match connected pin/signal width");
+            }
+        }
     }
 }
 
