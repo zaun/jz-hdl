@@ -1,18 +1,18 @@
 Memory Report
 -------------
-Project: src/pa35t-edu.jz
-Chip: XC7A35T-2FGG484
+Project: src/ice_sugar_v15.jz
+Chip: ICE40UP-5K-SG48
 
 Memory Summary
 --------------
 Block Memory:
     Requested: 0 bytes
-    Max Available: 230400 bytes (50 blocks x 36 Kbits)
-    Used: 0 / 50 blocks (one per BLOCK MEMORY)
+    Max Available: 15360 bytes (30 blocks x 4 Kbits)
+    Used: 0 / 30 blocks (one per BLOCK MEMORY)
 
 Distributed Memory:
     Requested: 0 bytes
-    Max Available: 51200 bytes
+    Max Available: Unknown
     Used: 0 bytes
 
 Errors: 0

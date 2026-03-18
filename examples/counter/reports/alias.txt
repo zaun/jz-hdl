@@ -1,4 +1,4 @@
-Input file: src/pa35t-edu.jz
+Input file: src/ice_sugar_v15.jz
 Module: counter
 
 User-visible identifiers:  7
@@ -42,9 +42,9 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@27: leds <= counter[LED_HIGH:LED_LOW];
 
 Top-level binding:
-    PORT binding: OUT leds -> LED (OUT_PINS)
+    PORT binding: OUT leds -> { ~ LED , _ , _ , _ }
 
-PHYSICAL NET: NET_0005    Width: 30    Tri-state: No
+PHYSICAL NET: NET_0005    Width: 26    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@21
@@ -86,7 +86,7 @@ counter                   4      1      1      0      1
 -------------------- ------ ------ ------ ------ ------
 TOTAL                     4      1      1      0      1
 ============================================================
-Input file: src/pa35t-edu.jz
+Input file: src/ice_sugar_v15.jz
 Module: counter
 
 User-visible identifiers:  7
@@ -130,9 +130,9 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@27: leds <= counter[LED_HIGH:LED_LOW];
 
 Top-level binding:
-    PORT binding: OUT leds -> LED (OUT_PINS)
+    PORT binding: OUT leds -> { ~ LED , _ , _ , _ }
 
-PHYSICAL NET: NET_0005    Width: 30    Tri-state: No
+PHYSICAL NET: NET_0005    Width: 26    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@21
