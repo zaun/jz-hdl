@@ -1,26 +1,56 @@
 # Test Plan: 10.5 Template Application
 **Specification Reference:** Section 10.5 of jz-hdl-specification.md
+
 ## 1. Objective
-Verify @apply syntax, argument count matching, count parameter (0/1/N), IDX substitution, placement (inside ASYNC/SYNC only), and expansion semantics.
-## 2. Instrumentation Strategy
-- **Span: `template.apply`** — attributes: `template_id`, `count`, `arg_count`, `idx_range`.
-## 3. Test Scenarios
-### 3.1 Happy Path
-1. Simple @apply with matching args
-2. @apply with count > 1 (IDX substitution)
-3. @apply count=0 (no-op)
-4. IDX in slice bounds
-### 3.3 Negative Testing
-1. Undefined template — Error (TEMPLATE_UNDEFINED)
-2. Arg count mismatch — Error (TEMPLATE_ARG_COUNT_MISMATCH)
-3. Non-nonneg count — Error (TEMPLATE_COUNT_NOT_NONNEG_INT)
-4. @apply outside block — Error (TEMPLATE_APPLY_OUTSIDE_BLOCK)
-5. IDX in runtime expression — Error
-## 4. Input/Output Matrix
+Verify @apply syntax, argument count matching, count parameter (0/1/N), IDX substitution, placement restrictions (inside ASYNC/SYNC only), and expansion semantics.
+
+## 2. Test Scenarios
+
+### 2.1 Happy Path
+1. Simple @apply with matching argument count — valid expansion
+2. @apply with count > 1 — IDX substitution for each iteration
+3. @apply with count=0 — no-op, no expansion
+4. IDX used in slice bounds — correct index substitution
+5. @apply with count=1 — single expansion, IDX=0
+
+### 2.2 Error Cases
+1. Reference to undefined template — Error (TEMPLATE_UNDEFINED)
+2. Argument count does not match parameter count — Error (TEMPLATE_ARG_COUNT_MISMATCH)
+3. Count expression not a non-negative integer — Error (TEMPLATE_COUNT_NOT_NONNEG_INT)
+4. @apply outside ASYNC/SYNC block — Error (TEMPLATE_APPLY_OUTSIDE_BLOCK)
+
+### 2.3 Edge Cases
+1. @apply with count from CONST expression — valid if resolvable
+2. IDX used in concatenation or complex expression — valid
+3. @apply with large count value — valid but generates many expansions
+4. IDX referenced in runtime expression — Error
+
+## 3. Input/Output Matrix
 | # | Input | Expected Output | Rule ID | Notes |
 |---|-------|----------------|---------|-------|
-| 1 | Undefined template | Error | TEMPLATE_UNDEFINED | S10.5 |
-| 2 | Arg count mismatch | Error | TEMPLATE_ARG_COUNT_MISMATCH | S10.5 |
-| 3 | Bad count | Error | TEMPLATE_COUNT_NOT_NONNEG_INT | S10.5 |
+| 1 | Undefined template ref | Error | TEMPLATE_UNDEFINED | S10.5 |
+| 2 | Wrong argument count | Error | TEMPLATE_ARG_COUNT_MISMATCH | S10.5 |
+| 3 | Non-nonneg count expr | Error | TEMPLATE_COUNT_NOT_NONNEG_INT | S10.5 |
 | 4 | @apply outside block | Error | TEMPLATE_APPLY_OUTSIDE_BLOCK | S10.5 |
-## 5-6. See 10.2 for integration.
+
+## 4. Existing Validation Tests
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| `10_5_TEMPLATE_UNDEFINED-undefined_template_ref.jz` | TEMPLATE_UNDEFINED | @apply references a template that does not exist |
+| `10_5_TEMPLATE_ARG_COUNT_MISMATCH-wrong_arg_count.jz` | TEMPLATE_ARG_COUNT_MISMATCH | Argument count differs from parameter count |
+| `10_5_TEMPLATE_COUNT_NOT_NONNEG_INT-bad_count_expr.jz` | TEMPLATE_COUNT_NOT_NONNEG_INT | Count expression is negative or non-integer |
+
+## 5. Rules Matrix
+
+### 5.1 Rules Tested
+| Rule ID | Description | Test Case(s) |
+|---------|-------------|-------------|
+| TEMPLATE_UNDEFINED | @apply references undefined template | Error 1 |
+| TEMPLATE_ARG_COUNT_MISMATCH | @apply argument count does not match template parameter count | Error 2 |
+| TEMPLATE_COUNT_NOT_NONNEG_INT | @apply count expression does not resolve to a non-negative integer | Error 3 |
+| TEMPLATE_APPLY_OUTSIDE_BLOCK | @apply may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks | Error 4 |
+
+### 5.2 Rules Not Tested
+| Expected Rule | Spec Reference | Gap Description |
+|--------------|---------------|-----------------|
+| — | — | All S10.5 rules covered |

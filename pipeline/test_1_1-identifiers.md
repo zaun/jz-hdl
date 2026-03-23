@@ -6,16 +6,9 @@
 
 Verify that the lexer and parser correctly accept valid identifiers, reject invalid identifiers, enforce the 255-character maximum length, treat identifiers as case-sensitive, reject reserved keywords used as identifiers, and handle the single-underscore (`_`) no-connect placeholder rule.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `lexer.tokenize`** — Trace each token produced by the lexer; attribute `token.type` = `IDENTIFIER` or `KEYWORD`.
-- **Span: `lexer.identifier_validate`** — Fires on each identifier candidate; attributes include `identifier.length`, `identifier.value`, `identifier.is_keyword`.
-- **Event: `identifier.rejected`** — Emitted when an identifier fails regex or keyword checks; includes `reason` attribute.
-- **Coverage Hook:** Instrument the identifier regex check path and keyword lookup table to confirm every reserved word is tested.
-
-## 3. Test Scenarios
-
-### 3.1 Happy Path
+### 2.1 Happy Path
 
 | # | Test Case | Input | Expected |
 |---|-----------|-------|----------|
@@ -23,70 +16,68 @@ Verify that the lexer and parser correctly accept valid identifiers, reject inva
 | 2 | Simple uppercase | `Foo` | Valid identifier |
 | 3 | Mixed case | `mySignal_01` | Valid identifier |
 | 4 | Leading underscore | `_data` | Valid identifier |
-| 5 | Maximum length (255 chars) | `a` × 255 | Valid identifier |
+| 5 | Maximum length (255 chars) | `a` x 255 | Valid identifier |
 | 6 | Single char | `x` | Valid identifier |
 | 7 | Underscore-separated | `clk_en_out` | Valid identifier |
 | 8 | Case sensitivity | `Foo` vs `foo` | Two distinct identifiers |
 
-### 3.2 Boundary/Edge Cases
+### 2.2 Error Cases
+
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | Reserved keyword as identifier | `WIRE { REGISTER [1]; }` | Error | KEYWORD_AS_IDENTIFIER |
+| 2 | All keywords tested | Each keyword from spec used as signal name | Error | KEYWORD_AS_IDENTIFIER |
+| 3 | Reserved identifier as signal | `WIRE { VCC [1]; }` | Error | KEYWORD_AS_IDENTIFIER |
+| 4 | Reserved identifier GND | `WIRE { GND [1]; }` | Error | KEYWORD_AS_IDENTIFIER |
+| 5 | Non-ASCII characters | `WIRE { cafe [1]; }` | Error | ID_SYNTAX_INVALID |
+| 6 | Single underscore in non-connect context | `WIRE { _ [1]; }` | Error | ID_SINGLE_UNDERSCORE |
+| 7 | 256+ char identifier | `a` x 256 | Error | ID_SYNTAX_INVALID |
+
+### 2.3 Edge Cases
 
 | # | Test Case | Input | Expected |
 |---|-----------|-------|----------|
-| 1 | Exactly 255 chars | `a` × 255 | Valid |
-| 2 | 256 chars (over limit) | `a` × 256 | Error: ID_SYNTAX_INVALID |
-| 3 | Single underscore `_` in non-port context | `WIRE { _ [1]; }` | Error: ID_SINGLE_UNDERSCORE |
-| 4 | Single underscore in port no-connect | `@new mod(.port(_))` | Valid |
-| 5 | Identifier starting with digit | `0abc` | Lexer error (not an identifier) |
-| 6 | Empty string as identifier | `` | Lexer error |
-| 7 | Identifier with only underscores | `__` | Valid (not single underscore) |
-
-### 3.3 Negative Testing
-
-| # | Test Case | Input | Expected |
-|---|-----------|-------|----------|
-| 1 | Reserved keyword as identifier | `WIRE { REGISTER [1]; }` | Error: KEYWORD_AS_IDENTIFIER |
-| 2 | All keywords tested | Each keyword from spec used as signal name | Error: KEYWORD_AS_IDENTIFIER |
-| 3 | Reserved identifier as signal | `WIRE { VCC [1]; }` | Error: KEYWORD_AS_IDENTIFIER |
-| 4 | Reserved identifier GND | `WIRE { GND [1]; }` | Error: KEYWORD_AS_IDENTIFIER |
-| 5 | Directive used as identifier | `WIRE { project [1]; }` | Valid (directives are @-prefixed, lowercase ok) |
-| 6 | Non-ASCII characters | `WIRE { café [1]; }` | Error: ID_SYNTAX_INVALID |
+| 1 | Exactly 255 chars | `a` x 255 | Valid |
+| 2 | 256 chars (over limit) | `a` x 256 | Error: ID_SYNTAX_INVALID |
+| 3 | Single underscore `_` in port no-connect | `@new mod(.port(_))` | Valid |
+| 4 | Identifier starting with digit | `0abc` | Lexer error (not an identifier) |
+| 5 | Identifier with only underscores | `__` | Valid (not single underscore) |
+| 6 | Directive used as identifier | `WIRE { project [1]; }` | Valid (directives are @-prefixed, lowercase ok) |
 | 7 | Special characters | `WIRE { my-signal [1]; }` | Lexer error |
 
-## 4. Input/Output Matrix
+## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `myWire` as signal name | Accepted, AST node created | — | Standard valid identifier |
-| 2 | `REGISTER` as signal name | Compile error | KEYWORD_AS_IDENTIFIER | Reserved keyword |
-| 3 | `_` as wire name | Compile error | ID_SINGLE_UNDERSCORE | Reserved for no-connect |
-| 4 | `_` in `@new` port list | Accepted as no-connect | — | Only valid context for `_` |
-| 5 | 256-char identifier | Compile error | ID_SYNTAX_INVALID | Exceeds 255-char limit |
-| 6 | `PLL` as signal name | Compile error | KEYWORD_AS_IDENTIFIER | Reserved identifier |
-| 7 | `IDX` as signal name | Compile error | KEYWORD_AS_IDENTIFIER | Reserved for templates |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | `myWire` as signal name | Accepted, AST node created | -- | -- | Standard valid identifier |
+| 2 | `REGISTER` as signal name | Compile error | KEYWORD_AS_IDENTIFIER | error | Reserved keyword |
+| 3 | `_` as wire name | Compile error | ID_SINGLE_UNDERSCORE | error | Reserved for no-connect |
+| 4 | `_` in `@new` port list | Accepted as no-connect | -- | -- | Only valid context for `_` |
+| 5 | 256-char identifier | Compile error | ID_SYNTAX_INVALID | error | Exceeds 255-char limit |
+| 6 | `PLL` as signal name | Compile error | KEYWORD_AS_IDENTIFIER | error | Reserved identifier |
+| 7 | `IDX` as signal name | Compile error | KEYWORD_AS_IDENTIFIER | error | Reserved for templates |
 
-## 5. Integration Points
+## 4. Existing Validation Tests
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `lexer.c` | Tokenizes source, produces IDENTIFIER tokens | Direct unit test with in-memory buffers; no mocks needed (pure function) |
-| `parser_core.c` | Consumes tokens, validates identifier context | Feed pre-built token streams; mock lexer output |
-| `rules.c` | Provides rule IDs for diagnostics | No mock needed (static lookup table) |
-| `diagnostic.c` | Collects and formats errors | Capture diagnostic list; verify rule IDs and messages |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 1_1_ID_SINGLE_UNDERSCORE-non_connect_contexts.jz | ID_SINGLE_UNDERSCORE | Single underscore `_` used as regular identifier outside no-connect context |
+| 1_1_ID_SYNTAX_INVALID-length_exceeded.jz | ID_SYNTAX_INVALID | Identifier does not match identifier regex or exceeds 255 chars |
+| 1_1_KEYWORD_AS_IDENTIFIER-keyword_in_declarations.jz | KEYWORD_AS_IDENTIFIER | Reserved keyword used as identifier in declarations |
+| 1_1_KEYWORD_AS_IDENTIFIER-reserved_identifier.jz | KEYWORD_AS_IDENTIFIER | Reserved identifier (VCC, GND, PLL, etc.) used as identifier |
 
-## 6. Rules Matrix
+## 5. Rules Matrix
 
-### 6.1 Rules Tested
+### 5.1 Rules Tested
 
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| KEYWORD_AS_IDENTIFIER | S1.1 Reserved keyword used as identifier | Neg 1-4 |
-| ID_SYNTAX_INVALID | S1.1 Identifier doesn't match regex or exceeds 255 chars | Boundary 2, 6; Neg 6 |
-| ID_SINGLE_UNDERSCORE | S1.1 Single underscore used outside no-connect context | Boundary 3 |
-| DIRECTIVE_INVALID_CONTEXT | S1.1/S6.2 Structural directives in invalid location | (Tested in Section 6 plans) |
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| ID_SYNTAX_INVALID | error | S1.1 Identifier does not match identifier regex or exceeds 255 chars | 1_1_ID_SYNTAX_INVALID-length_exceeded.jz |
+| ID_SINGLE_UNDERSCORE | error | S1.1 Single underscore `_` used as regular identifier outside no-connect context | 1_1_ID_SINGLE_UNDERSCORE-non_connect_contexts.jz |
+| KEYWORD_AS_IDENTIFIER | error | S1.1 Reserved keyword used as identifier | 1_1_KEYWORD_AS_IDENTIFIER-keyword_in_declarations.jz, 1_1_KEYWORD_AS_IDENTIFIER-reserved_identifier.jz |
 
-### 6.2 Rules Missing
+### 5.2 Rules Not Tested
 
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| ID_STARTS_WITH_DIGIT | S1.1 (regex) | No explicit rule ID for digit-leading identifiers; handled by lexer as non-identifier token |
-| ID_NON_ASCII | S1.1 (ASCII only) | No explicit rule ID for non-ASCII chars; handled by lexer |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| (none) | -- | All identifier-related rules have validation tests |

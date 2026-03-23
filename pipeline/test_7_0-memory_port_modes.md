@@ -4,49 +4,60 @@
 
 ## 1. Objective
 
-Verify MEM port mode declarations: OUT (read), IN (write), INOUT (read/write), ASYNC/SYNC read modes, and write modes (WRITE_FIRST, READ_FIRST, NO_CHANGE).
+Verify MEM port mode declarations: OUT (read) ports support ASYNC/SYNC modes, IN (write) ports are always SYNC, INOUT ports support write modes (WRITE_FIRST, READ_FIRST, NO_CHANGE), and invalid combinations are rejected.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `sem.mem_port_mode`** — attributes: `port_name`, `direction`, `read_mode`, `write_mode`.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | OUT ASYNC read port | `OUT rd ASYNC;` | Valid port declaration |
+| 2 | OUT SYNC read port | `OUT rd SYNC;` | Valid port declaration |
+| 3 | IN write port (implicit SYNC) | `IN wr;` | Valid port declaration |
+| 4 | INOUT with WRITE_FIRST | `INOUT rw SYNC WRITE_FIRST;` | Valid port declaration |
+| 5 | INOUT with READ_FIRST | `INOUT rw SYNC READ_FIRST;` | Valid port declaration |
+| 6 | INOUT with NO_CHANGE | `INOUT rw SYNC NO_CHANGE;` | Valid port declaration |
 
-### 3.1 Happy Path
-1. OUT ASYNC read port
-2. OUT SYNC read port
-3. IN write port
-4. INOUT read/write port with WRITE_FIRST
-5. INOUT with READ_FIRST
-6. INOUT with NO_CHANGE
+### 2.2 Error Cases
 
-### 3.2 Negative Testing
-1. Invalid port mode combination
-2. ASYNC on IN (write) port — Error
-3. Write mode on OUT (read) port — Error
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | ASYNC/SYNC keyword on IN port | `IN wr ASYNC;` | Error | MEM_INVALID_PORT_TYPE |
+| 2 | Invalid write mode value | `INOUT rw SYNC BOGUS;` | Error | MEM_INVALID_WRITE_MODE |
 
-## 4. Input/Output Matrix
+### 2.3 Edge Cases
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | ASYNC on IN port | Error | MEM_PORT_MODE_INVALID | S7.0 |
-| 2 | WRITE_FIRST on OUT port | Error | MEM_PORT_MODE_INVALID | S7.0 |
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | OUT port without explicit mode | `OUT rd;` | Default mode applied |
+| 2 | Multiple ports with mixed modes | `OUT rd1 ASYNC; OUT rd2 SYNC; IN wr;` | All valid |
 
-## 5. Integration Points
+## 3. Input/Output Matrix
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_mem.c` | MEM port parsing | Token stream |
-| `driver_mem.c` | Port mode validation | Unit test |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | ASYNC or SYNC keyword on IN (write) port | Error | MEM_INVALID_PORT_TYPE | error | S7.0: IN ports are always synchronous |
+| 2 | Invalid write mode keyword on INOUT port | Error | MEM_INVALID_WRITE_MODE | error | S7.0: Only WRITE_FIRST, READ_FIRST, NO_CHANGE allowed |
 
-## 6. Rules Matrix
+## 4. Existing Validation Tests
 
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| MEM_PORT_MODE_INVALID | Invalid port mode combination | Neg 1-3 |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 7_0_MEM_INVALID_PORT_TYPE-async_sync_on_write_port.jz | MEM_INVALID_PORT_TYPE | ASYNC or SYNC keyword applied to an IN (write) port |
+| 7_0_MEM_INVALID_WRITE_MODE-bad_write_mode_value.jz | MEM_INVALID_WRITE_MODE | Unrecognized write mode value on INOUT port |
 
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | Full coverage in S7.2 and S7.7 | — |
+## 5. Rules Matrix
+
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| MEM_INVALID_PORT_TYPE | error | S7.0 ASYNC or SYNC keyword on IN (write) port | 7_0_MEM_INVALID_PORT_TYPE-async_sync_on_write_port.jz |
+| MEM_INVALID_WRITE_MODE | error | S7.0 Invalid write mode value on port declaration | 7_0_MEM_INVALID_WRITE_MODE-bad_write_mode_value.jz |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| (none) | -- | All port mode rules have validation tests |

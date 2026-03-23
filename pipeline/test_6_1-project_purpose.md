@@ -1,54 +1,62 @@
-# Test Plan: 6.1 Project Purpose and Role
+# Test Plan: 6.1 Project Purpose
 
 **Specification Reference:** Section 6.1 of jz-hdl-specification.md
 
 ## 1. Objective
 
-Verify @project declaration with CHIP property, chip ID resolution (case-insensitive, JSON file lookup, built-in database fallback), and GENERIC default behavior.
+Verify @project with CHIP property, chip ID resolution (case-insensitive, JSON file lookup, built-in database fallback), and GENERIC default behavior.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `compiler.project_init`** — attributes: `chip_id`, `chip_source` (file/builtin/generic).
-- **Event: `chip.not_found`** — chip ID not found in file or builtin database.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | Default chip | `@project(CHIP=GENERIC) test` -- uses generic chip data |
+| 2 | Specific chip string | `@project(CHIP="GW2AR-18") test` -- chip ID as string literal |
+| 3 | Specific chip identifier | `@project(CHIP=GW2AR18) test` -- chip ID as identifier |
+| 4 | Case-insensitive match | `CHIP=gw2ar18` matches `GW2AR18` |
 
-### 3.1 Happy Path
-1. `@project(CHIP=GENERIC) test` — default chip
-2. `@project(CHIP="GW2AR-18") test` — specific chip with string literal
-3. `@project(CHIP=GW2AR18) test` — chip ID as identifier
-4. Case-insensitive: `CHIP=gw2ar18` matches `GW2AR18`
+### 2.2 Error Cases
 
-### 3.2 Boundary/Edge Cases
-1. No CHIP property → defaults to GENERIC
-2. Chip JSON in same directory as source file
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | Unknown chip ID | CHIP=INVALID -- no matching chip data |
+| 2 | Malformed chip JSON | Chip JSON file exists but is not valid JSON |
 
-### 3.3 Negative Testing
-1. Unknown chip ID → Error
-2. Malformed chip JSON → Error
+### 2.3 Edge Cases
 
-## 4. Input/Output Matrix
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | No CHIP property | Omitting CHIP defaults to GENERIC |
+| 2 | Chip JSON in source directory | Chip JSON co-located with source file |
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | Unknown CHIP=INVALID | Error | PROJECT_CHIP_NOT_FOUND | S6.1 |
-| 2 | CHIP=GENERIC | Valid | — | Default |
+## 3. Input/Output Matrix
 
-## 5. Integration Points
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|-----------------|---------|----------|-------|
+| 1 | Unknown CHIP=INVALID | Error | PROJECT_CHIP_DATA_NOT_FOUND | error | S6.1 |
+| 2 | Malformed chip JSON file | Error | PROJECT_CHIP_DATA_INVALID | error | S6.1 |
+| 3 | CHIP=GENERIC | Valid AST | -- | -- | Default chip |
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `chip_data.c` | Chip JSON parsing | Mock chip database |
-| `parser_project.c` | Project header parsing | Token stream |
+## 4. Existing Validation Tests
 
-## 6. Rules Matrix
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 6_1_PROJECT_CHIP_DATA_INVALID-malformed_json.jz | PROJECT_CHIP_DATA_INVALID | Chip JSON data could not be parsed |
+| 6_1_PROJECT_CHIP_DATA_NOT_FOUND-unknown_chip_id.jz | PROJECT_CHIP_DATA_NOT_FOUND | Chip data not found for CHIP id |
 
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| PROJECT_CHIP_NOT_FOUND | Unknown chip ID | Neg 1 |
+## 5. Rules Matrix
 
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| PROJECT_CHIP_JSON_MALFORMED | S6.1.1 | Corrupted chip JSON file |
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| PROJECT_CHIP_DATA_NOT_FOUND | error | S6.1 Chip data not found for CHIP id (no local JSON and no built-in data) | 6_1_PROJECT_CHIP_DATA_NOT_FOUND-unknown_chip_id.jz |
+| PROJECT_CHIP_DATA_INVALID | error | S6.1 Chip JSON data could not be parsed | 6_1_PROJECT_CHIP_DATA_INVALID-malformed_json.jz |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| -- | -- | All rules for this section are covered by existing tests |

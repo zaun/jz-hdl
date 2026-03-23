@@ -4,18 +4,11 @@
 
 ## 1. Objective
 
-Verify that the compiler correctly parses and validates bit-slice syntax `signal[MSB:LSB]`, enforces MSB ≥ LSB, computes width as MSB − LSB + 1, validates index ranges against declared signal width, and supports CONST names as indices.
+Verify that the compiler correctly parses and validates bit-slice syntax `signal[MSB:LSB]`, enforces MSB >= LSB, computes width as MSB - LSB + 1, validates index ranges against declared signal width, and supports CONST names as indices.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `parser.bit_slice`** — Trace parsing of slice expressions; attributes: `msb`, `lsb`, `signal_width`.
-- **Span: `sem.slice_validate`** — Semantic validation of slice bounds; attributes: `msb_value`, `lsb_value`, `signal_declared_width`, `result_width`.
-- **Event: `slice.out_of_range`** — Emitted when index ≥ signal width or < 0.
-- **Event: `slice.msb_lt_lsb`** — Emitted when MSB < LSB.
-
-## 3. Test Scenarios
-
-### 3.1 Happy Path
+### 2.1 Happy Path
 
 | # | Test Case | Input | Expected |
 |---|-----------|-------|----------|
@@ -27,7 +20,18 @@ Verify that the compiler correctly parses and validates bit-slice syntax `signal
 | 6 | Slice in ASYNCHRONOUS | `out = bus[7:0];` | Valid combinational slice |
 | 7 | Slice in SYNCHRONOUS | `reg <= bus[3:0];` | Valid sequential slice |
 
-### 3.2 Boundary/Edge Cases
+### 2.2 Error Cases
+
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | MSB < LSB | `bus[3:7]` | Error: MSB must be >= LSB | SLICE_MSB_LESS_THAN_LSB |
+| 2 | MSB >= signal width | `bus[23:4]` on 16-bit | Error: index out of range | SLICE_INDEX_OUT_OF_RANGE |
+| 3 | LSB >= signal width | `bus[7:16]` on 16-bit | Error: index out of range | SLICE_INDEX_OUT_OF_RANGE |
+| 4 | Both out of range | `bus[31:0]` on 16-bit | Error: index out of range | SLICE_INDEX_OUT_OF_RANGE |
+| 5 | Undefined CONST | `bus[UNDEF:0]` | Error: undefined CONST | CONST_UNDEFINED_IN_WIDTH_OR_SLICE |
+| 6 | Slice on VCC/GND | `VCC[1:0]` | Error: semantic driver cannot be sliced | SPECIAL_DRIVER_SLICED |
+
+### 2.3 Edge Cases
 
 | # | Test Case | Input | Expected |
 |---|-----------|-------|----------|
@@ -37,53 +41,42 @@ Verify that the compiler correctly parses and validates bit-slice syntax `signal
 | 4 | 1-bit signal sliced | `sig[0:0]` on 1-bit wire | Valid |
 | 5 | Large CONST indices | `bus[254:0]` on 255-bit wire | Valid |
 | 6 | CONST evaluating to 0 | `bus[C:0]` where C=0 | Width = 1, valid |
+| 7 | Negative index | `bus[-1:0]` | Error: nonnegative required |
 
-### 3.3 Negative Testing
+## 3. Input/Output Matrix
 
-| # | Test Case | Input | Expected |
-|---|-----------|-------|----------|
-| 1 | MSB < LSB | `bus[3:7]` | Error: MSB must be ≥ LSB |
-| 2 | MSB ≥ signal width | `bus[23:4]` on 16-bit | Error: index out of range |
-| 3 | LSB ≥ signal width | `bus[7:16]` on 16-bit | Error: index out of range |
-| 4 | Both out of range | `bus[31:0]` on 16-bit | Error: index out of range |
-| 5 | Negative index | `bus[-1:0]` | Error: nonnegative required |
-| 6 | Undefined CONST | `bus[UNDEF:0]` | Error: undefined CONST |
-| 7 | Slice on VCC/GND | `VCC[1:0]` | Error: semantic driver cannot be sliced |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | `bus[7:0]` (16-bit) | Valid slice, width=8 | -- | -- | Happy path |
+| 2 | `bus[16:0]` (16-bit) | Error: index 16 >= width 16 | SLICE_INDEX_OUT_OF_RANGE | error | S1.3/S8.1 |
+| 3 | `bus[3:7]` | Error: MSB < LSB | SLICE_MSB_LESS_THAN_LSB | error | S1.3/S8.1 |
+| 4 | `bus[31:0]` (16-bit) | Error: index 31 >= width 16 | SLICE_INDEX_OUT_OF_RANGE | error | S1.3/S8.1 |
+| 5 | `VCC[1:0]` | Error: slicing semantic driver | SPECIAL_DRIVER_SLICED | error | S2.3 |
+| 6 | `bus[H:L]` (H=15,L=8) | Valid slice, width=8 | -- | -- | CONST indices |
+| 7 | `bus[UNDEF:0]` | Error: undefined CONST | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | S1.3/S2.1/S7.10 |
 
-## 4. Input/Output Matrix
+## 4. Existing Validation Tests
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `bus[7:0]` (16-bit) | Valid slice, width=8 | — | Happy path |
-| 2 | `bus[16:0]` (16-bit) | Error: index 16 ≥ width 16 | SLICE_OUT_OF_RANGE | Index = width |
-| 3 | `bus[3:7]` | Error: MSB < LSB | SLICE_MSB_LT_LSB | Reversed indices |
-| 4 | `bus[31:0]` (16-bit) | Error: index 31 ≥ width 16 | SLICE_OUT_OF_RANGE | Far out of range |
-| 5 | `VCC[1:0]` | Error: slicing semantic driver | SEMANTIC_DRIVER_SLICED | S2.4 |
-| 6 | `bus[H:L]` (H=15,L=8) | Valid slice, width=8 | — | CONST indices |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 1_3_SLICE_INDEX_OUT_OF_RANGE-index_exceeds_width.jz | SLICE_INDEX_OUT_OF_RANGE | Slice indices are < 0 or >= signal width |
+| 1_3_SLICE_MSB_LESS_THAN_LSB-reversed_indices.jz | SLICE_MSB_LESS_THAN_LSB | Slice uses MSB < LSB |
+| 1_3_SPECIAL_DRIVER_SLICED-vcc_gnd_sliced.jz | SPECIAL_DRIVER_SLICED | GND/VCC may not be sliced or indexed |
+| 1_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-non_const_in_slice.jz | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | CONST used in width/slice not declared or evaluates invalidly |
 
-## 5. Integration Points
+## 5. Rules Matrix
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_expressions.c` | Parses slice syntax | Feed token stream with slice expressions |
-| `const_eval.c` | Evaluates CONST expressions in indices | Mock with known CONST values |
-| `driver_width.c` | Width validation of slice result | Unit test with declared widths |
-| `sem_type.c` | Type checking of slice operand | Verify signal type is sliceable |
-| `diagnostic.c` | Error reporting | Capture diagnostics |
+### 5.1 Rules Tested
 
-## 6. Rules Matrix
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| SLICE_MSB_LESS_THAN_LSB | error | S1.3/S8.1 Slice uses MSB < LSB | 1_3_SLICE_MSB_LESS_THAN_LSB-reversed_indices.jz |
+| SLICE_INDEX_OUT_OF_RANGE | error | S1.3/S8.1 Slice indices are < 0 or >= signal width | 1_3_SLICE_INDEX_OUT_OF_RANGE-index_exceeds_width.jz |
+| CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly | 1_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-non_const_in_slice.jz |
+| SPECIAL_DRIVER_SLICED | error | S2.3 GND/VCC may not be sliced or indexed | 1_3_SPECIAL_DRIVER_SLICED-vcc_gnd_sliced.jz |
 
-### 6.1 Rules Tested
+### 5.2 Rules Not Tested
 
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| SLICE_OUT_OF_RANGE | Index ≥ signal width or < 0 | Neg 2-5, Boundary 2 |
-| SLICE_MSB_LT_LSB | MSB less than LSB | Neg 1 |
-| SEMANTIC_DRIVER_SLICED | VCC/GND cannot be sliced | Neg 7 |
-| CONST_UNDEFINED | Undefined CONST in slice index | Neg 6 |
-
-### 6.2 Rules Missing
-
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| SLICE_NEGATIVE_INDEX | S1.3 "nonnegative integers" | No explicit rule for negative indices; may be handled by parser as syntax error |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| SLICE_INDEX_INVALID | error | No dedicated test; may be covered by parser as syntax error for non-integer indices |

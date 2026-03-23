@@ -1,34 +1,46 @@
 # Test Plan: 10.2 Template Definition
 **Specification Reference:** Section 10.2 of jz-hdl-specification.md
+
 ## 1. Objective
-Verify @template syntax, parameter list, module-scoped and file-scoped placement, identifier rules.
-## 2. Instrumentation Strategy
-- **Span: `parser.template`** — attributes: `template_id`, `param_count`, `scope`.
-## 3. Test Scenarios
-### 3.1 Happy Path
-1. Module-scoped template with parameters
-2. File-scoped template (outside @module)
-3. Zero parameters
-### 3.3 Negative Testing
-1. Duplicate template name — Error (TEMPLATE_DUP_NAME)
-2. Duplicate parameter name — Error (TEMPLATE_DUP_PARAM)
-## 4. Input/Output Matrix
+Verify @template syntax, parameter list, module-scoped and file-scoped placement, identifier rules, and duplicate detection.
+
+## 2. Test Scenarios
+
+### 2.1 Happy Path
+1. Module-scoped template with parameters — valid
+2. File-scoped template (outside @module) — valid
+3. Template with zero parameters — valid
+4. Multiple templates with distinct names in same scope — valid
+
+### 2.2 Error Cases
+1. Duplicate template name in same scope — Error (TEMPLATE_DUP_NAME)
+2. Duplicate parameter name in template definition — Error (TEMPLATE_DUP_PARAM)
+
+### 2.3 Edge Cases
+1. Same template name in different module scopes — valid (separate scopes)
+2. Template name matches a wire/register name — valid (different namespaces)
+
+## 3. Input/Output Matrix
 | # | Input | Expected Output | Rule ID | Notes |
 |---|-------|----------------|---------|-------|
-| 1 | Dup template name | Error | TEMPLATE_DUP_NAME | S10.2 |
-| 2 | Dup param name | Error | TEMPLATE_DUP_PARAM | S10.2 |
-## 5. Integration Points
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_template.c` | Template parsing | Token stream |
-| `template_expand.c` | Template expansion | Unit test |
-## 6. Rules Matrix
-### 6.1 Rules Tested
+| 1 | Duplicate template name | Error | TEMPLATE_DUP_NAME | S10.2 |
+| 2 | Duplicate param name | Error | TEMPLATE_DUP_PARAM | S10.2 |
+
+## 4. Existing Validation Tests
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| `10_2_TEMPLATE_DUP_NAME-duplicate_template_names.jz` | TEMPLATE_DUP_NAME | Two templates with the same name in one scope |
+| `10_2_TEMPLATE_DUP_PARAM-duplicate_param_names.jz` | TEMPLATE_DUP_PARAM | Repeated parameter identifier in definition |
+
+## 5. Rules Matrix
+
+### 5.1 Rules Tested
 | Rule ID | Description | Test Case(s) |
 |---------|-------------|-------------|
-| TEMPLATE_DUP_NAME | Duplicate template name | Neg 1 |
-| TEMPLATE_DUP_PARAM | Duplicate parameter name | Neg 2 |
-### 6.2 Rules Missing
+| TEMPLATE_DUP_NAME | Duplicate template name in the same scope | Error 1 |
+| TEMPLATE_DUP_PARAM | Duplicate parameter name in template definition | Error 2 |
+
+### 5.2 Rules Not Tested
 | Expected Rule | Spec Reference | Gap Description |
 |--------------|---------------|-----------------|
-| — | — | — |
+| — | — | All S10.2 rules covered |

@@ -4,45 +4,62 @@
 
 ## 1. Objective
 
-Verify that MEM type selection (BLOCK vs DISTRIBUTED) maps correctly to FPGA resources, that chip-specific memory constraints are validated, and that the compiler reports resource usage.
+Verify FPGA resource mapping rules: BLOCK MEM maps to BSRAM primitives, DISTRIBUTED MEM maps to LUT-based registers, multi-BSRAM tiling is reported, and chip resource capacity limits are enforced.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `backend.mem_synthesis`** — attributes: `mem_id`, `type`, `bsram_count`, `lut_count`.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | BLOCK maps to BSRAM | Small BLOCK MEM within chip capacity | Valid, maps to BSRAM primitives |
+| 2 | DISTRIBUTED maps to LUTs | Small DISTRIBUTED MEM within LUT budget | Valid, maps to LUT-based registers |
+| 3 | Memory fits within chip resources | MEM sizes within chip BSRAM/LUT limits | Valid, no resource warnings |
 
-### 3.1 Happy Path
-1. BLOCK maps to BSRAM primitives
-2. DISTRIBUTED maps to LUT-based registers
-3. Memory fitting within chip resources
+### 2.2 Error Cases
 
-### 3.2 Negative Testing
-1. BLOCK MEM exceeds chip BSRAM capacity — Warning/Error
-2. DISTRIBUTED MEM too large for LUTs — Warning
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | BLOCK MEM exceeds BSRAM capacity | MEM too large for chip BSRAM count | Error | MEM_BLOCK_RESOURCE_EXCEEDED |
+| 2 | DISTRIBUTED MEM exceeds LUT capacity | MEM too large for available LUTs | Error | MEM_DISTRIBUTED_RESOURCE_EXCEEDED |
+| 3 | Multi-BSRAM block tiling | BLOCK MEM requires multiple BSRAM primitives | Info | MEM_BLOCK_MULTI |
 
-## 4. Input/Output Matrix
+### 2.3 Edge Cases
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | BLOCK exceeds capacity | Warning/Error | — | Chip-specific |
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | MEM exactly at BSRAM limit | MEM uses 100% of available BSRAM | Valid, no error (at limit, not over) |
+| 2 | Multiple MEMs sharing BSRAM budget | Two BLOCK MEMs that together exceed capacity | Error: MEM_BLOCK_RESOURCE_EXCEEDED |
+| 3 | Chip with no BSRAM | BLOCK MEM on chip without BSRAM primitives | Error: MEM_BLOCK_RESOURCE_EXCEEDED |
 
-## 5. Integration Points
+## 3. Input/Output Matrix
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `chip_data.c` | BSRAM/LUT counts | Mock chip data |
-| `memory_report.c` | Memory resource report | Verify report output |
-| `ir_build_memory.c` | Memory IR | Integration test |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | BLOCK MEM requires multiple BSRAM primitives | Info | MEM_BLOCK_MULTI | info | S7.11: tiling notification |
+| 2 | BLOCK MEM exceeds chip BSRAM capacity | Error | MEM_BLOCK_RESOURCE_EXCEEDED | error | S7.11: chip-specific |
+| 3 | DISTRIBUTED MEM exceeds LUT capacity | Error | MEM_DISTRIBUTED_RESOURCE_EXCEEDED | error | S7.11: chip-specific |
 
-## 6. Rules Matrix
+## 4. Existing Validation Tests
 
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| — | Chip-specific resource checks | Neg 1, 2 |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 7_11_MEM_BLOCK_MULTI-multi_bsram_blocks.jz | MEM_BLOCK_MULTI | BLOCK MEM tiled across multiple BSRAM primitives |
+| 7_11_MEM_BLOCK_RESOURCE_EXCEEDED-exceeds_bsram_capacity.jz | MEM_BLOCK_RESOURCE_EXCEEDED | BLOCK MEM exceeds chip BSRAM capacity |
+| 7_11_MEM_DISTRIBUTED_RESOURCE_EXCEEDED-exceeds_distributed_capacity.jz | MEM_DISTRIBUTED_RESOURCE_EXCEEDED | DISTRIBUTED MEM exceeds chip LUT capacity |
 
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| MEM_EXCEEDS_BSRAM | S7.11 | MEM too large for chip BSRAM |
+## 5. Rules Matrix
+
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| MEM_BLOCK_MULTI | info | S7.11 BLOCK MEM requires multiple BSRAM primitives | 7_11_MEM_BLOCK_MULTI-multi_bsram_blocks.jz |
+| MEM_BLOCK_RESOURCE_EXCEEDED | error | S7.11 BLOCK MEM exceeds chip BSRAM capacity | 7_11_MEM_BLOCK_RESOURCE_EXCEEDED-exceeds_bsram_capacity.jz |
+| MEM_DISTRIBUTED_RESOURCE_EXCEEDED | error | S7.11 DISTRIBUTED MEM exceeds chip LUT capacity | 7_11_MEM_DISTRIBUTED_RESOURCE_EXCEEDED-exceeds_distributed_capacity.jz |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| — | — | All expected rules covered |

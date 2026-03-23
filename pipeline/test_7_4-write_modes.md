@@ -4,49 +4,53 @@
 
 ## 1. Objective
 
-Verify WRITE_FIRST (write-then-read), READ_FIRST (read-then-write), and NO_CHANGE (hold output during write) modes for INOUT ports, and their behavioral differences during simultaneous read/write.
+Verify WRITE_FIRST (write-then-read), READ_FIRST (read-then-write), and NO_CHANGE (hold output during write) write modes for INOUT ports, including behavioral differences during simultaneous read/write and rejection of invalid mode values.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `sem.mem_write_mode`** — attributes: `port_name`, `mode`, `collision_behavior`.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | WRITE_FIRST mode | `INOUT rw SYNC WRITE_FIRST;` -- simultaneous read returns new data | Valid, read sees written value |
+| 2 | READ_FIRST mode | `INOUT rw SYNC READ_FIRST;` -- simultaneous read returns old data | Valid, read sees previous value |
+| 3 | NO_CHANGE mode | `INOUT rw SYNC NO_CHANGE;` -- output holds during write | Valid, output unchanged during write |
 
-### 3.1 Happy Path
-1. WRITE_FIRST: simultaneous read returns new data
-2. READ_FIRST: simultaneous read returns old data
-3. NO_CHANGE: output holds previous value during write
+### 2.2 Error Cases
 
-### 3.2 Boundary/Edge Cases
-1. Write without simultaneous read (all modes identical)
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | Invalid write mode keyword | `INOUT rw SYNC BOGUS;` | Error | MEM_INVALID_WRITE_MODE |
 
-### 3.3 Negative Testing
-1. Invalid write mode keyword — Error
-2. Write mode on OUT port — Error
+### 2.3 Edge Cases
 
-## 4. Input/Output Matrix
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Write without simultaneous read | All three modes behave identically | Valid, no behavioral difference |
+| 2 | Default write mode when unspecified | INOUT port without explicit mode | Compiler default applied |
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | Invalid mode | Error | MEM_WRITE_MODE_INVALID | S7.4 |
-| 2 | Write mode on OUT | Error | MEM_WRITE_MODE_ON_READ_PORT | S7.4 |
+## 3. Input/Output Matrix
 
-## 5. Integration Points
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | Unrecognized write mode keyword | Error | MEM_INVALID_WRITE_MODE | error | S7.4: Only WRITE_FIRST, READ_FIRST, NO_CHANGE |
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `driver_mem.c` | Write mode validation | Unit test |
-| `sim_exec.c` | Simulation of write modes | Simulation comparison |
-| `ir_build_memory.c` | IR generation per mode | IR verification |
+## 4. Existing Validation Tests
 
-## 6. Rules Matrix
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 7_0_MEM_INVALID_WRITE_MODE-bad_write_mode_value.jz | MEM_INVALID_WRITE_MODE | Invalid write mode value on INOUT port (covered by 7.0 test) |
 
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| MEM_WRITE_MODE_INVALID | Unknown write mode | Neg 1 |
+## 5. Rules Matrix
 
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| MEM_WRITE_MODE_ON_READ_PORT | S7.4 | Write mode on read-only port |
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| MEM_INVALID_WRITE_MODE | error | S7.4 Invalid write mode value | 7_0_MEM_INVALID_WRITE_MODE-bad_write_mode_value.jz |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| (none) | -- | Write mode validation covered by 7_0 test |

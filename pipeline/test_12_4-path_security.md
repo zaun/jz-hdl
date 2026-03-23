@@ -1,44 +1,72 @@
 # Test Plan: 12.4 Path Security
+
 **Specification Reference:** Section 12.4 of jz-hdl-specification.md
+
 ## 1. Objective
-Verify path security enforcement: absolute path rejection (without flag), traversal rejection (without flag), sandbox enforcement, and symlink escape detection.
-## 2. Instrumentation Strategy
-- **Span: `security.path_check`** — attributes: `path`, `is_absolute`, `has_traversal`, `in_sandbox`, `is_symlink_escape`.
-## 3. Test Scenarios
-### 3.1 Happy Path
-1. Relative path within sandbox — valid
-2. Absolute path with --allow-absolute-paths flag — valid
-3. Traversal with --allow-traversal flag — valid
-### 3.2 Boundary/Edge Cases
-1. Path with redundant separators (`//`)
-2. Path with `.` components
-3. Symlink within sandbox — valid
-### 3.3 Negative Testing
-1. Absolute path without flag — Error (PATH_ABSOLUTE_FORBIDDEN)
-2. Traversal `../` without flag — Error (PATH_TRAVERSAL_FORBIDDEN)
-3. Path outside sandbox — Error (PATH_OUTSIDE_SANDBOX)
-4. Symlink escaping sandbox — Error (PATH_SYMLINK_ESCAPE)
-## 4. Input/Output Matrix
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `/absolute/path` | Error | PATH_ABSOLUTE_FORBIDDEN | S12.4 |
-| 2 | `../escape` | Error | PATH_TRAVERSAL_FORBIDDEN | S12.4 |
-| 3 | Path outside sandbox | Error | PATH_OUTSIDE_SANDBOX | S12.4 |
-| 4 | Symlink escape | Error | PATH_SYMLINK_ESCAPE | S12.4 |
-## 5. Integration Points
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `path_security.c` | Path validation | Mock filesystem (stat, realpath) |
-| `parser_import.c` | Import path resolution | Integration test |
-## 6. Rules Matrix
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| PATH_ABSOLUTE_FORBIDDEN | Absolute path without flag | Neg 1 |
-| PATH_TRAVERSAL_FORBIDDEN | Traversal without flag | Neg 2 |
-| PATH_OUTSIDE_SANDBOX | Path outside allowed roots | Neg 3 |
-| PATH_SYMLINK_ESCAPE | Symlink to outside sandbox | Neg 4 |
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | All path security rules appear covered | — |
+
+Verify path security enforcement: absolute paths are rejected without `--allow-absolute-paths`, traversal paths (`../`) are rejected without `--allow-traversal`, paths outside the sandbox are rejected, and symlink escapes are detected.
+
+## 2. Test Scenarios
+
+### 2.1 Happy Path
+
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Relative path within sandbox | `@import "subdir/module.jz"` | Valid, no error |
+| 2 | Absolute path with flag | `--allow-absolute-paths` with absolute path | Valid, no error |
+| 3 | Traversal with flag | `--allow-traversal` with `../` path | Valid, no error |
+
+### 2.2 Error Cases
+
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Absolute path without flag | `/absolute/path/module.jz` in import | Error: PATH_ABSOLUTE_FORBIDDEN |
+| 2 | Absolute path in file init | `/absolute/path/data.bin` in file init | Error: PATH_ABSOLUTE_FORBIDDEN |
+| 3 | Traversal without flag | `../escape/module.jz` in import | Error: PATH_TRAVERSAL_FORBIDDEN |
+| 4 | Traversal in file init | `../escape/data.bin` in file init | Error: PATH_TRAVERSAL_FORBIDDEN |
+| 5 | Path outside sandbox | Resolved path falls outside permitted roots | Error: PATH_OUTSIDE_SANDBOX |
+| 6 | Symlink escaping sandbox | Symlink resolves to target outside sandbox | Error: PATH_SYMLINK_ESCAPE |
+
+### 2.3 Edge Cases
+
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Redundant separators | Path with `//` | Normalized, no error if within sandbox |
+| 2 | Dot components | Path with `.` components | Normalized, no error if within sandbox |
+| 3 | Symlink within sandbox | Symlink to target inside sandbox | Valid |
+
+## 3. Input/Output Matrix
+
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | `/absolute/path` | Error | PATH_ABSOLUTE_FORBIDDEN | error | S12.2 |
+| 2 | `../escape` | Error | PATH_TRAVERSAL_FORBIDDEN | error | S12.2 |
+| 3 | Path outside sandbox | Error | PATH_OUTSIDE_SANDBOX | error | S12.2 |
+| 4 | Symlink escape | Error | PATH_SYMLINK_ESCAPE | error | S12.2 |
+
+## 4. Existing Validation Tests
+
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_file_init.jz` | PATH_ABSOLUTE_FORBIDDEN | Absolute path in file init |
+| `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_import_and_file.jz` | PATH_ABSOLUTE_FORBIDDEN | Absolute path in import and file context |
+| `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_file_init.jz` | PATH_TRAVERSAL_FORBIDDEN | Traversal path in file init |
+| `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_import_and_file.jz` | PATH_TRAVERSAL_FORBIDDEN | Traversal path in import and file context |
+
+## 5. Rules Matrix
+
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| PATH_ABSOLUTE_FORBIDDEN | error | Absolute path used without --allow-absolute-paths | Error 1, 2 |
+| PATH_TRAVERSAL_FORBIDDEN | error | Path contains `..` traversal without --allow-traversal | Error 3, 4 |
+| PATH_OUTSIDE_SANDBOX | error | Resolved path falls outside all permitted sandbox roots | Error 5 |
+| PATH_SYMLINK_ESCAPE | error | Symbolic link resolves to target outside sandbox root | Error 6 |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| PATH_OUTSIDE_SANDBOX | error | Requires filesystem sandbox configuration; may need integration test outside `--info --lint` |
+| PATH_SYMLINK_ESCAPE | error | Requires actual symlinks on filesystem; may need integration test outside `--info --lint` |

@@ -6,16 +6,9 @@
 
 Verify CDC block syntax and semantics for all 7 types (BIT, BUS, FIFO, HANDSHAKE, PULSE, MCP, RAW), n_stages parameter handling, source register constraints (must be REGISTER, plain identifier, sets home domain), destination alias behavior (read-only, scoped to dest domain), clock-domain rules (block uniqueness, source home domain, destination domain, crossing rule), and width constraints per type (BIT/PULSE: width-1 only).
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `sem.cdc_check`** — Trace CDC entry; attributes: `type`, `n_stages`, `source_reg`, `src_clk`, `dest_alias`, `dest_clk`.
-- **Event: `cdc.domain_conflict`** — Source register used in wrong domain.
-- **Event: `cdc.alias_write`** — Attempt to assign destination alias.
-- **Event: `cdc.width_violation`** — BIT/PULSE with width > 1.
-
-## 3. Test Scenarios
-
-### 3.1 Happy Path
+### 2.1 Happy Path
 
 | # | Test Case | Description |
 |---|-----------|-------------|
@@ -31,7 +24,21 @@ Verify CDC block syntax and semantics for all 7 types (BIT, BUS, FIFO, HANDSHAKE
 | 10 | Source in SYNC(src_clk) | Source register read/written in its home domain |
 | 11 | Dest alias in SYNC(dest_clk) | Read dest_alias in destination domain only |
 
-### 3.2 Boundary/Edge Cases
+### 2.2 Error Cases
+
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | BIT with multi-bit source | `BIT[2] wide_reg (clk_a) => ...` where wide_reg is 8-bit — Error |
+| 2 | PULSE with multi-bit | `PULSE trigger (clk_a) => ...` where trigger is 4-bit — Error |
+| 3 | RAW with n_stages | `RAW[2] sig ...` — Error: RAW must not have n_stages |
+| 4 | Assign to dest alias | `dest_alias <= data;` — Error: read-only |
+| 5 | Duplicate dest alias name | Two CDC entries with same dest alias name — Error |
+| 6 | n_stages invalid | Non-positive stages value — Error |
+| 7 | Invalid CDC type | Unknown type keyword — Error |
+| 8 | Source is wire | `BIT wire_sig (clk_a) => ...` — Error: must be REGISTER |
+| 9 | Source is expression | `BIT (a + b) (clk_a) => ...` — Error: must be plain identifier |
+
+### 2.3 Edge Cases
 
 | # | Test Case | Description |
 |---|-----------|-------------|
@@ -40,57 +47,50 @@ Verify CDC block syntax and semantics for all 7 types (BIT, BUS, FIFO, HANDSHAKE
 | 3 | Source reg read in ASYNC | `source_reg` read in ASYNCHRONOUS — valid (home domain) |
 | 4 | Multiple CDC entries | Several registers crossing between same domains |
 
-### 3.3 Negative Testing
-
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | BIT with multi-bit source | `BIT[2] wide_reg (clk_a) => ...` where wide_reg is 8-bit — Error |
-| 2 | PULSE with multi-bit | `PULSE trigger (clk_a) => ...` where trigger is 4-bit — Error |
-| 3 | RAW with n_stages | `RAW[2] sig ...` — Error: RAW must not have n_stages |
-| 4 | Assign to dest alias | `dest_alias <= data;` — Error: read-only |
-| 5 | Source in wrong SYNC | Source register used in SYNC(clk_b) when home is clk_a — Error |
-| 6 | Dest alias in wrong SYNC | Dest alias used in SYNC(clk_a) when dest is clk_b — Error |
-| 7 | Direct cross-domain | Register read in another domain without CDC — Error |
-| 8 | Source is expression | `BIT (a + b) (clk_a) => ...` — Error: must be plain identifier |
-| 9 | Source is wire | `BIT wire_sig (clk_a) => ...` — Error: must be REGISTER |
-
-## 4. Input/Output Matrix
+## 3. Input/Output Matrix
 
 | # | Input | Expected Output | Rule ID | Notes |
 |---|-------|----------------|---------|-------|
-| 1 | BIT with 8-bit reg | Error | CDC_BIT_WIDTH | Must be width-1 |
-| 2 | RAW with n_stages | Error | CDC_RAW_NO_STAGES | RAW cannot have stages |
-| 3 | Assign to dest alias | Error | CDC_ALIAS_READONLY | Read-only alias |
-| 4 | Source in wrong domain | Error | CDC_DOMAIN_CONFLICT | Home domain violation |
-| 5 | Cross-domain without CDC | Error | CDC_MISSING_BRIDGE | Must use CDC |
-| 6 | Valid BIT[2] crossing | Valid | — | Happy path |
+| 1 | BIT with 8-bit reg | Error | CDC_BIT_WIDTH_NOT_1 | Must be width-1 |
+| 2 | PULSE with multi-bit | Error | CDC_PULSE_WIDTH_NOT_1 | Must be width-1 |
+| 3 | RAW with n_stages | Error | CDC_RAW_STAGES_FORBIDDEN | RAW cannot have stages |
+| 4 | Assign to dest alias | Error | CDC_DEST_ALIAS_ASSIGNED | Read-only alias |
+| 5 | Duplicate dest alias | Error | CDC_DEST_ALIAS_DUP | Alias name conflict |
+| 6 | Non-positive stages | Error | CDC_STAGES_INVALID | Stages must be positive |
+| 7 | Unknown CDC type | Error | CDC_TYPE_INVALID | Type keyword not recognized |
+| 8 | Source is wire | Error | CDC_SOURCE_NOT_REGISTER | Source must be REGISTER |
+| 9 | Source is expression | Error | CDC_SOURCE_NOT_PLAIN_REG | Must be plain identifier |
+| 10 | Valid BIT[2] crossing | Valid | — | Happy path |
 
-## 5. Integration Points
+## 4. Existing Validation Tests
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_cdc.c` | Parses CDC block | Token stream |
-| `driver_clocks.c` | Clock domain analysis | Integration test |
-| `driver_instance.c` | CDC bridge instantiation in IR | IR verification |
-| `ir_build_instance.c` | Generates synchronizer instances | Integration test |
+| Test File | Rule Tested |
+|-----------|-------------|
+| 4_12_CDC_BIT_WIDTH_NOT_1-bit_multibit_source.jz | CDC_BIT_WIDTH_NOT_1 |
+| 4_12_CDC_DEST_ALIAS_DUP-alias_name_conflict.jz | CDC_DEST_ALIAS_DUP |
+| 4_12_CDC_PULSE_WIDTH_NOT_1-pulse_multibit_source.jz | CDC_PULSE_WIDTH_NOT_1 |
+| 4_12_CDC_RAW_STAGES_FORBIDDEN-raw_with_stages.jz | CDC_RAW_STAGES_FORBIDDEN |
+| 4_12_CDC_SOURCE_NOT_REGISTER-wire_as_source.jz | CDC_SOURCE_NOT_REGISTER |
+| 4_12_CDC_STAGES_INVALID-non_positive_stages.jz | CDC_STAGES_INVALID |
+| 4_12_CDC_TYPE_INVALID-unknown_cdc_type.jz | CDC_TYPE_INVALID |
 
-## 6. Rules Matrix
+## 5. Rules Matrix
 
-### 6.1 Rules Tested
+### 5.1 Rules Tested
 
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| CDC_BIT_WIDTH | BIT/PULSE must be width-1 | Neg 1, 2 |
-| CDC_RAW_NO_STAGES | RAW must not have n_stages | Neg 3 |
-| CDC_ALIAS_READONLY | Dest alias cannot be written | Neg 4 |
-| CDC_DOMAIN_CONFLICT | Source used in wrong domain | Neg 5 |
-| CDC_MISSING_BRIDGE | Cross-domain access without CDC | Neg 7 |
-| CDC_SOURCE_NOT_REGISTER | Source must be REGISTER | Neg 9 |
-| CDC_SOURCE_NOT_PLAIN | Source must be plain identifier | Neg 8 |
+| Rule ID | Severity | Test File(s) |
+|---------|----------|--------------|
+| CDC_BIT_WIDTH_NOT_1 | error | 4_12_CDC_BIT_WIDTH_NOT_1-bit_multibit_source.jz |
+| CDC_DEST_ALIAS_DUP | error | 4_12_CDC_DEST_ALIAS_DUP-alias_name_conflict.jz |
+| CDC_PULSE_WIDTH_NOT_1 | error | 4_12_CDC_PULSE_WIDTH_NOT_1-pulse_multibit_source.jz |
+| CDC_RAW_STAGES_FORBIDDEN | error | 4_12_CDC_RAW_STAGES_FORBIDDEN-raw_with_stages.jz |
+| CDC_SOURCE_NOT_REGISTER | error | 4_12_CDC_SOURCE_NOT_REGISTER-wire_as_source.jz |
+| CDC_STAGES_INVALID | error | 4_12_CDC_STAGES_INVALID-non_positive_stages.jz |
+| CDC_TYPE_INVALID | error | 4_12_CDC_TYPE_INVALID-unknown_cdc_type.jz |
 
-### 6.2 Rules Missing
+### 5.2 Rules Not Tested
 
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| CDC_DEST_WRONG_DOMAIN | S4.12 "readable only in destination domain" | Dest alias used outside dest domain |
-| CDC_BUS_GRAY_CODE | S4.12 "Gray-code discipline" | No compile-time check for Gray coding (may be warning) |
+| Rule ID | Severity | Gap Description |
+|---------|----------|-----------------|
+| CDC_SOURCE_NOT_PLAIN_REG | error | Source must be plain register identifier, not expression |
+| CDC_DEST_ALIAS_ASSIGNED | error | Destination alias written to (should be read-only) |

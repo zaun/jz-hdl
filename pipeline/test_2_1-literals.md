@@ -1,23 +1,14 @@
 # Test Plan: 2.1 Literals
 
-**Specification Reference:** Section 2.1 of jz-hdl-specification.md
+**Spec Ref:** Section 2.1 of jz-hdl-specification.md
 
 ## 1. Objective
 
-Verify that the lexer and parser correctly handle sized literals with syntax `<width>'<base><value>`, enforce base-specific digit rules (binary: 0/1/x/z; decimal: 0-9; hex: 0-9/A-F), compute intrinsic bit-width correctly, apply extension rules (zero/x/z extension based on MSB), detect overflow, reject unsized literals, and enforce x/z usage restrictions.
+Verify sized literal syntax (`<width>'<base><value>`), base-specific digit rules (binary: 0/1/x/z; decimal: 0-9; hex: 0-9/A-F/x/z), overflow detection (intrinsic width exceeds declared width), extension rules (zero/x/z extension based on MSB), underscore formatting rules, and rejection of unsized and bare integer literals.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `lexer.parse_literal`** — Trace literal tokenization; attributes: `declared_width`, `base`, `value_str`, `intrinsic_width`.
-- **Span: `sem.literal_validate`** — Semantic validation; attributes: `has_x`, `has_z`, `overflow`, `context` (reset/init/expr).
-- **Event: `literal.overflow`** — Intrinsic width exceeds declared width.
-- **Event: `literal.unsized`** — Missing width prefix.
-- **Event: `literal.invalid_digit`** — Digit not valid for base.
-- **Coverage Hook:** Ensure all bases (b/d/h) and all extension types (0-ext, x-ext, z-ext) are tested.
-
-## 3. Test Scenarios
-
-### 3.1 Happy Path
+### 2.1 Happy Path
 
 | # | Test Case | Input | Expected |
 |---|-----------|-------|----------|
@@ -34,7 +25,23 @@ Verify that the lexer and parser correctly handle sized literals with syntax `<w
 | 11 | Hex with mixed case | `8'hAb` | Valid, case-insensitive digits |
 | 12 | 32-bit hex zeros | `32'h00` | 32-bit, all zeros |
 
-### 3.2 Boundary/Edge Cases
+### 2.2 Error Cases
+
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Unsized literal | `'hFF` | Error: LIT_UNSIZED |
+| 2 | Bare integer | `42` in expression | Error: LIT_BARE_INTEGER |
+| 3 | Width zero | `0'b0` | Error: LIT_WIDTH_NOT_POSITIVE |
+| 4 | Binary overflow | `4'b10101` | Error: LIT_OVERFLOW (intrinsic 5 > declared 4) |
+| 5 | Hex overflow | `25'h3FFFFFF` | Error: LIT_OVERFLOW (intrinsic 26 > declared 25) |
+| 6 | Decimal overflow | `4'd16` | Error: LIT_OVERFLOW (intrinsic 5 > declared 4) |
+| 7 | Decimal with x | `8'd10x` | Error: LIT_DECIMAL_HAS_XZ |
+| 8 | Invalid digit for base | `8'b012` | Error: LIT_INVALID_DIGIT_FOR_BASE |
+| 9 | Underscore at start | `8'b_1100` | Error: LIT_UNDERSCORE_AT_EDGES |
+| 10 | Underscore at end | `8'b1100_` | Error: LIT_UNDERSCORE_AT_EDGES |
+| 11 | Undefined CONST in width | `UNDEF'hFF` | Error: LIT_UNDEFINED_CONST_WIDTH |
+
+### 2.3 Edge Cases
 
 | # | Test Case | Input | Expected |
 |---|-----------|-------|----------|
@@ -46,71 +53,51 @@ Verify that the lexer and parser correctly handle sized literals with syntax `<w
 | 6 | Hex leading zeros | `8'h00FF` | Intrinsic 8 bits (leading zeros don't count) |
 | 7 | Single x in binary | `8'bx` | Extended to `8'bxxxx_xxxx` |
 
-### 3.3 Negative Testing
+## 3. Input/Output Matrix
 
-| # | Test Case | Input | Expected |
-|---|-----------|-------|----------|
-| 1 | Unsized literal | `'hFF` | Error: LIT_UNSIZED |
-| 2 | Bare integer | `42` in expression | Error: LIT_BARE_INTEGER |
-| 3 | Width zero | `0'b0` | Error: LIT_WIDTH_ZERO |
-| 4 | Binary overflow | `4'b10101` | Error: LIT_OVERFLOW (intrinsic 5 > declared 4) |
-| 5 | Hex overflow | `25'h3FFFFFF` | Error: LIT_OVERFLOW (intrinsic 26 > declared 25) |
-| 6 | Decimal overflow | `4'd16` | Error: LIT_OVERFLOW (intrinsic 5 > declared 4) |
-| 7 | Decimal with x | `8'd10x` | Error: LIT_DECIMAL_HAS_XZ |
-| 8 | Hex with z | `8'hz0` | Error: LIT_HEX_HAS_XZ |
-| 9 | Hex with x | `8'hFx` | Error: LIT_HEX_HAS_XZ |
-| 10 | Invalid digit for base | `8'b012` | Error: LIT_INVALID_DIGIT_FOR_BASE |
-| 11 | x in register reset | `REGISTER { r [8] = 8'bxxxx_xxxx; }` | Error: LIT_RESET_HAS_X |
-| 12 | z in register reset | `REGISTER { r [8] = 8'bzzzz_zzzz; }` | Error: LIT_RESET_HAS_Z |
-| 13 | Underscore at start | `8'b_1100` | Error: invalid literal |
-| 14 | Underscore at end | `8'b1100_` | Error: invalid literal |
-| 15 | Undefined CONST in width | `UNDEF'hFF` | Error: undefined CONST |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | `'hFF` | Error: unsized | LIT_UNSIZED | error | No width prefix |
+| 2 | `42` in expr | Error: bare int | LIT_BARE_INTEGER | error | Must use sized literal |
+| 3 | `0'b0` | Error: zero width | LIT_WIDTH_NOT_POSITIVE | error | Width must be positive |
+| 4 | `4'b10101` | Error: overflow | LIT_OVERFLOW | error | 5 bits > 4-bit width |
+| 5 | `8'd10x` | Error: x in decimal | LIT_DECIMAL_HAS_XZ | error | x/z not in decimal |
+| 6 | `8'b012` | Error: invalid digit | LIT_INVALID_DIGIT_FOR_BASE | error | '2' invalid in binary |
+| 7 | `8'b_1100` | Error: underscore edge | LIT_UNDERSCORE_AT_EDGES | error | Underscore at start of value |
+| 8 | `UNDEF'hFF` | Error: undefined const | LIT_UNDEFINED_CONST_WIDTH | error | Width uses undefined CONST |
+| 9 | `8'b1100_0011` | Valid: 8-bit binary | -- | -- | Happy path |
+| 10 | `4'bx` | Valid: extended to `4'bxxxx` | -- | -- | x-extension |
 
-## 4. Input/Output Matrix
+## 4. Existing Validation Tests
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `'hFF` | Error: unsized | LIT_UNSIZED | No width prefix |
-| 2 | `42` in expr | Error: bare int | LIT_BARE_INTEGER | Must use sized literal |
-| 3 | `0'b0` | Error: zero width | LIT_WIDTH_ZERO | Width must be positive |
-| 4 | `4'b10101` | Error: overflow | LIT_OVERFLOW | 5 bits > 4-bit width |
-| 5 | `8'd10x` | Error: x in decimal | LIT_DECIMAL_HAS_XZ | x/z not in decimal |
-| 6 | `8'hFx` | Error: x in hex | LIT_HEX_HAS_XZ | x/z not in hex |
-| 7 | `8'b012` | Error: invalid digit | LIT_INVALID_DIGIT_FOR_BASE | '2' invalid in binary |
-| 8 | `8'bxxxx_xxxx` in reg reset | Error: x in reset | LIT_RESET_HAS_X | Reset must be 0/1 |
-| 9 | `8'b1100_0011` | Valid: 8-bit binary | — | Happy path |
-| 10 | `4'bx` | Valid: extended to `4'bxxxx` | — | x-extension |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 2_1_LIT_BARE_INTEGER-bare_int_in_expression.jz | LIT_BARE_INTEGER | Bare integer used in runtime expression |
+| 2_1_LIT_DECIMAL_HAS_XZ-xz_in_decimal.jz | LIT_DECIMAL_HAS_XZ | x or z digit in decimal literal |
+| 2_1_LIT_INVALID_DIGIT_FOR_BASE-invalid_digits.jz | LIT_INVALID_DIGIT_FOR_BASE | Digit not valid for base |
+| 2_1_LIT_OVERFLOW-intrinsic_exceeds_declared.jz | LIT_OVERFLOW | Intrinsic width exceeds declared width |
+| 2_1_LIT_UNDEFINED_CONST_WIDTH-undefined_const.jz | LIT_UNDEFINED_CONST_WIDTH | Width uses undefined CONST name |
+| 2_1_LIT_UNDERSCORE_AT_EDGES-underscore_position.jz | LIT_UNDERSCORE_AT_EDGES | Underscore at first or last position |
+| 2_1_LIT_UNSIZED-missing_width_prefix.jz | LIT_UNSIZED | Unsized literal missing width prefix |
+| 2_1_LIT_WIDTH_NOT_POSITIVE-zero_width.jz | LIT_WIDTH_NOT_POSITIVE | Literal with zero or negative width |
 
-## 5. Integration Points
+## 5. Rules Matrix
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `lexer.c` | Tokenizes literals | Direct unit test with source strings; no mocks needed |
-| `sem_literal.c` | Semantic validation of literal context | Feed literal AST nodes with context |
-| `const_eval.c` | Evaluates CONST expressions in width | Mock known CONST values |
-| `parser_expressions.c` | Parses literal into AST | Feed token stream |
-| `diagnostic.c` | Error collection | Capture and verify rule IDs |
-| `rules.c` | Rule ID registry | No mock needed |
+### 5.1 Rules Tested
 
-## 6. Rules Matrix
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| LIT_UNSIZED | error | Unsized literal not permitted | Error 1; 2_1_LIT_UNSIZED-missing_width_prefix.jz |
+| LIT_BARE_INTEGER | error | Bare integer in runtime expression | Error 2; 2_1_LIT_BARE_INTEGER-bare_int_in_expression.jz |
+| LIT_UNDERSCORE_AT_EDGES | error | Underscore at first or last character of value | Error 9, 10; 2_1_LIT_UNDERSCORE_AT_EDGES-underscore_position.jz |
+| LIT_UNDEFINED_CONST_WIDTH | error | Width uses undefined CONST name | Error 11; 2_1_LIT_UNDEFINED_CONST_WIDTH-undefined_const.jz |
+| LIT_WIDTH_NOT_POSITIVE | error | Width is non-positive or non-integer | Error 3; 2_1_LIT_WIDTH_NOT_POSITIVE-zero_width.jz |
+| LIT_OVERFLOW | error | Intrinsic width exceeds declared width | Error 4, 5, 6; 2_1_LIT_OVERFLOW-intrinsic_exceeds_declared.jz |
+| LIT_DECIMAL_HAS_XZ | error | x or z digit in decimal literal | Error 7; 2_1_LIT_DECIMAL_HAS_XZ-xz_in_decimal.jz |
+| LIT_INVALID_DIGIT_FOR_BASE | error | Digit not valid for base | Error 8; 2_1_LIT_INVALID_DIGIT_FOR_BASE-invalid_digits.jz |
 
-### 6.1 Rules Tested
+### 5.2 Rules Not Tested
 
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| LIT_UNSIZED | Unsized literal not permitted | Neg 1 |
-| LIT_BARE_INTEGER | Bare integer in runtime expression | Neg 2 |
-| LIT_WIDTH_ZERO | Width is zero | Neg 3 |
-| LIT_OVERFLOW | Intrinsic width exceeds declared width | Neg 4, 5, 6 |
-| LIT_DECIMAL_HAS_XZ | x or z in decimal literal | Neg 7 |
-| LIT_HEX_HAS_XZ | x or z in hex literal | Neg 8, 9 |
-| LIT_INVALID_DIGIT_FOR_BASE | Invalid digit for base | Neg 10 |
-| LIT_RESET_HAS_X | x in register reset literal | Neg 11 |
-| LIT_RESET_HAS_Z | z in register reset literal | Neg 12 |
-
-### 6.2 Rules Missing
-
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| LIT_UNDERSCORE_POSITION | S2.1 "cannot be first or last character" | No explicit rule for underscore at start/end of value |
-| LIT_MEM_INIT_HAS_XZ | S2.1 "MEM initialization literals" | May need separate rule for x/z in MEM init vs register reset |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| -- | -- | All rules from this section have validation tests |

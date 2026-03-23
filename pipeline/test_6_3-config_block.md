@@ -1,70 +1,94 @@
-# Test Plan: 6.3 CONFIG Block (including 6.3.1)
+# Test Plan: 6.3 CONFIG Block
 
-**Specification Reference:** Section 6.3 and 6.3.1 of jz-hdl-specification.md
+**Specification Reference:** Section 6.3 of jz-hdl-specification.md
 
 ## 1. Objective
 
-Verify CONFIG block: numeric and string entries, project-wide visibility via `CONFIG.<name>`, compile-time-only usage restriction, type restrictions (string in numeric context, numeric in string context), forward reference/circular dependency detection, and runtime usage prohibition.
+Verify CONFIG block: numeric and string entries, project-wide visibility via `CONFIG.<name>`, compile-time-only usage restriction, type constraints (string in numeric context, numeric in string context), forward reference and circular dependency detection, and runtime usage prohibition.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `sem.config_eval`** — attributes: `config_name`, `value`, `type`.
-- **Event: `config.runtime_use`** — CONFIG used in runtime expression.
-- **Event: `config.circular`** — Circular dependency detected.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | Numeric CONFIG | `XLEN = 32;` -- simple integer value |
+| 2 | String CONFIG | `FIRMWARE = "out/fw.bin";` -- string value |
+| 3 | CONFIG in port width | `IN [CONFIG.XLEN] data;` -- compile-time width |
+| 4 | CONFIG in MEM depth | `MEM { m [8] [CONFIG.DEPTH] ... }` -- compile-time depth |
+| 5 | CONFIG referencing earlier CONFIG | `TOTAL = CONFIG.A + CONFIG.B;` -- chained references |
+| 6 | CONFIG in CONST initializer | CONST using CONFIG.name value |
 
-### 3.1 Happy Path
-1. Numeric CONFIG: `XLEN = 32;`
-2. String CONFIG: `FIRMWARE = "out/fw.bin";`
-3. CONFIG in port width: `IN [CONFIG.XLEN] data;`
-4. CONFIG in MEM depth: `MEM { m [8] [CONFIG.DEPTH] ... }`
-5. CONFIG referencing earlier CONFIG: `TOTAL = CONFIG.A + CONFIG.B;`
-6. CONFIG.name in CONST initializer
+### 2.2 Error Cases
 
-### 3.2 Boundary/Edge Cases
-1. CONFIG value = 0 — valid but may not work as width
-2. Single CONFIG entry
-3. CONFIG and CONST same name — no shadowing, disjoint
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | Forward reference | `A = CONFIG.B; B = 5;` -- B not yet declared |
+| 2 | Circular dependency | `A = CONFIG.B; B = CONFIG.A;` -- mutual reference |
+| 3 | Runtime use of CONFIG | `data <= CONFIG.XLEN;` -- forbidden in runtime expression |
+| 4 | String in numeric context | `[CONFIG.FIRMWARE]` -- string used as width |
+| 5 | Duplicate CONFIG name | Two entries with same name in CONFIG block |
+| 6 | Undeclared CONFIG reference | `CONFIG.NONEXISTENT` -- name not in CONFIG block |
+| 7 | Invalid expression type | CONFIG value that is not a valid expression |
+| 8 | Multiple CONFIG blocks | More than one CONFIG block in project |
+| 9 | CONST runtime use | CONST identifier used in runtime expression |
 
-### 3.3 Negative Testing
-1. Forward reference: `A = CONFIG.B; B = 5;`
-2. Circular: `A = CONFIG.B; B = CONFIG.A;`
-3. Runtime use: `data <= CONFIG.XLEN;` — Error
-4. String in numeric: `[CONFIG.FIRMWARE]` — Error
-5. Numeric in string: `@file(CONFIG.XLEN)` — Error
-6. Duplicate CONFIG name
-7. CONFIG outside @project
+### 2.3 Edge Cases
 
-## 4. Input/Output Matrix
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | CONFIG value = 0 | Valid but may not work as width |
+| 2 | Single CONFIG entry | Minimal CONFIG block |
+| 3 | CONFIG and CONST same name | Disjoint namespaces, no shadowing |
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `A = CONFIG.B; B = 5;` | Error | CONFIG_FORWARD_REF | S6.3 |
-| 2 | Circular CONFIG | Error | CONFIG_CIRCULAR_DEP | S6.3 |
-| 3 | `data <= CONFIG.X;` | Error | CONFIG_RUNTIME_USE | S6.3.1 |
-| 4 | String in numeric | Error | CONST_STRING_IN_NUMERIC_CONTEXT | S6.3 |
-| 5 | Numeric in string | Error | CONST_NUMERIC_IN_STRING_CONTEXT | S6.3 |
+## 3. Input/Output Matrix
 
-## 5. Integration Points
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|-----------------|---------|----------|-------|
+| 1 | Multiple CONFIG blocks | Error | CONFIG_MULTIPLE_BLOCKS | error | S6.3 |
+| 2 | Duplicate config name | Error | CONFIG_NAME_DUPLICATE | error | S6.3 |
+| 3 | Invalid expression type | Error | CONFIG_INVALID_EXPR_TYPE | error | S6.3 |
+| 4 | Forward reference | Error | CONFIG_FORWARD_REF | error | S6.3 |
+| 5 | Undeclared CONFIG reference | Error | CONFIG_USE_UNDECLARED | error | S6.3 |
+| 6 | Circular dependency | Error | CONFIG_CIRCULAR_DEP | error | S6.3 |
+| 7 | CONFIG in runtime expression | Error | CONFIG_USED_WHERE_FORBIDDEN | error | S6.3 |
+| 8 | CONST in runtime expression | Error | CONST_USED_WHERE_FORBIDDEN | error | S4.3/S6.3 |
+| 9 | String in numeric context | Error | CONST_STRING_IN_NUMERIC_CONTEXT | error | S4.3/S6.3 |
+| 10 | Numeric in string context | Error | CONST_NUMERIC_IN_STRING_CONTEXT | error | S4.3/S6.3 |
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `const_eval.c` | CONFIG evaluation | Unit test |
-| `driver_project.c` | CONFIG scope validation | Integration test |
-| `parser_project.c` | CONFIG parsing | Token stream |
+## 4. Existing Validation Tests
 
-## 6. Rules Matrix
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 6_3_CONFIG_CIRCULAR_DEP-circular_dependency.jz | CONFIG_CIRCULAR_DEP | Circular dependency between CONFIG entries |
+| 6_3_CONFIG_FORWARD_REF-forward_reference.jz | CONFIG_FORWARD_REF | CONFIG entry references later CONFIG.<name> (forward reference) |
+| 6_3_CONFIG_INVALID_EXPR_TYPE-invalid_value.jz | CONFIG_INVALID_EXPR_TYPE | CONFIG value not a nonnegative integer expression |
+| 6_3_CONFIG_NAME_DUPLICATE-duplicate_name.jz | CONFIG_NAME_DUPLICATE | Duplicate config_id within CONFIG block |
+| 6_3_CONFIG_USE_UNDECLARED-undeclared_reference.jz | CONFIG_USE_UNDECLARED | Use of CONFIG.<name> not declared in project CONFIG |
+| 6_3_CONFIG_USED_WHERE_FORBIDDEN-runtime_use.jz | CONFIG_USED_WHERE_FORBIDDEN | CONFIG.<name> used outside compile-time constant expression contexts |
+| 6_3_CONST_STRING_IN_NUMERIC_CONTEXT-string_as_number.jz | CONST_STRING_IN_NUMERIC_CONTEXT | String CONST/CONFIG value used where a numeric expression is expected |
+| 6_3_CONST_USED_WHERE_FORBIDDEN-const_runtime_use.jz | CONST_USED_WHERE_FORBIDDEN | CONST identifier used outside compile-time constant expression contexts |
 
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| CONFIG_FORWARD_REF | Forward reference in CONFIG | Neg 1 |
-| CONFIG_CIRCULAR_DEP | Circular CONFIG dependency | Neg 2 |
-| CONST_STRING_IN_NUMERIC_CONTEXT | String used as number | Neg 4 |
-| CONST_NUMERIC_IN_STRING_CONTEXT | Number used as string | Neg 5 |
+## 5. Rules Matrix
 
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| CONFIG_RUNTIME_USE | S6.3.1 "may not be used as runtime literal" | Explicit rule needed |
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| CONFIG_MULTIPLE_BLOCKS | error | S6.3 More than one CONFIG block defined in project | -- (no dedicated test file) |
+| CONFIG_NAME_DUPLICATE | error | S6.3 Duplicate config_id within CONFIG block | 6_3_CONFIG_NAME_DUPLICATE-duplicate_name.jz |
+| CONFIG_INVALID_EXPR_TYPE | error | S6.3 CONFIG value not a nonnegative integer expression | 6_3_CONFIG_INVALID_EXPR_TYPE-invalid_value.jz |
+| CONFIG_FORWARD_REF | error | S6.3 CONFIG entry references later CONFIG.<name> (forward reference) | 6_3_CONFIG_FORWARD_REF-forward_reference.jz |
+| CONFIG_USE_UNDECLARED | error | S6.3 Use of CONFIG.<name> not declared in project CONFIG | 6_3_CONFIG_USE_UNDECLARED-undeclared_reference.jz |
+| CONFIG_CIRCULAR_DEP | error | S6.3 Circular dependency between CONFIG entries | 6_3_CONFIG_CIRCULAR_DEP-circular_dependency.jz |
+| CONFIG_USED_WHERE_FORBIDDEN | error | S6.3 CONFIG.<name> used outside compile-time constant expression contexts (runtime expression) | 6_3_CONFIG_USED_WHERE_FORBIDDEN-runtime_use.jz |
+| CONST_USED_WHERE_FORBIDDEN | error | S4.3/S6.3 CONST identifier used outside compile-time constant expression contexts (runtime expression) | 6_3_CONST_USED_WHERE_FORBIDDEN-const_runtime_use.jz |
+| CONST_STRING_IN_NUMERIC_CONTEXT | error | S4.3/S6.3 String CONST/CONFIG value used where a numeric expression is expected | 6_3_CONST_STRING_IN_NUMERIC_CONTEXT-string_as_number.jz |
+| CONST_NUMERIC_IN_STRING_CONTEXT | error | S4.3/S6.3 Numeric CONST/CONFIG value used where a string is expected (e.g. @file path) | -- (no dedicated test file) |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| CONFIG_MULTIPLE_BLOCKS | error | No dedicated validation test file exists |
+| CONST_NUMERIC_IN_STRING_CONTEXT | error | No dedicated validation test file exists |

@@ -1,63 +1,63 @@
-# Test Plan: 7.7 Error Checking and Validation (7.7.1–7.7.3)
+# Test Plan: 7.7 Error Checking and Validation
 
-**Specification Reference:** Section 7.7 of jz-hdl-specification.md
+**Specification Reference:** Section 7.7 (7.7.1-7.7.3) of jz-hdl-specification.md
 
 ## 1. Objective
 
-Verify all MEM declaration errors (7.7.1), access errors (7.7.2), and warnings (7.7.3).
+Verify MEM warning conditions: unused port detection, dead code access detection, and partial initialization warnings.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `sem.mem_errors`** — Trace all MEM-related diagnostics.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | All ports accessed | MEM with every declared port used | No warnings |
+| 2 | Fully initialized MEM | Init file matches depth exactly | No partial init warning |
+| 3 | All access paths reachable | No dead code around MEM accesses | No dead code warning |
 
-### 3.1 Declaration Errors (7.7.1)
-1. Zero depth / zero width
-2. Invalid type
-3. No ports
-4. Duplicate port name
-5. ASYNC on write port
-6. Multiple write modes on same port
+### 2.2 Error Cases
 
-### 3.2 Access Errors (7.7.2)
-1. Wrong block type for access
-2. Address width mismatch
-3. Undeclared port access
-4. Write to read-only port
-5. Multiple WDATA assigns same path
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | Port declared never accessed | MEM port declared but never read/written | Warning | MEM_WARN_PORT_NEVER_ACCESSED |
+| 2 | Dead code access | MEM access inside unreachable code path | Warning | MEM_WARN_DEAD_CODE_ACCESS |
+| 3 | Partial initialization | Init file smaller than MEM depth | Warning | MEM_WARN_PARTIAL_INIT |
 
-### 3.3 Warnings (7.7.3)
-1. Port declared never accessed — Warning
-2. Partial init file — Warning
-3. Dead code access — Warning
+### 2.3 Edge Cases
 
-## 4. Input/Output Matrix
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Port used in only one branch | MEM port accessed inside conditional | No warning (port is reachable) |
+| 2 | Multiple unused ports | MEM with 3 ports, only 1 used | Multiple MEM_WARN_PORT_NEVER_ACCESSED warnings |
+| 3 | Dead code after unconditional return | MEM access after always-true guard | Warning: MEM_WARN_DEAD_CODE_ACCESS |
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | Port never used | Warning | MEM_WARN_PORT_NEVER_ACCESSED | S7.7.3 |
-| 2 | Partial init | Warning | MEM_WARN_PARTIAL_INIT | S7.7.3 |
-| 3 | Dead code access | Warning | MEM_WARN_DEAD_CODE_ACCESS | S7.7.3 |
-| 4 | Multiple WDATA | Error | MEM_MULTIPLE_WDATA_ASSIGNS | S7.2.3 |
+## 3. Input/Output Matrix
 
-## 5. Integration Points
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | Port declared never accessed | Warning | MEM_WARN_PORT_NEVER_ACCESSED | warning | S7.7.3 |
+| 2 | MEM access in unreachable path | Warning | MEM_WARN_DEAD_CODE_ACCESS | warning | S7.7.3 |
+| 3 | Init file smaller than depth | Warning | MEM_WARN_PARTIAL_INIT | warning | S7.7.3 |
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `driver_mem.c` | All MEM validation | Integration test |
+## 4. Existing Validation Tests
 
-## 6. Rules Matrix
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 7_7_MEM_WARN_DEAD_CODE_ACCESS-unreachable_access.jz | MEM_WARN_DEAD_CODE_ACCESS | MEM access inside unreachable code path |
+| 7_7_MEM_WARN_PORT_NEVER_ACCESSED-unused_port.jz | MEM_WARN_PORT_NEVER_ACCESSED | MEM port declared but never accessed |
 
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| MEM_WARN_PORT_NEVER_ACCESSED | Unused port | 3.3.1 |
-| MEM_WARN_PARTIAL_INIT | Partial initialization | 3.3.2 |
-| MEM_WARN_DEAD_CODE_ACCESS | Dead code | 3.3.3 |
-| MEM_MULTIPLE_WDATA_ASSIGNS | Multiple writes | 3.2.5 |
+## 5. Rules Matrix
 
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | All expected MEM rules appear covered | — |
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| MEM_WARN_PORT_NEVER_ACCESSED | warning | S7.7.3 Port declared but never accessed | 7_7_MEM_WARN_PORT_NEVER_ACCESSED-unused_port.jz |
+| MEM_WARN_DEAD_CODE_ACCESS | warning | S7.7.3 MEM access in unreachable code path | 7_7_MEM_WARN_DEAD_CODE_ACCESS-unreachable_access.jz |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| MEM_WARN_PARTIAL_INIT | warning | No validation test yet for partial initialization warning (also referenced in S7.5) |

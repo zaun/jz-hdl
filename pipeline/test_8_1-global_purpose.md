@@ -3,43 +3,44 @@
 **Specification Reference:** Section 8.1 of jz-hdl-specification.md
 
 ## 1. Objective
-Verify @global blocks define named collections of sized literal constants visible to all modules.
+Verify @global blocks define named collections of sized literal constants visible to all modules, enforce namespace uniqueness, and enforce read-only semantics.
 
-## 2. Instrumentation Strategy
-- **Span: `sem.global_block`** — attributes: `global_name`, `const_count`.
+## 2. Test Scenarios
 
-## 3. Test Scenarios
-### 3.1 Happy Path
-1. Define @global with sized literals
-2. Reference `GLOBAL.CONST` in module expressions
-3. Multiple @global blocks with unique names
+### 2.1 Happy Path
+1. Define @global with sized literals and reference `GLOBAL.CONST` in a module expression
+2. Multiple @global blocks with unique names coexist without conflict
+3. Single entry in @global block resolves correctly
 
-### 3.2 Boundary/Edge Cases
-1. Single entry in @global block
-2. Large number of entries
+### 2.2 Error Cases
+1. Duplicate @global name produces GLOBAL_NAMESPACE_DUPLICATE error
+2. Assign to global constant produces GLOBAL_ASSIGN_FORBIDDEN error (read-only)
 
-### 3.3 Negative Testing
-1. Duplicate @global name — Error
-2. Assign to global constant — Error (read-only)
+### 2.3 Edge Cases
+1. Large number of entries in a single @global block
+2. Global constant referenced in multiple modules simultaneously
 
-## 4. Input/Output Matrix
+## 3. Input/Output Matrix
 | # | Input | Expected Output | Rule ID | Notes |
 |---|-------|----------------|---------|-------|
-| 1 | Duplicate @global name | Error | GLOBAL_DUPLICATE_NAME | S8.3 |
-| 2 | Assign to global | Error | GLOBAL_READONLY | S8.5 |
+| 1 | Duplicate @global name | Error | GLOBAL_NAMESPACE_DUPLICATE | S8.1 uniqueness |
+| 2 | Assign to global constant | Error | GLOBAL_ASSIGN_FORBIDDEN | S8.1 read-only |
 
-## 5. Integration Points
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_core.c` | @global parsing | Token stream |
-| `driver.c` | Global visibility | Integration test |
+## 4. Existing Validation Tests
+| Test File | Rule Tested |
+|-----------|-------------|
+| `8_1_GLOBAL_ASSIGN_FORBIDDEN-assign_to_global.jz` | GLOBAL_ASSIGN_FORBIDDEN |
+| `8_1_GLOBAL_NAMESPACE_DUPLICATE-duplicate_global_name.jz` | GLOBAL_NAMESPACE_DUPLICATE |
 
-## 6. Rules Matrix
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| GLOBAL_DUPLICATE_NAME | Duplicate global block name | Neg 1 |
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| GLOBAL_READONLY | S8.5 "read-only" | Assigning to global constant |
+## 5. Rules Matrix
+
+### 5.1 Rules Tested
+| Rule ID | Severity | Test Case(s) |
+|---------|----------|-------------|
+| GLOBAL_NAMESPACE_DUPLICATE | error | `8_1_GLOBAL_NAMESPACE_DUPLICATE-duplicate_global_name.jz` |
+| GLOBAL_ASSIGN_FORBIDDEN | error | `8_1_GLOBAL_ASSIGN_FORBIDDEN-assign_to_global.jz` |
+
+### 5.2 Rules Not Tested
+| Rule ID | Severity | Gap Description |
+|---------|----------|-----------------|
+| — | — | All section 8.1 rules covered |

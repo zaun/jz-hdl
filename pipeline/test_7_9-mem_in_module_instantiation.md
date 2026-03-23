@@ -4,20 +4,53 @@
 
 ## 1. Objective
 
-Verify MEM behavior when modules containing MEM are instantiated: port binding, OVERRIDE effects on MEM dimensions, and hierarchical access.
+Verify MEM access scoping across module hierarchy: MEM declared in a child module cannot be directly accessed from the parent, and must be accessed through ports.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `sem.mem_instance`** — attributes: `parent_module`, `child_mem`, `effective_depth`, `effective_width`.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Module with MEM instantiated normally | Parent instantiates child containing MEM, accesses via ports | Valid, compiles without errors |
+| 2 | OVERRIDE changes MEM depth via CONST | Parent overrides CONFIG that controls child MEM depth | Valid, MEM resized correctly |
+| 3 | Multiple instances of MEM-containing module | Two instances of same MEM module, independent memories | Valid, no conflicts |
 
-### 3.1 Happy Path
-1. Module with MEM instantiated normally
-2. OVERRIDE changes MEM depth via CONST
-3. Multiple instances of MEM-containing module
+### 2.2 Error Cases
 
-### 3.2 Negative Testing
-1. Direct access to child MEM from parent — Error (must go through ports)
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | Direct access to child MEM from parent | Parent references `child.mem_name` directly | Error | UNDECLARED_IDENTIFIER |
 
-## 4-6. Cross-reference with Section 4.13 (Module Instantiation) test plans.
+### 2.3 Edge Cases
+
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Nested instantiation with MEM | Grandchild module contains MEM, parent accesses via chain | Valid, each level uses ports |
+| 2 | Same MEM name in parent and child | Both modules declare MEM with same name | Valid, scoped independently |
+
+## 3. Input/Output Matrix
+
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | Parent accesses child MEM directly | Error | UNDECLARED_IDENTIFIER | error | S7.9: MEM scoped to declaring module |
+
+## 4. Existing Validation Tests
+
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 7_9_UNDECLARED_IDENTIFIER-child_mem_access_from_parent.jz | UNDECLARED_IDENTIFIER | Parent attempts direct access to child module MEM |
+
+## 5. Rules Matrix
+
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| UNDECLARED_IDENTIFIER | error | S7.9 Direct access to child MEM from parent scope | 7_9_UNDECLARED_IDENTIFIER-child_mem_access_from_parent.jz |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| — | — | All expected rules covered |

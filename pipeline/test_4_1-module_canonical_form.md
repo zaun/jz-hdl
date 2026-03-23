@@ -4,73 +4,71 @@
 
 ## 1. Objective
 
-Verify that the parser correctly accepts modules in canonical form with all optional sections (CONST, PORT, WIRE, REGISTER, MEM, @template, ASYNCHRONOUS, SYNCHRONOUS), enforces correct ordering, and rejects malformed module structures.
+Verify module canonical form, section ordering, structural directives. Confirm that modules accept all optional sections (CONST, PORT, WIRE, REGISTER, MEM, @template, ASYNCHRONOUS, SYNCHRONOUS), enforce correct ordering, reject duplicate blocks, require at least one PORT, and warn on input-only modules.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `parser.module`** — Trace module parsing; attributes: `module_name`, `section_count`, `has_port`, `has_sync`, `has_async`.
-- **Event: `module.section_parsed`** — Fires for each section within a module (CONST, PORT, WIRE, etc.).
-- **Coverage Hook:** Ensure each optional section is tested both present and absent.
-
-## 3. Test Scenarios
-
-### 3.1 Happy Path
+### 2.1 Happy Path
 
 | # | Test Case | Description |
 |---|-----------|-------------|
 | 1 | Full canonical form | Module with all sections: CONST, PORT, WIRE, REGISTER, MEM, @template, ASYNCHRONOUS, SYNCHRONOUS |
-| 2 | Minimal module | `@module m PORT { IN [1] clk; } @endmod` — just a port |
+| 2 | Minimal module | `@module m PORT { IN [1] clk; } @endmod` -- just a port |
 | 3 | Module without CONST | No CONST block, but PORT + WIRE + ASYNC |
 | 4 | Module without REGISTER | No registers, pure combinational |
 | 5 | Module without WIRE | Only ports and registers |
 | 6 | Multiple SYNCHRONOUS blocks | Different clocks, each with own SYNC block |
 | 7 | SYNCHRONOUS header variants | All optional properties (EDGE, RESET, RESET_ACTIVE, RESET_TYPE) |
 
-### 3.2 Boundary/Edge Cases
+### 2.2 Error Cases
 
 | # | Test Case | Description |
 |---|-----------|-------------|
-| 1 | Empty ASYNC body | `ASYNCHRONOUS { }` — valid but may warn |
-| 2 | Empty SYNC body | `SYNCHRONOUS(CLK=clk) { }` — valid, registers hold |
-| 3 | Module with only IN ports | Valid but may warn (dead code) |
+| 1 | Missing @endmod | Module without closing directive -- parse error |
+| 2 | Missing PORT | Module with no PORT block -- compile error |
+| 3 | Duplicate SYNCHRONOUS block | Two SYNCHRONOUS blocks for the same clock in one module |
+| 4 | Nested @module | @module inside @module -- structural directive in invalid location |
 
-### 3.3 Negative Testing
+### 2.3 Edge Cases
 
 | # | Test Case | Description |
 |---|-----------|-------------|
-| 1 | Missing @endmod | Module without closing directive — parse error |
-| 2 | Missing PORT | Module with no PORT block — compile error |
-| 3 | Duplicate CONST block | Two CONST blocks in same module |
-| 4 | @module inside @module | Nested module definitions — error |
+| 1 | Empty ASYNC body | `ASYNCHRONOUS { }` -- valid but may warn |
+| 2 | Empty SYNC body | `SYNCHRONOUS(CLK=clk) { }` -- valid, registers hold |
+| 3 | Module with only IN ports | Valid but warns (likely dead code) |
 
-## 4. Input/Output Matrix
+## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | Full canonical module | AST with all sections | — | Valid |
-| 2 | Module without PORT | Error | PORT_MISSING | Every module needs PORT |
-| 3 | Missing @endmod | Parse error | — | Unclosed module |
-| 4 | Nested @module | Error | DIRECTIVE_INVALID_CONTEXT | Modules cannot nest |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|-----------------|---------|----------|-------|
+| 1 | Full canonical module | AST with all sections | -- | -- | Valid |
+| 2 | Nested @module inside @module | Error: structural directive in wrong location | DIRECTIVE_INVALID_CONTEXT | error | Modules cannot nest |
+| 3 | Two SYNCHRONOUS blocks for same clock | Error: duplicate block | DUPLICATE_BLOCK | error | Only one SYNC per clock per module |
+| 4 | Module with no PORT block | Error: missing port block | MODULE_MISSING_PORT | error | Every module needs at least one port |
+| 5 | Module with only IN ports | Warning: only input ports | MODULE_PORT_IN_ONLY | warning | Likely dead code |
 
-## 5. Integration Points
+## 4. Existing Validation Tests
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_module.c` | Parses module structure | Feed token streams |
-| `parser_core.c` | Core parsing coordination | Integration with module parser |
-| `ast.c` | AST node creation | Verify tree structure |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 4_1_DIRECTIVE_INVALID_CONTEXT-nested_structural_directives.jz | DIRECTIVE_INVALID_CONTEXT | Structural directives (@module etc.) used in invalid nesting context |
+| 4_1_DUPLICATE_BLOCK-duplicate_sync_block.jz | DUPLICATE_BLOCK | Two SYNCHRONOUS blocks for the same clock signal |
+| 4_1_MODULE_MISSING_PORT-no_port_block.jz | MODULE_MISSING_PORT | Module declared without a PORT block |
+| 4_1_MODULE_PORT_IN_ONLY-only_input_ports.jz | MODULE_PORT_IN_ONLY | Module declares only IN ports, no OUT or INOUT |
 
-## 6. Rules Matrix
+## 5. Rules Matrix
 
-### 6.1 Rules Tested
+### 5.1 Rules Tested
 
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| DIRECTIVE_INVALID_CONTEXT | Structural directives in wrong location | Neg 4 |
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| DIRECTIVE_INVALID_CONTEXT | error | S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location | 4_1_DIRECTIVE_INVALID_CONTEXT-nested_structural_directives.jz |
+| DUPLICATE_BLOCK | error | S4.11/S4.12 More than one SYNCHRONOUS block declared for the same clock signal in a module | 4_1_DUPLICATE_BLOCK-duplicate_sync_block.jz |
+| MODULE_MISSING_PORT | error | S4.2/S4.4/S8.1 Module missing required PORT block or PORT block is empty | 4_1_MODULE_MISSING_PORT-no_port_block.jz |
+| MODULE_PORT_IN_ONLY | warning | S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code) | 4_1_MODULE_PORT_IN_ONLY-only_input_ports.jz |
 
-### 6.2 Rules Missing
+### 5.2 Rules Not Tested
 
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| MODULE_NO_PORT | S4.2 "must declare at least one PORT" | May need explicit rule for empty/missing PORT |
-| MODULE_ONLY_IN_PORTS | S4.2 "only IN ports" | Warning for module with no outputs |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| -- | -- | All rules for this section are covered by existing tests |

@@ -1,78 +1,78 @@
-# Test Plan: 5.3 Conditional Statements (IF / ELIF / ELSE)
+# Test Plan: 5.3 Conditional Statements
 
 **Specification Reference:** Section 5.3 of jz-hdl-specification.md
 
 ## 1. Objective
 
-Verify IF/ELIF/ELSE syntax (parenthesized condition, width-1 condition), branch exclusivity for assignments, nesting, combinational loop detection with flow-sensitivity, and interaction with exclusive assignment rule.
+Verify IF/ELIF/ELSE syntax (parenthesized conditions, width-1 condition requirement), branch exclusivity for assignments, nesting, combinational loop detection with flow-sensitivity, and interaction with exclusive assignment rule.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `parser.conditional`** — Trace IF parsing; attributes: `has_elif`, `elif_count`, `has_else`.
-- **Span: `sem.branch_analysis`** — Branch exclusivity; attributes: `branch_count`, `assignments_per_branch`.
-- **Event: `cond.not_1bit`** — Condition expression not width-1.
-- **Event: `cond.missing_parens`** — Missing parentheses.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Simple IF/ELSE | `IF (c) { w <= a; } ELSE { w <= b; }` | Valid, both paths drive w |
+| 2 | IF/ELIF/ELSE | Three branches, each assigns output | Valid |
+| 3 | Nested IF | IF inside IF, deeper nesting | Valid |
+| 4 | IF without ELSE in SYNC | `IF (load) { reg <= val; }` | Valid, register holds |
+| 5 | Flow-sensitive no loop | `IF (sel) { a = b; } ELSE { b = a; }` | Valid, no cycle in any single path |
+| 6 | Multiple ELIFs | `IF ... ELIF ... ELIF ... ELSE ...` | Valid |
 
-### 3.1 Happy Path
+### 2.2 Error Cases
 
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | Simple IF/ELSE | `IF (c) { w <= a; } ELSE { w <= b; }` |
-| 2 | IF/ELIF/ELSE | Three branches, each assigns output |
-| 3 | Nested IF | IF inside IF — deeper nesting |
-| 4 | IF without ELSE | Valid in SYNC (register holds) |
-| 5 | Flow-sensitive no loop | `IF (sel) { a = b; } ELSE { b = a; }` — no cycle |
-| 6 | Multiple ELIFs | `IF ... ELIF ... ELIF ... ELSE ...` |
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | Missing parens on IF | `IF c { ... }` | Error | IF_COND_MISSING_PARENS |
+| 2 | Missing parens on ELIF | `ELIF c { ... }` | Error | IF_COND_MISSING_PARENS |
+| 3 | Condition not 1-bit | `IF (8'd5) { ... }` | Error | IF_COND_WIDTH_NOT_1 |
+| 4 | Control flow outside block | IF/SELECT outside ASYNC/SYNC block | Error | CONTROL_FLOW_OUTSIDE_BLOCK |
+| 5 | Unconditional combinational loop | `a = b; b = a;` in ASYNC | Error | COMB_LOOP_UNCONDITIONAL |
+| 6 | Conditional safe cycle | Cycle only within mutually exclusive branches | Warning | COMB_LOOP_CONDITIONAL_SAFE |
 
-### 3.2 Boundary/Edge Cases
+### 2.3 Edge Cases
 
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | Deeply nested (10 levels) | Valid |
-| 2 | Empty IF body | `IF (c) { }` — valid |
-| 3 | IF with only ELSE | Not valid syntax — must have IF first |
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Deeply nested (10 levels) | 10+ nesting levels of IF | Valid |
+| 2 | Empty IF body | `IF (c) { }` | Valid |
+| 3 | IF with only ELSE | Missing IF before ELSE | Parse error |
+| 4 | IF without ELSE in ASYNC | Missing driver for net in else path | Error: ASYNC_UNDEFINED_PATH_NO_DRIVER |
 
-### 3.3 Negative Testing
+## 3. Input/Output Matrix
 
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | Missing parens | `IF c { ... }` — Error |
-| 2 | Condition not 1-bit | `IF (8'd5) { ... }` — Error |
-| 3 | Independent IFs same target | `IF (a) { w <= x; } IF (b) { w <= y; }` — Error |
-| 4 | Unconditional loop | `a = b; b = a;` — Error |
-| 5 | IF without ELSE in ASYNC | Missing driver for net in else path — Error (partial coverage) |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | `IF c { ... }` | Compile error | IF_COND_MISSING_PARENS | error | Parentheses required |
+| 2 | `ELIF c { ... }` | Compile error | IF_COND_MISSING_PARENS | error | ELIF also requires parens |
+| 3 | `IF (8'd5) { ... }` | Compile error | IF_COND_WIDTH_NOT_1 | error | Condition must be 1 bit |
+| 4 | IF outside ASYNC/SYNC | Compile error | CONTROL_FLOW_OUTSIDE_BLOCK | error | Must be inside block |
+| 5 | `a = b; b = a;` in ASYNC | Compile error | COMB_LOOP_UNCONDITIONAL | error | Unconditional feedback |
+| 6 | Cycle in exclusive branches | Warning | COMB_LOOP_CONDITIONAL_SAFE | warning | Safe if mutually exclusive |
 
-## 4. Input/Output Matrix
+## 4. Existing Validation Tests
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `IF c { ... }` | Error | IF_COND_MISSING_PARENS | S5.3 |
-| 2 | `IF (8'd5) { ... }` | Error | — | Condition width check |
-| 3 | Two independent IFs | Error | ASSIGN_INDEPENDENT_CHAIN_CONFLICT | S1.5.2 |
-| 4 | `a = b; b = a;` | Error | COMB_LOOP_DETECTED | S12.2 |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 5_3_IF_COND_MISSING_PARENS-missing_parentheses.jz | IF_COND_MISSING_PARENS | IF condition missing required parentheses |
+| 5_3_IF_COND_MISSING_PARENS-elif_missing_parens.jz | IF_COND_MISSING_PARENS | ELIF condition missing required parentheses |
+| 5_3_IF_COND_WIDTH_NOT_1-condition_not_1bit.jz | IF_COND_WIDTH_NOT_1 | IF/ELIF condition wider than 1 bit |
+| 5_3_COMB_LOOP_UNCONDITIONAL-unconditional_loop.jz | COMB_LOOP_UNCONDITIONAL | Unconditional combinational feedback loop in ASYNC |
+| 5_3_COMB_LOOP_CONDITIONAL_SAFE-conditional_safe_cycle.jz | COMB_LOOP_CONDITIONAL_SAFE | Cycle only within mutually exclusive branches (safe warning) |
 
-## 5. Integration Points
+## 5. Rules Matrix
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_statements.c` | Parses IF/ELIF/ELSE | Token stream |
-| `driver_control.c` | Control flow analysis | Integration test |
-| `driver_flow.c` | Path enumeration | Integration test |
-| `driver_comb.c` | Combinational loop detection | Integration test |
+### 5.1 Rules Tested
 
-## 6. Rules Matrix
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| IF_COND_MISSING_PARENS | error | S5.3 IF/ELIF condition missing required parentheses | 5_3_IF_COND_MISSING_PARENS-missing_parentheses.jz, 5_3_IF_COND_MISSING_PARENS-elif_missing_parens.jz |
+| IF_COND_WIDTH_NOT_1 | error | S5.3 IF/ELIF condition must be 1 bit wide | 5_3_IF_COND_WIDTH_NOT_1-condition_not_1bit.jz |
+| COMB_LOOP_UNCONDITIONAL | error | S5.3/S8.2 Combinational loop: signal feeds back to itself | 5_3_COMB_LOOP_UNCONDITIONAL-unconditional_loop.jz |
+| COMB_LOOP_CONDITIONAL_SAFE | warning | S5.3/S8.2 Cycles only within mutually exclusive branches | 5_3_COMB_LOOP_CONDITIONAL_SAFE-conditional_safe_cycle.jz |
 
-### 6.1 Rules Tested
+### 5.2 Rules Not Tested
 
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| IF_COND_MISSING_PARENS | Missing parentheses on IF condition | Neg 1 |
-| ASSIGN_INDEPENDENT_CHAIN_CONFLICT | Independent chains assign same signal | Neg 3 |
-
-### 6.2 Rules Missing
-
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| IF_COND_NOT_1BIT | S5.3 "width-1" | Condition wider than 1 bit |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| CONTROL_FLOW_OUTSIDE_BLOCK | error | No dedicated 5_3-prefixed test for control flow outside ASYNC/SYNC block |

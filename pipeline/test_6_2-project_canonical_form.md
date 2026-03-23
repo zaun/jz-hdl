@@ -1,67 +1,87 @@
-# Test Plan: 6.2 Project Canonical Form (including 6.2.1 @import)
+# Test Plan: 6.2 Project Canonical Form
 
-**Specification Reference:** Section 6.2 and 6.2.1 of jz-hdl-specification.md
+**Specification Reference:** Section 6.2 of jz-hdl-specification.md
 
 ## 1. Objective
 
-Verify project structure (canonical ordering), @import directive (placement, semantics, de-duplication, path normalization, nested imports), and imported file constraints (no @project in imported files).
+Verify project structure (canonical ordering), @import directive rules (placement, semantics, de-duplication, path normalization, nested imports), and imported file constraints (no @project in imported files).
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `parser.project`** — attributes: `import_count`, `has_config`, `has_clocks`, `has_pins`, `has_top`.
-- **Span: `import.resolve`** — attributes: `path`, `canonical_path`, `is_duplicate`.
-- **Event: `import.duplicate`** — Same file imported twice.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | Full project | Project with all sections in canonical order |
+| 2 | Two module imports | @import two files each containing modules |
+| 3 | Blackbox import | @import file with @blackbox definitions |
+| 4 | Relative path import | @import using relative path |
+| 5 | Multiple imports before CONFIG | Several @imports before CONFIG block |
+| 6 | Zero imports | Project with no @import directives -- valid |
 
-### 3.1 Happy Path
-1. Full project with all sections in order
-2. @import two files with modules
-3. @import file with @blackbox definitions
-4. Relative path import
-5. Multiple @imports before CONFIG
+### 2.2 Error Cases
 
-### 3.2 Boundary/Edge Cases
-1. Zero @imports — valid
-2. Import file with zero modules — valid
-3. Deep import chain (A imports B imports C)
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | Import outside project | @import at file scope, not inside @project |
+| 2 | Import after CONFIG | @import appears after CONFIG block |
+| 3 | Imported file has @project | Imported file contains its own @project/@endproj |
+| 4 | Duplicate module name across imports | Two imported files define same module/blackbox name |
+| 5 | Same file imported twice | Duplicate @import of identical path |
+| 6 | Multiple @project per file | More than one @project directive in same file |
+| 7 | Missing @endproj | @project block without closing @endproj |
 
-### 3.3 Negative Testing
-1. @import after CONFIG — Error (placement)
-2. Imported file contains @project — Error
-3. Duplicate import same path — Error (IMPORT_FILE_MULTIPLE_TIMES)
-4. Duplicate import via symlink (same canonical path) — Error
-5. Duplicate module name across imports — Error
-6. @import outside @project — Error
-7. Import file not found — Error
+### 2.3 Edge Cases
 
-## 4. Input/Output Matrix
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | Import file with zero modules | Valid but no definitions contributed |
+| 2 | Duplicate import via symlink | Same canonical path imported twice |
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | @import after CONFIG | Error | IMPORT_WRONG_POSITION | S6.2.1 |
-| 2 | Imported file has @project | Error | IMPORT_HAS_PROJECT | S6.2.1 |
-| 3 | Same file imported twice | Error | IMPORT_FILE_MULTIPLE_TIMES | S6.2.1 |
-| 4 | Import not found | Error | IMPORT_FILE_NOT_FOUND | S6.2.1 |
+## 3. Input/Output Matrix
 
-## 5. Integration Points
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|-----------------|---------|----------|-------|
+| 1 | @import at file scope | Error | IMPORT_OUTSIDE_PROJECT | error | S6.2.1 |
+| 2 | @import after CONFIG | Error | IMPORT_NOT_AT_PROJECT_TOP | error | S6.2.1 |
+| 3 | Imported file has @project | Error | IMPORT_FILE_HAS_PROJECT | error | S6.2.1 |
+| 4 | Duplicate module/blackbox name | Error | IMPORT_DUP_MODULE_OR_BLACKBOX | error | S6.2.1/S6.10 |
+| 5 | Same file imported twice | Error | IMPORT_FILE_MULTIPLE_TIMES | error | S6.2.1 |
+| 6 | Two @project in one file | Error | PROJECT_MULTIPLE_PER_FILE | error | S6.2/S6.9 |
+| 7 | Missing @endproj | Error | PROJECT_MISSING_ENDPROJ | error | S6.2 |
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_import.c` | Import resolution and parsing | Mock filesystem |
-| `path_security.c` | Path validation | Integration test |
-| `parser_project.c` | Project structure validation | Token stream |
+## 4. Existing Validation Tests
 
-## 6. Rules Matrix
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision.jz | IMPORT_DUP_MODULE_OR_BLACKBOX | Imported module/blackbox name duplicates existing project name |
+| 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libA.jz | IMPORT_DUP_MODULE_OR_BLACKBOX | Support file for name collision test (library A) |
+| 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libB.jz | IMPORT_DUP_MODULE_OR_BLACKBOX | Support file for name collision test (library B) |
+| 6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project.jz | IMPORT_FILE_HAS_PROJECT | Imported file contains its own @project/@endproj |
+| 6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project_lib.jz | IMPORT_FILE_HAS_PROJECT | Support file for imported-has-project test |
+| 6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import.jz | IMPORT_FILE_MULTIPLE_TIMES | Same source file imported more than once |
+| 6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import_lib.jz | IMPORT_FILE_MULTIPLE_TIMES | Support file for duplicate import test |
+| 6_2_IMPORT_NOT_AT_PROJECT_TOP-import_after_config.jz | IMPORT_NOT_AT_PROJECT_TOP | @import appears after CONFIG/CLOCKS/PIN blocks |
+| 6_2_IMPORT_NOT_AT_PROJECT_TOP-import_after_config_lib.jz | IMPORT_NOT_AT_PROJECT_TOP | Support file for import-after-config test |
+| 6_2_IMPORT_OUTSIDE_PROJECT-import_at_file_scope.jz | IMPORT_OUTSIDE_PROJECT | @import used outside @project block |
 
-### 6.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| IMPORT_FILE_MULTIPLE_TIMES | Duplicate import | Neg 3, 4 |
-| IMPORT_HAS_PROJECT | Imported file contains @project | Neg 2 |
-| DIRECTIVE_INVALID_CONTEXT | @import outside @project | Neg 6 |
+## 5. Rules Matrix
 
-### 6.2 Rules Missing
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| IMPORT_WRONG_POSITION | S6.2.1 "immediately after header" | @import after CONFIG/CLOCKS |
+### 5.1 Rules Tested
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| IMPORT_OUTSIDE_PROJECT | error | S6.2.1 @import used outside @project block | 6_2_IMPORT_OUTSIDE_PROJECT-import_at_file_scope.jz |
+| IMPORT_NOT_AT_PROJECT_TOP | error | S6.2.1 @import appears after CONFIG/CLOCKS/PIN/blackbox/top-level new blocks | 6_2_IMPORT_NOT_AT_PROJECT_TOP-import_after_config.jz |
+| IMPORT_FILE_HAS_PROJECT | error | S6.2.1 Imported file contains its own @project/@endproj (forbidden) | 6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project.jz |
+| IMPORT_DUP_MODULE_OR_BLACKBOX | error | S6.2.1/S6.10 Imported module/blackbox name duplicates existing project name | 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision.jz |
+| IMPORT_FILE_MULTIPLE_TIMES | error | S6.2.1 Same source file imported more than once into a single project | 6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import.jz |
+| PROJECT_MULTIPLE_PER_FILE | error | S6.2/S6.9 Multiple @project directives in same file | -- (no dedicated test file) |
+| PROJECT_MISSING_ENDPROJ | error | S6.2 @project block missing @endproj terminator | -- (no dedicated test file) |
+
+### 5.2 Rules Not Tested
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| PROJECT_MULTIPLE_PER_FILE | error | No dedicated validation test file exists |
+| PROJECT_MISSING_ENDPROJ | error | No dedicated validation test file exists |

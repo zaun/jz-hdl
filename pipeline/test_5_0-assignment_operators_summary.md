@@ -6,71 +6,72 @@
 
 Verify all 9 assignment operator variants: base operators (`=`, `=>`, `<=`), zero-extend variants (`=z`, `=>z`, `<=z`), and sign-extend variants (`=s`, `=>s`, `<=s`). Confirm width rules (same-width bare, modifier required for mismatch, truncation always illegal), and redundant modifier behavior.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `sem.assign_op`** — Trace each assignment; attributes: `operator`, `lhs_width`, `rhs_width`, `modifier`, `block_type`.
-- **Event: `assign.width_mismatch`** — Widths differ without modifier.
-- **Event: `assign.truncation`** — Truncation would be needed.
+### 2.1 Happy Path
 
-## 3. Test Scenarios
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | Same-width alias | `a = b;` (both 8-bit) | Valid assignment |
+| 2 | Same-width drive | `a => b;` (both 8-bit) | Valid assignment |
+| 3 | Same-width receive | `a <= b;` (both 8-bit) | Valid assignment |
+| 4 | Zero-extend alias | `wide =z narrow;` (16 =z 8) | Valid, narrow zero-extended to 16 |
+| 5 | Sign-extend alias | `wide =s narrow;` (16 =s 8) | Valid, narrow sign-extended to 16 |
+| 6 | Zero-extend receive | `wide <=z narrow;` | Valid, narrow zero-extended |
+| 7 | Sign-extend drive | `wide =>s narrow;` | Valid, narrow sign-extended |
+| 8 | Redundant modifier | `a =z b;` (same width) | Valid, harmless redundancy |
+| 9 | All 9 operators exercised | One test per operator variant | All valid when widths match or extend |
 
-### 3.1 Happy Path
+### 2.2 Error Cases
 
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | Same-width alias | `a = b;` (both 8-bit) |
-| 2 | Same-width drive | `a => b;` (both 8-bit) |
-| 3 | Same-width receive | `a <= b;` (both 8-bit) |
-| 4 | Zero-extend alias | `wide =z narrow;` (16 =z 8) |
-| 5 | Sign-extend alias | `wide =s narrow;` (16 =s 8) |
-| 6 | Zero-extend receive | `wide <=z narrow;` |
-| 7 | Sign-extend drive | `wide =>s narrow;` |
-| 8 | Redundant modifier | `a =z b;` (same width — harmless) |
-| 9 | All 9 operators exercised | One test per operator variant |
+| # | Test Case | Input | Expected | Rule ID |
+|---|-----------|-------|----------|---------|
+| 1 | Width mismatch no modifier | `wide = narrow;` (16 = 8) | Error | WIDTH_ASSIGN_MISMATCH_NO_EXT |
+| 2 | Truncation without modifier | `narrow <= wide;` (8 <= 16) | Error | ASSIGN_TRUNCATES |
+| 3 | Truncation with modifier | `narrow <=z wide;` (8 <=z 16) | Error | ASSIGN_TRUNCATES |
+| 4 | Slice width mismatch | `bus[7:4] <= expr[2:0];` (4 vs 3) | Error | ASSIGN_SLICE_WIDTH_MISMATCH |
+| 5 | Concat width mismatch | `{a, b} <= expr;` (sum != expr width) | Error | ASSIGN_CONCAT_WIDTH_MISMATCH |
+| 6 | Drive width mismatch no modifier | `wide => narrow;` (16 => 8) | Error | ASSIGN_WIDTH_NO_MODIFIER |
 
-### 3.2 Boundary/Edge Cases
+### 2.3 Edge Cases
 
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | 1-bit to 256-bit extend | Maximum extension |
-| 2 | Same width with all modifiers | Redundant but valid |
+| # | Test Case | Input | Expected |
+|---|-----------|-------|----------|
+| 1 | 1-bit to 256-bit extend | `wide <=z narrow;` (256 <=z 1) | Valid, maximum extension |
+| 2 | Same width with all modifiers | `a =z b; a =s b;` (same width) | Valid, redundant but allowed |
+| 3 | 1-bit signal all operators | Each of 9 operators on 1-bit signals | Valid when same width |
 
-### 3.3 Negative Testing
+## 3. Input/Output Matrix
 
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | Width mismatch no modifier | `wide = narrow;` — Error |
-| 2 | Truncation attempt | `narrow <= wide;` without modifier — Error |
-| 3 | Truncation with modifier | `narrow <=z wide;` — still Error (wider RHS) |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|----------------|---------|----------|-------|
+| 1 | `wide = narrow;` (no modifier) | Compile error | WIDTH_ASSIGN_MISMATCH_NO_EXT | error | Requires z/s modifier |
+| 2 | `narrow <= wide;` (truncation) | Compile error | ASSIGN_TRUNCATES | error | Truncation always illegal |
+| 3 | `narrow <=z wide;` (truncation with mod) | Compile error | ASSIGN_TRUNCATES | error | Modifier cannot make truncation valid |
+| 4 | `wide <=z narrow;` | Accepted | -- | -- | Zero-extend narrow into wider LHS |
+| 5 | `bus[7:4] <= 3'b101;` | Compile error | ASSIGN_SLICE_WIDTH_MISMATCH | error | Slice widths must match |
+| 6 | `{a, b} <= expr;` (width sum mismatch) | Compile error | ASSIGN_CONCAT_WIDTH_MISMATCH | error | Concat total must equal RHS width |
+| 7 | `wide => narrow;` (no modifier) | Compile error | ASSIGN_WIDTH_NO_MODIFIER | error | Drive requires modifier for mismatch |
 
-## 4. Input/Output Matrix
+## 4. Existing Validation Tests
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `wide = narrow;` (no mod) | Error | WIDTH_ASSIGN_MISMATCH_NO_EXT | Requires modifier |
-| 2 | `narrow <= wide;` | Error | ASSIGN_WIDTH_NO_MODIFIER | Truncation |
-| 3 | `narrow <=z wide;` | Error | — | Can't zero-extend into narrower |
-| 4 | `wide <=z narrow;` | Valid | — | Zero-extend narrow to wide |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 5_0_ASSIGN_TRUNCATES-truncation_with_modifier.jz | ASSIGN_TRUNCATES | Assignment truncates RHS into smaller LHS even with modifier |
 
-## 5. Integration Points
+## 5. Rules Matrix
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `driver_assign.c` | Assignment operator validation | Unit test |
-| `driver_width.c` | Width matching and extension | Unit test |
-| `parser_statements.c` | Parses assignment operators | Token stream |
+### 5.1 Rules Tested
 
-## 6. Rules Matrix
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| ASSIGN_TRUNCATES | error | S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier | 5_0_ASSIGN_TRUNCATES-truncation_with_modifier.jz |
 
-### 6.1 Rules Tested
+### 5.2 Rules Not Tested
 
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| WIDTH_ASSIGN_MISMATCH_NO_EXT | Width mismatch without modifier | Neg 1 |
-| ASSIGN_WIDTH_NO_MODIFIER | Truncation or mismatch | Neg 2 |
-
-### 6.2 Rules Missing
-
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| ASSIGN_TRUNCATION | S5.0 "truncation is never implicit" | Explicit rule for truncation attempt even with modifier |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| ASSIGN_WIDTH_NO_MODIFIER | error | No 5_0-prefixed test; covered implicitly by other sections (S4.10) |
+| ASSIGN_SLICE_WIDTH_MISMATCH | error | No 5_0-prefixed test; covered by S4.10 and S5.1/S5.2 tests |
+| ASSIGN_CONCAT_WIDTH_MISMATCH | error | No 5_0-prefixed test; covered by S4.10 and S5.1/S5.2 tests |
+| WIDTH_ASSIGN_MISMATCH_NO_EXT | error | No 5_0-prefixed test; covered by broader width-checking tests in other sections |

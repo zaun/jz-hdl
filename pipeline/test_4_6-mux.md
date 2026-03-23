@@ -4,84 +4,78 @@
 
 ## 1. Objective
 
-Verify MUX declaration forms (aggregation and auto-slicing), read-only semantics, dynamic indexing, width rules (equal source widths for aggregation, exact divisibility for auto-slicing), out-of-range index handling (compile-time error vs. runtime zero), and selector width requirements.
+Verify MUX aggregation/slicing, read-only semantics, dynamic indexing. Confirm that assigning to a MUX is rejected, aggregation sources must have equal widths, aggregation sources must be valid readable signals, auto-slicing requires the wide source width to be an exact multiple of element width, static out-of-range indices are caught at compile time, and duplicate MUX names are rejected.
 
-## 2. Instrumentation Strategy
+## 2. Test Scenarios
 
-- **Span: `parser.mux`** — Trace MUX parsing; attributes: `mux_name`, `form` (aggregate/slice), `element_count`.
-- **Span: `sem.mux_validate`** — Semantic validation; attributes: `source_widths`, `element_width`, `selector_width`.
-- **Event: `mux.width_mismatch`** — Sources have different widths.
-- **Event: `mux.index_out_of_range`** — Static index exceeds element count.
-
-## 3. Test Scenarios
-
-### 3.1 Happy Path
+### 2.1 Happy Path
 
 | # | Test Case | Description |
 |---|-----------|-------------|
-| 1 | Aggregation form | `mux = byte_a, byte_b;` — two 8-bit sources |
-| 2 | Auto-slicing form | `mux [8] = flat_data;` on 32-bit signal → 4 elements |
+| 1 | Aggregation form | `mux = byte_a, byte_b;` -- two 8-bit sources |
+| 2 | Auto-slicing form | `mux [8] = flat_data;` on 32-bit signal -- 4 elements |
 | 3 | Dynamic selection | `out = mux[sel];` in ASYNCHRONOUS |
-| 4 | Constant index | `out = mux[2'd1];` — valid static index |
-| 5 | MUX in SYNCHRONOUS | `reg <= mux[sel];` — read in SYNC block |
+| 4 | Constant index | `out = mux[2'd1];` -- valid static index |
+| 5 | MUX in SYNCHRONOUS | `reg <= mux[sel];` -- read in SYNC block |
 | 6 | Many sources | Aggregation with 8+ sources |
 
-### 3.2 Boundary/Edge Cases
+### 2.2 Error Cases
+
+| # | Test Case | Description |
+|---|-----------|-------------|
+| 1 | Assign to MUX | `mux[0] = data;` -- error: MUX is read-only |
+| 2 | Source width mismatch | `mux = byte_a, nibble;` (8-bit vs 4-bit) -- error |
+| 3 | Invalid aggregation source | Source is not a valid readable signal in module scope -- error |
+| 4 | Non-divisible auto-slice | `mux [3] = 8-bit_signal;` (8 % 3 != 0) -- error |
+| 5 | Static out-of-range index | `mux[4]` on 4-element MUX (valid 0-3) -- error |
+| 6 | Duplicate MUX name | MUX name conflicts with another identifier -- error |
+
+### 2.3 Edge Cases
 
 | # | Test Case | Description |
 |---|-----------|-------------|
 | 1 | Two elements | Minimum aggregation (2 sources) |
-| 2 | 256 elements | Large aggregation |
+| 2 | Large aggregation | 256 elements |
 | 3 | Selector width exact | clog2(N) bits for N elements |
-| 4 | Selector width narrow | Narrower than clog2(N) — zero-extended |
-| 5 | Single wide signal | 256-bit sliced into 32 8-bit elements |
-| 6 | Runtime out-of-range | Index > N-1 at runtime → result is zero |
+| 4 | Runtime out-of-range | Index > N-1 at runtime -- result is zero |
 
-### 3.3 Negative Testing
+## 3. Input/Output Matrix
 
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | Assign to MUX | `mux[0] = data;` — Error: read-only |
-| 2 | Mismatched source widths | `mux = byte_a, nibble;` (8-bit vs 4-bit) — Error |
-| 3 | Non-divisible auto-slice | `mux [3] = 8-bit_signal;` (8 % 3 ≠ 0) — Error |
-| 4 | Static out-of-range index | `mux[4]` on 4-element MUX (valid 0-3) — Error |
-| 5 | Duplicate MUX name | MUX name conflicts with wire/port — Error |
-| 6 | Element width zero | `mux [0] = signal;` — Error |
+| # | Input | Expected Output | Rule ID | Severity | Notes |
+|---|-------|-----------------|---------|----------|-------|
+| 1 | `mux[0] = data;` | Error: assigning to MUX is forbidden | MUX_ASSIGN_LHS | error | S4.6 read-only |
+| 2 | Sources with different widths | Error: sources must have identical bit-width | MUX_AGG_SOURCE_WIDTH_MISMATCH | error | S4.6 aggregation |
+| 3 | Invalid source in aggregation | Error: source not a valid readable signal | MUX_AGG_SOURCE_INVALID | error | S4.6 aggregation |
+| 4 | Wide source not evenly divisible | Error: width must be exact multiple of element width | MUX_SLICE_WIDTH_NOT_DIVISOR | error | S4.6 auto-slicing |
+| 5 | Static index outside valid range | Error: selector outside valid index range | MUX_SELECTOR_OUT_OF_RANGE_CONST | error | S4.6 compile-time |
+| 6 | MUX name duplicates another identifier | Error: duplicate identifier | MUX_NAME_DUPLICATE | error | S4.6 |
 
-## 4. Input/Output Matrix
+## 4. Existing Validation Tests
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `mux[0] = data;` | Error: assign to MUX | MUX_ASSIGN_READONLY | S4.6 |
-| 2 | Mismatched widths in sources | Error | MUX_WIDTH_MISMATCH | S4.6 |
-| 3 | 8 % 3 ≠ 0 | Error | MUX_SLICE_NOT_DIVISIBLE | S4.6 |
-| 4 | `mux[4]` on 4 elements | Error | MUX_INDEX_OUT_OF_RANGE | S4.6 |
-| 5 | Valid aggregation read | Valid result | — | Happy path |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 4_6_MUX_AGG_SOURCE_INVALID-invalid_source.jz | MUX_AGG_SOURCE_INVALID | Aggregation source not a valid readable signal in module scope |
+| 4_6_MUX_AGG_SOURCE_WIDTH_MISMATCH-source_width_mismatch.jz | MUX_AGG_SOURCE_WIDTH_MISMATCH | Aggregation form sources must all have identical bit-width |
+| 4_6_MUX_ASSIGN_LHS-assign_to_mux.jz | MUX_ASSIGN_LHS | Assigning to MUX id or its indexed form on LHS is forbidden |
+| 4_6_MUX_NAME_DUPLICATE-duplicate_name.jz | MUX_NAME_DUPLICATE | MUX identifier duplicates another identifier in module |
+| 4_6_MUX_SELECTOR_OUT_OF_RANGE_CONST-static_index_oob.jz | MUX_SELECTOR_OUT_OF_RANGE_CONST | Selector statically provable outside valid index range |
+| 4_6_MUX_SLICE_WIDTH_NOT_DIVISOR-non_divisible_width.jz | MUX_SLICE_WIDTH_NOT_DIVISOR | Auto-slicing form requires wide source width to be exact multiple of element width |
 
-## 5. Integration Points
+## 5. Rules Matrix
 
-| Dependency | Role | Mock/Stub Strategy |
-|-----------|------|-------------------|
-| `parser_mux.c` | Parses MUX declarations | Token stream |
-| `driver_expr.c` | MUX access in expressions | Expression AST |
-| `driver_width.c` | Width validation | Unit test |
-| `ir_build_expr.c` | MUX to multiplexer logic | IR verification |
+### 5.1 Rules Tested
 
-## 6. Rules Matrix
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| MUX_ASSIGN_LHS | error | S4.6 Assigning to MUX id or its indexed form on LHS is forbidden (MUX is read-only) | 4_6_MUX_ASSIGN_LHS-assign_to_mux.jz |
+| MUX_AGG_SOURCE_WIDTH_MISMATCH | error | S4.6 Aggregation form sources must all have identical bit-width | 4_6_MUX_AGG_SOURCE_WIDTH_MISMATCH-source_width_mismatch.jz |
+| MUX_AGG_SOURCE_INVALID | error | S4.6 Aggregation source not a valid readable signal in module scope | 4_6_MUX_AGG_SOURCE_INVALID-invalid_source.jz |
+| MUX_SLICE_WIDTH_NOT_DIVISOR | error | S4.6 Auto-slicing form requires wide_source width to be exact multiple of element_width | 4_6_MUX_SLICE_WIDTH_NOT_DIVISOR-non_divisible_width.jz |
+| MUX_SELECTOR_OUT_OF_RANGE_CONST | error | S4.6 Selector statically provable outside valid index range | 4_6_MUX_SELECTOR_OUT_OF_RANGE_CONST-static_index_oob.jz |
+| MUX_NAME_DUPLICATE | error | S4.6 MUX identifier duplicates another identifier in module | 4_6_MUX_NAME_DUPLICATE-duplicate_name.jz |
 
-### 6.1 Rules Tested
+### 5.2 Rules Not Tested
 
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| MUX_ASSIGN_READONLY | Assigning to read-only MUX | Neg 1 |
-| MUX_WIDTH_MISMATCH | Aggregated sources differ in width | Neg 2 |
-| MUX_SLICE_NOT_DIVISIBLE | Wide source not evenly divisible | Neg 3 |
-| MUX_INDEX_OUT_OF_RANGE | Static index exceeds element count | Neg 4 |
-| SCOPE_DUPLICATE_SIGNAL | MUX name conflicts with other identifier | Neg 5 |
-
-### 6.2 Rules Missing
-
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| MUX_ELEMENT_WIDTH_ZERO | S4.6 "positive integer" | Element width = 0 in auto-slicing |
-| MUX_SELECTOR_TOO_NARROW | S4.6 "implicitly zero-extend" | May need info/warning for narrow selector |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| -- | -- | All rules for this section are covered by existing tests |
