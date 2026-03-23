@@ -1,0 +1,50 @@
+// MAP_DUP_PHYSICAL_LOCATION: Two logical pins mapped to same physical board pin.
+// Tests duplicate physical pin between two scalar pins and between scalar+bus bit.
+// Valid unique mappings included to verify no false positives.
+
+@project MAP_DUP_PHYSICAL_LOCATION_duplicate_board_pin
+    OUT_PINS {
+        out_a = { standard=LVCMOS33, drive=8 };
+        out_b = { standard=LVCMOS33, drive=8 };
+        bus_out[2] = { standard=LVCMOS33, drive=8 };
+    }
+
+    IN_PINS {
+        in_a = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        out_a = 10;
+        // Trigger 1: scalar pin duplicates out_a's physical pin
+        out_b = 10;
+        // Trigger 2: bus bit duplicates in_a's physical pin
+        in_a = 20;
+        bus_out[0] = 20;
+        // Valid: unique physical pin
+        bus_out[1] = 21;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

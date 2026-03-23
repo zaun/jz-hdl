@@ -1,0 +1,5 @@
+File: 6_5_PIN_BUS_WIDTH_INVALID-bad_bus_width.jz
+      17:9    error PIN_BUS_WIDTH_INVALID S6.5/S6.9 Bus pin width non-integer or <= 0
+      19:9    error PIN_BUS_WIDTH_INVALID S6.5/S6.9 Bus pin width non-integer or <= 0
+      26:9    error PIN_BUS_WIDTH_INVALID S6.5/S6.9 Bus pin width non-integer or <= 0
+      33:9    error PIN_BUS_WIDTH_INVALID S6.5/S6.9 Bus pin width non-integer or <= 0

@@ -1,0 +1,7 @@
+File: 2_4_SPECIAL_DRIVER_IN_EXPRESSION-gnd_vcc_in_expr.jz
+      28:24   error SPECIAL_DRIVER_IN_EXPRESSION S2.3 GND/VCC may not appear in arithmetic/logical expressions
+      30:24   error SPECIAL_DRIVER_IN_EXPRESSION S2.3 GND/VCC may not appear in arithmetic/logical expressions
+      32:18   error SPECIAL_DRIVER_IN_EXPRESSION S2.3 GND/VCC may not appear in arithmetic/logical expressions
+      36:18   error SPECIAL_DRIVER_IN_EXPRESSION S2.3 GND/VCC may not appear in arithmetic/logical expressions
+      70:18   error SPECIAL_DRIVER_IN_EXPRESSION S2.3 GND/VCC may not appear in arithmetic/logical expressions
+      77:18   error SPECIAL_DRIVER_IN_EXPRESSION S2.3 GND/VCC may not appear in arithmetic/logical expressions

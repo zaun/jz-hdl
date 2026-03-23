@@ -1,0 +1,6 @@
+File: 1_4_COMMENT_IN_TOKEN-comment_inside_token.jz
+      19:11   error COMMENT_IN_TOKEN S1.4 Comment appears inside a token (identifier/number/operator/literal)
+      22:18   error COMMENT_IN_TOKEN S1.4 Comment appears inside a token (identifier/number/operator/literal)
+      25:11   error COMMENT_IN_TOKEN S1.4 Comment appears inside a token (identifier/number/operator/literal)
+      25:32   error COMMENT_IN_TOKEN S1.4 Comment appears inside a token (identifier/number/operator/literal)
+      52:21   error COMMENT_IN_TOKEN S1.4 Comment appears inside a token (identifier/number/operator/literal)

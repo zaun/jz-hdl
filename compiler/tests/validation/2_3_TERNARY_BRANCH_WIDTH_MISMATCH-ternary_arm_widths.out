@@ -1,0 +1,6 @@
+File: 2_3_TERNARY_BRANCH_WIDTH_MISMATCH-ternary_arm_widths.jz
+      31:18   error TERNARY_BRANCH_WIDTH_MISMATCH S3.2/S8.1 Ternary true/false branches have mismatched widths
+      33:18   error TERNARY_BRANCH_WIDTH_MISMATCH S3.2/S8.1 Ternary true/false branches have mismatched widths
+      37:14   error TERNARY_BRANCH_WIDTH_MISMATCH S3.2/S8.1 Ternary true/false branches have mismatched widths
+      70:13   error TERNARY_BRANCH_WIDTH_MISMATCH S3.2/S8.1 Ternary true/false branches have mismatched widths
+      77:14   error TERNARY_BRANCH_WIDTH_MISMATCH S3.2/S8.1 Ternary true/false branches have mismatched widths

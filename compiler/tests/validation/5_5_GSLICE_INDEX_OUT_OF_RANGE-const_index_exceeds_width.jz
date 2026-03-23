@@ -1,0 +1,67 @@
+// GSLICE_INDEX_OUT_OF_RANGE: gslice() index out of range for source width.
+// Tests gslice() with constant index >= source width in async and sync blocks.
+// Valid gslice() with in-range index included to verify no false positives.
+
+@project GSLICE_INDEX_OUT_OF_RANGE_const_index_exceeds_width
+    @top TopMod {
+        IN  [1]  clk = _;
+        IN  [16] data = _;
+        OUT [4]  out_a = _;
+        OUT [4]  out_b = _;
+    }
+@endproj
+
+// Helper module with out-of-range gslice indices
+@module HelperMod
+    PORT {
+        IN  [1]  clk;
+        IN  [16] data;
+        OUT [4]  out_a;
+        OUT [4]  out_b;
+    }
+    REGISTER {
+        r [4] = 4'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: gslice index 16 on 16-bit source (valid 0-15) in async
+        out_a <= gslice(data, 16, 4);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: gslice index 20 on 16-bit source in sync
+        r <= gslice(data, 20, 4);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1]  clk;
+        IN  [16] data;
+        OUT [4]  out_a;
+        OUT [4]  out_b;
+    }
+    WIRE {
+        h_a [4];
+        h_b [4];
+    }
+    REGISTER {
+        r [4] = 4'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1]  clk = clk;
+        IN  [16] data = data;
+        OUT [4]  out_a = h_a;
+        OUT [4]  out_b = h_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: gslice index 18 on 16-bit source in top async
+        out_a <= gslice(data, 18, 4);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: gslice index 31 on 16-bit source in top sync
+        r <= gslice(data, 31, 4);
+    }
+@endmod

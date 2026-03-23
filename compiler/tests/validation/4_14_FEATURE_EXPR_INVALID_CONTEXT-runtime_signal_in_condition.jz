@@ -1,0 +1,88 @@
+// FEATURE_EXPR_INVALID_CONTEXT: Runtime signals used in @feature conditions.
+// Tests wire, register, and port references in @feature guard expressions.
+// Valid references (CONFIG, CONST, literals) are included as negative tests.
+
+@project FEATURE_EXPR_INVALID_CONTEXT_runtime_signal_in_condition
+    CONFIG {
+        DEBUG = 1;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST {
+        FLAG = 1;
+    }
+
+    WIRE {
+        w [1];
+    }
+
+    ASYNCHRONOUS {
+        w = din;
+
+        // Valid: CONST reference (should NOT trigger)
+        @feature FLAG == 1
+            data = din;
+        @else
+            data = ~din;
+        @endfeat
+
+        // Trigger 1: wire reference in @feature condition (ASYNC block)
+        @feature w == 1'b1
+            data = din;
+        @else
+            data = ~din;
+        @endfeat
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST {
+        MODE = 1;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: CONFIG reference (should NOT trigger)
+        @feature CONFIG.DEBUG == 1
+            data = r;
+        @else
+            data = ~r;
+        @endfeat
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: register reference in @feature condition
+        @feature r == 1'b1
+            r <= ~r;
+        @endfeat
+
+        // Trigger 2: port reference in @feature condition
+        @feature clk == 1'b1
+            r <= 1'b0;
+        @endfeat
+    }
+@endmod

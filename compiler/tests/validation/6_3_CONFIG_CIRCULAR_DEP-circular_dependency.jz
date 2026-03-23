@@ -1,0 +1,39 @@
+// CONFIG_CIRCULAR_DEP: Circular dependency between CONFIG entries.
+// Tests direct and indirect circular references.
+// Valid non-circular entries included to verify no false positives.
+
+@project CONFIG_CIRCULAR_DEP_circular_dependency
+    CONFIG {
+        // Valid: literal values
+        OK1 = 10;
+        OK2 = CONFIG.OK1;
+        // Trigger 1: direct circular A <-> B
+        CA = CONFIG.CB;
+        CB = CONFIG.CA;
+        // Trigger 2: indirect circular X -> Y -> Z -> X
+        CX = CONFIG.CZ;
+        CY = CONFIG.CX;
+        CZ = CONFIG.CY;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

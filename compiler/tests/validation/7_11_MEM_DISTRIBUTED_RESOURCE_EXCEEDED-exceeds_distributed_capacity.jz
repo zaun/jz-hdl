@@ -1,0 +1,87 @@
+// MEM_DISTRIBUTED_RESOURCE_EXCEEDED: Total DISTRIBUTED memory exceeds chip capacity.
+// Uses gw1nr-9 chip with 16384 bits of distributed memory.
+// Creates two modules each with distributed MEMs totaling > 16384 bits.
+
+@project(CHIP="gw1nr-9-qn88-c6-i5") MEM_DISTRIBUTED_RESOURCE_EXCEEDED_exceeds_distributed_capacity
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module DistChild
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // 8 * 1024 = 8192 bits of distributed memory
+    MEM(type=DISTRIBUTED) {
+        dist_a [8] [1024] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = dist_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        dist_a.wr[addr] <= wdata;
+    }
+@endmod
+
+// Trigger: TopMod has 8192 bits distributed + 2 instances of DistChild (2*8192) = 24576 > 16384
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // 8 * 1024 = 8192 bits in top module
+    MEM(type=DISTRIBUTED) {
+        dist_top [8] [1024] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_a DistChild {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    @new inst_b DistChild {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = dist_top.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        dist_top.wr[addr] <= wdata;
+    }
+@endmod

@@ -1,0 +1,71 @@
+// PORT_TRISTATE_MISMATCH: z assigned to non-INOUT port.
+// Tests z assigned to OUT ports in various contexts via IF/ELSE branching.
+// WARN_INTERNAL_TRISTATE co-fires as an inherent secondary diagnostic.
+// Valid z usage (wire with z) included to verify PORT_TRISTATE_MISMATCH does not fire for wires.
+
+@project PORT_TRISTATE_MISMATCH_z_on_non_inout_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] en = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module with z assigned to OUT port in IF branch
+@module HelperA
+    PORT {
+        IN  [1] en;
+        IN  [8] din;
+        OUT [8] data;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: z in IF branch assigned to OUT port in helper module
+        IF (en) {
+            data <= 8'bzzzz_zzzz;
+        } ELSE {
+            data <= din;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] en;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'b0000_0000;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] en = en;
+        IN  [8] din = r;
+        OUT [8] data = _;
+    };
+
+    WIRE {
+        // Valid: z to wire does NOT trigger PORT_TRISTATE_MISMATCH
+        w_ok [8];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: z to wire (only WARN_INTERNAL_TRISTATE, not PORT_TRISTATE_MISMATCH)
+        IF (en) {
+            w_ok <= 8'bzzzz_zzzz;
+        } ELSE {
+            w_ok <= r;
+        }
+        // Trigger 2: z in IF branch assigned to OUT port in top module
+        IF (en) {
+            data <= r;
+        } ELSE {
+            data <= 8'bzzzz_zzzz;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

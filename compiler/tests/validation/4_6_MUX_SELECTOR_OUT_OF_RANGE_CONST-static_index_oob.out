@@ -1,0 +1,4 @@
+File: 4_6_MUX_SELECTOR_OUT_OF_RANGE_CONST-static_index_oob.jz
+      30:16   error MUX_SELECTOR_OUT_OF_RANGE_CONST S4.6 Selector statically provable outside valid index range
+      62:17   error MUX_SELECTOR_OUT_OF_RANGE_CONST S4.6 Selector statically provable outside valid index range
+      64:17   error MUX_SELECTOR_OUT_OF_RANGE_CONST S4.6 Selector statically provable outside valid index range

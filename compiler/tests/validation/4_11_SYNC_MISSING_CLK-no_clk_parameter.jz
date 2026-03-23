@@ -1,0 +1,61 @@
+// SYNC_MISSING_CLK: SYNCHRONOUS block must declare a CLK parameter.
+// Tests SYNCHRONOUS blocks without CLK in multiple modules.
+// Valid SYNCHRONOUS blocks with CLK included to verify no false positives.
+
+@project SYNC_MISSING_CLK_no_clk_parameter
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] rst = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: SYNCHRONOUS block without CLK
+@module HelperA
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    // Trigger 1: SYNCHRONOUS with no CLK parameter at all
+    SYNCHRONOUS() {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] din = rst;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_ok [1] = 1'b0;
+        r_bad [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+
+    // Valid: SYNCHRONOUS with CLK — should NOT trigger
+    SYNCHRONOUS(CLK=clk) {
+        r_ok <= ~r_ok;
+    }
+
+    // Trigger 2: SYNCHRONOUS with RESET but no CLK
+    SYNCHRONOUS(RESET=rst) {
+        r_bad <= ~r_bad;
+    }
+@endmod

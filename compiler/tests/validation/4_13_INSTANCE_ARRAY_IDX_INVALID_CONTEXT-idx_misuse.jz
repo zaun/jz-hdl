@@ -1,0 +1,65 @@
+// INSTANCE_ARRAY_IDX_INVALID_CONTEXT: IDX used outside arrayed instance signal bindings.
+// Tests IDX in scalar @new bindings, in OVERRIDE blocks, and validates IDX in
+// arrayed @new bindings produces no false positives.
+
+@project INSTANCE_ARRAY_IDX_INVALID_CONTEXT_idx_misuse
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with CONST and ports
+@module ChildMod
+    CONST {
+        WIDTH = 8;
+    }
+
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        bus [4] = 4'b0000;
+    }
+
+    // Trigger 1: IDX in scalar @new IN port binding
+    @new inst_a ChildMod {
+        IN  [1] din = bus[IDX];
+        OUT [1] data = _;
+    };
+
+    // Trigger 2: IDX in OVERRIDE block of array instance
+    @new inst_b[2] ChildMod {
+        OVERRIDE {
+            WIDTH = IDX;
+        }
+        IN  [1] din = bus[IDX];
+        OUT [1] data = _;
+    };
+
+    // Valid: IDX in arrayed @new signal binding (no trigger)
+    @new inst_c[4] ChildMod {
+        IN  [1] din = bus[IDX];
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = bus[0];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        bus <= ~bus;
+    }
+@endmod

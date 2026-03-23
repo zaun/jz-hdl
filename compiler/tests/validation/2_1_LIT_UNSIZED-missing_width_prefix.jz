@@ -1,0 +1,57 @@
+// LIT_UNSIZED: Unsized literals (missing width prefix) in multiple contexts.
+// Tests unsized literals in async RHS, sync RHS, and register init across modules.
+// Valid sized literals included to verify no false positives.
+
+@project LIT_UNSIZED_missing_width_prefix
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: unsized literals in async and sync contexts
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'hAA;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: unsized literal in async RHS
+        data = 'hFF;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: unsized literal in sync RHS
+        r <= 'b0;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    WIRE {
+        helper_data [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] data = helper_data;
+    };
+
+    REGISTER {
+        // Trigger 3: unsized literal in register init
+        r [8] = 'hCC;
+    }
+    ASYNCHRONOUS {
+        // Valid: sized literal (no false positive)
+        data = helper_data;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: unsized literal in sync expression
+        r <= 'hAB;
+    }
+@endmod

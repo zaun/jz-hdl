@@ -1,0 +1,65 @@
+// PIN_MODE_STANDARD_MISMATCH: Pin mode conflicts with I/O standard.
+// Tests DIFFERENTIAL mode with single-ended standards in IN_PINS, OUT_PINS, and INOUT_PINS.
+// Valid differential+differential-standard combos verify no false positives.
+
+@project PIN_MODE_STANDARD_MISMATCH_mode_standard_conflict
+    CLOCKS {
+        sys_clk = { period=10 };
+        fast_clk = { period=2 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        fast_clk = { standard=LVCMOS33 };
+        // Valid: DIFFERENTIAL with differential standard (no trigger)
+        valid_diff = { standard=LVDS25, mode=DIFFERENTIAL };
+        // Trigger 1: DIFFERENTIAL with single-ended standard in IN_PINS
+        bad_in = { standard=LVCMOS33, mode=DIFFERENTIAL };
+    }
+
+    OUT_PINS {
+        // Trigger 2: DIFFERENTIAL with single-ended standard in OUT_PINS
+        bad_out = { standard=LVCMOS18, drive=8, mode=DIFFERENTIAL, fclk=fast_clk, pclk=sys_clk, reset=sys_clk };
+        // Valid: SINGLE with single-ended standard (no trigger)
+        valid_out = { standard=LVCMOS33, drive=8, mode=SINGLE };
+    }
+
+    INOUT_PINS {
+        // Trigger 3: DIFFERENTIAL with single-ended standard in INOUT_PINS
+        bad_io = { standard=LVCMOS25, drive=4, mode=DIFFERENTIAL };
+    }
+
+    MAP {
+        sys_clk = 1;
+        fast_clk = 2;
+        valid_diff = { P=3, N=4 };
+        bad_in = { P=5, N=6 };
+        bad_out = { P=7, N=8 };
+        valid_out = 9;
+        bad_io = { P=10, N=11 };
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -1,0 +1,57 @@
+// LIT_INVALID_DIGIT_FOR_BASE: Literal contains digit not allowed for its base.
+// Tests binary with invalid digit (2-9), hex with x, hex with z in multiple contexts.
+// Valid literals for each base included to verify no false positives.
+
+@project LIT_INVALID_DIGIT_FOR_BASE_invalid_digits
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: binary invalid digit and hex with x
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: binary with digit '2' (invalid for binary)
+        data = 8'b0000_0012;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: hex with 'x' digit (x not allowed in hex)
+        r <= 8'hFx;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    WIRE {
+        helper_data [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] data = helper_data;
+    };
+
+    REGISTER {
+        // Trigger 3: hex with 'z' digit in register init
+        r [8] = 8'hz0;
+    }
+    ASYNCHRONOUS {
+        // Valid: binary with 0/1 only (no false positive)
+        data = helper_data;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: hex with 0-9/A-F only (no false positive)
+        r <= 8'hAB;
+    }
+@endmod

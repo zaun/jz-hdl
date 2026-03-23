@@ -1,0 +1,79 @@
+// TEMPLATE_FORBIDDEN_BLOCK_HEADER: SYNCHRONOUS/ASYNCHRONOUS block headers
+// are not allowed inside template body.
+// Tests both SYNCHRONOUS and ASYNCHRONOUS headers in file-scoped and module-scoped templates.
+// Valid template included for negative testing.
+// Note: Parser does not recover after forbidden block header, so each template
+// has only the forbidden keyword followed by endtemplate to avoid cascading errors.
+
+@project TEMPLATE_FORBIDDEN_BLOCK_HEADER_sync_async_in_template
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: template with only assignments (no error)
+@template valid_tmpl(a, b)
+    @scratch tmp [1];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Trigger 1: ASYNCHRONOUS in file-scoped template (keyword only, no block body)
+@template async_file(a, b)
+    ASYNCHRONOUS
+@endtemplate
+
+// Trigger 2: SYNCHRONOUS in file-scoped template
+@template sync_file(a, b)
+    SYNCHRONOUS
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 3: ASYNCHRONOUS in module-scoped template
+    @template async_mod(a, b)
+        ASYNCHRONOUS
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 4: SYNCHRONOUS in top module template
+    @template sync_top(a, b)
+        SYNCHRONOUS
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -1,0 +1,73 @@
+// ASSIGN_SLICE_OVERLAP: Overlapping part-select assignments to same identifier bits.
+// Tests overlapping slice assignments in ASYNCHRONOUS blocks across modules.
+// Valid non-overlapping slices included to verify no false positives.
+
+@project ASSIGN_SLICE_OVERLAP_overlapping_slices
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: overlapping slices in async block
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: overlapping slices on port (bits 4-5 overlap)
+        out_a[7:4] = r[7:4];
+        out_a[5:2] = r[3:0];
+        // Need to cover remaining bits
+        out_a[1:0] = r[1:0];
+        // Valid: non-overlapping slices (no false positive)
+        out_b[7:4] = r[7:4];
+        out_b[3:0] = r[3:0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        w [8];
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: overlapping slices on wire (bits 2-3 overlap)
+        w[5:2] = ha_a[3:0];
+        w[3:0] = ha_b[3:0];
+        w[7:6] = ha_a[1:0];
+        // Trigger 3: overlapping slices on port (bits 6-7 overlap)
+        out_a[7:6] = ha_a[1:0];
+        out_a[7:4] = ha_b[3:0];
+        out_a[3:0] = ha_b[3:0];
+        out_b = w;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+    }
+@endmod

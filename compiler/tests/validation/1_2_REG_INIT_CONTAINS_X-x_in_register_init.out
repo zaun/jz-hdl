@@ -1,0 +1,5 @@
+File: 1_2_REG_INIT_CONTAINS_X-x_in_register_init.jz
+      20:21   error REG_INIT_CONTAINS_X S2.1/S4.7 Register initialization literal must not contain `x` bits
+      46:23   error REG_INIT_CONTAINS_X S2.1/S4.7 Register initialization literal must not contain `x` bits
+      48:26   error REG_INIT_CONTAINS_X S2.1/S4.7 Register initialization literal must not contain `x` bits
+      50:23   error REG_INIT_CONTAINS_X S2.1/S4.7 Register initialization literal must not contain `x` bits

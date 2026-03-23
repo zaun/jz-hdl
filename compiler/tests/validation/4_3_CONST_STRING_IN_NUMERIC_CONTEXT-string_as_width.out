@@ -1,0 +1,5 @@
+File: 4_3_CONST_STRING_IN_NUMERIC_CONTEXT-string_as_width.jz
+      21:21   error CONST_STRING_IN_NUMERIC_CONTEXT S4.3/S6.3 String CONST/CONFIG value used where a numeric expression is expected
+      44:9    error CONST_STRING_IN_NUMERIC_CONTEXT S4.3/S6.3 String CONST/CONFIG value used where a numeric expression is expected
+      44:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      49:9    error CONST_STRING_IN_NUMERIC_CONTEXT S4.3/S6.3 String CONST/CONFIG value used where a numeric expression is expected

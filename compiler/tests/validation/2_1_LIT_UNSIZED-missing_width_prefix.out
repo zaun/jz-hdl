@@ -1,0 +1,5 @@
+File: 2_1_LIT_UNSIZED-missing_width_prefix.jz
+      23:16   error LIT_UNSIZED S2.1 Unsized literal (e.g. 'hFF) is not permitted
+      27:14   error LIT_UNSIZED S2.1 Unsized literal (e.g. 'hFF) is not permitted
+      47:17   error LIT_UNSIZED S2.1 Unsized literal (e.g. 'hFF) is not permitted
+      55:14   error LIT_UNSIZED S2.1 Unsized literal (e.g. 'hFF) is not permitted

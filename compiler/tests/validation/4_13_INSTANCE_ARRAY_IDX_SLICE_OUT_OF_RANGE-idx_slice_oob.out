@@ -1,0 +1,2 @@
+File: 4_13_INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE-idx_slice_oob.jz
+      36:17   error INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE S4.13.1 Instance array IDX-dependent slice evaluates to indices outside the parent signal width for some instance index

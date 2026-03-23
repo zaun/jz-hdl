@@ -1,0 +1,81 @@
+// MEM_BLOCK_MULTI: BLOCK memory requiring multiple BSRAM blocks triggers info.
+// Uses gw1nr-9 chip. A MEM [8] [4096] exceeds single-block config [8] [2048],
+// requiring 2 blocks (1x2 tiling of [8]x[2048]).
+
+@project(CHIP="gw1nr-9-qn88-c6-i5") MEM_BLOCK_MULTI_multi_bsram_blocks
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [12] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: multi-block MEM in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [12] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        big_mem [8] [4096] = 8'h00 {
+            OUT rd SYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        big_mem.rd.addr <= addr;
+        r <= big_mem.rd.data;
+        big_mem.wr[addr] <= wdata;
+    }
+@endmod
+
+// Trigger 2: multi-block MEM in top module
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [12] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        big_top [8] [4096] = 8'h00 {
+            OUT rd_top SYNC;
+            IN  wr_top;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [12] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        big_top.rd_top.addr <= addr;
+        r <= big_top.rd_top.data;
+        big_top.wr_top[addr] <= wdata;
+    }
+@endmod

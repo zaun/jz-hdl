@@ -1,0 +1,58 @@
+// KEYWORD_AS_IDENTIFIER: Reserved identifier IDX used as a user-declared name.
+// IDX is reserved for template index usage per the spec.
+// Valid identifiers are included alongside invalid ones to verify no false positives.
+
+@project KEYWORD_AS_IDENTIFIER_reserved_identifier
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with IDX as port name
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        // Trigger 1: reserved identifier IDX used as port name
+        OUT [1] IDX;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        IDX = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 2: reserved identifier IDX used as const name
+    CONST {
+        IDX = 4;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        // Trigger 3: reserved identifier IDX used in @new port binding
+        OUT [1] IDX = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

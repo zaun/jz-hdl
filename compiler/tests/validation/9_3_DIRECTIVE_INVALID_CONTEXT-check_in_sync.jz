@@ -1,0 +1,42 @@
+// DIRECTIVE_INVALID_CONTEXT: @check inside SYNCHRONOUS block is forbidden.
+// Valid @check at module and project scope included for negative testing.
+
+@project DIRECTIVE_INVALID_CONTEXT_check_in_sync
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    // Valid: @check at project scope (no error)
+    @check (CONFIG.WIDTH == 8, "width ok");
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST { DEPTH = 16; }
+
+    // Valid: @check at module scope (no error)
+    @check (DEPTH > 0, "depth ok");
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: @check inside SYNCHRONOUS block
+        @check (1, "sync check");
+        r <= ~r;
+    }
+@endmod

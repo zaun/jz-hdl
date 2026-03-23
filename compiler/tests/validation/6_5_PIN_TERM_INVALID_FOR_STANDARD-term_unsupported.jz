@@ -1,0 +1,62 @@
+// PIN_TERM_INVALID_FOR_STANDARD: Termination not supported for this I/O standard.
+// Tests term=ON on standards that don't support termination (e.g. LVCMOS).
+// Valid termination on SSTL/HSTL standards verifies no false positives.
+
+@project PIN_TERM_INVALID_FOR_STANDARD_term_unsupported
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Valid: term=ON on SSTL (supports termination, no trigger)
+        valid_sstl = { standard=SSTL18_I, term=ON };
+        // Trigger 1: term=ON on LVCMOS33 input (does not support termination)
+        bad_term_in = { standard=LVCMOS33, term=ON };
+    }
+
+    OUT_PINS {
+        // Valid: no term on LVCMOS output (no trigger)
+        valid_out = { standard=LVCMOS33, drive=8 };
+    }
+
+    INOUT_PINS {
+        // Valid: term=ON on SSTL INOUT (supports termination, no trigger)
+        valid_sstl_io = { standard=SSTL18_I, drive=4, term=ON };
+        // Trigger 2: term=ON on LVCMOS18 INOUT (does not support termination)
+        bad_term_io = { standard=LVCMOS18, drive=4, term=ON };
+    }
+
+    MAP {
+        sys_clk = 1;
+        valid_sstl = 2;
+        bad_term_in = 3;
+        valid_out = 4;
+        valid_sstl_io = 5;
+        bad_term_io = 6;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

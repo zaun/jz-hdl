@@ -1,0 +1,4 @@
+File: 4_4_PORT_DIRECTION_MISMATCH_IN-write_to_input.jz
+      29:9    error PORT_DIRECTION_MISMATCH_IN S4.4/S5.1 Cannot assign to IN port; IN ports are read-only inside the module
+      60:9    error PORT_DIRECTION_MISMATCH_IN S4.4/S5.1 Cannot assign to IN port; IN ports are read-only inside the module
+      63:13   error PORT_DIRECTION_MISMATCH_IN S4.4/S5.1 Cannot assign to IN port; IN ports are read-only inside the module

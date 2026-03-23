@@ -1,0 +1,62 @@
+// PIN_PULL_ON_OUTPUT: Pull resistor specified on output-only pin (OUT_PINS).
+// Tests pull=UP, pull=DOWN, and pull=NONE on OUT_PINS.
+// Valid IN_PINS/INOUT_PINS with pull verify no false positives.
+
+@project PIN_PULL_ON_OUTPUT_pull_on_out
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Valid: pull on input is allowed (no trigger)
+        valid_in = { standard=LVCMOS33, pull=UP };
+    }
+
+    OUT_PINS {
+        // Valid: no pull specified (no trigger)
+        valid_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 1: pull=UP on OUT_PIN
+        pull_up_out = { standard=LVCMOS33, drive=8, pull=UP };
+        // Trigger 2: pull=DOWN on OUT_PIN
+        pull_down_out = { standard=LVCMOS33, drive=8, pull=DOWN };
+    }
+
+    INOUT_PINS {
+        // Valid: pull on INOUT is allowed (no trigger)
+        valid_io = { standard=LVCMOS33, drive=4, pull=DOWN };
+    }
+
+    MAP {
+        sys_clk = 1;
+        valid_in = 2;
+        valid_out = 3;
+        pull_up_out = 4;
+        pull_down_out = 5;
+        valid_io = 6;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

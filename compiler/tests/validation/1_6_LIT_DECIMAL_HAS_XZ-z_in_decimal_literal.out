@@ -1,0 +1,6 @@
+File: 1_6_LIT_DECIMAL_HAS_XZ-z_in_decimal_literal.jz
+      19:17   error LIT_DECIMAL_HAS_XZ S2.1 Decimal literal with `x` or `z` digits (e.g. `8'd10x`)
+      30:21   error LIT_DECIMAL_HAS_XZ S2.1 Decimal literal with `x` or `z` digits (e.g. `8'd10x`)
+      34:21   error LIT_DECIMAL_HAS_XZ S2.1 Decimal literal with `x` or `z` digits (e.g. `8'd10x`)
+      40:23   error LIT_DECIMAL_HAS_XZ S2.1 Decimal literal with `x` or `z` digits (e.g. `8'd10x`)
+      50:18   error LIT_DECIMAL_HAS_XZ S2.1 Decimal literal with `x` or `z` digits (e.g. `8'd10x`)

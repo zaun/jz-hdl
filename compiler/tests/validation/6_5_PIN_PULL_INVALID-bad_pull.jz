@@ -1,0 +1,68 @@
+// PIN_PULL_INVALID: Invalid pull value (must be UP, DOWN, or NONE).
+// Tests invalid pull values in IN_PINS and INOUT_PINS blocks.
+// Valid pull values included to verify no false positives.
+
+@project PIN_PULL_INVALID_bad_pull
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Valid: pull=UP (no trigger)
+        valid_up = { standard=LVCMOS33, pull=UP };
+        // Valid: pull=DOWN (no trigger)
+        valid_down = { standard=LVCMOS33, pull=DOWN };
+        // Valid: pull=NONE (no trigger)
+        valid_none = { standard=LVCMOS33, pull=NONE };
+        // Trigger 1: invalid pull in IN_PINS
+        bad_pull_in = { standard=LVCMOS33, pull=HIGH };
+    }
+
+    OUT_PINS {
+        // Valid: no pull on output (no trigger)
+        valid_out = { standard=LVCMOS33, drive=8 };
+    }
+
+    INOUT_PINS {
+        // Valid: pull=UP on INOUT (no trigger)
+        valid_io = { standard=LVCMOS33, drive=4, pull=UP };
+        // Trigger 2: invalid pull in INOUT_PINS
+        bad_pull_io = { standard=LVCMOS33, drive=4, pull=WEAK };
+    }
+
+    MAP {
+        sys_clk = 1;
+        valid_up = 2;
+        valid_down = 3;
+        valid_none = 4;
+        bad_pull_in = 5;
+        valid_out = 6;
+        valid_io = 7;
+        bad_pull_io = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

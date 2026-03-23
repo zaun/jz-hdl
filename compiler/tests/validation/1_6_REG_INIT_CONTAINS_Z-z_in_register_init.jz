@@ -1,0 +1,68 @@
+// REG_INIT_CONTAINS_Z: Register initialization literal contains z bits.
+// Tests z bits in register init across multiple modules and widths.
+// Valid register inits (no z) are included to verify no false positives.
+
+@project REG_INIT_CONTAINS_Z_z_in_register_init
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with z in register init
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        // Trigger 1: z bits in single-bit register init
+        r_bad [1] = 1'bz;
+        // Valid: no z bits
+        r_ok [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r_bad <= ~r_bad;
+        r_ok <= ~r_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        // Trigger 2: z bits in 8-bit binary register init
+        r_allz [8] = 8'bzzzz_zzzz;
+        // Trigger 3: partial z bits in binary register init
+        r_partial [8] = 8'bzzzz_0000;
+        // Trigger 4: mixed z bits (some z, some valid)
+        r_mixed [4] = 4'b1z0z;
+        // Trigger 5: z extension (MSB z pads to full width)
+        r_ext [4] = 4'bz;
+        // Valid: all-zero init
+        r_valid [8] = 8'b0000_0000;
+    }
+
+    ASYNCHRONOUS {
+        data = r_valid[0:0];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_allz <= ~r_allz;
+        r_partial <= ~r_partial;
+        r_mixed <= ~r_mixed;
+        r_ext <= ~r_ext;
+        r_valid <= ~r_valid;
+    }
+@endmod

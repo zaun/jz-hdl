@@ -1,0 +1,68 @@
+// SLICE_INDEX_OUT_OF_RANGE: Slice indices >= signal width.
+// Tests out-of-range slices in async RHS, sync RHS, sync LHS across modules.
+// Valid slices included to verify no false positives.
+
+@project SLICE_INDEX_OUT_OF_RANGE_index_exceeds_width
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: out-of-range slices in async RHS and sync RHS
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [16] bus;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: async RHS — index 16 >= width 16
+        out_a = bus[16:16];
+        // Valid: bus[0:0] — index within range (no false positive)
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: sync RHS — index 20 >= width 16
+        r <= bus[20:20];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        ha_out_a [1];
+        ha_out_b [1];
+    }
+    REGISTER {
+        r [16] = 16'h0000;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [16] bus = r;
+        OUT [1] out_a = ha_out_a;
+        OUT [1] out_b = ha_out_b;
+    };
+
+    ASYNCHRONOUS {
+        out_a = ha_out_a;
+        out_b = ha_out_b;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: r[15:8] <= r[7:0] — indices within range
+        r[15:8] <= r[7:0];
+        // Trigger 3: sync LHS — index 16 >= width 16
+        r[16:16] <= 1'b0;
+    }
+@endmod

@@ -1,0 +1,72 @@
+// DUPLICATE_BLOCK: More than one SYNCHRONOUS block for the same clock signal.
+// Tests duplicate SYNCHRONOUS blocks for the same clock in multiple modules.
+// Distinct clocks with their own SYNCHRONOUS blocks are included to verify no false positives.
+
+@project DUPLICATE_BLOCK_duplicate_sync_block
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with duplicate sync block for same clock
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r1 [1] = 1'b0;
+        r2 [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r1;
+    }
+    // Valid: first SYNCHRONOUS block for clk
+    SYNCHRONOUS(CLK=clk) {
+        r1 <= ~r1;
+    }
+    // Trigger 1: second SYNCHRONOUS block for same clk
+    SYNCHRONOUS(CLK=clk) {
+        r2 <= ~r2;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk_a;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_a [1] = 1'b0;
+        r_b [1] = 1'b0;
+        r_a2 [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_a;
+    }
+
+    // Valid: first SYNCHRONOUS block for clk_a
+    SYNCHRONOUS(CLK=clk_a) {
+        r_a <= ~r_a;
+    }
+
+    // Valid: SYNCHRONOUS block for different clock clk_b (should NOT trigger)
+    SYNCHRONOUS(CLK=clk_b) {
+        r_b <= ~r_b;
+    }
+
+    // Trigger 2: second SYNCHRONOUS block for clk_a
+    SYNCHRONOUS(CLK=clk_a) {
+        r_a2 <= ~r_a2;
+    }
+@endmod

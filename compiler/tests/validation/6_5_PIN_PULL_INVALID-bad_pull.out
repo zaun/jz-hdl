@@ -1,0 +1,3 @@
+File: 6_5_PIN_PULL_INVALID-bad_pull.jz
+      19:9    error PIN_PULL_INVALID S6.5/S6.9 Invalid pull value (must be UP, DOWN, or NONE)
+      31:9    error PIN_PULL_INVALID S6.5/S6.9 Invalid pull value (must be UP, DOWN, or NONE)

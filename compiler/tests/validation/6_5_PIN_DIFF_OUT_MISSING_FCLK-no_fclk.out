@@ -1,0 +1,2 @@
+File: 6_5_PIN_DIFF_OUT_MISSING_FCLK-no_fclk.jz
+      23:9    error PIN_DIFF_OUT_MISSING_FCLK S6.5/S6.9 Differential output pin missing required fclk attribute

@@ -1,0 +1,106 @@
+// TEMPLATE_EXTERNAL_REF: Identifiers in template body must be parameters, @scratch wires,
+// or compile-time constants. External signals must be passed as arguments.
+// Tests external refs on LHS of <=, RHS of <=, both sides of =, in expressions,
+// and in IF conditions. Valid uses of params, scratch, and CONST included.
+
+@project TEMPLATE_EXTERNAL_REF_external_signal_reference
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: template using only params and scratch (no error)
+@template valid_tmpl(a, b)
+    @scratch tmp [1];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Valid: template using CONST in expression (no error)
+@template valid_const(a, b)
+    @scratch tmp [WIDTH];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w [1];
+    }
+
+    // Trigger 1: external wire on RHS of <=
+    @template ext_rhs(a)
+        a <= w;
+    @endtemplate
+
+    // Trigger 2: external wire on LHS of <=
+    @template ext_lhs(a)
+        w <= a;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        w = din;
+        data = w;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    WIRE {
+        sig [1];
+    }
+
+    // Trigger 3: external wire in RHS expression
+    @template ext_expr(a, b)
+        a <= b + sig;
+    @endtemplate
+
+    // Trigger 4: external wire as alias RHS
+    @template ext_alias_rhs(a)
+        a = sig;
+    @endtemplate
+
+    // Trigger 5: external wire as alias LHS
+    @template ext_alias_lhs(a)
+        sig = a;
+    @endtemplate
+
+    // Trigger 6: external register in IF condition
+    @template ext_if_cond(a, b)
+        IF (r) {
+            a <= b;
+        }
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        sig = r;
+        data = sig;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

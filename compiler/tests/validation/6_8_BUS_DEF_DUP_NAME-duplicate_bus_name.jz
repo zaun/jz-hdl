@@ -1,0 +1,105 @@
+// BUS_DEF_DUP_NAME: Duplicate BUS definition name in project.
+// Tests defining multiple BUS blocks with the same name at project scope.
+// Valid BUS definitions with unique names included to verify no false positives.
+
+@project BUS_DEF_DUP_NAME_duplicate_bus_name
+
+    // Valid: first definition of ALPHA_BUS (no trigger)
+    BUS ALPHA_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    // Valid: unique BUS name (no trigger)
+    BUS BETA_BUS {
+        OUT [4] data;
+        IN  [1] ack;
+    }
+
+    // Trigger 1: duplicate BUS name (same as first ALPHA_BUS)
+    BUS ALPHA_BUS {
+        OUT [16] addr;
+        IN  [16] rdata;
+    }
+
+    // Trigger 2: second duplicate of ALPHA_BUS (triple definition)
+    BUS ALPHA_BUS {
+        INOUT [8] bidir;
+    }
+
+    // Trigger 3: duplicate BUS name BETA_BUS
+    BUS BETA_BUS {
+        OUT [1] req;
+        IN  [1] gnt;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+@module SourceMod
+    PORT {
+        IN  [1] clk;
+        BUS ALPHA_BUS SOURCE sbus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        sbus.tx <= r;
+        data <= sbus.rx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= sbus.rx;
+    }
+@endmod
+
+@module TargetMod
+    PORT {
+        IN  [1] clk;
+        BUS ALPHA_BUS TARGET tbus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        tbus.rx <= r;
+        data <= tbus.tx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= tbus.tx;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+    }
+
+    @new inst_s SourceMod {
+        IN  [1] clk = clk;
+        BUS ALPHA_BUS SOURCE sbus = _;
+        OUT [8] data = dout;
+    };
+
+    @new inst_t TargetMod {
+        IN  [1] clk = clk;
+        BUS ALPHA_BUS TARGET tbus = _;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // TopMod passes through instance outputs
+    }
+@endmod

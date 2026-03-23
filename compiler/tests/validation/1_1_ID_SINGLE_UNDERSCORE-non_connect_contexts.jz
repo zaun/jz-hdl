@@ -1,0 +1,86 @@
+// ID_SINGLE_UNDERSCORE: Single underscore `_` used as regular identifier outside no-connect context.
+// Tests _ in port name, register name, and const name contexts across multiple modules.
+// Valid uses of _ in @top and @new port bindings are included to verify no false positives.
+
+@project ID_SINGLE_UNDERSCORE_non_connect_contexts
+    @top TopMod {
+        // Valid: _ as no-connect in @top port binding (should NOT trigger)
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with _ as port name
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        // Trigger 1: _ used as port name declaration
+        OUT [1] _;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 2: _ used in assignment LHS (reference to port _)
+        _ = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Helper module with _ as register name
+@module HelperB
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        // Trigger 3: _ used as register name declaration
+        _ [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 4: _ used in async expression (reference to register _)
+        data = _;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: _ used in synchronous LHS (write to register _)
+        // Trigger 6: _ used in synchronous RHS (read from register _)
+        _ <= ~_;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 7: _ used as const name
+    CONST {
+        _ = 8;
+    }
+
+    // Valid: _ as no-connect in @new port binding (should NOT trigger)
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [1] _ = _;
+    };
+
+    @new inst_b HelperB {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

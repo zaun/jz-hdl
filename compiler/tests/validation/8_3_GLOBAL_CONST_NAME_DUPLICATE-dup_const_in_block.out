@@ -1,0 +1,4 @@
+File: 8_3_GLOBAL_CONST_NAME_DUPLICATE-dup_const_in_block.jz
+       9:5    error GLOBAL_CONST_NAME_DUPLICATE S8.4 Duplicate constant identifier within a single @global block
+      22:5    error GLOBAL_CONST_NAME_DUPLICATE S8.4 Duplicate constant identifier within a single @global block
+      24:5    error GLOBAL_CONST_NAME_DUPLICATE S8.4 Duplicate constant identifier within a single @global block

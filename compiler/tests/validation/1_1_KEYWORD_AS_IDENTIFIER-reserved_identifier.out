@@ -1,0 +1,4 @@
+File: 1_1_KEYWORD_AS_IDENTIFIER-reserved_identifier.jz
+      17:17   error KEYWORD_AS_IDENTIFIER S1.1 Reserved keyword used as identifier
+      38:9    error KEYWORD_AS_IDENTIFIER S1.1 Reserved keyword used as identifier
+      44:17   error KEYWORD_AS_IDENTIFIER S1.1 Reserved keyword used as identifier

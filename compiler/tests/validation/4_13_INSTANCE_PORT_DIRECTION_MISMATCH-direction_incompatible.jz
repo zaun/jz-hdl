@@ -1,0 +1,92 @@
+// INSTANCE_PORT_DIRECTION_MISMATCH: Child port direction incompatible with binding direction.
+// Tests IN/OUT direction swaps in @new port bindings.
+// Valid direction-matching bindings are included for negative testing.
+
+@project INSTANCE_PORT_DIRECTION_MISMATCH_direction_incompatible
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with IN and OUT ports
+@module ChildMod
+    PORT {
+        IN  [1] a;
+        IN  [1] b;
+        OUT [1] x;
+        OUT [1] y;
+    }
+    ASYNCHRONOUS {
+        x = a;
+        y = b;
+    }
+@endmod
+
+// Module with direction mismatches
+@module MidMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 1: child IN port declared as OUT in @new
+    @new inst_a ChildMod {
+        OUT [1] a = _;
+        IN  [1] b = din;
+        OUT [1] x = _;
+        OUT [1] y = _;
+    };
+
+    // Trigger 2: child OUT port declared as IN in @new
+    @new inst_b ChildMod {
+        IN  [1] a = din;
+        IN  [1] b = din;
+        IN  [1] x = din;
+        OUT [1] y = _;
+    };
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 3: direction mismatch in top module
+    @new inst_c ChildMod {
+        IN  [1] a = r;
+        OUT [1] b = _;
+        OUT [1] x = _;
+        OUT [1] y = _;
+    };
+
+    // Valid: correct directions (no trigger)
+    @new inst_d ChildMod {
+        IN  [1] a = r;
+        IN  [1] b = r;
+        OUT [1] x = _;
+        OUT [1] y = _;
+    };
+
+    @new inst_e MidMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

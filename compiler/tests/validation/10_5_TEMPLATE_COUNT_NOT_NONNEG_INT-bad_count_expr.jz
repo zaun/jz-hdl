@@ -1,0 +1,73 @@
+// TEMPLATE_COUNT_NOT_NONNEG_INT: @apply count expression must resolve to a non-negative integer.
+// Tests negative count in ASYNC and SYNC blocks.
+// Valid @apply with count=0 and count=1 included for negative testing.
+
+@project TEMPLATE_COUNT_NOT_NONNEG_INT_bad_count_expr
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@template simple(a, b)
+    a <= b;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w1 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: count=0 is a no-op (no error)
+        @apply[0] simple(w1, din);
+        // Valid: count=1 (no error)
+        @apply[1] simple(w1, din);
+        // Trigger 1: negative count in ASYNC
+        @apply[-1] simple(w1, din);
+        data = w1;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    WIRE {
+        w1 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: count=1 (no error)
+        @apply[1] simple(w1, r);
+        // Trigger 2: negative count in TopMod ASYNC
+        @apply[-5] simple(w1, r);
+        data = w1;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: negative count in SYNC
+        @apply[-3] simple(r, clk);
+        r <= ~r;
+    }
+@endmod

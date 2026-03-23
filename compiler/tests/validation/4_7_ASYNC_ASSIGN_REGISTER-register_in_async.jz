@@ -1,0 +1,92 @@
+// ASYNC_ASSIGN_REGISTER: Register assigned in ASYNCHRONOUS block.
+// Tests register write in ASYNC root, IF branch, and SELECT case across modules.
+// Valid register reads in ASYNC and writes in SYNC included for no false positives.
+
+@project ASYNC_ASSIGN_REGISTER_register_in_async
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] ctrl = _;
+        IN  [8] din = _;
+        OUT [8] dout = _;
+        OUT [8] dout_if = _;
+        OUT [8] dout_sel = _;
+    }
+@endproj
+
+// Helper module: register written in ASYNC root
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r_help [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: register read in ASYNC (current value)
+        data_out <= r_help;
+        // Trigger 1: register written in ASYNC root (helper module)
+        r_help <= data_in;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_help <= data_in;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] dout;
+        OUT [8] dout_if;
+        OUT [8] dout_sel;
+    }
+
+    REGISTER {
+        r_root [8] = 8'h00;
+        r_if [8] = 8'h00;
+        r_sel [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data_in = din;
+        OUT [8] data_out = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: register read in ASYNC
+        dout <= r_root;
+        dout_if <= r_if;
+        dout_sel <= r_sel;
+        // Trigger 2: register written in ASYNC root (top module)
+        r_root <= din;
+        // Trigger 3: register written in ASYNC IF branch
+        IF (ctrl) {
+            r_if <= din;
+        }
+        // Trigger 4: register written in ASYNC SELECT case
+        SELECT (ctrl) {
+            CASE (1'b0) {
+                r_sel <= din;
+            }
+            CASE (1'b1) {
+                r_sel <= din;
+            }
+            DEFAULT {
+                r_sel <= din;
+            }
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_root <= din;
+        r_if <= din;
+        r_sel <= din;
+    }
+@endmod

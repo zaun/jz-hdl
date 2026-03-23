@@ -1,0 +1,18 @@
+// Library B for IMPORT_DUP_MODULE_OR_BLACKBOX test.
+// Contains a module named SharedMod which collides with libA.
+
+@module SharedMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

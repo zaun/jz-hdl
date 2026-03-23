@@ -1,0 +1,30 @@
+// IMPORT_FILE_HAS_PROJECT: Imported file contains its own @project/@endproj.
+// Tests that importing a file which contains a @project block produces an error.
+// The diagnostic location points to the @project token in the imported file.
+
+@project IMPORT_FILE_HAS_PROJECT_imported_has_project
+
+    // Trigger 1: imported file contains @project
+    @import "6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project_lib.jz";
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

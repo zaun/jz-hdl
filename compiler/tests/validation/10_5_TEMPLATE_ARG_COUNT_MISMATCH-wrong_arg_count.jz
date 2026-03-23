@@ -1,0 +1,92 @@
+// TEMPLATE_ARG_COUNT_MISMATCH: @apply argument count does not match template parameter count.
+// Tests too few args, too many args, zero args when params expected,
+// in both ASYNCHRONOUS and SYNCHRONOUS blocks.
+// Valid @apply calls included to verify no false positives.
+
+@project TEMPLATE_ARG_COUNT_MISMATCH_wrong_arg_count
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Template with 2 params
+@template two_param(a, b)
+    a <= b;
+@endtemplate
+
+// Template with 3 params
+@template three_param(a, b, c)
+    a <= b;
+    c <= b;
+@endtemplate
+
+// Template with 1 param
+@template one_param(a)
+    a <= 1'b0;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w1 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: correct arg count (no error)
+        @apply two_param(w1, din);
+        // Trigger 1: too few args (1 instead of 2) in ASYNC
+        @apply two_param(w1);
+        // Trigger 2: too many args (3 instead of 2) in ASYNC
+        @apply two_param(w1, din, din);
+        data = w1;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r  [1] = 1'b0;
+    }
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: correct arg count (no error)
+        @apply three_param(w1, r, w2);
+        // Trigger 3: too few args (1 instead of 3)
+        @apply three_param(w1);
+        // Trigger 4: too many args (4 instead of 3)
+        @apply three_param(w1, r, w2, r);
+        data = w1;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: correct arg count for one_param (no error)
+        @apply one_param(r);
+        // Trigger 5: too many args (2 instead of 1) in SYNC
+        @apply one_param(r, clk);
+        // Trigger 6: zero args when 2 expected
+        @apply two_param();
+    }
+@endmod

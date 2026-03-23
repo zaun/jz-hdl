@@ -1,0 +1,81 @@
+// INSTANCE_UNDEFINED_MODULE: Instantiation references a module that does not exist.
+// Tests undefined module references in scalar and array instantiation contexts.
+// Valid instantiations of defined modules are included to verify no false positives.
+
+@project INSTANCE_UNDEFINED_MODULE_nonexistent_module
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module (structurally valid, used as instantiation target)
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module with undefined module instantiation
+@module MidMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 1: scalar instantiation of undefined module
+    @new inst_a NonExistentMod {
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    // Valid: instantiation of defined module (no trigger)
+    @new inst_b HelperMod {
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    // Trigger 2: array instantiation of undefined module
+    @new inst_c[2] AlsoNotDefined {
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 3: undefined module in top module context
+    @new inst_d MissingModule {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    @new inst_e MidMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

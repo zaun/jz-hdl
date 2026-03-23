@@ -1,0 +1,64 @@
+// ASSIGN_MULTIPLE_SAME_BITS: Same bits assigned more than once on a single execution path.
+// Tests double assignment to ports in ASYNCHRONOUS blocks across modules.
+// Valid assignments (different targets) included to verify no false positives.
+
+@project ASSIGN_MULTIPLE_SAME_BITS_double_assign_same_path
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper module: double assignment at root of async block
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: port assigned twice at root level
+        out_a = VCC;
+        out_a = GND;
+        // Valid: different target (no false positive)
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        ha_a [1];
+        ha_b [1];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [1] out_a = ha_a;
+        OUT [1] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: port assigned twice at root level
+        out_a = ha_a;
+        out_a = ha_b;
+        out_b = ha_b;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

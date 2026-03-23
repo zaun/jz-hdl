@@ -1,0 +1,86 @@
+// LATCH_AS_CLOCK_OR_CDC: LATCH may not be used as a clock signal or in CDC.
+// Tests latch identifier used as CLK parameter in SYNCHRONOUS block.
+// Valid clock usage with port signal included to verify no false positives.
+
+@project LATCH_AS_CLOCK_OR_CDC_latch_as_clock
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] enable = _;
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: latch used as CLK
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    LATCH {
+        lat_clk [1] D;
+    }
+
+    REGISTER {
+        r_ok [1] = 1'b0;
+        r_bad [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        lat_clk <= enable : din;
+        data <= r_ok | r_bad;
+    }
+
+    // Valid: normal clock usage (should NOT trigger)
+    SYNCHRONOUS(CLK=clk) {
+        r_ok <= din;
+    }
+
+    // Trigger 1: latch used as CLK in helper module
+    SYNCHRONOUS(CLK=lat_clk) {
+        r_bad <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] enable = enable;
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    LATCH {
+        lat_clk2 [1] D;
+    }
+
+    REGISTER {
+        r_top_ok [1] = 1'b0;
+        r_top_bad [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        lat_clk2 <= enable : din;
+        data <= r_top_ok | r_top_bad;
+    }
+
+    // Valid: normal clock usage
+    SYNCHRONOUS(CLK=clk) {
+        r_top_ok <= din;
+    }
+
+    // Trigger 2: latch used as CLK in top module
+    SYNCHRONOUS(CLK=lat_clk2) {
+        r_top_bad <= din;
+    }
+@endmod

@@ -1,0 +1,3 @@
+File: 10_6_SYNC_MULTI_ASSIGN_SAME_REG_BITS-template_double_apply_sync.jz
+      16:5    error SYNC_MULTI_ASSIGN_SAME_REG_BITS S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block
+      79:9    error SYNC_MULTI_ASSIGN_SAME_REG_BITS S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block

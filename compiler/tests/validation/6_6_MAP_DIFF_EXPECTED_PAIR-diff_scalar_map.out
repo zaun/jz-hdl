@@ -1,0 +1,2 @@
+File: 6_6_MAP_DIFF_EXPECTED_PAIR-diff_scalar_map.jz
+      14:9    error MAP_DIFF_EXPECTED_PAIR S6.6/S6.9 Differential pin must use { P=<id>, N=<id> } MAP syntax

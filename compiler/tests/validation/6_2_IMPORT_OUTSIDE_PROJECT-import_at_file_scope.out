@@ -1,0 +1,3 @@
+File: 6_2_IMPORT_OUTSIDE_PROJECT-import_at_file_scope.jz
+       6:1    error IMPORT_OUTSIDE_PROJECT S6.2.1 @import used outside @project block
+      16:1    error IMPORT_OUTSIDE_PROJECT S6.2.1 @import used outside @project block

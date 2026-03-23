@@ -1,0 +1,5 @@
+File: 5_5_OH2B_INPUT_TOO_NARROW-single_bit_source.jz
+      26:18   error OH2B_INPUT_TOO_NARROW S5.5.12 oh2b() source must be at least 2 bits wide
+      31:14   error OH2B_INPUT_TOO_NARROW S5.5.12 oh2b() source must be at least 2 bits wide
+      59:18   error OH2B_INPUT_TOO_NARROW S5.5.12 oh2b() source must be at least 2 bits wide
+      64:14   error OH2B_INPUT_TOO_NARROW S5.5.12 oh2b() source must be at least 2 bits wide

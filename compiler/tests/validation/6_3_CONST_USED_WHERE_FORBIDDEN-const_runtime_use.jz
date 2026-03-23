@@ -1,0 +1,71 @@
+// CONST_USED_WHERE_FORBIDDEN: CONST identifier used in runtime expression context.
+// Tests module-local CONST used in ASYNCHRONOUS and SYNCHRONOUS blocks.
+// Valid compile-time uses (port widths) included to verify no false positives.
+
+@project CONST_USED_WHERE_FORBIDDEN_const_runtime_use
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [CONFIG.WIDTH] data = _;
+        OUT [CONFIG.WIDTH] data2 = _;
+    }
+@endproj
+
+@module Helper
+    CONST {
+        SIZE = 4;
+    }
+    PORT {
+        // Valid: CONST in port width (compile-time context)
+        IN  [1] clk;
+        OUT [SIZE] dout;
+        OUT [SIZE] dout2;
+    }
+    REGISTER {
+        r [SIZE] = 4'h0;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+        // Trigger 1: CONST in async assignment RHS
+        dout2 = SIZE;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: CONST in sync assignment RHS
+        r <= SIZE;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        MY_VAL = 16;
+    }
+    PORT {
+        IN  [1] clk;
+        OUT [CONFIG.WIDTH] data;
+        OUT [CONFIG.WIDTH] data2;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [4] dout = _;
+        OUT [4] dout2 = _;
+    };
+
+    REGISTER {
+        r [CONFIG.WIDTH] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+        // Trigger 3: CONST in async assignment RHS (top module)
+        data2 = MY_VAL;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: CONST in sync assignment RHS (top module)
+        r <= MY_VAL;
+    }
+@endmod

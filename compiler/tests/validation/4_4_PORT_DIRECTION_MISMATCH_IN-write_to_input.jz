@@ -1,0 +1,72 @@
+// PORT_DIRECTION_MISMATCH_IN: Cannot assign to IN port inside module.
+// Tests writing to IN port in ASYNC root and ASYNC IF across multiple modules.
+// Valid reads from IN ports included to verify no false positives.
+
+@project PORT_DIRECTION_MISMATCH_IN_write_to_input
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] ctrl = _;
+        IN  [8] din_a = _;
+        IN  [8] din_b = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Helper module: trigger in non-top module ASYNC root
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: receive-assign to IN port in helper ASYNC root
+        data_in <= r;
+        data_out <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: read from IN port in SYNC
+        r <= data_in;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] ctrl;
+        IN  [8] din_a;
+        IN  [8] din_b;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data_in = din_a;
+        OUT [8] data_out = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: receive-assign to IN port in top module ASYNC root
+        din_a <= r;
+        // Trigger 3: receive-assign to IN port inside IF
+        IF (ctrl) {
+            din_b <= r;
+        }
+        dout <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: read from IN port in SYNC
+        r <= din_a;
+    }
+@endmod

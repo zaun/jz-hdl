@@ -1,0 +1,83 @@
+// MEM_CONST_ADDR_OUT_OF_RANGE: Constant address >= depth.
+// mem [8] [4] has depth 4, so valid addresses are 0-3.
+// Valid constant address included for no false positives.
+
+@project MEM_CONST_ADDR_OUT_OF_RANGE_const_addr_overflow
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: constant addr >= depth in async read and sync write
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [4] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+            IN  wr2;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: addr 4 >= depth 4
+        data = mem_a.rd[4];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        // Valid: addr 0 is within range
+        mem_a.wr[0] <= wdata;
+        // Trigger 2: addr 5 >= depth 4 in sync write
+        mem_a.wr2[5] <= 8'hAA;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [4] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+            IN  wr2;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: addr 10 >= depth 4 in top module
+        data = mem_b.rd[10];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.wr[0] <= wdata;
+        // Trigger 4: addr 100 >= depth 4 in sync write in top
+        mem_b.wr2[100] <= 8'hBB;
+    }
+@endmod

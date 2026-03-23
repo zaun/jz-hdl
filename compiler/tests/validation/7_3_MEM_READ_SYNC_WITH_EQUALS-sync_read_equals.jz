@@ -1,0 +1,73 @@
+// MEM_READ_SYNC_WITH_EQUALS: Sync MEM read using = instead of <= in SYNC block.
+// Valid <= read included for no false positives.
+
+@project MEM_READ_SYNC_WITH_EQUALS_sync_read_equals
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: = instead of <= for sync read in helper
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_a.rd.addr <= addr;
+        // Trigger 1: = instead of <=
+        r = mem_a.rd.data;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_b.rd.addr <= addr;
+        // Trigger 2: = instead of <= in top module
+        r = mem_b.rd.data;
+    }
+@endmod

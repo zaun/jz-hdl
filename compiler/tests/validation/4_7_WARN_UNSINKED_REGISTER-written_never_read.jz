@@ -1,0 +1,66 @@
+// WARN_UNSINKED_REGISTER: Register written in SYNC but never read.
+// Tests unsinked register detection in multiple modules.
+// Valid registers (both read and written) included for no false positives.
+
+@project WARN_UNSINKED_REGISTER_written_never_read
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with unsinked register
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        // Trigger 1: written but never read in helper module
+        r_unsinked [8] = 8'h00;
+        // Valid: register that is both read and written
+        r_ok [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_unsinked <= data_in;
+        r_ok <= ~r_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [1] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data_in = din;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        // Trigger 2: written but never read in top module
+        r_unsinked_top [8] = 8'h00;
+        // Valid: register that is both read and written
+        r_ok [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_unsinked_top <= din;
+        r_ok <= ~r_ok;
+    }
+@endmod

@@ -1,0 +1,35 @@
+// LATCH_INVALID_TYPE: LATCH type must be D or SR.
+// Tests invalid latch type keyword in declaration.
+// Valid D and SR latch types included to verify no false positives.
+// Note: parser aborts LATCH block on first invalid type, so only one trigger per file.
+
+@project LATCH_INVALID_TYPE_invalid_latch_type
+    @top TopMod {
+        IN  [1] enable = _;
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    LATCH {
+        // Valid: D latch type (should NOT trigger)
+        lat_ok [1] D;
+    }
+
+    LATCH {
+        // Trigger 1: invalid latch type
+        lat_bad [1] FLIP;
+    }
+
+    ASYNCHRONOUS {
+        lat_ok <= enable : din;
+        data <= lat_ok;
+    }
+@endmod

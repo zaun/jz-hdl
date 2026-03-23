@@ -1,0 +1,5 @@
+File: 5_4_SELECT_DUP_CASE_VALUE-duplicate_case_values.jz
+      29:18   error SELECT_DUP_CASE_VALUE S5.4/S8.1 Multiple CASE labels with same value in SELECT
+      64:18   error SELECT_DUP_CASE_VALUE S5.4/S8.1 Multiple CASE labels with same value in SELECT
+      79:18   error SELECT_DUP_CASE_VALUE S5.4/S8.1 Multiple CASE labels with same value in SELECT
+      93:18   error SELECT_DUP_CASE_VALUE S5.4/S8.1 Multiple CASE labels with same value in SELECT

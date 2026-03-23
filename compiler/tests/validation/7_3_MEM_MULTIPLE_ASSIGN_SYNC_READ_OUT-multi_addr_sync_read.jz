@@ -1,0 +1,77 @@
+// MEM_MULTIPLE_ASSIGN_SYNC_READ_OUT: Multiple .addr assignments in same path.
+// Single .addr assignment included for no false positives.
+
+@project MEM_MULTIPLE_ASSIGN_SYNC_READ_OUT_multi_addr_sync_read
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: multiple .addr in helper
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= mem_a.rd.data;
+        // First .addr assignment
+        mem_a.rd.addr <= addr;
+        // Trigger 1: second .addr assignment in same path
+        mem_a.rd.addr <= 4'h0;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= mem_b.rd.data;
+        // First .addr assignment
+        mem_b.rd.addr <= addr;
+        // Trigger 2: second .addr in top module
+        mem_b.rd.addr <= 4'h0;
+    }
+@endmod

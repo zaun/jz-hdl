@@ -1,0 +1,31 @@
+// TOP_NO_CONNECT_WITHOUT_WIDTH: Port bound to _ without explicit width in @top.
+// Tests empty width brackets on no-connect bindings.
+// Valid: no-connect with explicit width included for no false positives.
+
+@project TOP_NO_CONNECT_WITHOUT_WIDTH_missing_width
+    @top TopMod {
+        // Valid: no-connect with explicit width
+        IN  [1] clk = _;
+        // Trigger 1: OUT port with empty width brackets bound to _
+        OUT [] data = _;
+        // Trigger 2: IN port with empty width brackets bound to _
+        IN  [] extra_in = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+        IN  [1] extra_in;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= extra_in ^ r;
+    }
+@endmod

@@ -1,0 +1,62 @@
+// LIT_UNDEFINED_CONST_WIDTH: Literal width uses undefined CONST name.
+// Tests undefined CONST in literal width in sync RHS and register init across modules.
+// Valid CONST-width literals included to verify no false positives.
+
+@project LIT_UNDEFINED_CONST_WIDTH_undefined_const
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: undefined CONST in width in sync context
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    CONST {
+        MYWIDTH = 8;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: undefined CONST 'UNDEF_A' in literal width
+        r <= UNDEF_A'hFF;
+        // Valid: defined CONST in width (no false positive — MYWIDTH is defined)
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    CONST {
+        W = 8;
+    }
+    WIRE {
+        helper_data [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] data = helper_data;
+    };
+
+    REGISTER {
+        // Trigger 2: undefined CONST in register init width
+        r [8] = UNDEF_B'hAA;
+    }
+    ASYNCHRONOUS {
+        data = helper_data ^ r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: undefined CONST in sync expression
+        r <= UNDEF_C'h00;
+    }
+@endmod

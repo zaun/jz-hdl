@@ -1,0 +1,64 @@
+// SELECT_DEFAULT_RECOMMENDED_ASYNC: ASYNC SELECT without DEFAULT may float.
+// Tests missing DEFAULT in ASYNC blocks across multiple modules.
+// ASYNC SELECT with DEFAULT included for no false positive.
+
+@project SELECT_DEFAULT_RECOMMENDED_ASYNC_async_no_default
+    @top TopMod {
+        IN  [4] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+@module HelperA
+    PORT {
+        IN  [4] sel;
+        OUT [1] out_a;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: ASYNC SELECT without DEFAULT in helper module
+        SELECT (sel) {
+            CASE 0 {
+                out_a <= VCC;
+            }
+            CASE 1 {
+                out_a <= GND;
+            }
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [4] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    @new inst_a HelperA {
+        IN  [4] sel = sel;
+        OUT [1] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: ASYNC SELECT without DEFAULT in top module
+        SELECT (sel) {
+            CASE 4'h0 {
+                out_a <= VCC;
+            }
+            CASE 4'h1 {
+                out_a <= GND;
+            }
+        }
+
+        // Valid: ASYNC SELECT with DEFAULT (no false positive)
+        SELECT (sel) {
+            CASE 4'h0 {
+                out_b <= VCC;
+            }
+            DEFAULT {
+                out_b <= GND;
+            }
+        }
+    }
+@endmod

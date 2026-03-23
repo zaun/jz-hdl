@@ -1,0 +1,5 @@
+File: 5_5_SSLICE_WIDTH_INVALID-zero_width_param.jz
+      29:37   error SSLICE_WIDTH_INVALID S5.5.9 sslice() width parameter must be a positive integer
+      34:33   error SSLICE_WIDTH_INVALID S5.5.9 sslice() width parameter must be a positive integer
+      64:37   error SSLICE_WIDTH_INVALID S5.5.9 sslice() width parameter must be a positive integer
+      69:33   error SSLICE_WIDTH_INVALID S5.5.9 sslice() width parameter must be a positive integer

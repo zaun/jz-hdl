@@ -1,0 +1,5 @@
+File: 8_1_GLOBAL_ASSIGN_FORBIDDEN-assign_to_global.jz
+      31:9    error GLOBAL_ASSIGN_FORBIDDEN S8.5 Assignment to GLOBAL constant is forbidden; globals are read-only
+      54:9    error GLOBAL_ASSIGN_FORBIDDEN S8.5 Assignment to GLOBAL constant is forbidden; globals are read-only
+      80:9    error GLOBAL_ASSIGN_FORBIDDEN S8.5 Assignment to GLOBAL constant is forbidden; globals are read-only
+      86:9    error GLOBAL_ASSIGN_FORBIDDEN S8.5 Assignment to GLOBAL constant is forbidden; globals are read-only

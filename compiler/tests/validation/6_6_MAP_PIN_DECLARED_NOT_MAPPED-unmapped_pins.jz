@@ -1,0 +1,57 @@
+// MAP_PIN_DECLARED_NOT_MAPPED: Pin declared in PIN blocks but not mapped in MAP.
+// Tests unmapped pins in IN_PINS, OUT_PINS, INOUT_PINS, and partially mapped bus.
+// Valid mapped pins included to verify no false positives.
+
+@project MAP_PIN_DECLARED_NOT_MAPPED_unmapped_pins
+    IN_PINS {
+        mapped_in = { standard=LVCMOS33 };
+        // Trigger 1: unmapped IN pin
+        unmapped_in = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        mapped_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 2: unmapped OUT pin
+        unmapped_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 3: bus with bit 1 unmapped
+        bus_out[2] = { standard=LVCMOS33, drive=8 };
+    }
+
+    INOUT_PINS {
+        mapped_io = { standard=LVCMOS33, drive=4 };
+        // Trigger 4: unmapped INOUT pin
+        unmapped_io = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        mapped_in = 1;
+        mapped_out = 2;
+        bus_out[0] = 3;
+        // bus_out[1] intentionally omitted
+        mapped_io = 4;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

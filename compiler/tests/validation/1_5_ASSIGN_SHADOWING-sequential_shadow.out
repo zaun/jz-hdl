@@ -1,0 +1,4 @@
+File: 1_5_ASSIGN_SHADOWING-sequential_shadow.jz
+      29:13   error ASSIGN_SHADOWING S1.5/S5.2/S8.1 Assignment at higher nesting level followed by nested assignment to same bits (sequential shadowing)
+      66:13   error ASSIGN_SHADOWING S1.5/S5.2/S8.1 Assignment at higher nesting level followed by nested assignment to same bits (sequential shadowing)
+      71:13   error ASSIGN_SHADOWING S1.5/S5.2/S8.1 Assignment at higher nesting level followed by nested assignment to same bits (sequential shadowing)

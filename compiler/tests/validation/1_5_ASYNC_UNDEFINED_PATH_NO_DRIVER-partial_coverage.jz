@@ -1,0 +1,85 @@
+// ASYNC_UNDEFINED_PATH_NO_DRIVER: Signal undriven on some ASYNCHRONOUS paths.
+// Tests partial coverage where IF lacks ELSE or SELECT lacks DEFAULT.
+// Valid patterns (complete coverage, registers in sync) included to verify no false positives.
+
+@project ASYNC_UNDEFINED_PATH_NO_DRIVER_partial_coverage
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+        OUT [1] out_c = _;
+    }
+@endproj
+
+// Helper module: IF without ELSE leaves port undriven
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: IF without ELSE — out_a undriven when sel is false
+        IF (sel) {
+            out_a <= VCC;
+        }
+        // Valid: complete coverage (no false positive)
+        IF (sel) {
+            out_b <= VCC;
+        } ELSE {
+            out_b <= GND;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+    WIRE {
+        w [1];
+        ha_a [1];
+        ha_b [1];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [1] sel = sel;
+        OUT [1] out_a = ha_a;
+        OUT [1] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: IF without ELSE — wire undriven when sel is false
+        IF (sel) {
+            w <= VCC;
+        }
+        // Trigger 3: IF without ELSE — port undriven when sel is false
+        IF (sel) {
+            out_c <= ha_a;
+        }
+        out_a = w;
+        out_b = ha_b;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: register in sync with IF and no ELSE (clock gating, not an error)
+        IF (sel) {
+            r <= ~r;
+        }
+    }
+@endmod

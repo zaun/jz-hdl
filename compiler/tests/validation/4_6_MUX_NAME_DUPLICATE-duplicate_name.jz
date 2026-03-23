@@ -1,0 +1,71 @@
+// MUX_NAME_DUPLICATE: MUX identifier duplicates another identifier in module.
+// Tests MUX name conflicts with port, wire, register, and another MUX.
+// Valid unique MUX names included to verify no false positives.
+
+@project MUX_NAME_DUPLICATE_duplicate_name
+    @top TopMod {
+        IN  [8] a = _;
+        IN  [8] b = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: MUX name duplicates port name
+@module HelperMod
+    PORT {
+        IN  [8] port_name;
+        OUT [8] data;
+    }
+
+    MUX {
+        port_name = port_name, port_name;
+    }
+
+    ASYNCHRONOUS {
+        data = port_name;
+    }
+@endmod
+
+// Triggers 2-4: MUX name conflicts with wire, register, and another MUX
+@module TopMod
+    PORT {
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w_name [8];
+    }
+
+    REGISTER {
+        r_name [8] = 8'd0;
+    }
+
+    MUX {
+        // Valid: unique MUX name (no error expected)
+        valid_mux = a, b;
+        // Trigger 2: MUX name duplicates wire name
+        w_name = a, b;
+        // Trigger 3: MUX name duplicates register name
+        r_name = a, b;
+        // Trigger 4: MUX name duplicates another MUX name
+        valid_mux = a, b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] port_name = a;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        w_name = a;
+        data = w_name | r_name;
+    }
+
+    SYNCHRONOUS(CLK=sel) {
+        r_name <= a;
+    }
+@endmod

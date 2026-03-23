@@ -1,0 +1,53 @@
+// LIT_DECIMAL_HAS_XZ: Decimal literal contains z digits.
+// Tests z digits in decimal literals across multiple expression contexts.
+// Valid binary z literals and valid decimal literals included to verify no false positives.
+
+@project LIT_DECIMAL_HAS_XZ_z_in_decimal_literal
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module HelperA
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: z in decimal literal in async driven assignment
+        data <= 8'dz;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    CONST {
+        // Trigger 2: z in decimal literal in CONST value
+        BAD_CONST = 8'dz;
+    }
+    REGISTER {
+        // Trigger 3: z in decimal literal in register init
+        r_bad [8] = 8'dz;
+        // Valid: normal decimal literal
+        r_ok [8] = 8'd0;
+    }
+    @new inst_a HelperA {
+        // Trigger 4: z in decimal literal in instance port binding
+        IN  [8] din = 8'dz;
+        OUT [8] data = _;
+    };
+    ASYNCHRONOUS {
+        // Valid: binary z literal (no error)
+        // Valid: normal decimal literal
+        data = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: z in decimal literal in sync assignment
+        r_bad <= 8'dz;
+        r_ok <= ~r_ok;
+    }
+@endmod

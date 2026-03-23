@@ -1,0 +1,66 @@
+// SLICE_MSB_LESS_THAN_LSB: Slice with MSB < LSB (reversed indices).
+// Tests reversed slice indices in async RHS, sync RHS, sync LHS across modules.
+// Valid slices (MSB >= LSB) included to verify no false positives.
+
+@project SLICE_MSB_LESS_THAN_LSB_reversed_indices
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: reversed slice in async RHS and sync RHS
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [16] bus;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: async RHS — MSB 3 < LSB 7
+        out_a = bus[3:7];
+        // Valid: reading register r (no false positive)
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: sync RHS — MSB 0 < LSB 5
+        r <= bus[0:5];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        ha_out_a [1];
+        ha_out_b [1];
+    }
+    REGISTER {
+        r [16] = 16'h0000;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [16] bus = r;
+        OUT [1] out_a = ha_out_a;
+        OUT [1] out_b = ha_out_b;
+    };
+
+    ASYNCHRONOUS {
+        out_a = ha_out_a;
+        out_b = ha_out_b;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: sync LHS — MSB 2 < LSB 8
+        r[2:8] <= 1'b0;
+    }
+@endmod

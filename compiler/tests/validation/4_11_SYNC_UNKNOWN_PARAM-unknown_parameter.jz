@@ -1,0 +1,61 @@
+// SYNC_UNKNOWN_PARAM: Unknown SYNCHRONOUS block parameter.
+// Tests unrecognized parameter names in SYNCHRONOUS headers in multiple modules.
+// Valid parameters included to verify no false positives.
+
+@project SYNC_UNKNOWN_PARAM_unknown_parameter
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: unknown parameter in SYNCHRONOUS header
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    // Trigger 1: unknown parameter "MODE"
+    SYNCHRONOUS(CLK=clk MODE=Fast) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk_a;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_ok [1] = 1'b0;
+        r_bad [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+
+    // Valid: only valid parameters — should NOT trigger
+    SYNCHRONOUS(CLK=clk_a EDGE=Rising) {
+        r_ok <= ~r_ok;
+    }
+
+    // Trigger 2: unknown parameter "PRIORITY"
+    SYNCHRONOUS(CLK=clk_b PRIORITY=High) {
+        r_bad <= ~r_bad;
+    }
+@endmod

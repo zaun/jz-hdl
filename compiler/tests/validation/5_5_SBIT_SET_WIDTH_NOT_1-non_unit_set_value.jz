@@ -1,0 +1,71 @@
+// SBIT_SET_WIDTH_NOT_1: sbit() third argument must be width-1.
+// Tests sbit() with non-1-bit set values in async and sync blocks.
+// Valid sbit() with 1-bit set value included to verify no false positives.
+
+@project SBIT_SET_WIDTH_NOT_1_non_unit_set_value
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        IN  [4] val4 = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module with non-1-bit sbit set values
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        IN  [4] val4;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: sbit set value is 4-bit in async
+        out_a <= sbit(data, 3'd0, val4);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: sbit set value is 8-bit (data is 8-bit) in sync
+        r <= sbit(data, 3'd1, data);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        IN  [4] val4;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        h_a [8];
+        h_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data = data;
+        IN  [4] val4 = val4;
+        OUT [8] out_a = h_a;
+        OUT [8] out_b = h_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: sbit set value is 4-bit in top async
+        out_a <= sbit(data, 3'd2, val4);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: sbit set value is 8-bit in top sync
+        r <= sbit(data, 3'd4, data);
+    }
+@endmod

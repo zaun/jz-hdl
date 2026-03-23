@@ -1,0 +1,72 @@
+// NET_TRI_STATE_ALL_Z_READ: All drivers assign z but signal is still read.
+// Tests that the compiler catches nets where every driver releases (z)
+// and no driver ever provides an active value, yet the net is consumed.
+// Note: ASYNC_FLOATING_Z_READ fires for this scenario; NET_TRI_STATE_ALL_Z_READ
+// may be unreachable (see issues.md).
+
+@project NET_TRI_STATE_ALL_Z_READ_all_drivers_z_but_read
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] en = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module with all-z wire that is read
+@module HelperMod
+    PORT {
+        IN  [1] en;
+        OUT [8] data;
+    }
+
+    WIRE {
+        // Trigger 1: wire driven only with z in every path, then read
+        w_allz [8];
+    }
+
+    ASYNCHRONOUS {
+        IF (en) {
+            w_allz <= 8'bzzzz_zzzz;
+        } ELSE {
+            w_allz <= 8'bzzzz_zzzz;
+        }
+        data <= w_allz;
+    }
+@endmod
+
+// Top module with local all-z wire and helper instantiation
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] en;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'b0000_0000;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] en = en;
+        OUT [8] data = _;
+    };
+
+    WIRE {
+        // Trigger 2: wire in top module, all paths assign z, then read
+        top_allz [8];
+    }
+
+    ASYNCHRONOUS {
+        IF (en) {
+            top_allz <= 8'bzzzz_zzzz;
+        } ELSE {
+            top_allz <= 8'bzzzz_zzzz;
+        }
+
+        data <= top_allz;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

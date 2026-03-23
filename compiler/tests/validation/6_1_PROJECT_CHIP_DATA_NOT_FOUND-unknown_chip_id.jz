@@ -1,0 +1,44 @@
+// PROJECT_CHIP_DATA_NOT_FOUND: Unknown chip ID triggers error.
+// Only one trigger possible per file (single @project per file).
+// Uses a chip name that does not match any built-in or local JSON file.
+
+@project(CHIP="NONEXISTENT_CHIP_XYZ") PROJECT_CHIP_DATA_NOT_FOUND_unknown_chip_id
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

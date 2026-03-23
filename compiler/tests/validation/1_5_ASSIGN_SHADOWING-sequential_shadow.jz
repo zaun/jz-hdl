@@ -1,0 +1,78 @@
+// ASSIGN_SHADOWING: Assignment at higher nesting level followed by nested assignment to same bits.
+// Tests sequential shadowing in ASYNCHRONOUS blocks across modules.
+// Valid patterns (branch-exclusive, different targets) included to verify no false positives.
+
+@project ASSIGN_SHADOWING_sequential_shadow
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper module: root assignment then nested IF assignment
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: root assignment shadowed by IF branch
+        out_a = GND;
+        IF (sel) {
+            out_a <= VCC;
+        }
+        // Valid: no shadowing (different target)
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        w [1];
+        ha_a [1];
+        ha_b [1];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [1] sel = sel;
+        OUT [1] out_a = ha_a;
+        OUT [1] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: root wire assignment shadowed by nested IF
+        w = GND;
+        IF (sel) {
+            w <= VCC;
+        }
+        // Trigger 3: root port assignment shadowed by nested IF
+        out_a = ha_a;
+        IF (sel) {
+            out_a <= ha_b;
+        }
+        out_b = w;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

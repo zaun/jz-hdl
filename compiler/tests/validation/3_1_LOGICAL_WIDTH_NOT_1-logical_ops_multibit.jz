@@ -1,0 +1,94 @@
+// LOGICAL_WIDTH_NOT_1: Logical operators &&, ||, ! require 1-bit operands.
+// Tests all three logical operators with multi-bit operands in ASYNCHRONOUS
+// and SYNCHRONOUS blocks across multiple modules.
+// Valid 1-bit logical operations included to verify no false positives.
+
+@project LOGICAL_WIDTH_NOT_1_logical_ops_multibit
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        IN  [1] flag = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+        OUT [1] out_c = _;
+    }
+@endproj
+
+// Helper module: logical operators on multi-bit operands in async and sync
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: logical AND with multi-bit operands in ASYNC
+        out_a <= a && b;
+        // Trigger 2: logical NOT with multi-bit operand in ASYNC
+        out_b <= !a;
+        // Sink register to avoid unrelated warning
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: logical OR with multi-bit operands in SYNC
+        r <= a || b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] flag;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+    WIRE {
+        ha_a [1];
+        ha_b [1];
+        ha_c [1];
+        w1   [1];
+        w2   [1];
+        w3   [1];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [1] out_a = ha_a;
+        OUT [1] out_b = ha_b;
+        OUT [1] out_c = ha_c;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 4: logical OR with multi-bit operands in top module ASYNC
+        w1 = a || b;
+        // Trigger 5: logical AND with multi-bit operands in top module ASYNC
+        w2 = a && b;
+        // Trigger 6: logical NOT with multi-bit operand in top module ASYNC
+        w3 = !b;
+        // Valid: 1-bit logical AND (no false positive)
+        out_a = flag && ha_a;
+        // Valid: 1-bit logical NOT (no false positive)
+        out_b = !ha_b;
+        // Sink register and remaining wire
+        out_c = r | ha_c;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 7: logical AND with multi-bit operands in top module SYNC
+        r <= a && b;
+    }
+@endmod

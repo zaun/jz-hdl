@@ -1,0 +1,45 @@
+// GLOBAL_NAMESPACE_DUPLICATE: Duplicate @global block names in a compilation unit.
+// Two @global blocks share the name "COLORS", triggering the duplicate namespace error.
+// A valid @global block "SIZES" is included to verify no false positive.
+
+@global COLORS
+    RED   = 3'b001;
+    GREEN = 3'b010;
+    BLUE  = 3'b100;
+@endglob
+
+// Valid: unique @global name (should NOT trigger)
+@global SIZES
+    SMALL  = 4'b0001;
+    MEDIUM = 4'b0010;
+    LARGE  = 4'b0100;
+@endglob
+
+// Trigger 1: duplicate @global name "COLORS"
+@global COLORS
+    CYAN    = 3'b011;
+    MAGENTA = 3'b101;
+@endglob
+
+@project GLOBAL_NAMESPACE_DUPLICATE_duplicate_global_name
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [3] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [3] data;
+    }
+    REGISTER {
+        r [3] = 3'b000;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= COLORS.RED;
+    }
+@endmod

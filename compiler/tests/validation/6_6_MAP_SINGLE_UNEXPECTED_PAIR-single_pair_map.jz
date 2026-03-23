@@ -1,0 +1,53 @@
+// MAP_SINGLE_UNEXPECTED_PAIR: Single-ended pin must not use { P, N } MAP syntax.
+// Tests single-ended IN, OUT, and INOUT pins with differential {P,N} MAP syntax.
+// Valid scalar mapping included to verify no false positives.
+
+@project MAP_SINGLE_UNEXPECTED_PAIR_single_pair_map
+    IN_PINS {
+        // Valid: single-ended with scalar MAP
+        valid_in = { standard=LVCMOS33 };
+        // Trigger 1: single-ended IN pin with {P,N} MAP
+        bad_in = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        // Trigger 2: single-ended OUT pin with {P,N} MAP
+        bad_out = { standard=LVCMOS33, drive=8 };
+    }
+
+    INOUT_PINS {
+        // Trigger 3: single-ended INOUT pin with {P,N} MAP
+        bad_io = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        valid_in = 1;
+        bad_in = { P=2, N=3 };
+        bad_out = { P=4, N=5 };
+        bad_io = { P=6, N=7 };
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

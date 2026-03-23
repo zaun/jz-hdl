@@ -1,0 +1,2 @@
+File: 4_13_INSTANCE_ARRAY_PARENT_BIT_OVERLAP-overlapping_out_bits.jz
+      48:17   error INSTANCE_ARRAY_PARENT_BIT_OVERLAP S4.13.1 Instance array OUT mappings drive overlapping bits of the same parent signal for different instance indices

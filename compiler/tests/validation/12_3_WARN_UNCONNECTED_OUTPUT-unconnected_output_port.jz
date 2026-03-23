@@ -1,0 +1,61 @@
+// WARN_UNCONNECTED_OUTPUT: Output port declared but never driven inside the module.
+// Tests unconnected output detection in multiple modules.
+// Valid outputs (driven in ASYNC) included for no false positives.
+
+@project WARN_UNCONNECTED_OUTPUT_unconnected_output_port
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+        OUT [1] extra = _;
+    }
+@endproj
+
+// Helper module with one unconnected output and one connected output
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        // Trigger 1: output port never driven in helper module
+        OUT [1] unused_out;
+        // Valid: output port that is driven
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+        // Trigger 2: output port never driven in top module
+        OUT [1] extra;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [1] unused_out = _;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

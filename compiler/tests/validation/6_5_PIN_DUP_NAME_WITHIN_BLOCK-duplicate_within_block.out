@@ -1,0 +1,4 @@
+File: 6_5_PIN_DUP_NAME_WITHIN_BLOCK-duplicate_within_block.jz
+      15:9    error PIN_DUP_NAME_WITHIN_BLOCK S6.5/S6.9 Duplicate pin names within same PIN block
+      22:9    error PIN_DUP_NAME_WITHIN_BLOCK S6.5/S6.9 Duplicate pin names within same PIN block
+      29:9    error PIN_DUP_NAME_WITHIN_BLOCK S6.5/S6.9 Duplicate pin names within same PIN block

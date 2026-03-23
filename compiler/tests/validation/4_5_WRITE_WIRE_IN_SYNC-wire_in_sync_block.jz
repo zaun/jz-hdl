@@ -1,0 +1,80 @@
+// WRITE_WIRE_IN_SYNC: Wire assigned in SYNCHRONOUS block.
+// Tests wire assignment in SYNC root and SYNC IF across multiple modules.
+// Valid wire usage in ASYNCHRONOUS blocks included to verify no false positives.
+
+@project WRITE_WIRE_IN_SYNC_wire_in_sync_block
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] ctrl = _;
+        IN  [8] din = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Helper module: trigger wire write in SYNC root
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] data_out;
+    }
+
+    WIRE {
+        w_helper [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: wire driven in ASYNC
+        w_helper <= data_in;
+        data_out <= w_helper;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: wire assigned in SYNC root (helper module)
+        w_helper <= r;
+        r <= data_in;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        w_top [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data_in = din;
+        OUT [8] data_out = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: wire driven in ASYNC
+        w_top <= din;
+        dout <= w_top;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: wire assigned in SYNC root (top module)
+        w_top <= r;
+        // Trigger 3: wire assigned inside IF in SYNC
+        IF (ctrl) {
+            w_top <= din;
+        }
+        r <= din;
+    }
+@endmod

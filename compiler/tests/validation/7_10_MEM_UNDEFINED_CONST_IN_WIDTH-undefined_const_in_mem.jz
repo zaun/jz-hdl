@@ -1,0 +1,103 @@
+// MEM_UNDEFINED_CONST_IN_WIDTH: CONST used in MEM word_width or depth is not declared.
+// Tests undefined CONST in both width and depth positions across multiple modules.
+// Valid CONST references included to verify no false positives.
+
+@project MEM_UNDEFINED_CONST_IN_WIDTH_undefined_const_in_mem
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: undefined CONST in word_width in helper module
+@module HelperMod
+    CONST {
+        VALID_DEPTH = 16;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [UNDEF_WIDTH] [VALID_DEPTH] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        VALID_WIDTH = 8;
+        VALID_DEPTH = 16;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [1] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: undefined CONST in depth in top module
+    MEM {
+        mem_b [VALID_WIDTH] [UNDEF_DEPTH] = 8'h00 {
+            OUT rd_b ASYNC;
+            IN  wr_b;
+        };
+    }
+
+    // Trigger 3: undefined CONST in both width and depth
+    MEM {
+        mem_c [UNDEF_W2] [UNDEF_D2] = 8'h00 {
+            OUT rd_c ASYNC;
+            IN  wr_c;
+        };
+    }
+
+    // Valid: all CONSTs declared (no error expected)
+    MEM {
+        mem_ok [VALID_WIDTH] [VALID_DEPTH] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_ok.wr_ok[addr] <= wdata;
+    }
+@endmod

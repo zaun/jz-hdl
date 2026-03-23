@@ -1,0 +1,104 @@
+// BLACKBOX_OVERRIDE_UNCHECKED: OVERRIDE in blackbox instantiation is not validated.
+// Tests that info-level diagnostic fires when OVERRIDE is used in @new of a blackbox.
+// Valid blackbox instantiation without OVERRIDE is included for negative testing.
+
+@project BLACKBOX_OVERRIDE_UNCHECKED_override_passthrough
+    @blackbox bb_ip {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
+    @blackbox bb_ip2 {
+        PORT {
+            IN  [1] a;
+            IN  [1] b;
+            OUT [1] q;
+        }
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module SubMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 2: OVERRIDE in blackbox @new inside non-top module
+    @new inst_bb2 bb_ip2 {
+        OVERRIDE {
+            MODE = 1;
+        }
+        IN  [1] a = r;
+        IN  [1] b = r;
+        OUT [1] q = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 1: OVERRIDE in blackbox @new with single param
+    @new inst_bb bb_ip {
+        OVERRIDE {
+            FREQ = 100;
+        }
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    // Trigger 3: OVERRIDE in blackbox @new with multiple params
+    @new inst_bb3 bb_ip2 {
+        OVERRIDE {
+            WIDTH = 8;
+            DEPTH = 256;
+        }
+        IN  [1] a = r;
+        IN  [1] b = r;
+        OUT [1] q = _;
+    };
+
+    // Valid: blackbox @new without OVERRIDE (no diagnostic)
+    @new inst_ok bb_ip {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    @new inst_sub SubMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

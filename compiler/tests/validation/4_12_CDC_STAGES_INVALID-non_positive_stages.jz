@@ -1,0 +1,84 @@
+// CDC_STAGES_INVALID: CDC stages parameter must be a positive integer.
+// Tests invalid stages values (zero, negative, non-integer) in multiple modules.
+// Valid stages included to verify no false positives.
+
+@project CDC_STAGES_INVALID_non_positive_stages
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with invalid CDC stages
+@module HelperMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        reg_a [1] = 1'b0;
+        reg_b [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 1: stages = 0 (not positive)
+        BIT[0] reg_a (clk_a) => sync_a (clk_b);
+        // Valid: stages = 2
+        BIT[2] reg_b (clk_a) => sync_b (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        data = sync_b;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        reg_a <= ~reg_a;
+        reg_b <= ~reg_b;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (sync_a) {
+            // reading alias
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        top_reg [8] = 8'h00;
+    }
+
+    CDC {
+        // Trigger 2: stages = abc (non-integer)
+        BUS[abc] top_reg (clk_a) => top_sync (clk_b);
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = top_sync[0:0];
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        top_reg <= 8'hAA;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (top_sync[0:0]) {
+            // reading alias
+        }
+    }
+@endmod

@@ -1,0 +1,43 @@
+// GLOBAL_INVALID_EXPR_TYPE: Non-sized-literal values in @global blocks.
+// Tests bare integers, missing base, and other invalid value forms.
+// Valid sized literals are included to verify no false positives.
+
+// Valid: properly sized literals (should NOT trigger)
+@global VALID
+    A = 8'hFF;
+    B = 4'b1010;
+    C = 16'd1234;
+@endglob
+
+// Trigger 1: bare decimal integer (no width or base)
+@global BAD_BARE
+    X = 42;
+@endglob
+
+// Trigger 2: bare zero
+@global BAD_ZERO
+    Y = 0;
+@endglob
+
+@project GLOBAL_INVALID_EXPR_TYPE_unsized_value
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= VALID.A;
+    }
+@endmod

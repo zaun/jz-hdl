@@ -1,0 +1,5 @@
+File: 4_1_MODULE_MISSING_PORT-no_port_block.jz
+      13:1    warn  WARN_UNUSED_MODULE S8.3 Module declared but never instantiated; remove it or add a @new
+      13:1    error MODULE_MISSING_PORT S4.2/S4.4/S8.1 Module missing required PORT block or PORT block is empty (no ports declared)
+      20:1    warn  WARN_UNUSED_MODULE S8.3 Module declared but never instantiated; remove it or add a @new
+      21:5    error MODULE_MISSING_PORT S4.2/S4.4/S8.1 Module missing required PORT block or PORT block is empty (no ports declared)

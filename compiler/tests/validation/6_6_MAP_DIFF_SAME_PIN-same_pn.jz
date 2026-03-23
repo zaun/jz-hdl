@@ -1,0 +1,41 @@
+// MAP_DIFF_SAME_PIN: Differential MAP entry has same physical pin for P and N.
+// Tests P and N set to identical board pin IDs.
+// Valid different P and N included to verify no false positives.
+
+@project MAP_DIFF_SAME_PIN_same_pn
+    IN_PINS {
+        // Trigger 1: P and N are same pin
+        diff_same = { mode=DIFFERENTIAL, standard=LVDS25 };
+        // Valid: P and N are different
+        valid_diff = { mode=DIFFERENTIAL, standard=LVDS25 };
+    }
+
+    MAP {
+        diff_same = { P=10, N=10 };
+        valid_diff = { P=12, N=13 };
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

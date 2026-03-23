@@ -1,0 +1,89 @@
+// MEM_INVALID_PORT_TYPE: ASYNC/SYNC qualifiers used on IN (write) ports.
+// IN ports are write-only and do not support timing qualifiers.
+// Valid OUT ASYNC/SYNC ports included to verify no false positives.
+
+@project MEM_INVALID_PORT_TYPE_async_sync_on_write_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: IN port with ASYNC qualifier in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr ASYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.wr[addr] <= wdata;
+    }
+@endmod
+
+// Top module — valid ports plus Trigger 2, instantiates HelperMod
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: IN port with SYNC qualifier in top module
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd_b ASYNC;
+            IN  wr_b SYNC;
+        };
+    }
+
+    // Valid: OUT ASYNC and plain IN (no error expected)
+    MEM {
+        mem_ok [8] [16] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_b.rd_b[addr] ^ mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.wr_b[addr] <= wdata;
+        mem_ok.wr_ok[addr] <= wdata;
+    }
+@endmod

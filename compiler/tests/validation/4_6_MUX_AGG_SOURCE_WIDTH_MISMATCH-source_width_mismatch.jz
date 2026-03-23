@@ -1,0 +1,60 @@
+// MUX_AGG_SOURCE_WIDTH_MISMATCH: Aggregation sources must have identical bit-width.
+// Tests mismatched widths in aggregation across multiple modules.
+// Valid equal-width aggregations included to verify no false positives.
+
+@project MUX_AGG_SOURCE_WIDTH_MISMATCH_source_width_mismatch
+    @top TopMod {
+        IN  [8] a = _;
+        IN  [4] b = _;
+        IN  [16] c = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [8] a;
+        OUT [8] data;
+    }
+
+    WIRE {
+        narrow [4];
+    }
+
+    MUX {
+        // Trigger 1: 8-bit and 4-bit sources (width mismatch)
+        h_mux = a, narrow;
+    }
+
+    ASYNCHRONOUS {
+        narrow = a[3:0];
+        data = a;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [8] a;
+        IN  [4] b;
+        IN  [16] c;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    MUX {
+        // Valid: equal-width aggregation (no error expected)
+        valid_mux = a, a;
+        // Trigger 2: 8-bit, 4-bit, and 16-bit sources (width mismatch)
+        t_mux = a, b, c;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] a = a;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = valid_mux[sel];
+    }
+@endmod

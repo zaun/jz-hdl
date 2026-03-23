@@ -1,0 +1,61 @@
+// SYNC_CLK_WIDTH_NOT_1: SYNCHRONOUS block CLK signal must have width [1].
+// Tests CLK parameter bound to multi-bit ports in multiple modules.
+// Valid width-1 CLK included to verify no false positives.
+
+@project SYNC_CLK_WIDTH_NOT_1_wide_clk_signal
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] wide_clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: CLK bound to 8-bit port
+@module HelperA
+    PORT {
+        IN  [8] clk_wide;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    // Trigger 1: CLK is 8-bit port
+    SYNCHRONOUS(CLK=clk_wide) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] wide_clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [8] clk_wide = wide_clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_ok [1] = 1'b0;
+        r_bad [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+
+    // Valid: CLK bound to 1-bit port — should NOT trigger
+    SYNCHRONOUS(CLK=clk) {
+        r_ok <= ~r_ok;
+    }
+
+    // Trigger 2: CLK bound to 8-bit port in top module
+    SYNCHRONOUS(CLK=wide_clk) {
+        r_bad <= ~r_bad;
+    }
+@endmod

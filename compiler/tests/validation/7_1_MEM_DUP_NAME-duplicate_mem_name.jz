@@ -1,0 +1,92 @@
+// MEM_DUP_NAME: Two MEM blocks with the same name in one module triggers error.
+// Unique names included for no false positives.
+
+@project MEM_DUP_NAME_duplicate_mem_name
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: duplicate MEM name in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        shared [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    MEM {
+        shared [8] [16] = 8'h00 {
+            OUT rd2 ASYNC;
+            IN  wr2;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = shared.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        shared.wr[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: duplicate MEM name in top module
+    MEM {
+        my_mem [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    MEM {
+        my_mem [8] [16] = 8'h00 {
+            OUT rd2 ASYNC;
+            IN  wr2;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = my_mem.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        my_mem.wr[addr] <= wdata;
+    }
+@endmod

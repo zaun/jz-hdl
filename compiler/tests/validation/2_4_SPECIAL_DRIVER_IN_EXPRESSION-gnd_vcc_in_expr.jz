@@ -1,0 +1,79 @@
+// SPECIAL_DRIVER_IN_EXPRESSION: GND/VCC may not appear in expressions.
+// Tests GND/VCC in binary ops, unary ops, ternary condition, and function args.
+// Valid standalone uses of GND/VCC included to verify no false positives.
+
+@project SPECIAL_DRIVER_IN_EXPRESSION_gnd_vcc_in_expr
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [1] out_c = _;
+    }
+@endproj
+
+// Helper: GND/VCC in binary and unary expressions
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [1] out_c;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: GND in binary add (async RHS)
+        out_a = data + GND;
+        // Trigger 2: VCC in binary or (async RHS)
+        out_b = data | VCC;
+        // Trigger 3: GND as unary NOT operand (async RHS)
+        out_c = ~GND;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: VCC in binary add (sync RHS)
+        r <= r + VCC;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [1] out_c;
+    }
+    WIRE {
+        ha_out_a [8];
+        ha_out_b [8];
+        ha_out_c [1];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+        s [1] = 1'b0;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [8] data = r;
+        OUT [8] out_a = ha_out_a;
+        OUT [8] out_b = ha_out_b;
+        OUT [1] out_c = ha_out_c;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: GND as standalone RHS (no false positive)
+        out_a = ha_out_a;
+        out_b = ha_out_b;
+        // Trigger 5: VCC as ternary condition
+        out_c <= VCC ? ha_out_c : 1'b0;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: VCC as standalone register reset-like assignment (no false positive)
+        r <= GND;
+        // Trigger 6: GND in binary subtract (sync RHS)
+        s <= s - GND;
+    }
+@endmod

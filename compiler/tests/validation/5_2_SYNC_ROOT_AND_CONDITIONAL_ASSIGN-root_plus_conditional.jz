@@ -1,0 +1,97 @@
+// SYNC_ROOT_AND_CONDITIONAL_ASSIGN: Root-level register assignment combined
+// with nested conditional assignment to same bits.
+// Tests root + IF, root + SELECT with DEFAULT.
+// Valid conditional-only assignments included to verify no false positives.
+
+@project SYNC_ROOT_AND_CONDITIONAL_ASSIGN_root_plus_conditional
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper module: root + IF branch conflict
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] out_a;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: root assignment then conditional assignment to same register
+        r <= a;
+        IF (sel) {
+            r <= b;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r_x [8] = 8'h00;
+        r_y [8] = 8'h00;
+        r_ok [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] sel = sel;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r_x;
+        out_b = r_y;
+        out_c = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: root + IF in top module
+        r_x <= a;
+        IF (sel) {
+            r_x <= b;
+        }
+        // Trigger 3: root + SELECT case (with DEFAULT to avoid SELECT_NO_MATCH_SYNC_OK)
+        r_y <= a;
+        SELECT (sel) {
+            CASE (1'b0) {
+                r_y <= b;
+            }
+            CASE (1'b1) {
+                r_y <= b;
+            }
+            DEFAULT {
+                r_y <= b;
+            }
+        }
+        // Valid: conditional-only assignments, no root conflict (should NOT trigger)
+        IF (sel) {
+            r_ok <= a;
+        } ELSE {
+            r_ok <= b;
+        }
+    }
+@endmod

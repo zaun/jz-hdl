@@ -1,0 +1,63 @@
+// OBS_X_TO_OBSERVABLE_SINK: Expression containing x bits drives observable sinks.
+// Tests x-bit literals reaching OUT ports and REGISTER next-state inputs.
+// Valid uses (no x bits) are included to verify no false positives.
+
+@project OBS_X_TO_OBSERVABLE_SINK_x_bits_to_observable
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: x bits driving output port and register
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: x literal driving OUT port via <=
+        out_a <= 8'bxxxx_0000;
+        // Valid: register current value driving output (no x)
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: x literal driving REGISTER next-state
+        r <= 8'bxxxx_xxxx;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 3: x literal driving OUT port in top module
+        out_a <= 8'b0000_xxxx;
+        // Valid: register current value driving output (no x)
+        out_b = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: x literal driving register next-state in top module
+        r <= 8'bxx00_00xx;
+    }
+@endmod

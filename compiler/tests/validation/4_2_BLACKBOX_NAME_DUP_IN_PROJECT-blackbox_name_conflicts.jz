@@ -1,0 +1,77 @@
+// BLACKBOX_NAME_DUP_IN_PROJECT: Blackbox name conflicts with existing module or blackbox.
+// Tests blackbox-blackbox and blackbox-module name collisions.
+// Valid unique names are included to verify no false positives.
+
+@project BLACKBOX_NAME_DUP_IN_PROJECT_blackbox_name_conflicts
+    // Valid: unique blackbox
+    @blackbox bb_unique {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
+    // Valid: first definition of bb_dup
+    @blackbox bb_dup {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
+    // Trigger 1: duplicate blackbox name bb_dup
+    @blackbox bb_dup {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
+    // Trigger 2: blackbox name conflicts with module name SharedName
+    @blackbox SharedName {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Module named SharedName — defined before blackbox above triggers conflict
+@module SharedName
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_bb bb_unique {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

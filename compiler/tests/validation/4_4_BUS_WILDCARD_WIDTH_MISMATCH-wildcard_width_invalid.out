@@ -1,0 +1,4 @@
+File: 4_4_BUS_WILDCARD_WIDTH_MISMATCH-wildcard_width_invalid.jz
+      34:9    error BUS_WILDCARD_WIDTH_MISMATCH S4.4.1 BUS wildcard assignment requires RHS width of 1 or array count
+      57:9    error BUS_WILDCARD_WIDTH_MISMATCH S4.4.1 BUS wildcard assignment requires RHS width of 1 or array count
+      80:9    error BUS_WILDCARD_WIDTH_MISMATCH S4.4.1 BUS wildcard assignment requires RHS width of 1 or array count

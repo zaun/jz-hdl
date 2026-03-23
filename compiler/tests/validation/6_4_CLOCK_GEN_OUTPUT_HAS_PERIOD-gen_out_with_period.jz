@@ -1,0 +1,62 @@
+// CLOCK_GEN_OUTPUT_HAS_PERIOD: CLOCK_GEN output clock must not have a period in CLOCKS.
+// Tests CLOCK_GEN OUT clocks that incorrectly specify period in CLOCKS block.
+// Valid CLOCK_GEN OUT without period included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_OUTPUT_HAS_PERIOD_gen_out_with_period
+    CLOCKS {
+        ref_clk = { period=10 };
+        // Trigger 1: CLOCK_GEN OUT with period
+        gen_clk_a = { period=5 };
+        // Valid: CLOCK_GEN OUT without period (no trigger)
+        gen_clk_b;
+        // Trigger 2: another CLOCK_GEN OUT with period
+        gen_clk_c = { period=20 };
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK ref_clk;
+            OUT BASE gen_clk_a;
+            OUT PHASE gen_clk_b;
+            OUT DIV gen_clk_c;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

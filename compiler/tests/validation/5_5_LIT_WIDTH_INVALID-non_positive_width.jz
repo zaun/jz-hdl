@@ -1,0 +1,69 @@
+// LIT_WIDTH_INVALID: lit() width must be a positive integer constant expression.
+// Tests lit() with width=0 in ASYNC and SYNC expressions across modules.
+// lit() is a runtime intrinsic valid in expression blocks.
+// Valid lit(8, 5) included to verify no false positives.
+
+@project LIT_WIDTH_INVALID_non_positive_width
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data_in = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: lit() with zero width in async and sync
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] val;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: lit() with width=0 in helper async
+        out_a <= lit(0, 1);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: lit() with width=0 in helper sync
+        r <= val | lit(0, 0);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] val = data_in;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: lit() with width=0 in top async
+        out_a <= lit(0, 0);
+        // Valid: lit(8, 5) with positive width (no false positive)
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: lit() with width=0 in top sync
+        r <= data_in | lit(0, 1);
+    }
+@endmod

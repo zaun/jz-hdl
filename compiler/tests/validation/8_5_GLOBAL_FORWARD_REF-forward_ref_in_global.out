@@ -1,0 +1,3 @@
+File: 8_5_GLOBAL_FORWARD_REF-forward_ref_in_global.jz
+       9:5    error GLOBAL_FORWARD_REF S8.4 Global constant expression references a later constant in the same @global block
+      11:5    error GLOBAL_FORWARD_REF S8.4 Global constant expression references a later constant in the same @global block

@@ -1,0 +1,69 @@
+// SYNC_EDGE_BOTH_WARNING: EDGE=Both (dual-edge clocking) warning.
+// Tests EDGE=Both producing a warning in multiple modules.
+// Valid EDGE values included to verify no false positives.
+
+@project SYNC_EDGE_BOTH_WARNING_dual_edge_warning
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        IN  [1] clk_c = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: EDGE=Both
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    // Trigger 1: EDGE=Both in helper module
+    SYNCHRONOUS(CLK=clk EDGE=Both) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] clk_c;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk_a;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_ok [1] = 1'b0;
+        r_both [1] = 1'b0;
+        r_ok2 [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+
+    // Valid: EDGE=Rising — should NOT trigger
+    SYNCHRONOUS(CLK=clk_a EDGE=Rising) {
+        r_ok <= ~r_ok;
+    }
+
+    // Trigger 2: EDGE=Both in top module
+    SYNCHRONOUS(CLK=clk_b EDGE=Both) {
+        r_both <= ~r_both;
+    }
+
+    // Valid: EDGE=Falling — should NOT trigger
+    SYNCHRONOUS(CLK=clk_c EDGE=Falling) {
+        r_ok2 <= ~r_ok2;
+    }
+@endmod

@@ -1,0 +1,41 @@
+// CONFIG_FORWARD_REF: Forward reference in CONFIG block.
+// Tests CONFIG entry referencing a later CONFIG.<name>.
+// Valid backward references included to verify no false positives.
+
+@project CONFIG_FORWARD_REF_forward_reference
+    CONFIG {
+        // Valid: literal value
+        A = 8;
+        // Valid: backward reference to earlier entry
+        B = CONFIG.A;
+        // Trigger 1: forward reference to D (defined later)
+        C = CONFIG.D;
+        // Valid: literal
+        D = 16;
+        // Trigger 2: forward reference to F (defined later)
+        E = CONFIG.F;
+        // Valid: literal
+        F = 32;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

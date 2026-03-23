@@ -1,0 +1,71 @@
+// MEM_PORT_USED_AS_SIGNAL: Reference MEM port without .field or [index].
+// Valid field/index access included for no false positives.
+
+@project MEM_PORT_USED_AS_SIGNAL_bare_port_ref
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: bare port ref in helper
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: bare port ref used as signal
+        r <= mem_a.rd;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_b.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: bare port ref in top module
+        r <= mem_b.rd;
+    }
+@endmod

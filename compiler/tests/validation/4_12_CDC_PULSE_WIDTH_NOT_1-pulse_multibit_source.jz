@@ -1,0 +1,86 @@
+// CDC_PULSE_WIDTH_NOT_1: PULSE CDC source register must have width [1].
+// Tests PULSE type with multi-bit registers in multiple modules.
+// Valid width-1 PULSE CDC included to verify no false positives.
+
+@project CDC_PULSE_WIDTH_NOT_1_pulse_multibit_source
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with PULSE CDC on multi-bit register
+@module HelperMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    // Trigger 1: 4-bit register used as PULSE CDC source
+    REGISTER {
+        wide_pulse [4] = 4'h0;
+        ok_pulse [1] = 1'b0;
+    }
+
+    CDC {
+        PULSE wide_pulse (clk_a) => wide_psync (clk_b);
+        PULSE ok_pulse (clk_a) => ok_psync (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        data = ok_psync;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        wide_pulse <= 4'h1;
+        ok_pulse <= ~ok_pulse;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (wide_psync[0:0]) {
+            // reading sync alias
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    // Trigger 2: 8-bit register used as PULSE CDC source in top module
+    REGISTER {
+        top_wide [8] = 8'h00;
+        top_ok [1] = 1'b0;
+    }
+
+    CDC {
+        PULSE top_wide (clk_a) => top_wide_psync (clk_b);
+        PULSE top_ok (clk_a) => top_ok_psync (clk_b);
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = top_ok_psync;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        top_wide <= 8'hFF;
+        top_ok <= ~top_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (top_wide_psync[0:0]) {
+            // reading sync alias
+        }
+    }
+@endmod

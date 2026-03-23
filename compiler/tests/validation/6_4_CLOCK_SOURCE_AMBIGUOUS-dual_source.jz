@@ -1,0 +1,64 @@
+// CLOCK_SOURCE_AMBIGUOUS: Clock with period in CLOCKS that is also a CLOCK_GEN output.
+// Period implies external source; CLOCK_GEN OUT implies generated source.
+// Tests clocks with period that are also CLOCK_GEN outputs.
+// Valid clocks (external-only, gen-only) included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_SOURCE_AMBIGUOUS_dual_source
+    CLOCKS {
+        ref_clk = { period=10 };
+        // Trigger 1: has period AND is CLOCK_GEN OUT (ambiguous source)
+        ambig_clk_a = { period=5 };
+        // Valid: CLOCK_GEN OUT without period (no trigger)
+        gen_only_clk;
+        // Trigger 2: another clock with period AND CLOCK_GEN OUT
+        ambig_clk_b = { period=20 };
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK ref_clk;
+            OUT BASE ambig_clk_a;
+            OUT PHASE gen_only_clk;
+            OUT DIV ambig_clk_b;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+                CLKOUTD_DIV = 4;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -1,0 +1,89 @@
+// TEMPLATE_NESTED_DEF: Nested @template definitions are not allowed.
+// Tests nested templates in file-scoped and module-scoped contexts.
+// Valid non-nested templates included for negative testing.
+
+@project TEMPLATE_NESTED_DEF_nested_template_definition
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: non-nested file-scoped template (no error)
+@template valid_tmpl(a, b)
+    a <= b;
+@endtemplate
+
+// Trigger 1: nested @template inside file-scoped template
+@template outer_file(a, b)
+    @template inner_file(x, y)
+        x <= y;
+    @endtemplate
+    a <= b;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 2: nested @template inside module-scoped template
+    @template outer_mod(a, b)
+        @template inner_mod(x, y)
+            x <= y;
+        @endtemplate
+        a <= b;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 3: nested @template in top module template
+    @template outer_top(a, b)
+        @template inner_top(x, y)
+            x <= y;
+        @endtemplate
+        a <= b;
+    @endtemplate
+
+    // Trigger 4: doubly nested @template
+    @template outer_deep(a, b)
+        @template mid_deep(x, y)
+            @template inner_deep(p, q)
+                p <= q;
+            @endtemplate
+            x <= y;
+        @endtemplate
+        a <= b;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

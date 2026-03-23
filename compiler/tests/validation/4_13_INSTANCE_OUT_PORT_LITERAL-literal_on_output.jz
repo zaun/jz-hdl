@@ -1,0 +1,87 @@
+// INSTANCE_OUT_PORT_LITERAL: OUT port binding in @new may not be a literal value.
+// Tests literal values bound to OUT ports in scalar and array instantiations.
+// Valid OUT bindings (signal and no-connect) and IN literal tie-offs are included.
+
+@project INSTANCE_OUT_PORT_LITERAL_literal_on_output
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with IN and OUT ports
+@module ChildMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+        OUT [1] flag;
+    }
+    ASYNCHRONOUS {
+        data = din;
+        flag = din[0];
+    }
+@endmod
+
+// Module with literal OUT port bindings
+@module MidMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 1: literal bound to OUT port (sized binary)
+    @new inst_a ChildMod {
+        IN  [8] din = 8'hAA;
+        OUT [8] data = 8'h00;
+        OUT [1] flag = _;
+    };
+
+    // Trigger 2: literal bound to second OUT port
+    @new inst_b ChildMod {
+        IN  [8] din = 8'hBB;
+        OUT [8] data = _;
+        OUT [1] flag = 1'b0;
+    };
+
+    // Valid: IN literal tie-off and OUT no-connect (no trigger)
+    @new inst_c ChildMod {
+        IN  [8] din = 8'hCC;
+        OUT [8] data = _;
+        OUT [1] flag = _;
+    };
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 3: literal on OUT in top module
+    @new inst_d ChildMod {
+        IN  [8] din = 8'hDD;
+        OUT [8] data = 8'hFF;
+        OUT [1] flag = _;
+    };
+
+    @new inst_e MidMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

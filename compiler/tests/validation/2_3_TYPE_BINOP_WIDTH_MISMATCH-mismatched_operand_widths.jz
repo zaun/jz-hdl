@@ -1,0 +1,78 @@
+// TYPE_BINOP_WIDTH_MISMATCH: Binary operators require equal operand widths.
+// Tests width mismatch across arithmetic, bitwise, and comparison operators
+// in both ASYNCHRONOUS and SYNCHRONOUS blocks, across multiple modules.
+// Valid same-width operations included to verify no false positives.
+
+@project TYPE_BINOP_WIDTH_MISMATCH_mismatched_operand_widths
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [4] b = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: width mismatches in ASYNCHRONOUS and SYNCHRONOUS blocks
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: arithmetic ADD width mismatch (8 vs 4), also reads r
+        out_a <= r + b;
+        // Trigger 2: comparison EQ width mismatch (8 vs 4)
+        out_b <= (a == b) ? 1'b1 : 1'b0;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: arithmetic SUB width mismatch in SYNC (8 vs 4)
+        r <= a - b;
+    }
+@endmod
+
+// Second helper to read HelperA's register via instance binding
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        w [8];
+        ha_a [8];
+        ha_b [1];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [4] b = b;
+        OUT [8] out_a = ha_a;
+        OUT [1] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 4: bitwise OR width mismatch (8 vs 4)
+        w <= a | b;
+        // Trigger 5: bitwise XOR width mismatch (8 vs 4)
+        out_a <= a ^ b;
+        // Valid: same-width addition (no false positive)
+        out_b = ha_a + r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 6: MUL width mismatch in SYNC (8 vs 4)
+        r <= a * b;
+    }
+@endmod

@@ -1,0 +1,100 @@
+// BUS_SIGNAL_READ_FROM_WRITABLE: Read access to writable BUS signal.
+// Tests reading from writable-only BUS signals in SOURCE and TARGET roles.
+// Valid reads from readable signals included for no false positives.
+
+@project BUS_SIGNAL_READ_FROM_WRITABLE_read_writable_signal
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+        OUT [8] dout_d = _;
+    }
+@endproj
+
+// SOURCE role: OUT signals are writable, IN signals are readable
+@module SourceMod
+    PORT {
+        IN  [1] clk;
+        BUS MY_BUS SOURCE sbus;
+        OUT [8] data_ok;
+        OUT [8] data_err;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: write to writable (tx is OUT for SOURCE = writable)
+        sbus.tx <= r;
+        // Valid: read from readable (rx is IN for SOURCE = readable)
+        data_ok <= sbus.rx;
+        // Trigger 1: read from writable signal (tx is OUT for SOURCE = writable, not readable)
+        data_err <= sbus.tx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= sbus.rx;
+    }
+@endmod
+
+// TARGET role: IN signals are writable, OUT signals are readable
+@module TargetMod
+    PORT {
+        IN  [1] clk;
+        BUS MY_BUS TARGET tbus;
+        OUT [8] data_ok;
+        OUT [8] data_err;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: write to writable (rx is IN for TARGET = writable)
+        tbus.rx <= r;
+        // Valid: read from readable (tx is OUT for TARGET = readable)
+        data_ok <= tbus.tx;
+        // Trigger 2: read from writable signal (rx is IN for TARGET = writable, not readable)
+        data_err <= tbus.rx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= tbus.tx;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+        OUT [8] dout_d;
+    }
+
+    @new inst_s SourceMod {
+        IN  [1] clk = clk;
+        BUS MY_BUS SOURCE sbus = _;
+        OUT [8] data_ok = dout_a;
+        OUT [8] data_err = dout_b;
+    };
+
+    @new inst_t TargetMod {
+        IN  [1] clk = clk;
+        BUS MY_BUS TARGET tbus = _;
+        OUT [8] data_ok = dout_c;
+        OUT [8] data_err = dout_d;
+    };
+
+    ASYNCHRONOUS {
+        // TopMod passes through instance outputs
+    }
+@endmod

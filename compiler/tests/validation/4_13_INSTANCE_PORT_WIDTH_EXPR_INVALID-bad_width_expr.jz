@@ -1,0 +1,85 @@
+// INSTANCE_PORT_WIDTH_EXPR_INVALID: Width expression in instantiation uses undefined CONST/CONFIG.
+// Tests undefined identifiers in port width expressions of @new blocks.
+// Valid width expressions using defined CONSTs are included for negative testing.
+
+@project INSTANCE_PORT_WIDTH_EXPR_INVALID_bad_width_expr
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with known port widths
+@module ChildMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module with invalid width expressions in @new
+@module MidMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    // Trigger 1: undefined CONST in IN port width
+    @new inst_a ChildMod {
+        IN  [UNDEF_W] din = _;
+        OUT [8] data = _;
+    };
+
+    // Trigger 2: undefined CONST in OUT port width
+    @new inst_b ChildMod {
+        IN  [8] din = _;
+        OUT [MISSING] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        MY_WIDTH = 8;
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 3: undefined CONST in top module @new width
+    @new inst_c ChildMod {
+        IN  [NO_SUCH_CONST] din = _;
+        OUT [8] data = _;
+    };
+
+    // Valid: defined CONST in width expression (no trigger)
+    @new inst_d ChildMod {
+        IN  [MY_WIDTH] din = _;
+        OUT [MY_WIDTH] data = _;
+    };
+
+    @new inst_e MidMod {
+        IN  [8] din = _;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

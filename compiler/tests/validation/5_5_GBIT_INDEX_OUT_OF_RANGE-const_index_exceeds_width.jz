@@ -1,0 +1,67 @@
+// GBIT_INDEX_OUT_OF_RANGE: gbit() with constant index >= source width.
+// Tests gbit() with out-of-range constant index in async and sync blocks.
+// Valid gbit() with in-range index included to verify no false positives.
+
+@project GBIT_INDEX_OUT_OF_RANGE_const_index_exceeds_width
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper module with out-of-range gbit indices
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: gbit index 8 on 8-bit source (valid 0-7) in async
+        out_a <= gbit(data, 8);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: gbit index 10 on 8-bit source in sync
+        r <= gbit(data, 10);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        h_a [1];
+        h_b [1];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data = data;
+        OUT [1] out_a = h_a;
+        OUT [1] out_b = h_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: gbit index 9 on 8-bit source in top async
+        out_a <= gbit(data, 9);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: gbit index 15 on 8-bit source in top sync
+        r <= gbit(data, 15);
+    }
+@endmod

@@ -1,0 +1,34 @@
+// TOP_OUT_LITERAL_BINDING: OUT port bound to literal value in @top.
+// Tests literal binding to OUT port.
+// Valid: IN port bound to literal (constant tie-off is allowed).
+
+@project TOP_OUT_LITERAL_BINDING_literal_on_out
+    @top TopMod {
+        IN  [1] clk = _;
+        // Valid: IN port bound to literal (allowed for tie-off)
+        IN  [1] tie_high = 1'b1;
+        // Trigger 1: OUT port bound to literal
+        OUT [1] data = 1'b0;
+        // Valid: OUT port bound to no-connect
+        OUT [1] other = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] tie_high;
+        OUT [1] data;
+        OUT [1] other;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+        other = tie_high;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

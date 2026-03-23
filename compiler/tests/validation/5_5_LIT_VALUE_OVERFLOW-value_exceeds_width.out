@@ -1,0 +1,5 @@
+File: 5_5_LIT_VALUE_OVERFLOW-value_exceeds_width.jz
+      28:18   error LIT_VALUE_OVERFLOW S5.5.11 lit() value exceeds declared width
+      33:20   error LIT_VALUE_OVERFLOW S5.5.11 lit() value exceeds declared width
+      61:18   error LIT_VALUE_OVERFLOW S5.5.11 lit() value exceeds declared width
+      67:24   error LIT_VALUE_OVERFLOW S5.5.11 lit() value exceeds declared width

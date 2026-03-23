@@ -1,0 +1,82 @@
+// INSTANCE_MISSING_PORT: Not all child module ports listed in @new block.
+// Tests missing ports in scalar and array instantiation contexts.
+// Valid instantiations with all ports listed are included for negative testing.
+
+@project INSTANCE_MISSING_PORT_incomplete_port_list
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with multiple ports
+@module ChildMod
+    PORT {
+        IN  [1] a;
+        IN  [1] b;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = a & b;
+    }
+@endmod
+
+// Module that omits ports in instantiation
+@module MidMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 1: missing port b in scalar instantiation
+    @new inst_a ChildMod {
+        IN  [1] a = din;
+        OUT [1] data = _;
+    };
+
+    // Valid: all ports listed (no trigger)
+    @new inst_b ChildMod {
+        IN  [1] a = din;
+        IN  [1] b = din;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 2: missing ports a and b in top module
+    @new inst_c ChildMod {
+        OUT [1] data = _;
+    };
+
+    // Trigger 3: missing port in array instantiation
+    @new inst_d[2] ChildMod {
+        IN  [1] a = r;
+        OUT [1] data = _;
+    };
+
+    @new inst_e MidMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

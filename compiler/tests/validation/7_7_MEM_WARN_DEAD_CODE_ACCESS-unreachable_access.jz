@@ -1,0 +1,91 @@
+// MEM_WARN_DEAD_CODE_ACCESS: Memory access in unreachable code path.
+// Unreachable paths created via constant-false IF conditions in SYNC blocks.
+// Separate write ports used for dead paths to avoid MEM_MULTIPLE_WRITES_SAME_IN.
+// Reachable accesses included for no false positives.
+
+@project MEM_WARN_DEAD_CODE_ACCESS_unreachable_access
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [2] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: dead sync write in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_h [8] [4] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr_live;
+            IN  wr_dead;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_h.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        // Valid: reachable write (no warning)
+        mem_h.wr_live[addr] <= wdata;
+        // Trigger 1: write in unreachable sync path
+        IF (1'b0) {
+            mem_h.wr_dead[addr] <= wdata;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [4] = 8'h00 {
+            OUT rd_a ASYNC;
+            IN  wr_live;
+            IN  wr_dead;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [2] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_a.rd_a[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        // Valid: reachable write (no warning)
+        mem_a.wr_live[addr] <= wdata;
+        // Trigger 2: dead sync write in top module
+        IF (1'b0) {
+            mem_a.wr_dead[addr] <= wdata;
+        }
+    }
+@endmod

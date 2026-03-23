@@ -1,0 +1,66 @@
+// OH2B_INPUT_TOO_NARROW: oh2b() source must be at least 2 bits wide.
+// Tests oh2b() with 1-bit source in async and sync blocks across modules.
+
+@project OH2B_INPUT_TOO_NARROW_single_bit_source
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] narrow = _;
+        OUT [2] out_a = _;
+        OUT [2] out_b = _;
+    }
+@endproj
+
+// Helper module with 1-bit oh2b source
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] narrow;
+        OUT [2] out_a;
+        OUT [2] out_b;
+    }
+    REGISTER {
+        r [2] = 2'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: oh2b with 1-bit source in async
+        out_a <= oh2b(narrow);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: oh2b with 1-bit source in sync
+        r <= oh2b(narrow);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] narrow;
+        OUT [2] out_a;
+        OUT [2] out_b;
+    }
+    WIRE {
+        h_a [2];
+        h_b [2];
+    }
+    REGISTER {
+        r [2] = 2'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] narrow = narrow;
+        OUT [2] out_a = h_a;
+        OUT [2] out_b = h_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: oh2b with 1-bit source in top async
+        out_a <= oh2b(narrow);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: oh2b with 1-bit source in top sync
+        r <= oh2b(narrow);
+    }
+@endmod

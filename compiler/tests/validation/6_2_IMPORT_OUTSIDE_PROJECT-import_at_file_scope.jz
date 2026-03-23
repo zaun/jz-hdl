@@ -1,0 +1,32 @@
+// IMPORT_OUTSIDE_PROJECT: @import used outside @project block.
+// Tests @import appearing at file scope where no @project block is active.
+// Trigger contexts: before @project, after @endproj.
+
+// Trigger 1: @import at file scope before @project
+@import "nonexistent.jz";
+
+@project IMPORT_OUTSIDE_PROJECT_import_at_file_scope
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 2: @import at file scope after @endproj
+@import "another.jz";
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

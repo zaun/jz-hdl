@@ -1,0 +1,3 @@
+File: 12_3_WARN_UNUSED_MODULE-unused_module.jz
+      13:1    warn  WARN_UNUSED_MODULE S8.3 Module declared but never instantiated; remove it or add a @new
+      33:1    warn  WARN_UNUSED_MODULE S8.3 Module declared but never instantiated; remove it or add a @new

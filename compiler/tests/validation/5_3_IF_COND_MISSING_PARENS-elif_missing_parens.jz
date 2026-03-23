@@ -1,0 +1,36 @@
+// IF_COND_MISSING_PARENS: ELIF condition missing required parentheses.
+// Parser aborts after first parse error, so only one trigger per file is possible.
+// Tests ELIF without parens in ASYNCHRONOUS block.
+
+@project IF_COND_MISSING_PARENS_elif_missing_parens
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Valid: IF with parens
+        IF (sel) {
+            data <= r;
+        // Trigger 1: ELIF missing parens
+        } ELIF sel {
+            data <= VCC;
+        } ELSE {
+            data <= GND;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

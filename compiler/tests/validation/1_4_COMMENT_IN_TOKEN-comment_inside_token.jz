@@ -1,0 +1,54 @@
+// COMMENT_IN_TOKEN: Comment appears inside a token.
+// Tests comments inside identifiers and inside numeric literals.
+// Valid comments between tokens are included to verify no false positives.
+
+@project COMMENT_IN_TOKEN_comment_inside_token
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        // Trigger 1: comment inside identifier in register name
+        my/*comment*/reg [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = my/*comment*/reg;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        my/*comment*/reg <= ~my/*comment*/reg;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    WIRE {
+        w [1];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [1] data = w;
+    };
+
+    REGISTER {
+        r [8] = 8'b0000_0000;
+    }
+    ASYNCHRONOUS {
+        // Valid: comment between tokens (no false positive)
+        data = /* valid */ w;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: comment inside numeric literal
+        r <= 8'b1100/**/0011;
+    }
+@endmod

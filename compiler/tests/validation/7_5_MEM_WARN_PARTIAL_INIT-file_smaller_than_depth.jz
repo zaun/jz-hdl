@@ -1,0 +1,83 @@
+// MEM_WARN_PARTIAL_INIT: @file smaller than depth triggers warning (zero-padded).
+// Full-size literal init included for no false positives.
+
+@project MEM_WARN_PARTIAL_INIT_file_smaller_than_depth
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [2] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: 2-byte file for 4-deep 8-bit memory in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [4] = @file("mem_partial_2bytes.bin") {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.wr[addr] <= 8'h00;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: 2-byte file for 4-deep 8-bit memory in top module
+    MEM {
+        mem_b [8] [4] = @file("mem_partial_2bytes.bin") {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // Valid: literal init (no warning)
+    MEM {
+        mem_ok [8] [4] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [2] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_b.rd[addr] ^ mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.wr[addr] <= 8'h00;
+        mem_ok.wr_ok[addr] <= 8'h00;
+    }
+@endmod

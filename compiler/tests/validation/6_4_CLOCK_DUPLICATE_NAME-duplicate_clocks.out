@@ -1,0 +1,4 @@
+File: 6_4_CLOCK_DUPLICATE_NAME-duplicate_clocks.jz
+      10:9    error CLOCK_DUPLICATE_NAME S6.4/S6.10/S6.9 Duplicate clock names in CLOCKS block
+      12:9    error CLOCK_DUPLICATE_NAME S6.4/S6.10/S6.9 Duplicate clock names in CLOCKS block
+      16:9    error CLOCK_DUPLICATE_NAME S6.4/S6.10/S6.9 Duplicate clock names in CLOCKS block

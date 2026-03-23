@@ -1,0 +1,6 @@
+File: 6_5_PIN_DRIVE_MISSING_OR_INVALID-drive_problems.jz
+      21:9    error PIN_DRIVE_MISSING_OR_INVALID S6.5/S6.9 Missing or nonpositive drive value for OUT_PINS/INOUT_PINS
+      23:9    error PIN_DRIVE_MISSING_OR_INVALID S6.5/S6.9 Missing or nonpositive drive value for OUT_PINS/INOUT_PINS
+      25:9    error PIN_DRIVE_MISSING_OR_INVALID S6.5/S6.9 Missing or nonpositive drive value for OUT_PINS/INOUT_PINS
+      32:9    error PIN_DRIVE_MISSING_OR_INVALID S6.5/S6.9 Missing or nonpositive drive value for OUT_PINS/INOUT_PINS
+      34:9    error PIN_DRIVE_MISSING_OR_INVALID S6.5/S6.9 Missing or nonpositive drive value for OUT_PINS/INOUT_PINS

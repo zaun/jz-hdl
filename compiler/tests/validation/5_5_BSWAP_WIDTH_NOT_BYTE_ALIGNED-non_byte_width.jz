@@ -1,0 +1,70 @@
+// BSWAP_WIDTH_NOT_BYTE_ALIGNED: bswap() source width must be a multiple of 8.
+// Tests bswap() with non-byte-aligned widths (7-bit, 12-bit) in async and sync blocks.
+
+@project BSWAP_WIDTH_NOT_BYTE_ALIGNED_non_byte_width
+    @top TopMod {
+        IN  [1]  clk = _;
+        IN  [7]  data7 = _;
+        IN  [12] data12 = _;
+        OUT [16] out_a = _;
+        OUT [16] out_b = _;
+    }
+@endproj
+
+// Helper module with non-byte-aligned bswap sources
+@module HelperMod
+    PORT {
+        IN  [1]  clk;
+        IN  [7]  data7;
+        IN  [12] data12;
+        OUT [16] out_a;
+        OUT [16] out_b;
+    }
+    REGISTER {
+        r [16] = 16'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: bswap with 7-bit source in async
+        out_a <= bswap(data7);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: bswap with 12-bit source in sync
+        r <= bswap(data12);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1]  clk;
+        IN  [7]  data7;
+        IN  [12] data12;
+        OUT [16] out_a;
+        OUT [16] out_b;
+    }
+    WIRE {
+        h_a [16];
+        h_b [16];
+    }
+    REGISTER {
+        r [16] = 16'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1]  clk = clk;
+        IN  [7]  data7 = data7;
+        IN  [12] data12 = data12;
+        OUT [16] out_a = h_a;
+        OUT [16] out_b = h_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: bswap with 7-bit source in top async
+        out_a <= bswap(data7);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: bswap with 12-bit source in top sync
+        r <= bswap(data12);
+    }
+@endmod

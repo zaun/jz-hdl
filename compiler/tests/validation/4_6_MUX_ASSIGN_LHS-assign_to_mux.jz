@@ -1,0 +1,63 @@
+// MUX_ASSIGN_LHS: Assigning to a MUX on LHS is forbidden (read-only).
+// Tests bare mux name and indexed mux on LHS in ASYNCHRONOUS blocks.
+// Valid MUX reads included to verify no false positives.
+
+@project MUX_ASSIGN_LHS_assign_to_mux
+    @top TopMod {
+        IN  [8] a = _;
+        IN  [8] b = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    MUX {
+        h_mux = a, b;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: bare mux name on LHS in ASYNC
+        h_mux = a;
+        // Trigger 2: indexed mux on LHS in ASYNC
+        h_mux[1'b0] = b;
+        // Valid: read from mux (no error expected)
+        data = h_mux[sel];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    MUX {
+        t_mux = a, b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] a = a;
+        IN  [8] b = b;
+        IN  [1] sel = sel;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: bare mux name on LHS in ASYNC
+        t_mux = a;
+        // Trigger 4: indexed mux on LHS in ASYNC
+        t_mux[1'b0] = b;
+        // Valid: read from mux (no error expected)
+        data = t_mux[sel];
+    }
+@endmod

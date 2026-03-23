@@ -1,0 +1,83 @@
+// SYNC_MULTI_ASSIGN_SAME_REG_BITS: Same register bits assigned more than once
+// along any execution path in SYNCHRONOUS block.
+// Tests double assignment in various SYNC contexts.
+// Valid mutually-exclusive assignments included to verify no false positives.
+
+@project SYNC_MULTI_ASSIGN_SAME_REG_BITS_double_assign_sync
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper module: double assignment at root of SYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] out_a;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: double assignment to same register at root
+        r <= a;
+        r <= b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r_x [8] = 8'h00;
+        r_y [8] = 8'h00;
+        r_ok [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r_x;
+        out_b = r_y;
+        out_c = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: double assignment inside same IF branch
+        IF (sel) {
+            r_x <= a;
+            r_x <= b;
+        }
+        // Trigger 3: double assignment at root in top module
+        r_y <= a;
+        r_y <= b;
+        // Valid: mutually exclusive assignments (should NOT trigger)
+        IF (sel) {
+            r_ok <= a;
+        } ELSE {
+            r_ok <= b;
+        }
+    }
+@endmod

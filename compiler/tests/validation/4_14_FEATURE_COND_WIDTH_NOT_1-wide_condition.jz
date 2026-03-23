@@ -1,0 +1,77 @@
+// FEATURE_COND_WIDTH_NOT_1: Feature guard condition with width != 1.
+// Tests that the compiler rejects @feature conditions that are not 1-bit wide.
+// Valid conditions (comparisons producing width 1) are included as negative tests.
+
+@project FEATURE_COND_WIDTH_NOT_1_wide_condition
+    CONFIG {
+        DEBUG = 1;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST {
+        CTRL = 1;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: comparison produces width-1 (should NOT trigger)
+        @feature CTRL == 1
+            data = din;
+        @else
+            data = ~din;
+        @endfeat
+
+        // Trigger 1: wide literal as condition in ASYNCHRONOUS block
+        @feature 8'd255
+            data = din;
+        @else
+            data = ~din;
+        @endfeat
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST {
+        MODE = 1;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: CONFIG comparison produces width-1 (should NOT trigger)
+        @feature CONFIG.DEBUG == 1
+            data = r;
+        @else
+            data = ~r;
+        @endfeat
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: wide literal as condition in SYNCHRONOUS block
+        @feature 4'd3
+            r <= ~r;
+        @endfeat
+    }
+@endmod

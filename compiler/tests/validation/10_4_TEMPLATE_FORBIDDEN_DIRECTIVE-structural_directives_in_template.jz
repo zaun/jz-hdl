@@ -1,0 +1,97 @@
+// TEMPLATE_FORBIDDEN_DIRECTIVE: Structural directives (@new, @module, @feature, etc.)
+// are not allowed inside template body.
+// Tests @new, @module, @project, @feature, and CDC inside templates.
+// Note: Parser does not recover after forbidden directives, so each template
+// has only the forbidden directive followed by endtemplate to avoid cascading errors.
+// Valid template included for negative testing.
+
+@project TEMPLATE_FORBIDDEN_DIRECTIVE_structural_directives_in_template
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: template with only assignments (no error)
+@template valid_tmpl(a, b)
+    a <= b;
+@endtemplate
+
+// Trigger 1: @new inside file-scoped template
+@template new_file(a, b)
+    @new
+@endtemplate
+
+// Trigger 2: @module inside file-scoped template
+@template mod_file(a, b)
+    @module
+@endtemplate
+
+// Trigger 3: @feature inside file-scoped template
+@template feat_file(a, b)
+    @feature
+@endtemplate
+
+// Trigger 4: @project inside file-scoped template
+@template proj_file(a, b)
+    @project
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 5: @new in module-scoped template
+    @template new_mod(a, b)
+        @new
+    @endtemplate
+
+    // Trigger 6: @feature in module-scoped template
+    @template feat_mod(a, b)
+        @feature
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 7: @module in top module template
+    @template mod_top(a, b)
+        @module
+    @endtemplate
+
+    // Trigger 8: @project in top module template
+    @template proj_top(a, b)
+        @project
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
