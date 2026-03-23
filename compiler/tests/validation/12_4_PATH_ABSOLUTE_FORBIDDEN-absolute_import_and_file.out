@@ -1,2 +1,0 @@
-File: 12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_import_and_file.jz
-       7:5    error PATH_ABSOLUTE_FORBIDDEN S12.2 Absolute path used without --allow-absolute-paths

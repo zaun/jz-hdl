@@ -1,0 +1,86 @@
+// SLICE_HAPPY_PATH: Valid bit-slicing and indexing operations.
+// Exercises full-width, partial, single-bit, CONST-based, zero-CONST, and cross-module slices.
+// No diagnostics expected — all slices are within range with MSB >= LSB.
+
+@project SLICE_HAPPY_PATH_valid_slicing
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [1] out_b = _;
+        OUT [1] out_c = _;
+    }
+@endproj
+
+// Helper: valid slices in async RHS and sync RHS
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [16] bus;
+        OUT [8] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+    CONST {
+        H = 15;
+        L = 8;
+        ZERO = 0;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Full-width slice narrowed via chained slice
+        out_a = bus[15:0][15:8];
+        // Single-bit slice with literal index
+        out_b = bus[0:0];
+        // CONST evaluating to 0 — verifies zero-value indices work
+        out_c = r[ZERO:ZERO];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // CONST indices in slice
+        r <= bus[H:L];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+    WIRE {
+        ha_out_a [8];
+        ha_out_b [1];
+        ha_out_c [1];
+    }
+    REGISTER {
+        r [16] = 16'h0000;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [16] bus = r;
+        OUT [8] out_a = ha_out_a;
+        OUT [1] out_b = ha_out_b;
+        OUT [1] out_c = ha_out_c;
+    };
+
+    ASYNCHRONOUS {
+        // Partial slice as passthrough
+        out_a = ha_out_a;
+        out_b = ha_out_b;
+        out_c = ha_out_c;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Slice on LHS — partial write
+        r[15:8] <= r[7:0];
+        // MSB equals LSB — single bit
+        r[5:5] <= 1'b1;
+    }
+@endmod

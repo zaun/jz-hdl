@@ -1,0 +1,114 @@
+// ASYNC_INVALID_STATEMENT_TARGET: LHS in ASYNCHRONOUS assignment is not assignable.
+// Triggers via MEM SYNC OUT .addr assigned in ASYNC blocks across multiple
+// modules, and CONST assignment attempt. Valid assignments (WIRE, PORT OUT,
+// register read, MEM .addr in SYNC) verify no false positives.
+
+@project ASYNC_INVALID_STATEMENT_TARGET_invalid_lhs_in_async
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: triggers rule via MEM SYNC OUT .addr in ASYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: MEM SYNC OUT .addr assigned in ASYNC (helper module)
+        mem_a.rd.addr = addr;
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= mem_a.rd.data;
+    }
+@endmod
+
+// Second helper: same pattern, different MEM name
+@module HelperMod2
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_c [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: MEM SYNC OUT .addr assigned in ASYNC (second helper)
+        mem_c.rd.addr = addr;
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= mem_c.rd.data;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] data = dout_a;
+    };
+
+    @new inst_h2 HelperMod2 {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: MEM SYNC OUT .addr assigned in ASYNC (top module)
+        mem_b.rd.addr = addr;
+        // Valid: PORT OUT assignment in ASYNC (no error)
+        dout_b = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: MEM .addr read in SYNC block (no error)
+        r <= mem_b.rd.data;
+    }
+@endmod

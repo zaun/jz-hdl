@@ -1,0 +1,70 @@
+// MULTI_CLK_ASSIGN: Same register assigned in SYNCHRONOUS blocks driven by different clocks.
+// Tests register assigned in two SYNC blocks with different clocks.
+// Registers assigned in only one clock domain are included to verify no false positives.
+
+@project MULTI_CLK_ASSIGN_register_multi_clock
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: same register assigned in two different clock domains
+@module HelperA
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+    REGISTER {
+        r_shared [1] = 1'b0;
+        r_ok [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r_shared;
+    }
+    // r_shared first assigned in clk_a domain
+    SYNCHRONOUS(CLK=clk_a) {
+        r_shared <= ~r_shared;
+        r_ok <= ~r_ok;
+    }
+    // Trigger 1: r_shared also assigned in clk_b domain
+    SYNCHRONOUS(CLK=clk_b) {
+        r_shared <= 1'b1;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_multi [1] = 1'b0;
+        r_safe [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_multi;
+    }
+
+    // r_multi first assigned in clk_a domain
+    SYNCHRONOUS(CLK=clk_a) {
+        r_multi <= ~r_multi;
+        r_safe <= ~r_safe;
+    }
+
+    // Trigger 2: r_multi also assigned in clk_b domain
+    SYNCHRONOUS(CLK=clk_b) {
+        r_multi <= 1'b0;
+    }
+@endmod

@@ -1,5 +1,6 @@
 // TEMPLATE_FORBIDDEN_DECL: Declaration blocks are not allowed inside template body.
-// Tests WIRE, REGISTER, PORT, CONST, MEM, and MUX declarations inside templates.
+// Tests WIRE, REGISTER, PORT, CONST, MEM, MUX, and CDC declarations inside templates.
+// Contexts: file-scoped template, module-scoped template (helper), module-scoped template (top).
 // Valid template with only @scratch and assignments included for negative testing.
 
 @project TEMPLATE_FORBIDDEN_DECL_declaration_blocks_in_template
@@ -70,13 +71,21 @@
     a <= b;
 @endtemplate
 
+// Trigger 7: CDC declaration inside template
+@template cdc_in_tmpl(a, b)
+    CDC {
+        a <= b;
+    }
+    a <= b;
+@endtemplate
+
 @module HelperMod
     PORT {
         IN  [1] din;
         OUT [1] data;
     }
 
-    // Trigger 7: WIRE in module-scoped template
+    // Trigger 8: WIRE in module-scoped template (helper module)
     @template mod_wire_tmpl(a, b)
         WIRE {
             mw [1];
@@ -95,7 +104,7 @@
         OUT [1] data;
     }
 
-    // Trigger 8: REGISTER in module-scoped template
+    // Trigger 9: REGISTER in module-scoped template (top module)
     @template mod_reg_tmpl(a, b)
         REGISTER {
             mr [1] = 1'b0;

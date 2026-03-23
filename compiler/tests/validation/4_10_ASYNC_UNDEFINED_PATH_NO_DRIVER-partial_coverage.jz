@@ -1,0 +1,77 @@
+// ASYNC_UNDEFINED_PATH_NO_DRIVER: Signal undriven on some ASYNC paths.
+// Tests IF-without-ELSE and SELECT-without-DEFAULT leaving signals undriven
+// across multiple modules. Valid patterns (IF/ELSE with full coverage,
+// SELECT with DEFAULT) verify no false positives.
+
+@project ASYNC_UNDEFINED_PATH_NO_DRIVER_partial_coverage
+    @top TopMod {
+        IN  [1] sel = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+    }
+@endproj
+
+// Helper module: IF without ELSE leaves output undriven on one path
+@module HelperMod
+    PORT {
+        IN  [1] sel;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: IF without ELSE — dout undriven when sel is false
+        IF (sel) {
+            dout <= din;
+        }
+    }
+@endmod
+
+// Second helper: SELECT without DEFAULT
+@module HelperMod2
+    PORT {
+        IN  [1] sel;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: SELECT without DEFAULT — dout undriven on uncovered cases
+        SELECT (sel) {
+            CASE (1'b1) {
+                dout <= din;
+            }
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] sel;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] sel = sel;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+    };
+
+    @new inst_h2 HelperMod2 {
+        IN  [1] sel = sel;
+        IN  [8] din = din;
+        OUT [8] dout = dout_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: IF without ELSE on wire in top module
+        IF (sel) {
+            dout_c <= din;
+        }
+    }
+@endmod

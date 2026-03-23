@@ -1,0 +1,4 @@
+File: 11_GND_6_TRISTATE_INOUT_HANDLING-valid_inout_ok.jz
+      17:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+      30:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+      56:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default

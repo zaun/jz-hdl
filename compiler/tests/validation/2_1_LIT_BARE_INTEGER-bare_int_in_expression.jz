@@ -1,7 +1,7 @@
 // LIT_BARE_INTEGER: Bare integer literal in runtime expression.
-// Tests bare integers in sync RHS across modules. Bare integers whose intrinsic
-// width matches the target are used to avoid cascading width mismatch errors.
-// Valid sized literals and CONST bare integers included to verify no false positives.
+// Tests bare integers in sync RHS across modules.
+// Bare integers whose intrinsic width matches the target avoid cascading width errors.
+// Valid: CONST bare integers and sized literals included to verify no false positives.
 
 @project LIT_BARE_INTEGER_bare_int_in_expression
     @top TopMod {

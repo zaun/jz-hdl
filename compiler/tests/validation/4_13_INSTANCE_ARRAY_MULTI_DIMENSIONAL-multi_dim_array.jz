@@ -1,0 +1,52 @@
+// INSTANCE_ARRAY_MULTI_DIMENSIONAL: Multi-dimensional instance arrays are not supported.
+// Tests @new with two dimension specifiers.
+// Valid single-dimensional array is included for negative testing.
+
+@project INSTANCE_ARRAY_MULTI_DIMENSIONAL_multi_dim_array
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module
+@module ChildMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 1: multi-dimensional array
+    @new inst_a[4][2] ChildMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    // Valid: single-dimensional array (no trigger)
+    @new inst_b[4] ChildMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

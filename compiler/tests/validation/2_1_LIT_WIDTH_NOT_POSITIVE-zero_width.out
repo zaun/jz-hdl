@@ -1,3 +1,4 @@
 File: 2_1_LIT_WIDTH_NOT_POSITIVE-zero_width.jz
       26:14   error LIT_WIDTH_NOT_POSITIVE S2.1 Literal width is non-positive or non-integer
-      52:14   error LIT_WIDTH_NOT_POSITIVE S2.1 Literal width is non-positive or non-integer
+      46:17   error LIT_WIDTH_NOT_POSITIVE S2.1 Literal width is non-positive or non-integer
+      53:14   error LIT_WIDTH_NOT_POSITIVE S2.1 Literal width is non-positive or non-integer

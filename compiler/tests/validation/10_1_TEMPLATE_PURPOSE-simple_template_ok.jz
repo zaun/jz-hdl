@@ -1,0 +1,92 @@
+// TEMPLATE_PURPOSE: Happy-path test for section 10.1 — templates as compile-time reusable logic blocks.
+// Covers: simple define+apply, duplication reduction across modules, parameter substitution,
+// zero-count apply (no-op), and comments-only template body.
+// No diagnostics expected.
+
+@project TEMPLATE_PURPOSE_simple_template_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// File-scoped template: simple passthrough assignment
+@template assign_tmpl(dst, src)
+    dst <= src;
+@endtemplate
+
+// File-scoped template with scratch wire for intermediate computation
+@template invert_tmpl(dst, src)
+    @scratch tmp [1];
+    tmp <= ~src;
+    dst <= tmp;
+@endtemplate
+
+// Template body containing only comments — valid but no effect
+@template comments_only_tmpl(a, b)
+    // This template intentionally has no statements.
+    // It exists to verify comments-only bodies are accepted.
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Module-scoped template — visible only within this module
+    @template local_tmpl(out, inp)
+        out <= inp;
+    @endtemplate
+
+    WIRE {
+        w1 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Apply file-scoped template — reduces duplication across modules
+        @apply assign_tmpl(w1, din);
+        // Apply module-scoped template
+        @apply local_tmpl(data, w1);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    WIRE {
+        w1 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Apply file-scoped template — same template used in HelperMod (duplication reduction)
+        @apply assign_tmpl(w1, r);
+        // Apply template with parameter substitution and scratch wire
+        @apply invert_tmpl(data, w1);
+        // Zero-count apply — no-op expansion, produces no hardware
+        @apply [0] assign_tmpl(w1, r);
+        // Apply comments-only template — valid no-op
+        @apply comments_only_tmpl(w1, r);
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Apply template in synchronous context
+        @apply assign_tmpl(r, ~r);
+    }
+@endmod

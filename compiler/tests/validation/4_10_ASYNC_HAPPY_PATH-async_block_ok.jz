@@ -1,0 +1,143 @@
+// ASYNC_HAPPY_PATH: Valid ASYNCHRONOUS block constructs.
+// Exercises net alias, receive, drive, sliced assignment, concatenation LHS,
+// extension modifiers (=z, =s, <=z, <=s, =>z, =>s), transitive alias,
+// ternary in receive, register read in ASYNC, and empty ASYNC block.
+
+@project ASYNC_HAPPY_PATH_async_block_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        IN  [1] sel = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+        OUT [1] dout_d = _;
+        OUT [8] dout_e = _;
+        OUT [8] dout_f = _;
+        OUT [8] dout_g = _;
+        OUT [8] dout_h = _;
+        OUT [8] dout_i = _;
+    }
+@endproj
+
+// Helper module: pass-through with alias
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: net alias with matching widths
+        dout = din;
+    }
+@endmod
+
+// Module exercising extension modifiers
+@module ExtMod
+    PORT {
+        IN  [1] narrow_in;
+        IN  [8] wide_in;
+        OUT [8] zext_out;
+        OUT [8] sext_out;
+        OUT [8] drive_zext_out;
+        OUT [8] drive_sext_out;
+        OUT [8] recv_zext_out;
+        OUT [8] recv_sext_out;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: zero-extend alias
+        zext_out =z narrow_in;
+        // Valid: sign-extend alias
+        sext_out =s narrow_in;
+        // Valid: drive with zero-extend
+        narrow_in =>z drive_zext_out;
+        // Valid: drive with sign-extend
+        narrow_in =>s drive_sext_out;
+        // Valid: receive with zero-extend
+        recv_zext_out <=z narrow_in;
+        // Valid: receive with sign-extend
+        recv_sext_out <=s wide_in;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        IN  [1] sel;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+        OUT [1] dout_d;
+        OUT [8] dout_e;
+        OUT [8] dout_f;
+        OUT [8] dout_g;
+        OUT [8] dout_h;
+        OUT [8] dout_i;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+    };
+
+    @new inst_e ExtMod {
+        IN  [1] narrow_in = sel;
+        IN  [8] wide_in = din;
+        OUT [8] zext_out = dout_b;
+        OUT [8] sext_out = dout_c;
+        OUT [8] drive_zext_out = _;
+        OUT [8] drive_sext_out = _;
+        OUT [8] recv_zext_out = _;
+        OUT [8] recv_sext_out = _;
+    };
+
+    WIRE {
+        w_alias_a [8];
+        w_alias_b [8];
+        w_alias_c [8];
+        w_recv [8];
+        w_drive [8];
+        w_slice [4];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: transitive alias (a = b, b = c => all same net)
+        w_alias_a = din;
+        w_alias_b = w_alias_a;
+        w_alias_c = w_alias_b;
+
+        // Valid: receive assignment
+        w_recv <= din;
+
+        // Valid: drive assignment
+        din => w_drive;
+
+        // Valid: sliced assignment
+        w_slice = din[3:0];
+
+        // Valid: ternary in receive
+        dout_e <= sel ? din : 8'h00;
+
+        // Valid: register read in ASYNC
+        dout_f <= r;
+
+        // Valid: receive with literal (not alias)
+        dout_g <= 8'hBB;
+
+        // Connect remaining outputs
+        dout_d = sel;
+        dout_h = w_recv;
+        dout_i = w_drive;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

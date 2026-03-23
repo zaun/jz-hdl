@@ -1,14 +1,18 @@
 // NET_TRI_STATE_ALL_Z_READ: All drivers assign z but signal is still read.
 // Tests that the compiler catches nets where every driver releases (z)
 // and no driver ever provides an active value, yet the net is consumed.
-// Note: ASYNC_FLOATING_Z_READ fires for this scenario; NET_TRI_STATE_ALL_Z_READ
-// may be unreachable (see issues.md).
+// Contexts: conditional all-z in helper module, conditional all-z in top
+// module, unconditional z in top module.
+// Note: Compiler fires ASYNC_FLOATING_Z_READ for this scenario instead of
+// NET_TRI_STATE_ALL_Z_READ (see issues.md).
 
 @project NET_TRI_STATE_ALL_Z_READ_all_drivers_z_but_read
     @top TopMod {
         IN  [1] clk = _;
-        IN  [1] en = _;
-        OUT [8] data = _;
+        IN  [1] en  = _;
+        OUT [8] data_a = _;
+        OUT [8] data_b = _;
+        OUT [8] data_c = _;
     }
 @endproj
 
@@ -20,7 +24,7 @@
     }
 
     WIRE {
-        // Trigger 1: wire driven only with z in every path, then read
+        // Trigger 1: wire driven only with z in every branch, then read
         w_allz [8];
     }
 
@@ -34,36 +38,49 @@
     }
 @endmod
 
-// Top module with local all-z wire and helper instantiation
+// Top module with local all-z wires and helper instantiation
 @module TopMod
     PORT {
         IN  [1] clk;
         IN  [1] en;
-        OUT [8] data;
+        OUT [8] data_a;
+        OUT [8] data_b;
+        OUT [8] data_c;
     }
 
     REGISTER {
-        r [8] = 8'b0000_0000;
+        r [8] = 8'h00;
     }
 
     @new inst_h HelperMod {
         IN  [1] en = en;
-        OUT [8] data = _;
+        OUT [8] data = data_a;
     };
 
     WIRE {
-        // Trigger 2: wire in top module, all paths assign z, then read
-        top_allz [8];
+        // Trigger 2: conditional all-z in top module
+        top_allz_cond [8];
+        // Trigger 3: unconditional z in top module
+        top_allz_uncond [8];
+        // Valid: wire with real data, not all-z
+        w_ok [8];
     }
 
     ASYNCHRONOUS {
+        // Trigger 2: conditional all-z, both branches assign z
         IF (en) {
-            top_allz <= 8'bzzzz_zzzz;
+            top_allz_cond <= 8'bzzzz_zzzz;
         } ELSE {
-            top_allz <= 8'bzzzz_zzzz;
+            top_allz_cond <= 8'bzzzz_zzzz;
         }
+        data_b <= top_allz_cond;
 
-        data <= top_allz;
+        // Trigger 3: unconditional z assignment, then read
+        top_allz_uncond <= 8'bzzzz_zzzz;
+        data_c <= top_allz_uncond;
+
+        // Valid: not all-z, has real data — no error expected
+        w_ok <= 8'hFF;
     }
 
     SYNCHRONOUS(CLK=clk) {

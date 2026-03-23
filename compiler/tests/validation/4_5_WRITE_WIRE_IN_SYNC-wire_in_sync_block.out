@@ -1,4 +1,7 @@
 File: 4_5_WRITE_WIRE_IN_SYNC-wire_in_sync_block.jz
-      38:9    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
-      73:9    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
-      76:13   error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
+      40:9    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
+      78:9    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
+      81:13   error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
+      84:13   error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
+      87:9    warn  SELECT_NO_MATCH_SYNC_OK S5.4 In SYNCHRONOUS, missing DEFAULT simply holds registers (no error)
+      89:17   error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS

@@ -1,0 +1,64 @@
+// WRITE_WIRE_IN_SYNC: Cannot assign to WIRE in SYNCHRONOUS block.
+// Tests wire assigned in SYNCHRONOUS blocks in multiple modules.
+// Valid REGISTER assignments in SYNC and WIRE assignments in ASYNC verify no false positives.
+
+@project WRITE_WIRE_IN_SYNC_wire_in_sync
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: wire assigned in SYNCHRONOUS block
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    WIRE {
+        w [1];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+        // Trigger 1: wire assigned in SYNCHRONOUS block
+        w <= 1'b1;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    WIRE {
+        w_ok [1];
+        w_bad [1];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: wire assigned in ASYNCHRONOUS — should NOT trigger
+        w_ok = r;
+        data = w_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+        // Trigger 2: wire assigned in SYNCHRONOUS block in top module
+        w_bad <= 1'b0;
+    }
+@endmod

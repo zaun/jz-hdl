@@ -1,5 +1,5 @@
 // TEMPLATE_DUP_NAME: Duplicate template names in the same scope are rejected.
-// Tests file-scoped duplicates and module-scoped duplicates.
+// Tests file-scoped duplicates and module-scoped duplicates in multiple modules.
 // Valid uses: same name in different scopes (file vs module), same name in different modules.
 
 @project TEMPLATE_DUP_NAME_duplicate_template_names
@@ -28,7 +28,7 @@
     a <= b;
 @endtemplate
 
-// Trigger 2: Second duplicate of file_other at file scope
+// Trigger 2: Second duplicate at file scope
 @template file_other(c, d)
     c <= d;
 @endtemplate

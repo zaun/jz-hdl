@@ -1,0 +1,7 @@
+File: 12_1_COMPILE_ERRORS-multiple_errors.jz
+      19:1    error KEYWORD_AS_IDENTIFIER S1.1 Reserved keyword used as identifier
+      38:17   error REG_INIT_WIDTH_MISMATCH S4.7 Register initialization literal width does not match declared register width
+      74:16   error SLICE_MSB_LESS_THAN_LSB S1.3/S8.1 Slice uses MSB < LSB
+      80:14   error LIT_OVERFLOW S2.1/S8.1 Literal numeric value exceeds declared width
+      82:14   error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
+      84:9    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly

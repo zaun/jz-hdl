@@ -1,14 +1,17 @@
 // ASYNC_UNDEFINED_PATH_NO_DRIVER: Signal undriven on some ASYNCHRONOUS paths.
 // Tests partial coverage where IF lacks ELSE or SELECT lacks DEFAULT.
-// Valid patterns (complete coverage, registers in sync) included to verify no false positives.
+// Covers: IF-no-ELSE on port (helper), IF-no-ELSE on wire (top), IF-no-ELSE on port (top),
+// SELECT-no-DEFAULT on port (top). Valid patterns included to verify no false positives.
 
 @project ASYNC_UNDEFINED_PATH_NO_DRIVER_partial_coverage
     @top TopMod {
         IN  [1] clk = _;
         IN  [1] sel = _;
+        IN  [2] sel2 = _;
         OUT [1] out_a = _;
         OUT [1] out_b = _;
         OUT [1] out_c = _;
+        OUT [1] out_d = _;
     }
 @endproj
 
@@ -28,7 +31,7 @@
         IF (sel) {
             out_a <= VCC;
         }
-        // Valid: complete coverage (no false positive)
+        // Valid: complete IF/ELSE coverage (no false positive)
         IF (sel) {
             out_b <= VCC;
         } ELSE {
@@ -44,9 +47,11 @@
     PORT {
         IN  [1] clk;
         IN  [1] sel;
+        IN  [2] sel2;
         OUT [1] out_a;
         OUT [1] out_b;
         OUT [1] out_c;
+        OUT [1] out_d;
     }
     WIRE {
         w [1];
@@ -65,16 +70,21 @@
     };
 
     ASYNCHRONOUS {
+        out_b = ha_b;
         // Trigger 2: IF without ELSE — wire undriven when sel is false
         IF (sel) {
             w <= VCC;
         }
+        out_a = w;
         // Trigger 3: IF without ELSE — port undriven when sel is false
         IF (sel) {
             out_c <= ha_a;
         }
-        out_a = w;
-        out_b = ha_b;
+        // Trigger 4: SELECT without DEFAULT — port undriven for uncovered cases
+        SELECT (sel2) {
+            CASE 2'b00 { out_d <= VCC; }
+            CASE 2'b01 { out_d <= GND; }
+        }
     }
     SYNCHRONOUS(CLK=clk) {
         // Valid: register in sync with IF and no ELSE (clock gating, not an error)

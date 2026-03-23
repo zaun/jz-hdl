@@ -1,5 +1,5 @@
 // SPECIAL_DRIVER_IN_EXPRESSION: GND/VCC may not appear in expressions.
-// Tests GND/VCC in binary ops, unary ops, ternary condition, and function args.
+// Tests GND/VCC in binary ops, unary ops, ternary condition, and ternary branches.
 // Valid standalone uses of GND/VCC included to verify no false positives.
 
 @project SPECIAL_DRIVER_IN_EXPRESSION_gnd_vcc_in_expr
@@ -71,7 +71,7 @@
     }
 
     SYNCHRONOUS(CLK=clk) {
-        // Valid: VCC as standalone register reset-like assignment (no false positive)
+        // Valid: VCC as standalone register assignment (no false positive)
         r <= GND;
         // Trigger 6: GND in binary subtract (sync RHS)
         s <= s - GND;

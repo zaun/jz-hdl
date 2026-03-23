@@ -1,0 +1,97 @@
+// ASYNC_ASSIGN_REGISTER: Cannot write REGISTER in ASYNCHRONOUS block.
+// Tests receive (<=), alias (=), and drive (=>) assignments to registers
+// in ASYNC blocks across multiple modules. Valid register reads in ASYNC
+// and register writes in SYNC verify no false positives.
+
+@project ASYNC_ASSIGN_REGISTER_register_write_in_async
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: register receive-assign in ASYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: receive-assign to register in ASYNC (helper module)
+        r <= din;
+        // Valid: register read in ASYNC (no error)
+        dout = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: register write in SYNC (no error)
+        r <= din;
+    }
+@endmod
+
+// Second helper: register alias-assign in ASYNC
+@module HelperMod2
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: alias-assign to register in ASYNC (second helper)
+        r = din;
+        dout = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+    };
+
+    @new inst_h2 HelperMod2 {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        OUT [8] dout = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: drive-assign to register in ASYNC (top module)
+        din => r;
+        // Valid: register read in ASYNC (no error)
+        dout_b = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

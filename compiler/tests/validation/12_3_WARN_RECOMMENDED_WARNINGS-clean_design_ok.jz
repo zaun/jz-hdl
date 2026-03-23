@@ -1,0 +1,74 @@
+// Recommended warnings: Clean design with no warning conditions.
+// All registers are read and written, all outputs driven, no dead code,
+// no unused wires, no unused modules, SELECT has DEFAULT. Happy-path test.
+
+@project RECOMMENDED_WARNINGS_clean_design_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] sel = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module — fully connected, no warnings expected
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        w <= din ^ 8'hFF;
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= w;
+    }
+@endmod
+
+// Top module — instantiates helper, uses SELECT with DEFAULT, no warnings
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] sel;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: SELECT with DEFAULT (no warning)
+        SELECT (sel) {
+            CASE 4'h0 {
+                data <= r;
+            }
+            DEFAULT {
+                data <= din;
+            }
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

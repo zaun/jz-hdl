@@ -1,5 +1,7 @@
 File: 11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz
-      24:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
-      33:9    error ASYNC_FLOATING_Z_READ S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)
-      56:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
-      66:9    error ASYNC_FLOATING_Z_READ S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)
+      28:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      37:9    error ASYNC_FLOATING_Z_READ S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)
+      62:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      64:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      76:9    error ASYNC_FLOATING_Z_READ S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)
+      80:9    error ASYNC_FLOATING_Z_READ S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)

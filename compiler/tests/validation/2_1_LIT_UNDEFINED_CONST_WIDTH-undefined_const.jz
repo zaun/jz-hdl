@@ -9,7 +9,7 @@
     }
 @endproj
 
-// Helper: undefined CONST in width in sync context
+// Helper: undefined CONST in sync context
 @module HelperA
     PORT {
         IN  [1] clk;
@@ -27,7 +27,7 @@
     SYNCHRONOUS(CLK=clk) {
         // Trigger 1: undefined CONST 'UNDEF_A' in literal width
         r <= UNDEF_A'hFF;
-        // Valid: defined CONST in width (no false positive — MYWIDTH is defined)
+        // Valid: defined CONST in width (MYWIDTH is defined — no false positive)
     }
 @endmod
 

@@ -18,14 +18,15 @@
         OUT [1] data;
     }
 
-    // Trigger 1: 4-bit register used as PULSE CDC source
     REGISTER {
+        // Trigger 1: 4-bit register used as PULSE CDC source
         wide_pulse [4] = 4'h0;
         ok_pulse [1] = 1'b0;
     }
 
     CDC {
         PULSE wide_pulse (clk_a) => wide_psync (clk_b);
+        // Valid: width-1 register
         PULSE ok_pulse (clk_a) => ok_psync (clk_b);
     }
 
@@ -52,14 +53,15 @@
         OUT [1] data;
     }
 
-    // Trigger 2: 8-bit register used as PULSE CDC source in top module
     REGISTER {
+        // Trigger 2: 8-bit register used as PULSE CDC source in top module
         top_wide [8] = 8'h00;
         top_ok [1] = 1'b0;
     }
 
     CDC {
         PULSE top_wide (clk_a) => top_wide_psync (clk_b);
+        // Valid: width-1 register
         PULSE top_ok (clk_a) => top_ok_psync (clk_b);
     }
 

@@ -1,0 +1,2 @@
+File: 4_5_WIRE_MULTI_DIMENSIONAL-multi_dim_top.jz
+      29:22   error PARSE000 parse error near token '[': expected ';' after WIRE declaration (orig: PARSE000)

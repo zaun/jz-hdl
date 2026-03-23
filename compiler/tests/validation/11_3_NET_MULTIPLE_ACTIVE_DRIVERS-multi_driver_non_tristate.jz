@@ -1,18 +1,19 @@
 // NET_MULTIPLE_ACTIVE_DRIVERS: Multiple active drivers on same signal.
 // Tests that the compiler detects when multiple module instances drive the
 // same wire through output port bindings without proper tri-state discipline.
+// Contexts: two-driver conflict, three-driver conflict, cross-module conflict.
 // Valid: single-driver wires included for negative testing.
 
 @project NET_MULTIPLE_ACTIVE_DRIVERS_multi_driver_non_tristate
     @top TopMod {
         IN  [1] clk = _;
-        IN  [1] en = _;
+        IN  [1] en  = _;
         OUT [8] data = _;
     }
 @endproj
 
-// Driver module that always drives its output
-@module DriverA
+// Simple driver module that always drives its output
+@module DriverMod
     PORT {
         IN  [1] en;
         OUT [8] data;
@@ -20,15 +21,15 @@
 
     ASYNCHRONOUS {
         IF (en) {
-            data <= 8'b1010_1010;
+            data <= 8'hAA;
         } ELSE {
-            data <= 8'b0101_0101;
+            data <= 8'h55;
         }
     }
 @endmod
 
-// Another driver module that always drives its output
-@module DriverB
+// Another driver module with different values
+@module DriverAlt
     PORT {
         IN  [1] en;
         OUT [8] data;
@@ -36,14 +37,48 @@
 
     ASYNCHRONOUS {
         IF (en) {
-            data <= 8'b1111_0000;
+            data <= 8'hF0;
         } ELSE {
-            data <= 8'b0000_1111;
+            data <= 8'h0F;
         }
     }
 @endmod
 
-// Top module: two instances drive the same wire — multiple active drivers
+// Helper module: two instances drive the same wire — triggers in non-top context
+@module HelperMod
+    PORT {
+        IN  [1] en;
+        OUT [8] data;
+    }
+
+    WIRE {
+        // Trigger 1: two instances drive this wire in HelperMod
+        h_shared [8];
+        // Valid: only one instance drives this wire
+        h_single [8];
+    }
+
+    @new h_inst_a DriverMod {
+        IN  [1] en = en;
+        OUT [8] data = h_shared;
+    };
+
+    @new h_inst_b DriverAlt {
+        IN  [1] en = en;
+        OUT [8] data = h_shared;
+    };
+
+    @new h_inst_c DriverMod {
+        IN  [1] en = en;
+        OUT [8] data = h_single;
+    };
+
+    ASYNCHRONOUS {
+        data <= h_shared | h_single;
+    }
+@endmod
+
+// Top module: additional multi-driver conflicts
 @module TopMod
     PORT {
         IN  [1] clk;
@@ -52,35 +87,55 @@
     }
 
     REGISTER {
-        r [8] = 8'b0000_0000;
+        r [8] = 8'h00;
     }
 
     WIRE {
-        // Trigger: two instances will both drive this wire
-        shared [8];
-        // Valid: only driven by one instance
-        single_drv [8];
+        // Trigger 2: two instances drive this wire in TopMod
+        t_shared [8];
+        // Trigger 3: three instances drive this wire in TopMod
+        t_triple [8];
+        // Valid: only one instance drives this wire
+        t_single [8];
     }
 
-    // Trigger: both inst_a and inst_b drive shared — multiple active drivers
-    @new inst_a DriverA {
+    @new inst_a DriverMod {
         IN  [1] en = en;
-        OUT [8] data = shared;
+        OUT [8] data = t_shared;
     };
 
-    @new inst_b DriverB {
+    @new inst_b DriverAlt {
         IN  [1] en = en;
-        OUT [8] data = shared;
+        OUT [8] data = t_shared;
     };
 
-    // Valid: single driver — no conflict
-    @new inst_c DriverA {
+    @new inst_c DriverMod {
         IN  [1] en = en;
-        OUT [8] data = single_drv;
+        OUT [8] data = t_triple;
+    };
+
+    @new inst_d DriverAlt {
+        IN  [1] en = en;
+        OUT [8] data = t_triple;
+    };
+
+    @new inst_e DriverMod {
+        IN  [1] en = en;
+        OUT [8] data = t_triple;
+    };
+
+    @new inst_f DriverMod {
+        IN  [1] en = en;
+        OUT [8] data = t_single;
+    };
+
+    @new inst_h HelperMod {
+        IN  [1] en = en;
+        OUT [8] data = _;
     };
 
     ASYNCHRONOUS {
-        data <= shared;
+        data <= t_shared | t_triple | t_single;
     }
 
     SYNCHRONOUS(CLK=clk) {

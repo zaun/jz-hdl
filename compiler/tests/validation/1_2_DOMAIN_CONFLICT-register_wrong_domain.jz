@@ -23,13 +23,16 @@
         // Home domain: clk_b
         r_b [1] = 1'b0;
     }
+
     ASYNCHRONOUS {
         data = r_a;
     }
+
     // Valid: r_a assigned in its home domain clk_a
     SYNCHRONOUS(CLK=clk_a) {
         r_a <= ~r_a;
     }
+
     SYNCHRONOUS(CLK=clk_b) {
         r_b <= ~r_b;
         // Trigger 1: r_a assigned in clk_b but home domain is clk_a

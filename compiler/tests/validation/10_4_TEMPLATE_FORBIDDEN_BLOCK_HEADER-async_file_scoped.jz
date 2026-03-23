@@ -1,0 +1,40 @@
+// TEMPLATE_FORBIDDEN_BLOCK_HEADER: ASYNCHRONOUS block header in file-scoped template.
+// Realistic syntax with full block body. Parser does not recover after the error,
+// producing cascading PARSE000. Split from other block header triggers for this reason.
+
+@project TEMPLATE_FORBIDDEN_BLOCK_HEADER_async_file_scoped
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger: ASYNCHRONOUS block header inside file-scoped template
+@template async_tmpl(a, b)
+    ASYNCHRONOUS {
+        a = b;
+    }
+@endtemplate
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

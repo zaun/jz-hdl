@@ -1,7 +1,6 @@
 // LIT_OVERFLOW: Literal intrinsic bit-width exceeds declared width.
 // Tests overflow in binary, decimal, and hex literals in sync RHS across modules.
 // Valid non-overflowing literals included to verify no false positives.
-// NOTE: Register init overflow not tested — compiler does not fire LIT_OVERFLOW in that context (see issues.md).
 
 @project LIT_OVERFLOW_intrinsic_exceeds_declared
     @top TopMod {

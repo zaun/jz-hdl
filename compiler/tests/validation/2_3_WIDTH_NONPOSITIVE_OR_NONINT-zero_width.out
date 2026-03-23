@@ -1,0 +1,7 @@
+File: 2_3_WIDTH_NONPOSITIVE_OR_NONINT-zero_width.jz
+      23:9    error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer
+      23:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      28:9    error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer
+      47:9    error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer
+      47:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      52:9    error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer

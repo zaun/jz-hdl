@@ -32,7 +32,7 @@
         out_b <= a;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 3: receive 4-bit to 8-bit register in SYNC, also reads r
+        // Trigger 3: receive 4-bit slice to 8-bit register in SYNC
         r <= r[3:0];
     }
 @endmod
@@ -71,7 +71,7 @@
         out_a = w8;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 6: receive 4-bit to 8-bit register in top module sync
+        // Trigger 6: receive 4-bit slice to 8-bit register in top module sync
         r <= r[3:0];
     }
 @endmod

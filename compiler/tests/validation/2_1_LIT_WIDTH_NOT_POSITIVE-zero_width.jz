@@ -42,15 +42,14 @@
     };
 
     REGISTER {
-        r [8] = 8'h00;
+        // Trigger 2: zero-width decimal in register init
+        r [8] = 0'd0;
     }
     ASYNCHRONOUS {
         data = helper_data ^ r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: zero-width hex literal in sync RHS
+        // Trigger 3: zero-width hex in sync RHS
         r <= 0'h0;
-        // Valid: positive-width literal (no false positive)
-        // (tested implicitly by register init 8'h00 above)
     }
 @endmod

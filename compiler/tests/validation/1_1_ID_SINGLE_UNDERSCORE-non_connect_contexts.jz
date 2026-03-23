@@ -1,5 +1,5 @@
 // ID_SINGLE_UNDERSCORE: Single underscore `_` used as regular identifier outside no-connect context.
-// Tests _ in port name, register name, and const name contexts across multiple modules.
+// Tests _ in port name, register name, const name, and @new port binding contexts.
 // Valid uses of _ in @top and @new port bindings are included to verify no false positives.
 
 @project ID_SINGLE_UNDERSCORE_non_connect_contexts

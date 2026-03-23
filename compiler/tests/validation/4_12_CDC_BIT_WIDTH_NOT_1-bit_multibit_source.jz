@@ -18,14 +18,15 @@
         OUT [1] data;
     }
 
-    // Trigger 1: 8-bit register used as BIT CDC source
     REGISTER {
+        // Trigger 1: 8-bit register used as BIT CDC source
         wide_reg [8] = 8'h00;
         ok_reg [1] = 1'b0;
     }
 
     CDC {
         BIT wide_reg (clk_a) => wide_sync (clk_b);
+        // Valid: width-1 register
         BIT ok_reg (clk_a) => ok_sync (clk_b);
     }
 
@@ -39,9 +40,8 @@
     }
 
     SYNCHRONOUS(CLK=clk_b) {
-        // Use wide_sync to avoid unused warnings
         IF (wide_sync[0:0]) {
-            // no-op needed, just reading
+            // reading sync alias
         }
     }
 @endmod
@@ -53,14 +53,15 @@
         OUT [1] data;
     }
 
-    // Trigger 2: 4-bit register used as BIT CDC source in top module
     REGISTER {
+        // Trigger 2: 4-bit register used as BIT CDC source in top module
         top_wide [4] = 4'h0;
         top_ok [1] = 1'b0;
     }
 
     CDC {
         BIT top_wide (clk_a) => top_wide_sync (clk_b);
+        // Valid: width-1 register
         BIT top_ok (clk_a) => top_ok_sync (clk_b);
     }
 

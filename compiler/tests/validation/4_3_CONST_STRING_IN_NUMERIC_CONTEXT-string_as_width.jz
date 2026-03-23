@@ -1,11 +1,12 @@
 // CONST_STRING_IN_NUMERIC_CONTEXT: String CONST used where numeric expected.
-// Tests string CONST in port width, wire width, and register width.
+// Tests string CONST in port width, wire width, and register width contexts.
 // Valid numeric CONST in width included to verify no false positives.
 
 @project CONST_STRING_IN_NUMERIC_CONTEXT_string_as_width
     @top TopMod {
         IN  [1] clk = _;
         OUT [1] data = _;
+        OUT [1] out_h = _;
     }
 @endproj
 
@@ -37,7 +38,13 @@
     PORT {
         IN  [1] clk;
         OUT [1] data;
+        OUT [1] out_h;
     }
+
+    @new inst_h HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = out_h;
+    };
 
     WIRE {
         // Trigger 2: string CONST in wire width
@@ -50,16 +57,14 @@
         r [1] = 1'b0;
     }
 
-    @new inst_h HelperMod {
-        IN  [1] din = r;
-        OUT [1] data = _;
-    };
-
     ASYNCHRONOUS {
         data = r;
+        // Read w_bad and r_bad to avoid unused warnings
+        w_bad = r_bad;
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= ~r;
+        r_bad <= ~r;
     }
 @endmod

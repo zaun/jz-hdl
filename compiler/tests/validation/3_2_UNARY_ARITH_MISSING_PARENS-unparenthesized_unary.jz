@@ -1,5 +1,5 @@
 // UNARY_ARITH_MISSING_PARENS: Unary arithmetic -/+ must be parenthesized.
-// Tests unparenthesized unary minus and plus in multiple contexts.
+// Tests unparenthesized unary minus and plus in async and sync blocks across modules.
 // Valid parenthesized uses included to verify no false positives.
 
 @project UNARY_ARITH_MISSING_PARENS_unparenthesized_unary
@@ -13,7 +13,7 @@
     }
 @endproj
 
-// Helper module with unary in async and sync blocks
+// Helper module with unary triggers in async and sync
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -26,14 +26,14 @@
         r [8] = 8'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: unparenthesized unary minus in async assignment
+        // Trigger 1: unparenthesized unary minus in async
         out_a = -val;
         // Valid: parenthesized unary minus (no false positive)
         out_b = (-val);
         out_c = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: unparenthesized unary minus in sync assignment
+        // Trigger 2: unparenthesized unary minus in sync
         r <= -val;
     }
 @endmod

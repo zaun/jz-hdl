@@ -1,6 +1,7 @@
 // TEMPLATE_SCRATCH_OUTSIDE: @scratch may only appear inside a @template body.
-// Tests @scratch in various non-template contexts: module top-level, ASYNCHRONOUS,
-// SYNCHRONOUS, and file scope. Valid @scratch inside template included for negative testing.
+// Tests @scratch in various non-template contexts: file scope, module top-level,
+// ASYNCHRONOUS block, SYNCHRONOUS block. Valid @scratch inside templates included
+// for negative testing.
 
 @project TEMPLATE_SCRATCH_OUTSIDE_scratch_outside_template
     CONFIG {

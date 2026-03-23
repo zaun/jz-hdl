@@ -1,0 +1,67 @@
+// TRISTATE_TRANSFORM_OE_EXTRACT_FAIL: Attempt to trigger OE extraction failure.
+// DriverA uses standard ternary z pattern — OE extracts fine.
+// DriverB uses ternary z pattern with concatenation in z literal — confuses
+// OE extractor because the z is not a simple literal.
+// Both share the same parent wire through INOUT ports.
+// Context: INOUT multi-driver with ambiguous OE condition.
+
+@project OE_EXTRACT_FAIL_ambiguous_oe
+    @top TopMod {
+        IN  [1] en = _;
+        IN  [8] din = _;
+        OUT [8] result = _;
+    }
+@endproj
+
+@module DriverA
+    PORT {
+        IN    [1] en;
+        IN    [8] din;
+        INOUT [8] data;
+    }
+
+    ASYNCHRONOUS {
+        data <= (en == 1'b1) ? din : 8'bzzzz_zzzz;
+    }
+@endmod
+
+// DriverB: uses concatenation in z literal — confuses OE extractor
+@module DriverB
+    PORT {
+        IN    [1] en;
+        IN    [8] din;
+        INOUT [8] data;
+    }
+
+    ASYNCHRONOUS {
+        data <= (en == 1'b0) ? din : {4'bzzzz, 4'bzzzz};
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] en;
+        IN  [8] din;
+        OUT [8] result;
+    }
+
+    WIRE {
+        bus [8];
+    }
+
+    @new inst_a DriverA {
+        IN    [1] en = en;
+        IN    [8] din = din;
+        INOUT [8] data = bus;
+    };
+
+    @new inst_b DriverB {
+        IN    [1] en = en;
+        IN    [8] din = din;
+        INOUT [8] data = bus;
+    };
+
+    ASYNCHRONOUS {
+        result <= bus;
+    }
+@endmod

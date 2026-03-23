@@ -1,0 +1,58 @@
+// INFO_TRISTATE_TRANSFORM: Single-bit full-width z is a valid transform.
+// Verifies that a 1-bit signal with full-width z assignment is correctly
+// identified as a tri-state net and transformed (not treated as per-bit).
+// This is an edge case: 1-bit wide signal where the z covers the full width.
+
+@project INFO_TRISTATE_TRANSFORM_single_bit_z
+    @top TopMod {
+        IN  [1] en = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with 1-bit tri-state wire
+@module HelperMod
+    PORT {
+        IN  [1] en;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w [1];
+    }
+
+    ASYNCHRONOUS {
+        IF (en) {
+            w <= 1'b1;
+        } ELSE {
+            w <= 1'bz;
+        }
+        data <= w;
+    }
+@endmod
+
+// Top module with 1-bit tri-state wire
+@module TopMod
+    PORT {
+        IN  [1] en;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w_top [1];
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] en = en;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        IF (en) {
+            w_top <= 1'b0;
+        } ELSE {
+            w_top <= 1'bz;
+        }
+        data <= w_top;
+    }
+@endmod

@@ -1,0 +1,56 @@
+// WARN_UNUSED_WIRE: WIRE declared but never driven or read.
+// Note: compiler emits NET_DANGLING_UNUSED (not WARN_UNUSED_WIRE).
+// Tests unused wire detection across multiple modules.
+// Valid: used wires included for no false positives.
+
+@project WARN_UNUSED_WIRE_unused_wire
+    @top TopMod {
+        IN  [8] din = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module with an unused wire
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        // Trigger 1: wire never driven or read in helper module
+        dead_wire [8];
+        // Valid: wire that is driven and read
+        w [8];
+    }
+
+    ASYNCHRONOUS {
+        w <= din ^ 8'hFF;
+        data = w;
+    }
+@endmod
+
+// Top module with unused wires and valid usage
+@module TopMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    WIRE {
+        // Trigger 2: wire never driven or read in top module
+        unused_w [4];
+        // Valid: wire that is driven and read
+        w_active [8];
+    }
+
+    ASYNCHRONOUS {
+        w_active <= din;
+        data = w_active;
+    }
+@endmod

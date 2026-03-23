@@ -1,5 +1,5 @@
 // CONST_USED_WHERE_FORBIDDEN: CONST identifier in runtime expression context.
-// Tests CONST used in ASYNCHRONOUS and SYNCHRONOUS blocks.
+// Tests CONST used in ASYNCHRONOUS and SYNCHRONOUS block expressions.
 // Valid CONST uses in width expressions included to verify no false positives.
 
 @project CONST_USED_WHERE_FORBIDDEN_const_in_runtime_expr

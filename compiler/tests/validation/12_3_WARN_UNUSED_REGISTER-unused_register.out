@@ -1,0 +1,4 @@
+File: 12_3_WARN_UNUSED_REGISTER-unused_register.jz
+      21:9    warn  WARN_UNUSED_REGISTER S8.3 Register is never read or written; remove it if unused
+      49:9    warn  WARN_UNUSED_REGISTER S8.3 Register is never read or written; remove it if unused
+      51:9    warn  WARN_UNUSED_REGISTER S8.3 Register is never read or written; remove it if unused

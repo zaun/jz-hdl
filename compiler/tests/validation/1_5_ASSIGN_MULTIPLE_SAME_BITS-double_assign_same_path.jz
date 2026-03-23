@@ -1,6 +1,6 @@
 // ASSIGN_MULTIPLE_SAME_BITS: Same bits assigned more than once on a single execution path.
-// Tests double assignment to ports in ASYNCHRONOUS blocks across modules.
-// Valid assignments (different targets) included to verify no false positives.
+// Tests unconditional double assignment to ports and wires in ASYNCHRONOUS blocks.
+// Valid assignments (different targets, branch-exclusive) included to verify no false positives.
 
 @project ASSIGN_MULTIPLE_SAME_BITS_double_assign_same_path
     @top TopMod {
@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Helper module: double assignment at root of async block
+// Helper module: double assignment to port at root of async block
 @module HelperA
     PORT {
         IN  [1] clk;
@@ -39,6 +39,7 @@
         OUT [1] out_b;
     }
     WIRE {
+        w [1];
         ha_a [1];
         ha_b [1];
     }
@@ -53,10 +54,14 @@
     };
 
     ASYNCHRONOUS {
+        // Drive outputs first (valid, no conflict)
+        out_b = ha_b;
         // Trigger 2: port assigned twice at root level
         out_a = ha_a;
         out_a = ha_b;
-        out_b = ha_b;
+        // Trigger 3: wire assigned twice at root level
+        w = VCC;
+        w = GND;
     }
     SYNCHRONOUS(CLK=clk) {
         r <= ~r;

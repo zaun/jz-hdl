@@ -1,5 +1,5 @@
 // LIT_UNSIZED: Unsized literals (missing width prefix) in multiple contexts.
-// Tests unsized literals in async RHS, sync RHS, and register init across modules.
+// Tests unsized literals in async RHS, sync RHS, register init, and sync expression.
 // Valid sized literals included to verify no false positives.
 
 @project LIT_UNSIZED_missing_width_prefix

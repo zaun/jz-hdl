@@ -16,7 +16,7 @@
 @endproj
 
 // Helper module: logical operators on multi-bit operands in async and sync
-@module HelperA
+@module HelperMod
     PORT {
         IN  [1] clk;
         IN  [8] a;
@@ -30,10 +30,10 @@
     }
     ASYNCHRONOUS {
         // Trigger 1: logical AND with multi-bit operands in ASYNC
-        out_a <= a && b;
+        out_a = a && b;
         // Trigger 2: logical NOT with multi-bit operand in ASYNC
-        out_b <= !a;
-        // Sink register to avoid unrelated warning
+        out_b = !a;
+        // Read register to avoid unsinked warning
         out_c = r;
     }
     SYNCHRONOUS(CLK=clk) {
@@ -61,10 +61,11 @@
         w3   [1];
     }
     REGISTER {
-        r [1] = 1'b0;
+        r1 [1] = 1'b0;
+        r2 [1] = 1'b0;
     }
 
-    @new inst_a HelperA {
+    @new inst_a HelperMod {
         IN  [1] clk = clk;
         IN  [8] a = a;
         IN  [8] b = b;
@@ -74,21 +75,23 @@
     };
 
     ASYNCHRONOUS {
-        // Trigger 4: logical OR with multi-bit operands in top module ASYNC
+        // Trigger 4: logical OR with multi-bit operands in ASYNC
         w1 = a || b;
-        // Trigger 5: logical AND with multi-bit operands in top module ASYNC
+        // Trigger 5: logical AND with multi-bit operands in ASYNC
         w2 = a && b;
-        // Trigger 6: logical NOT with multi-bit operand in top module ASYNC
+        // Trigger 6: logical NOT with multi-bit operand in ASYNC
         w3 = !b;
         // Valid: 1-bit logical AND (no false positive)
         out_a = flag && ha_a;
         // Valid: 1-bit logical NOT (no false positive)
         out_b = !ha_b;
-        // Sink register and remaining wire
-        out_c = r | ha_c;
+        // Sink registers and helper output
+        out_c = r1 | r2 | ha_c;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 7: logical AND with multi-bit operands in top module SYNC
-        r <= a && b;
+        // Trigger 7: logical AND with multi-bit operands in SYNC
+        r1 <= a && b;
+        // Trigger 8: logical NOT with multi-bit operand in SYNC
+        r2 <= !a;
     }
 @endmod

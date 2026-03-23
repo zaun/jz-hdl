@@ -22,11 +22,13 @@
     LATCH {
         lat [1] D;
     }
+
     ASYNCHRONOUS {
         // Valid: guarded latch assignment in ASYNCHRONOUS (should NOT trigger)
         lat <= enable : din;
         data <= lat;
     }
+
     SYNCHRONOUS(CLK=clk) {
         // Trigger 1: latch written in SYNCHRONOUS block
         lat <= 1'b1;

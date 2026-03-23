@@ -1,5 +1,6 @@
 // PATH_ABSOLUTE_FORBIDDEN: Absolute paths in @file() MEM init forbidden
 // without --allow-absolute-paths.
+// Tests absolute path rejection in @file() context.
 
 @project PATH_ABSOLUTE_FORBIDDEN_absolute_file_init
     @top TopMod {
@@ -22,18 +23,18 @@
 
     // Trigger 1: @file() with absolute path in MEM init
     MEM {
-        mem_abs [8] [16] = @file("/absolute/path/init.bin") {
+        rom [8] [16] = @file("/absolute/path/init.bin") {
             OUT rd ASYNC;
             IN  wr;
         };
     }
 
     ASYNCHRONOUS {
-        data = mem_abs.rd[addr];
+        data = rom.rd[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_abs.wr[addr] <= 8'h00;
+        rom.wr[addr] <= 8'h00;
     }
 @endmod

@@ -1,13 +1,16 @@
 // ASSIGN_SHADOWING: Assignment at higher nesting level followed by nested assignment to same bits.
 // Tests sequential shadowing in ASYNCHRONOUS blocks across modules.
-// Valid patterns (branch-exclusive, different targets) included to verify no false positives.
+// Covers: root-then-IF on port (helper), root-then-IF on wire (top), root-then-IF on port (top),
+// and root-then-SELECT on port (top). Valid patterns included to verify no false positives.
 
 @project ASSIGN_SHADOWING_sequential_shadow
     @top TopMod {
         IN  [1] clk = _;
         IN  [1] sel = _;
+        IN  [2] sel2 = _;
         OUT [1] out_a = _;
         OUT [1] out_b = _;
+        OUT [1] out_c = _;
     }
 @endproj
 
@@ -23,7 +26,7 @@
         r [1] = 1'b0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: root assignment shadowed by IF branch
+        // Trigger 1: root port assignment shadowed by IF branch
         out_a = GND;
         IF (sel) {
             out_a <= VCC;
@@ -40,8 +43,10 @@
     PORT {
         IN  [1] clk;
         IN  [1] sel;
+        IN  [2] sel2;
         OUT [1] out_a;
         OUT [1] out_b;
+        OUT [1] out_c;
     }
     WIRE {
         w [1];
@@ -70,7 +75,13 @@
         IF (sel) {
             out_a <= ha_b;
         }
-        out_b = w;
+        // Trigger 4: root port assignment shadowed by nested SELECT
+        out_b = GND;
+        SELECT (sel2) {
+            CASE 2'b00 { out_b <= VCC; }
+            DEFAULT { out_b <= GND; }
+        }
+        out_c = w;
     }
     SYNCHRONOUS(CLK=clk) {
         r <= ~r;

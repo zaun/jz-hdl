@@ -1,5 +1,5 @@
 // COMMENT_IN_TOKEN: Comment appears inside a token.
-// Tests comments inside identifiers and inside numeric literals.
+// Tests comments inside identifiers and numeric literals across multiple contexts.
 // Valid comments between tokens are included to verify no false positives.
 
 @project COMMENT_IN_TOKEN_comment_inside_token
@@ -15,13 +15,15 @@
         OUT [1] data;
     }
     REGISTER {
-        // Trigger 1: comment inside identifier in register name
+        // Trigger 1: comment inside identifier in register name declaration
         my/*comment*/reg [1] = 1'b0;
     }
     ASYNCHRONOUS {
+        // Trigger 2: comment inside identifier in async expression reference
         data = my/*comment*/reg;
     }
     SYNCHRONOUS(CLK=clk) {
+        // Trigger 3,4: comment inside identifier in sync references (both sides)
         my/*comment*/reg <= ~my/*comment*/reg;
     }
 @endmod
@@ -40,6 +42,11 @@
         OUT [1] data = w;
     };
 
+    CONST {
+        // Trigger 5: comment inside identifier in const name
+        MY/**/VAL = 1;
+    }
+
     REGISTER {
         r [8] = 8'b0000_0000;
     }
@@ -48,7 +55,7 @@
         data = /* valid */ w;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: comment inside numeric literal
+        // Trigger 6: comment inside numeric literal
         r <= 8'b1100/**/0011;
     }
 @endmod

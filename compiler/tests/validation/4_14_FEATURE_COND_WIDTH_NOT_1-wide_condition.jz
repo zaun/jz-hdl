@@ -9,10 +9,13 @@
 
     @top TopMod {
         IN  [1] clk = _;
-        OUT [1] data = _;
+        IN  [1] din = _;
+        OUT [1] data_a = _;
+        OUT [1] data_b = _;
     }
 @endproj
 
+// Helper module with wide-condition trigger in ASYNCHRONOUS block
 @module HelperMod
     PORT {
         IN  [1] din;
@@ -43,7 +46,9 @@
 @module TopMod
     PORT {
         IN  [1] clk;
-        OUT [1] data;
+        IN  [1] din;
+        OUT [1] data_a;
+        OUT [1] data_b;
     }
 
     CONST {
@@ -51,8 +56,8 @@
     }
 
     @new inst_h HelperMod {
-        IN  [1] din = r;
-        OUT [1] data = _;
+        IN  [1] din = din;
+        OUT [1] data = data_b;
     };
 
     REGISTER {
@@ -62,16 +67,16 @@
     ASYNCHRONOUS {
         // Valid: CONFIG comparison produces width-1 (should NOT trigger)
         @feature CONFIG.DEBUG == 1
-            data = r;
+            data_a = r;
         @else
-            data = ~r;
+            data_a = ~r;
         @endfeat
     }
 
     SYNCHRONOUS(CLK=clk) {
         // Trigger 2: wide literal as condition in SYNCHRONOUS block
         @feature 4'd3
-            r <= ~r;
+            r <= din;
         @endfeat
     }
 @endmod

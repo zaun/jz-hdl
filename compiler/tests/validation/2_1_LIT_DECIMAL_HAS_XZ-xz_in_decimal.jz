@@ -1,5 +1,5 @@
 // LIT_DECIMAL_HAS_XZ: Decimal literal with x or z digits.
-// Tests x and z in decimal literals in async RHS and sync RHS across modules.
+// Tests x and z in decimal literals in async RHS, sync RHS, and register init.
 // Valid decimal and binary literals included to verify no false positives.
 
 @project LIT_DECIMAL_HAS_XZ_xz_in_decimal
@@ -43,14 +43,15 @@
     };
 
     REGISTER {
-        r [8] = 8'h00;
+        // Trigger 3: decimal with z in register init
+        r [8] = 8'd1z;
     }
     ASYNCHRONOUS {
         // Valid: decimal without x/z (no false positive)
         data = helper_data;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 3: decimal with x in sync
+        // Trigger 4: decimal with x in sync
         r <= 8'd2x;
     }
 @endmod

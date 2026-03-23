@@ -1,0 +1,96 @@
+// BIT_WIDTH_CONSTRAINTS: Valid bit-width operations with matching widths.
+// Exercises binary operators (+, -, *, /, %, &, |, ^, ==, !=, <, >, <=, >=),
+// ternary expressions, concatenation, and assignments with matching widths.
+// No diagnostics expected — all operations are valid.
+
+@project BIT_WIDTH_CONSTRAINTS_valid_operations
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        IN  [1] sel = _;
+        OUT [8] result = _;
+    }
+@endproj
+
+// Helper: arithmetic operators with matching widths
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Valid: same-width addition reading register
+        data = r + a;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: same-width subtraction
+        r <= a - b;
+    }
+@endmod
+
+// Helper: bitwise operators
+@module HelperB
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Valid: same-width bitwise AND and XOR
+        data = (a & b) ^ r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: same-width bitwise OR
+        r <= a | b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] result;
+    }
+    WIRE {
+        ha_data [8];
+        hb_data [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] data = ha_data;
+    };
+
+    @new inst_b HelperB {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] data = hb_data;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Valid: same-width ternary with matching arms, reading register
+        result = sel ? (ha_data + r) : hb_data;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: same-width ternary with matching arms
+        r <= sel ? a : b;
+    }
+@endmod

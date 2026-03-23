@@ -1,5 +1,7 @@
 // TEMPLATE_NESTED_DEF: Nested @template definitions are not allowed.
 // Tests nested templates in file-scoped and module-scoped contexts.
+// Contexts: file-scoped outer, module-scoped outer (helper), module-scoped outer (top),
+// and doubly-nested template.
 // Valid non-nested templates included for negative testing.
 
 @project TEMPLATE_NESTED_DEF_nested_template_definition

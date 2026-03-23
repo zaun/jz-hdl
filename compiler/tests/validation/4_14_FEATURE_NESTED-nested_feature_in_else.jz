@@ -1,0 +1,46 @@
+// FEATURE_NESTED: Nested @feature guard in @else body.
+// Parser stops at first nested @feature; split by context for coverage.
+
+@project FEATURE_NESTED_nested_feature_in_else
+    CONFIG {
+        MODE = 1;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST {
+        FLAG = 1;
+        LEVEL = 0;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: nested @feature inside @else body
+        @feature FLAG == 1
+            data = r;
+        @else
+            @feature LEVEL == 0
+                data = din;
+            @endfeat
+        @endfeat
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

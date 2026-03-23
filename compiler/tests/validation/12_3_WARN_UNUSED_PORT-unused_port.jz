@@ -1,0 +1,62 @@
+// WARN_UNUSED_PORT: PORT declared but never used inside the module.
+// Note: compiler emits NET_DANGLING_UNUSED (not WARN_UNUSED_PORT).
+// Tests unused port detection across multiple modules.
+// Valid: used ports included for no false positives.
+
+@project WARN_UNUSED_PORT_unused_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] unused_in = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with an unused input port
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        // Trigger 1: input port never used inside the module
+        IN  [1] extra_in;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Top module with an unused input port
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        // Trigger 2: input port never used inside the top module
+        IN  [1] unused_in;
+        OUT [1] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] extra_in = _;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

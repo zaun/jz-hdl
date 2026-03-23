@@ -1,0 +1,2 @@
+File: 4_13_INSTANCE_ARRAY_MULTI_DIMENSIONAL-multi_dim_array.jz
+      30:19   error PARSE000 parse error near token '[': expected module or blackbox name after instance name (orig: PARSE000)

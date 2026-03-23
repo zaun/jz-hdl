@@ -9,10 +9,13 @@
 
     @top TopMod {
         IN  [1] clk = _;
-        OUT [1] data = _;
+        IN  [1] din = _;
+        OUT [1] data_a = _;
+        OUT [1] data_b = _;
     }
 @endproj
 
+// Helper module: wire reference in @feature condition (ASYNC block)
 @module HelperMod
     PORT {
         IN  [1] din;
@@ -49,7 +52,9 @@
 @module TopMod
     PORT {
         IN  [1] clk;
-        OUT [1] data;
+        IN  [1] din;
+        OUT [1] data_a;
+        OUT [1] data_b;
     }
 
     CONST {
@@ -57,8 +62,8 @@
     }
 
     @new inst_h HelperMod {
-        IN  [1] din = r;
-        OUT [1] data = _;
+        IN  [1] din = din;
+        OUT [1] data = data_b;
     };
 
     REGISTER {
@@ -68,19 +73,19 @@
     ASYNCHRONOUS {
         // Valid: CONFIG reference (should NOT trigger)
         @feature CONFIG.DEBUG == 1
-            data = r;
+            data_a = r;
         @else
-            data = ~r;
+            data_a = ~r;
         @endfeat
     }
 
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 1: register reference in @feature condition
+        // Trigger 2: register reference in @feature condition (SYNC block)
         @feature r == 1'b1
-            r <= ~r;
+            r <= din;
         @endfeat
 
-        // Trigger 2: port reference in @feature condition
+        // Trigger 3: port reference in @feature condition (SYNC block)
         @feature clk == 1'b1
             r <= 1'b0;
         @endfeat

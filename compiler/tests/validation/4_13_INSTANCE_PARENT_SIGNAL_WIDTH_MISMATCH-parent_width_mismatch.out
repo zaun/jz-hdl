@@ -1,0 +1,5 @@
+File: 4_13_INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH-parent_width_mismatch.jz
+      39:17   error INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH S4.13/S8.1 Bound parent signal width does not match instantiation port width
+      46:17   error INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH S4.13/S8.1 Bound parent signal width does not match instantiation port width
+      52:17   error INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH S4.13/S8.1 Bound parent signal width does not match instantiation port width
+      80:17   error INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH S4.13/S8.1 Bound parent signal width does not match instantiation port width

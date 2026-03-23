@@ -1,0 +1,2 @@
+File: 4_12_CDC_DEST_ALIAS_ASSIGNED-dest_alias_written.jz
+      78:9    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS

@@ -1,14 +1,19 @@
 // ASSIGN_INDEPENDENT_IF_SELECT: Same identifier assigned in multiple independent IF/SELECT chains.
 // Tests independent chain conflicts in ASYNCHRONOUS blocks across modules.
-// Valid branch-exclusive assignments included to verify no false positives.
+// Covers: independent IFs on port, independent IFs on wire, independent SELECTs,
+// and mixed IF+SELECT chain. Valid branch-exclusive assignments included to verify no false positives.
 
 @project ASSIGN_INDEPENDENT_IF_SELECT_independent_chains
     @top TopMod {
         IN  [1] clk = _;
         IN  [1] sel_a = _;
         IN  [1] sel_b = _;
+        IN  [2] sel2_a = _;
+        IN  [2] sel2_b = _;
         OUT [1] out_a = _;
         OUT [1] out_b = _;
+        OUT [1] out_c = _;
+        OUT [1] out_d = _;
     }
 @endproj
 
@@ -53,8 +58,12 @@
         IN  [1] clk;
         IN  [1] sel_a;
         IN  [1] sel_b;
+        IN  [2] sel2_a;
+        IN  [2] sel2_b;
         OUT [1] out_a;
         OUT [1] out_b;
+        OUT [1] out_c;
+        OUT [1] out_d;
     }
     WIRE {
         w [1];
@@ -74,6 +83,8 @@
     };
 
     ASYNCHRONOUS {
+        out_a = ha_a;
+        out_b = ha_b;
         // Trigger 2: two independent IFs assigning same wire
         IF (sel_a) {
             w <= VCC;
@@ -85,8 +96,16 @@
         } ELSE {
             w <= ha_b;
         }
-        out_a = w;
-        out_b = ha_b;
+        out_c = w;
+        // Trigger 3: two independent SELECTs assigning same port
+        SELECT (sel2_a) {
+            CASE 2'b00 { out_d <= VCC; }
+            DEFAULT { out_d <= GND; }
+        }
+        SELECT (sel2_b) {
+            CASE 2'b00 { out_d <= VCC; }
+            DEFAULT { out_d <= GND; }
+        }
     }
     SYNCHRONOUS(CLK=clk) {
         r <= ~r;

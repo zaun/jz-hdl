@@ -1,0 +1,74 @@
+// SPECIAL_DRIVER_SLICED: GND/VCC may not be sliced or indexed.
+// Tests slicing GND/VCC directly (e.g., GND[7:0], VCC[0]) in async and sync blocks.
+// Valid standalone uses of GND/VCC included to verify no false positives.
+
+@project SPECIAL_DRIVER_SLICED_gnd_vcc_sliced
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [1] out_c = _;
+    }
+@endproj
+
+// Helper: GND/VCC sliced in async and sync blocks
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [1] out_c;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: GND sliced with range (async)
+        out_a = GND[7:0];
+        // Register read (avoids WARN_UNSINKED_REGISTER)
+        out_b = r;
+        // Trigger 2: VCC single-bit index (async)
+        out_c = VCC[0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: VCC sliced with range (sync)
+        r <= VCC[7:0];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [1] out_c;
+    }
+    WIRE {
+        ha_out_a [8];
+        ha_out_b [8];
+        ha_out_c [1];
+    }
+    REGISTER {
+        r [8] = GND;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] out_a = ha_out_a;
+        OUT [8] out_b = ha_out_b;
+        OUT [1] out_c = ha_out_c;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: standalone GND/VCC (no false positive)
+        out_a = ha_out_a;
+        // Register read (avoids WARN_UNSINKED_REGISTER)
+        out_b = r;
+        // Trigger 4: GND single-bit index (async, top module)
+        out_c = GND[0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: GND sliced with range (sync, top module)
+        r <= GND[7:0];
+    }
+@endmod

@@ -1,0 +1,59 @@
+// ASYNC_FLOATING_Z_READ: Net has sinks but all drivers assign z.
+// Tests wire driven only by z literal while being read, across
+// multiple modules. WARN_INTERNAL_TRISTATE co-fires as expected.
+// Valid patterns (non-z drivers on separate wire) verify no false positives.
+
+@project ASYNC_FLOATING_Z_READ_floating_z_read
+    @top TopMod {
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+    }
+@endproj
+
+// Helper module: wire driven only by z, then read
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout;
+        OUT [8] dout_v;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: wire driven only by z but read (helper module)
+        w <= 8'bzzzz_zzzz;
+        dout <= w;
+        // Valid: non-z driven output (no error)
+        dout_v = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+    }
+
+    WIRE {
+        w_z [8];
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+        OUT [8] dout_v = dout_c;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: wire driven only by z but read (top module)
+        w_z <= 8'bzzzz_zzzz;
+        dout_b <= w_z;
+    }
+@endmod

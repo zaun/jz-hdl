@@ -1,6 +1,7 @@
 // MODULE_PORT_IN_ONLY: Module declares only IN ports (no OUT/INOUT).
 // Tests modules with only IN ports in helper and top-instantiated contexts.
-// Modules with OUT ports are included to verify no false positives.
+// A module with multiple IN ports is also tested. Modules with OUT ports
+// are included to verify no false positives.
 
 @project MODULE_PORT_IN_ONLY_only_input_ports
     @top TopMod {
@@ -9,10 +10,18 @@
     }
 @endproj
 
-// Trigger 1: Helper module with only IN ports
-@module OnlyInputs
+// Trigger 1: Helper module with single IN port
+@module OnlyOneInput
     PORT {
         IN [1] din;
+    }
+@endmod
+
+// Trigger 2: Helper module with multiple IN ports (still no OUT)
+@module OnlyMultipleInputs
+    PORT {
+        IN [1] a;
+        IN [1] b;
     }
 @endmod
 
@@ -33,8 +42,13 @@
         OUT [1] data;
     }
 
-    @new inst_in OnlyInputs {
+    @new inst_one OnlyOneInput {
         IN [1] din = r;
+    };
+
+    @new inst_multi OnlyMultipleInputs {
+        IN [1] a = r;
+        IN [1] b = r;
     };
 
     @new inst_v HelperValid {

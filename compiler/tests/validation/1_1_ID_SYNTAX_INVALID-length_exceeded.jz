@@ -1,5 +1,6 @@
 // ID_SYNTAX_INVALID: Identifier exceeds 255 character maximum length.
-// Tests 256-char identifiers in const name, register name, and port name contexts.
+// Tests 256-char identifiers in port name, register name, const name,
+// and @new port binding contexts across multiple modules.
 // Valid 255-char identifiers are included to verify no false positives.
 
 @project ID_SYNTAX_INVALID_length_exceeded

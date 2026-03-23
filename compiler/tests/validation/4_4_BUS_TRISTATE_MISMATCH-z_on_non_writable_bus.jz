@@ -1,0 +1,65 @@
+// BUS_TRISTATE_MISMATCH: Only writable BUS signals may be assigned z.
+// Tests z assignment to readable-only BUS signals in TARGET role.
+// Valid z on writable signals included to verify no false positives.
+// BUS_SIGNAL_WRITE_TO_READABLE co-fires because writing z to readable is also a write violation.
+// WARN_INTERNAL_TRISTATE co-fires because z literals trigger FPGA-compatibility warning.
+
+@project BUS_TRISTATE_MISMATCH_z_on_non_writable_bus
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] ctrl = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// TARGET role: tx is readable (OUT from BUS def -> IN for TARGET)
+// Trigger 1: z on readable signal tx (readable for TARGET)
+@module TargetMod
+    PORT {
+        IN  [1] ctrl;
+        IN  [8] din;
+        BUS MY_BUS TARGET tbus;
+        OUT [8] data_ok;
+        OUT [8] data_err;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: read from readable signal
+        data_ok <= tbus.tx;
+        // Valid: write to writable signal
+        tbus.rx <= din;
+        // Trigger 1: z assigned to readable signal
+        IF (ctrl) {
+            data_err <= tbus.tx;
+        } ELSE {
+            tbus.tx <= 8'bz;
+            data_err <= 8'h00;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    @new inst_t TargetMod {
+        IN  [1] ctrl = ctrl;
+        IN  [8] din = din;
+        BUS MY_BUS TARGET tbus = _;
+        OUT [8] data_ok = dout_a;
+        OUT [8] data_err = dout_b;
+    };
+
+    ASYNCHRONOUS {
+    }
+@endmod

@@ -1,0 +1,3 @@
+File: 11_VCC_4_INFO_TRISTATE_TRANSFORM-vcc_transform.jz
+      17:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+      39:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default

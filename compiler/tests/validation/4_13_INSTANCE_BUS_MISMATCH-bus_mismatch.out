@@ -1,0 +1,6 @@
+File: 4_13_INSTANCE_BUS_MISMATCH-bus_mismatch.jz
+      53:29   error INSTANCE_BUS_MISMATCH S4.13/S6.9 Instance BUS binding must match child BUS port BUS id and role
+      60:30   error INSTANCE_BUS_MISMATCH S4.13/S6.9 Instance BUS binding must match child BUS port BUS id and role
+      92:29   error INSTANCE_BUS_MISMATCH S4.13/S6.9 Instance BUS binding must match child BUS port BUS id and role
+      99:29   error INSTANCE_BUS_MISMATCH S4.13/S6.9 Instance BUS binding must match child BUS port BUS id and role
+      99:29   error INSTANCE_BUS_MISMATCH S4.13/S6.9 Instance BUS binding must match child BUS port BUS id and role

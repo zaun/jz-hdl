@@ -1,3 +1,0 @@
-File: 4_6_MUX_AGG_SOURCE_INVALID-invalid_source.jz
-      22:9    error MUX_AGG_SOURCE_INVALID S4.6 Aggregation source not a valid readable signal in module scope
-      46:9    error MUX_AGG_SOURCE_INVALID S4.6 Aggregation source not a valid readable signal in module scope

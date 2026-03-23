@@ -1,6 +1,5 @@
-// FEATURE_NESTED: Nested @feature guards inside other @feature guards.
-// Tests that the compiler rejects @feature inside another @feature body.
-// Parser detects nesting and aborts; only one trigger per file is possible.
+// FEATURE_NESTED: Nested @feature guard in SYNCHRONOUS block.
+// Parser stops at first nested @feature; split by context for coverage.
 
 @project FEATURE_NESTED_nested_feature_in_sync
     CONFIG {
@@ -9,6 +8,7 @@
 
     @top TopMod {
         IN  [1] clk = _;
+        IN  [1] din = _;
         OUT [1] data = _;
     }
 @endproj
@@ -16,11 +16,13 @@
 @module TopMod
     PORT {
         IN  [1] clk;
+        IN  [1] din;
         OUT [1] data;
     }
 
     CONST {
         FLAG = 1;
+        LEVEL = 0;
     }
 
     REGISTER {
@@ -34,8 +36,8 @@
     SYNCHRONOUS(CLK=clk) {
         // Trigger 1: nested @feature inside SYNCHRONOUS block @feature body
         @feature FLAG == 1
-            @feature FLAG == 1
-                r <= ~r;
+            @feature LEVEL == 0
+                r <= din;
             @endfeat
         @endfeat
     }

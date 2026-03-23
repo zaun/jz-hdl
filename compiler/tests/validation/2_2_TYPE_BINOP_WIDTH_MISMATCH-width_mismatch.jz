@@ -1,0 +1,64 @@
+// TYPE_BINOP_WIDTH_MISMATCH: Unsigned binary operators reject mismatched operand widths.
+// Tests width mismatch in comparison and arithmetic operators
+// across ASYNCHRONOUS and SYNCHRONOUS blocks in multiple modules.
+// Valid same-width operations included to verify no false positives.
+
+@project TYPE_BINOP_WIDTH_MISMATCH_width_mismatch
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [4] b = _;
+        OUT [8] result = _;
+    }
+@endproj
+
+// Helper: width mismatch in unsigned comparison and arithmetic
+@module Helper
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: unsigned greater-than with mismatched widths (8 vs 4)
+        data <= (a > b) ? r : 8'd0;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: unsigned not-equal with mismatched widths (8 vs 4)
+        r <= (a != b) ? a : 8'd0;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] result;
+    }
+    WIRE {
+        helper_data [8];
+    }
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [4] b = b;
+        OUT [8] data = helper_data;
+    };
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 3: unsigned less-than with mismatched widths (8 vs 4)
+        result <= (a < b) ? helper_data : r;
+        // Valid: same-width addition (no false positive)
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: unsigned addition with mismatched widths (8 vs 4)
+        r <= a + b;
+    }
+@endmod

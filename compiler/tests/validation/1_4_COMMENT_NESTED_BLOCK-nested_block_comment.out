@@ -1,2 +1,4 @@
 File: 1_4_COMMENT_NESTED_BLOCK-nested_block_comment.jz
-      29:9    error COMMENT_NESTED_BLOCK S1.4 Nested block comment `/* ... /* ... */ ... */` detected
+      16:1    error COMMENT_NESTED_BLOCK S1.4 Nested block comment `/* ... /* ... */ ... */` detected
+      32:9    error COMMENT_NESTED_BLOCK S1.4 Nested block comment `/* ... /* ... */ ... */` detected
+      56:9    error COMMENT_NESTED_BLOCK S1.4 Nested block comment `/* ... /* ... */ ... */` detected

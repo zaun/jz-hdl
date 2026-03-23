@@ -1,1099 +1,908 @@
-# Compiler Test Issues
-
-## test_1_1-identifiers.md
-
-### KEYWORD_AS_IDENTIFIER not enforced in WIRE block declarations
-- **Severity:** Bug
-- **Description:** All keywords (REGISTER, WIRE, PORT, SELECT, CONFIG, CONST, MUX, etc.) are silently accepted as wire names in `WIRE { ... }` blocks without triggering KEYWORD_AS_IDENTIFIER. The check fires correctly in CONST block, module name, port name, and instance name contexts.
-- **Reproduction:** `WIRE { REGISTER [1]; }` — accepted with no error.
-
-### KEYWORD_AS_IDENTIFIER inconsistent in REGISTER block declarations
-- **Severity:** Bug
-- **Description:** In REGISTER blocks, some keywords trigger KEYWORD_AS_IDENTIFIER (e.g., CONFIG) while others trigger PARSE000 (e.g., SELECT, WIRE, PORT). The behavior should be consistent — all keywords should produce KEYWORD_AS_IDENTIFIER.
-- **Reproduction:** `REGISTER { SELECT [1] = 1'b0; }` → PARSE000 instead of KEYWORD_AS_IDENTIFIER.
-
-### ID_SINGLE_UNDERSCORE not enforced in WIRE block declarations
-- **Severity:** Bug
-- **Description:** Single underscore `_` is silently accepted as a wire name in `WIRE { _ [1]; }` without triggering ID_SINGLE_UNDERSCORE. The check fires correctly in REGISTER, CONST, PORT, module name, and instance name contexts.
-- **Reproduction:** `WIRE { _ [1]; }` — accepted with only NET_DANGLING_UNUSED warning.
-
-### ID_SYNTAX_INVALID not enforced in WIRE block declarations
-- **Severity:** Bug
-- **Description:** A 256-character identifier is silently accepted as a wire name in `WIRE { ... }` blocks without triggering ID_SYNTAX_INVALID. The check fires correctly in REGISTER, CONST, PORT, and module name contexts.
-- **Reproduction:** `WIRE { <256-char-name> [1]; }` — accepted with only NET_DANGLING_UNUSED warning.
-
-### Reserved identifiers (VCC, GND) produce PARSE000 instead of KEYWORD_AS_IDENTIFIER
-- **Severity:** Bug
-- **Description:** VCC and GND are listed as reserved identifiers in the spec (Section 1.1) but produce `PARSE000` ("expected wire name" / "expected const name") instead of KEYWORD_AS_IDENTIFIER when used as user-declared names in CONST/WIRE blocks.
-- **Reproduction:** `CONST { VCC = 1; }` → PARSE000 instead of KEYWORD_AS_IDENTIFIER.
-
-### Most reserved identifiers not enforced as keywords
-- **Severity:** Gap
-- **Description:** The spec lists PLL, DLL, CLKDIV, BIT, BUS, FIFO, HANDSHAKE, PULSE, MCP, RAW, BLOCK, DISTRIBUTED, ASYNC, SYNC, WRITE_FIRST, READ_FIRST, NO_CHANGE as reserved identifiers, but only IDX is enforced as a keyword. All others are accepted as regular identifiers in all contexts.
-- **Reproduction:** `CONST { PLL = 1; }` — accepted with no error.
-
-### PORT name with keyword triggers TOP_PORT_NOT_LISTED in top module
-- **Severity:** Limitation
-- **Description:** Using a keyword as a port name in the `@top` module triggers both KEYWORD_AS_IDENTIFIER and TOP_PORT_NOT_LISTED (since the @top block can't list the port by its keyword name). Testing this context for the @top module is not possible without unrelated diagnostics. Testing in non-top modules works cleanly.
-
-## test_1_2-fundamental_terms.md
-
-### NET_MULTIPLE_ACTIVE_DRIVERS does not fire for multiple unconditional instance drivers
-- **Severity:** Bug
-- **Description:** When two module instances bind their output ports to the same wire (both unconditionally driving), NET_MULTIPLE_ACTIVE_DRIVERS does not fire. The net driver analysis code in `driver_net.c` checks for `instance_driver_count > 1` and calls `sem_tristate_check_net()`, but the rule never fires for any tested scenario. Tested with: (1) two instances of different modules unconditionally driving the same wire, (2) two instances of the same module with tri-state pattern using identical guard constants, (3) with and without CHIP configuration.
-- **Reproduction:** Two instances both with `OUT [1] out_val = shared;` where `shared` is a WIRE — no diagnostic produced.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `ASSIGN_MULTI_DRIVER` → actual: `NET_MULTIPLE_ACTIVE_DRIVERS`
-  - `WIRE_UNDRIVEN` → actual: `NET_FLOATING_WITH_SINK`
-  - `TRISTATE_FLOATING_NET_READ` → actual: `NET_TRI_STATE_ALL_Z_READ` (but fires as `ASYNC_FLOATING_Z_READ` in practice)
-  - `LIT_RESET_HAS_X` → actual: `REG_INIT_CONTAINS_X`
-  - `X_OBSERVABLE_SINK` is listed as missing but exists as `OBS_X_TO_OBSERVABLE_SINK`
-
-### DOMAIN_CONFLICT and MULTI_CLK_ASSIGN always co-fire
-- **Severity:** Limitation
-- **Description:** When a register is assigned in two SYNCHRONOUS blocks with different clocks, both DOMAIN_CONFLICT and MULTI_CLK_ASSIGN fire. It is not possible to trigger one without the other because the conditions are inherently coupled: assigning in the wrong domain (DOMAIN_CONFLICT) requires assigning in multiple domains (MULTI_CLK_ASSIGN). Tests for either rule necessarily include diagnostics from both.
-
-### ASYNC_FLOATING_Z_READ fires instead of NET_TRI_STATE_ALL_Z_READ
-- **Severity:** Observation
-- **Description:** When all drivers of a wire assign `z` and the wire is read, ASYNC_FLOATING_Z_READ (from ASYNC_BLOCK_RULES) fires rather than NET_TRI_STATE_ALL_Z_READ (from NET_DRIVERS_AND_TRI_STATE). The async block check occurs earlier in the analysis pipeline and catches the issue first. NET_TRI_STATE_ALL_Z_READ may be dead code or only fire in scenarios not reproducible through the current test framework.
-
-## test_1_3-bit_slicing_and_indexing.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan uses rule IDs that differ from rules.c:
-  - `SLICE_OUT_OF_RANGE` → actual: `SLICE_INDEX_OUT_OF_RANGE`
-  - `SLICE_MSB_LT_LSB` → actual: `SLICE_MSB_LESS_THAN_LSB`
-  - `SEMANTIC_DRIVER_SLICED` → actual: `SPECIAL_DRIVER_SLICED`
-  - `CONST_UNDEFINED` → actual: `CONST_UNDEFINED_IN_WIDTH_OR_SLICE` (for declared non-CONST names) or `UNDECLARED_IDENTIFIER` (for completely undefined names)
-
-### SLICE_INDEX_INVALID cannot be triggered
-- **Severity:** Observation
-- **Description:** The rule SLICE_INDEX_INVALID ("S1.3/S8.1 Slice index is not an integer/CONST or CONST is undefined/negative") exists in rules.c but could not be triggered in any tested scenario. When an undefined name is used in a slice position, UNDECLARED_IDENTIFIER fires. When a declared non-CONST name (wire, register, port) is used, CONST_UNDEFINED_IN_WIDTH_OR_SLICE fires. Negative indices via literal `-1` are a parse error. Negative CONST values are caught by CONST_NEGATIVE_OR_NONINT. The specific condition that triggers SLICE_INDEX_INVALID is unknown — it may be dead code or reachable only through internal compiler paths not expressible in user code.
-
-### Undefined names in slices fire UNDECLARED_IDENTIFIER not slice-specific rule
-- **Severity:** Observation
-- **Description:** When a completely undefined name (e.g., `UNDEF_MSB`) is used in a slice index like `bus[UNDEF_MSB:0]`, the compiler fires UNDECLARED_IDENTIFIER rather than SLICE_INDEX_INVALID or CONST_UNDEFINED_IN_WIDTH_OR_SLICE. The general identifier resolution runs before slice-specific validation. This means there is no slice-specific diagnostic for undefined names — the generic UNDECLARED_IDENTIFIER covers it.
-
-## test_1_4-comments.md
-
-No issues found. Both testable rules (COMMENT_IN_TOKEN, COMMENT_NESTED_BLOCK) fire correctly in all tested contexts.
-
-## test_1_5-exclusive_assignment_rule.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `ASSIGN_MULTI_DRIVER` → actual: `ASSIGN_MULTIPLE_SAME_BITS`
-  - `ASSIGN_SHADOW_OUTER` → actual: `ASSIGN_SHADOWING`
-  - `ASSIGN_INDEPENDENT_CHAIN_CONFLICT` → actual: `ASSIGN_INDEPENDENT_IF_SELECT`
-  - `ASSIGN_PARTIAL_COVERAGE` → actual: `ASYNC_UNDEFINED_PATH_NO_DRIVER`
-  - `ASSIGN_UNREACHABLE_DEAD_WRITE` → no matching rule ID (closest is `WARN_DEAD_CODE_UNREACHABLE` but it covers different scenarios)
-
-### Wire double-assignment cascades into NET_FLOATING_WITH_SINK
-- **Severity:** Observation
-- **Description:** When a wire is double-assigned at root of ASYNC (`w = VCC; w = GND;`), ASSIGN_MULTIPLE_SAME_BITS fires correctly on the second assignment. However, if the wire is subsequently read (`out_b = w;`), a cascading NET_FLOATING_WITH_SINK error fires on the reading port, suggesting the compiler invalidates the wire's driver status after the exclusive assignment violation. This prevents clean testing of wire double-assignment without unrelated diagnostics.
-- **Reproduction:** `WIRE { w [1]; } ASYNCHRONOUS { w = VCC; w = GND; out_b = w; }` → ASSIGN_MULTIPLE_SAME_BITS on `w = GND` plus NET_FLOATING_WITH_SINK on `out_b`.
-
-## test_1_6-high_impedance_and_tristate.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `LIT_HEX_HAS_XZ` → actual: `LIT_INVALID_DIGIT_FOR_BASE` (generic rule for invalid digits in any base)
-  - `LIT_RESET_HAS_Z` → actual: `REG_INIT_CONTAINS_Z`
-  - `TRISTATE_MULTIPLE_ACTIVE_DRIVERS` → actual: `NET_MULTIPLE_ACTIVE_DRIVERS` (but this rule does not fire; see test_1_2 issues)
-  - `TRISTATE_FLOATING_NET_READ` → actual: `ASYNC_FLOATING_Z_READ` (already tested under test_1_2)
-
-### No compiler error for z assigned to register next-state (REG_Z_ASSIGN missing)
-- **Severity:** Gap
-- **Description:** The spec (S1.6.6) states "Registers cannot store z" but the compiler does not produce an error when z is assigned as the next-state value to a register in a SYNCHRONOUS block (`r <= 8'bzzzz_zzzz;`). Only `WARN_INTERNAL_TRISTATE` (a warning about FPGA compatibility) is produced. There is no `REG_Z_ASSIGN` or equivalent rule ID in rules.c.
-- **Reproduction:** `SYNCHRONOUS(CLK=clk) { r <= 8'bzzzz_zzzz; }` — only `WARN_INTERNAL_TRISTATE` warning, no error.
-
-### PORT_TRISTATE_MISMATCH co-fires with WARN_INTERNAL_TRISTATE
-- **Severity:** Limitation
-- **Description:** When z is assigned to a non-INOUT port (triggering PORT_TRISTATE_MISMATCH), WARN_INTERNAL_TRISTATE always co-fires on the port declaration. This is inherent because any z usage on an internal signal triggers the FPGA-compatibility warning. Tests for PORT_TRISTATE_MISMATCH necessarily include WARN_INTERNAL_TRISTATE diagnostics in the .out file.
-
-## test_2_3-bit_width_constraints.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `WIDTH_BINOP_MISMATCH` → actual: `TYPE_BINOP_WIDTH_MISMATCH`
-  - `WIDTH_TERNARY_MISMATCH` → actual: `TERNARY_BRANCH_WIDTH_MISMATCH`
-  - `WIDTH_ASSIGN_MISMATCH_NO_EXT` → exists but is suppressed by `ASSIGN_WIDTH_NO_MODIFIER` (see below)
-
-### WIDTH_ASSIGN_MISMATCH_NO_EXT suppressed by ASSIGN_WIDTH_NO_MODIFIER priority
-- **Severity:** Observation
-- **Description:** The rule `WIDTH_ASSIGN_MISMATCH_NO_EXT` (priority 0) fires on every assignment width mismatch, but `ASSIGN_WIDTH_NO_MODIFIER` (priority 1) always co-fires on the same location. The diagnostic priority system (in `diagnostic.c`) only prints the highest-priority diagnostic per line, so `WIDTH_ASSIGN_MISMATCH_NO_EXT` never appears in compiler output. Both rules are emitted by `driver_assign.c:1371-1381` on the same `stmt->loc`. The test plan's intent to test `WIDTH_ASSIGN_MISMATCH_NO_EXT` is addressed by testing `ASSIGN_WIDTH_NO_MODIFIER` instead.
-
-### Multiply/divide/modulus NOT exempt from strict width matching
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.2 "Rules Missing") suggests `WIDTH_MULTIPLY_RULES` as a missing rule for specialized width behavior of multiply/divide/modulus per S3.2. In practice, the compiler enforces equal operand widths for these operators via `TYPE_BINOP_WIDTH_MISMATCH`, the same as all other binary operators. There is no exemption for arithmetic operators.
-
-## test_2_4-special_semantic_drivers.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `SEMANTIC_DRIVER_IN_EXPR` → actual: `SPECIAL_DRIVER_IN_EXPRESSION`
-  - `SEMANTIC_DRIVER_IN_CONCAT` → actual: `SPECIAL_DRIVER_IN_CONCAT`
-  - `SEMANTIC_DRIVER_SLICED` → actual: `SPECIAL_DRIVER_SLICED`
-  - `SEMANTIC_DRIVER_IN_SLICE_INDEX` → actual: `SPECIAL_DRIVER_IN_INDEX`
-  - `ASSIGN_MULTI_DRIVER` → actual: `NET_MULTIPLE_ACTIVE_DRIVERS` (doesn't fire; see test_1_2 issues)
-
-### SPECIAL_DRIVER_IN_INDEX unreachable via user syntax
-- **Severity:** Dead code
-- **Description:** The rule SPECIAL_DRIVER_IN_INDEX exists in rules.c and has a semantic check in `driver_assign.c`, but the parser (`parser_expressions.c:1064-1074`) rejects GND/VCC tokens in slice/index positions with PARSE000 before the AST is built. The semantic check can never fire because the parser prevents the required AST structure from being created. This rule is dead code.
-- **Reproduction:** `data[GND]` or `data[0:GND]` → PARSE000 instead of SPECIAL_DRIVER_IN_INDEX.
-
-## test_3_1-operator_categories.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses `WIDTH_BINOP_MISMATCH` but the actual rule ID is `TYPE_BINOP_WIDTH_MISMATCH`. The "Rules Missing" section lists `LOGICAL_OP_MULTI_BIT` but the rule already exists as `LOGICAL_WIDTH_NOT_1`.
-
-## test_2_2-signedness_model.md
-
-No issues found. This section defines the unsigned-by-default signedness model. There are no rule IDs in rules.c specific to signedness enforcement. The two rules listed as missing in the test plan (SIGNED_KEYWORD_USED, SIGNED_OP_WITHOUT_INTRINSIC) do not exist and all test scenarios are behavioral/simulation-level, not lint-level.
-
-## test_2_1-literals.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `LIT_WIDTH_ZERO` → actual: `LIT_WIDTH_NOT_POSITIVE`
-  - `LIT_HEX_HAS_XZ` → actual: `LIT_INVALID_DIGIT_FOR_BASE` (generic rule for invalid digits in any base, including x/z in hex)
-  - `LIT_RESET_HAS_X` → actual: `REG_INIT_CONTAINS_X` (in PORT_WIRE_REGISTER_DECLS category, not literals)
-  - `LIT_RESET_HAS_Z` → actual: `REG_INIT_CONTAINS_Z` (in PORT_WIRE_REGISTER_DECLS category, not literals)
-
-### LIT_UNDERSCORE_POSITION listed as missing but exists
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.2 "Rules Missing") lists `LIT_UNDERSCORE_POSITION` as a missing rule, but it exists in rules.c as `LIT_UNDERSCORE_AT_EDGES` with the message "S2.1 Literal has underscore as first or last character of value".
-
-### LIT_OVERFLOW does not fire in register init context
-- **Severity:** Bug
-- **Description:** The LIT_OVERFLOW rule fires correctly in SYNCHRONOUS block expressions (e.g., `r <= 4'b10101;`) but does NOT fire when an overflowing literal is used as a register initialization value (e.g., `r [4] = 4'd16;`). The literal `4'd16` has intrinsic width 5 > declared width 4, which should trigger LIT_OVERFLOW, but the compiler silently accepts it.
-- **Reproduction:** `REGISTER { r [4] = 4'd16; }` — no diagnostic produced. Compare with `r <= 4'd16;` in SYNCHRONOUS which correctly fires LIT_OVERFLOW.
-
-### LIT_BARE_INTEGER suppressed by ASSIGN_WIDTH_NO_MODIFIER when widths mismatch
-- **Severity:** Observation
-- **Description:** When a bare integer's intrinsic width differs from the assignment target width, ASSIGN_WIDTH_NO_MODIFIER fires instead of LIT_BARE_INTEGER. LIT_BARE_INTEGER only fires when the bare integer's intrinsic width happens to match the target. For example, `data = 42;` (6-bit intrinsic, 8-bit target) fires ASSIGN_WIDTH_NO_MODIFIER, but `r <= 255;` (8-bit intrinsic, 8-bit register) fires LIT_BARE_INTEGER. Tests use matching-width bare integers to trigger LIT_BARE_INTEGER cleanly.
-
-### ASYNC_ALIAS_LITERAL_RHS prevents testing literals with `=` in ASYNC blocks
-- **Severity:** Limitation
-- **Description:** Using a sized literal as the RHS of `=` in an ASYNCHRONOUS block triggers ASYNC_ALIAS_LITERAL_RHS ("Literal on RHS of `=` in ASYNCHRONOUS block"), preventing clean testing of other literal rules (LIT_OVERFLOW, LIT_UNDEFINED_CONST_WIDTH) in ASYNC `=` contexts. Tests use SYNCHRONOUS `<=` contexts instead. Note: bare integers do NOT trigger ASYNC_ALIAS_LITERAL_RHS.
-
-## test_3_2-operator_definitions.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `UNARY_NOT_PARENTHESIZED` → actual: `UNARY_ARITH_MISSING_PARENS`
-  - `EXPR_DIVISION_BY_ZERO` → actual: `DIV_CONST_ZERO`
-  - `WIDTH_TERNARY_MISMATCH` → does not exist; closest is `TERNARY_BRANCH_WIDTH_MISMATCH` and `TERNARY_COND_WIDTH_NOT_1`
-
-### Rules listed as missing in test plan but actually exist in rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.2 "Rules Missing") lists three rules as missing, but all exist:
-  - `TERNARY_COND_NOT_1BIT` → exists as `TERNARY_COND_WIDTH_NOT_1` (tested)
-  - `LOGICAL_OP_NOT_1BIT` → exists as `LOGICAL_WIDTH_NOT_1` (tested)
-  - `CONCAT_EMPTY` → exists in rules.c (tested)
-
-### DIV_CONST_ZERO and DIV_UNGUARDED_RUNTIME_ZERO cannot be tested in ASYNC blocks
-- **Severity:** Limitation
-- **Description:** Division by constant zero in ASYNC blocks triggers ASYNC_ALIAS_LITERAL_RHS (because the expression contains a literal `8'd0`). Division guarded by `IF` in ASYNC blocks triggers ASYNC_ALIAS_IN_CONDITIONAL. The DIV_UNGUARDED_RUNTIME_ZERO warning only fires from the IR pass when no errors exist, so it requires a completely error-free file. All division tests use SYNCHRONOUS blocks exclusively. This is not a coverage gap since the operator validation is context-independent — the same code path fires in both block types.
-
-## test_3_3-operator_precedence.md
-
-No issues found. This section defines the 15-level operator precedence hierarchy. There are no rule IDs in rules.c specific to operator precedence enforcement. The one rule listed as missing in the test plan (PRECEDENCE_AMBIGUOUS — warning for potentially confusing expressions without parentheses) does not exist in the compiler. All test scenarios are AST structure verification or parse-level errors, neither of which produce rule-ID diagnostics testable in the lint validation framework.
-
-## test_3_4-operator_examples.md
-
-No issues found. Section 3.4 provides canonical usage examples of operators defined in S3.1-S3.2. No new rules are introduced. The two rules referenced in the test plan use non-matching names:
-- `UNARY_NOT_PARENTHESIZED` → actual: `UNARY_ARITH_MISSING_PARENS` (already tested)
-- `WIDTH_TERNARY_MISMATCH` → actual: `TERNARY_BRANCH_WIDTH_MISMATCH` (already tested)
-
-All other scenarios (unary negation, arithmetic vs logical shift, carry capture via concatenation, ternary+concat, tri-state driver patterns) are behavioral/simulation-level checks, not lint diagnostics.
+# Test Issues
 
 ## test_4_1-module_canonical_form.md
 
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.2 "Rules Missing") lists two rules as missing, but both exist:
-  - `MODULE_NO_PORT` → exists as `MODULE_MISSING_PORT` (tested)
-  - `MODULE_ONLY_IN_PORTS` → exists as `MODULE_PORT_IN_ONLY` (tested)
-
-### MODULE_MISSING_PORT inherently co-fires with WARN_UNUSED_MODULE
-- **Severity:** Limitation
-- **Description:** A module with no PORT block (or empty PORT block) cannot be instantiated by any other module, so WARN_UNUSED_MODULE always co-fires alongside MODULE_MISSING_PORT. The test .out file includes both diagnostics.
-
-### MODULE_PORT_IN_ONLY inherently co-fires with NET_DANGLING_UNUSED
-- **Severity:** Limitation
-- **Description:** A module with only IN ports has no output to sink input values through. The IN port declared in the module is flagged as NET_DANGLING_UNUSED because nothing reads it (no OUT port to drive). The test .out file includes both diagnostics.
-
-### No rule for duplicate CONST/PORT/WIRE/REGISTER blocks
-- **Severity:** Observation
-- **Description:** The test plan (Neg 3) mentions "Duplicate CONST block" as a negative test case, but the parser (`parser_module.c`) accepts multiple CONST blocks without error — each is simply added as a child of the module AST node. There is no rule ID for detecting duplicate declaration blocks (CONST, PORT, WIRE, REGISTER). Only duplicate SYNCHRONOUS blocks for the same clock have a dedicated rule (DUPLICATE_BLOCK). The compiler merges multiple declaration blocks silently.
-
-### Missing @endmod is a parse error without rule ID
-- **Severity:** Observation
-- **Description:** The test plan (Neg 1) lists "Missing @endmod" as a negative test, but the parser produces a generic parse error ("missing @endmod for module") without a rule ID. This cannot be tested in the validation framework which requires rule-ID diagnostics.
+No issues found. All tests pass cleanly. No parser recovery bugs, no cascading errors, no missing rule implementations. The MODULE_PORT_IN_ONLY test co-fires NET_DANGLING_UNUSED for unused input ports in input-only modules — this is expected behavior, not a bug.
 
 ## test_4_2-scope_and_uniqueness.md
 
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `MODULE_DUPLICATE_NAME` → actual: `MODULE_NAME_DUP_IN_PROJECT`
-  - `SCOPE_DUPLICATE_SIGNAL` → actual: `ID_DUP_IN_MODULE` (for declaration duplicates), `INSTANCE_NAME_DUP_IN_MODULE` (for instance name duplicates), `INSTANCE_NAME_CONFLICT` (for instance-signal name collision)
-  - `MODULE_SELF_INSTANTIATION` → no rule ID exists in rules.c
+### Bug: AMBIGUOUS_REFERENCE rule not implemented
 
-### MODULE_SELF_INSTANTIATION rule does not exist
-- **Severity:** Gap
-- **Description:** The test plan (Neg 7) specifies that a module instantiating itself (`@module foo` containing `@new x foo {}`) should produce an error with rule ID MODULE_SELF_INSTANTIATION. No such rule exists in rules.c. Self-instantiation may be caught by other mechanisms (e.g., circular dependency or undefined module during forward reference resolution), but there is no dedicated rule for it.
+**Severity:** Bug (missing rule implementation)
 
-### BLACKBOX_NAME_DUP_IN_PROJECT co-fires with WARN_UNUSED_MODULE
-- **Severity:** Limitation
-- **Description:** When a module and a blackbox share the same name, BLACKBOX_NAME_DUP_IN_PROJECT fires on the module definition, and WARN_UNUSED_MODULE also fires because the conflicting module cannot be instantiated. The test .out file includes both diagnostics.
+**Description:** The rule `AMBIGUOUS_REFERENCE` is defined in `rules.c` with message "S4.2/S8.1 Identifier reference ambiguous without instance prefix", but the compiler never emits this diagnostic. No semantic pass emits this rule — it is defined in `rules.c` but has no corresponding implementation code in any `src/sem/` file.
 
-## test_4_3-const.md
+**Impact:** Cannot write a validation test for this rule. It is documented in `not_tested.md`.
 
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `CONST_DUPLICATE` → actual: `ID_DUP_IN_MODULE` (generic duplicate identifier rule, already tested in test_4_2)
-  - `CONST_CIRCULAR_DEP` → exists in rules.c but never fires for module CONSTs (see below)
-  - `CONST_FORWARD_REF` → no rule ID exists for module CONST forward references
-  - `CONST_NEGATIVE_WIDTH` → actual: `CONST_NEGATIVE_OR_NONINT`
+### Note: BLACKBOX_NAME_DUP_IN_PROJECT co-fires WARN_UNUSED_MODULE
 
-### CONST_CIRCULAR_DEP is dead code for module-level CONSTs
-- **Severity:** Bug
-- **Description:** The rule `CONST_CIRCULAR_DEP` exists in rules.c and has detection code in `const_eval.c:824` (fired when eval_one encounters an already-visiting CONST) and `const_eval.c:624` (fired during expression parsing via env_parser_diag with rule "CONST002"). However, for module-level CONST evaluation, `driver.c:1367-1371` intentionally suppresses all const_eval internal diagnostics by passing `opts.diagnostics = NULL`. Any evaluation failure (including circular dependencies) is then mapped to the generic `CONST_NEGATIVE_OR_NONINT` rule on each CONST declaration that failed to evaluate. This means circular CONST dependencies produce multiple `CONST_NEGATIVE_OR_NONINT` errors instead of the more specific `CONST_CIRCULAR_DEP`.
-- **Reproduction:** `CONST { CA = CB; CB = CA; }` → two CONST_NEGATIVE_OR_NONINT errors, not CONST_CIRCULAR_DEP.
+**Severity:** Expected behavior (not a bug)
 
-### CONST_FORWARD_REF does not exist for module CONSTs
-- **Severity:** Gap
-- **Description:** The test plan (Neg 3) specifies that `A = B; B = 5;` should produce a forward reference error. No `CONST_FORWARD_REF` rule exists in rules.c — only `CONFIG_FORWARD_REF` (for project CONFIG) and `GLOBAL_FORWARD_REF` (for @global blocks). Module-level CONST forward references (`A = B; B = 5;`) produce `CONST_NEGATIVE_OR_NONINT` on `A` because the const_eval engine evaluates in declared order and `B` is not yet available when `A` is evaluated.
+**Description:** When a `@blackbox` name conflicts with a `@module` name, the module also fires `WARN_UNUSED_MODULE` because the blackbox name shadows it and the module cannot be instantiated. The test `.out` file includes both diagnostics. This is correct compiler behavior.
 
-### CONST_STRING_IN_NUMERIC_CONTEXT on wire width co-fires with NET_DANGLING_UNUSED
-- **Severity:** Limitation
-- **Description:** When a string CONST is used as a wire width (`WIRE { w [MY_STR]; }`), the width evaluates to 0 or invalid, causing the wire to be flagged as NET_DANGLING_UNUSED in addition to CONST_STRING_IN_NUMERIC_CONTEXT. This is inherent — a wire with invalid width is always unused.
+## test_10_1-template_purpose.md
 
-## test_4_4-port.md
-
-### BUS_SIGNAL_UNDEFINED fires ASYNC_INVALID_STATEMENT_TARGET for scalar BUS write
-- **Severity:** Bug
-- **Description:** Writing to a nonexistent signal on a scalar BUS port (e.g., `sbus.nonexistent <= r`) fires ASYNC_INVALID_STATEMENT_TARGET ("LHS in ASYNCHRONOUS assignment is not assignable") instead of BUS_SIGNAL_UNDEFINED. The same operation on an arrayed BUS port (e.g., `abus[0].missing <= r`) correctly fires BUS_SIGNAL_UNDEFINED. Read-context accesses (RHS) correctly fire BUS_SIGNAL_UNDEFINED for both scalar and arrayed ports.
-- **Reproduction:** `BUS MY_BUS SOURCE sbus;` then `sbus.nonexistent <= r;` → ASYNC_INVALID_STATEMENT_TARGET instead of BUS_SIGNAL_UNDEFINED.
-
-### COMB_LOOP_UNCONDITIONAL co-fires with ASYNC_ALIAS_IN_CONDITIONAL in SELECT and nested IF
-- **Severity:** Limitation
-- **Description:** When an alias (`=`) appears inside a SELECT case or nested IF, ASYNC_ALIAS_IN_CONDITIONAL fires correctly. However, COMB_LOOP_UNCONDITIONAL also co-fires on the ASYNCHRONOUS block when the same target has `<=` (receive-assign) on other branches. This occurs because the alias is still processed (creating a net merge) despite the error, and the combination of alias on one path and receive-assign on another creates what the compiler interprets as a combinational loop. Single-level IF (non-nested) with alias on one branch and receive on the other does NOT produce COMB_LOOP.
-- **Reproduction:** `SELECT (ctrl) { CASE (1'b0) { data = din; } CASE (1'b1) { data <= din; } DEFAULT { data <= din; } }` → ASYNC_ALIAS_IN_CONDITIONAL on CASE(0) plus COMB_LOOP_UNCONDITIONAL on the ASYNCHRONOUS block.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `PORT_INPUT_DRIVEN_INSIDE` → actual: `PORT_DIRECTION_MISMATCH_IN`
-  - `PORT_DIRECTION_VIOLATION` → actual: `PORT_DIRECTION_MISMATCH_OUT`
-  - `BUS_PORT_DIRECTION_VIOLATION` → actual: `BUS_SIGNAL_READ_FROM_WRITABLE` and `BUS_SIGNAL_WRITE_TO_READABLE`
-  - `BUS_INDEX_OUT_OF_RANGE` → actual: `BUS_PORT_INDEX_OUT_OF_RANGE`
-  - `ALIAS_IN_CONDITIONAL` → actual: `ASYNC_ALIAS_IN_CONDITIONAL`
-  - `BUS_SIGNAL_NOT_FOUND` is listed as missing but exists as `BUS_SIGNAL_UNDEFINED`
-
-## test_4_5-wire.md
-
-### WARN_UNUSED_WIRE is dead code
-- **Severity:** Bug
-- **Description:** The rule `WARN_UNUSED_WIRE` ("S12.3 WIRE declared but never driven or read; remove it if unused") exists in rules.c but is never emitted by any semantic analysis code. No `sem_report_rule` call references this rule ID. Completely unused wires (neither driven nor read) are caught by `NET_DANGLING_UNUSED` ("S5.1/S8.3 Signal is neither driven nor read; remove it or connect it") from the net driver analysis pass instead. WARN_UNUSED_WIRE appears to be dead code that was superseded by the more general NET_DANGLING_UNUSED check.
-- **Reproduction:** `WIRE { w_unused [8]; }` with no references → fires NET_DANGLING_UNUSED, not WARN_UNUSED_WIRE.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `ASSIGN_OP_WRONG_BLOCK` → actual: `WRITE_WIRE_IN_SYNC`
-  - `ASSIGN_MULTI_DRIVER` → actual: `NET_MULTIPLE_ACTIVE_DRIVERS` (but doesn't fire; see test_1_2 issues)
-
-## test_4_6-mux.md
-
-### MUX_SELECTOR_OUT_OF_RANGE_CONST does not handle sized literals
-- **Severity:** Bug
-- **Description:** The `MUX_SELECTOR_OUT_OF_RANGE_CONST` check in `driver.c:2290-2295` uses `parse_simple_nonnegative_int()` to extract the selector value. This function only handles plain decimal digit strings, not sized literals like `2'd3` or `8'd10`. When a sized literal is used as a MUX selector (e.g., `mux[2'd3]`), the function fails to parse the text and the out-of-range check is silently skipped. The rule fires correctly with bare integer selectors (e.g., `mux[3]`).
-- **Reproduction:** `MUX { m = a, b; } ASYNCHRONOUS { data = m[2'd2]; }` — no diagnostic produced. Compare with `data = m[2];` which correctly fires MUX_SELECTOR_OUT_OF_RANGE_CONST.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `MUX_ASSIGN_READONLY` → actual: `MUX_ASSIGN_LHS`
-  - `MUX_WIDTH_MISMATCH` → actual: `MUX_AGG_SOURCE_WIDTH_MISMATCH`
-  - `MUX_SLICE_NOT_DIVISIBLE` → actual: `MUX_SLICE_WIDTH_NOT_DIVISOR`
-  - `MUX_INDEX_OUT_OF_RANGE` → actual: `MUX_SELECTOR_OUT_OF_RANGE_CONST`
-  - `SCOPE_DUPLICATE_SIGNAL` → actual: `MUX_NAME_DUPLICATE`
-
-## test_4_7-register.md
-
-### REG_MULTI_DIMENSIONAL is dead code (parser catches first)
-- **Severity:** Dead code
-- **Description:** The rule `REG_MULTI_DIMENSIONAL` ("S4.7 REGISTER declared with multi-dimensional syntax") exists in rules.c but the parser rejects multi-dimensional register syntax with PARSE000 ("expected '=' and initialization literal in REGISTER block") before semantic analysis runs. The second `[` token after the width is not expected by the parser. The semantic rule can never fire.
-- **Reproduction:** `REGISTER { r [8] [4] = 8'h00; }` → PARSE000 instead of REG_MULTI_DIMENSIONAL.
-
-### REG_MISSING_INIT_LITERAL is dead code (parser catches first)
-- **Severity:** Dead code
-- **Description:** The rule `REG_MISSING_INIT_LITERAL` ("S4.7 Register declared without mandatory reset/power-on literal") exists in rules.c but the parser rejects register declarations without init values with PARSE000 ("expected '=' and initialization literal in REGISTER block") before semantic analysis runs. The `;` token after the width is not expected by the parser.
-- **Reproduction:** `REGISTER { r [8]; }` → PARSE000 instead of REG_MISSING_INIT_LITERAL.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `ASSIGN_OP_WRONG_BLOCK` → actual: `ASYNC_ASSIGN_REGISTER`
-  - `LIT_RESET_HAS_X` → actual: `REG_INIT_CONTAINS_X`
-  - `LIT_RESET_HAS_Z` → actual: `REG_INIT_CONTAINS_Z`
-  - `REG_MISSING_RESET` → actual: `REG_MISSING_INIT_LITERAL` (exists but dead code)
-  - `REG_MULTI_DIMENSIONAL` → exists but dead code (parser catches first)
-
-## test_4_8-latches.md
-
-### LATCH_SR_WIDTH_MISMATCH not implemented
-- **Severity:** Gap
-- **Description:** The rule `LATCH_SR_WIDTH_MISMATCH` ("S4.8 SR latch set/reset expression width does not match latch width") exists in rules.c but has no corresponding `sem_report_rule` call in any semantic analysis file. The `driver_assign.c:1174-1180` code has a placeholder comment "SR-specific validation can be added here if needed" with `(void)is_sr_latch;`. SR latches with mismatched set/reset widths are not caught.
-
-### LATCH_IN_CONST_CONTEXT not implemented
-- **Severity:** Gap
-- **Description:** The rule `LATCH_IN_CONST_CONTEXT` ("S4.8 LATCH identifier may not be used in compile-time constant contexts (@check/@feature conditions)") exists in rules.c but has no corresponding `sem_report_rule` call in any semantic analysis file. Using a latch identifier where a compile-time constant is required is not enforced.
-
-### LATCH_WIDTH_INVALID suppressed by WIDTH_NONPOSITIVE_OR_NONINT priority
-- **Severity:** Observation
-- **Description:** The rule `LATCH_WIDTH_INVALID` (priority 0) fires in `driver_width.c:887-898` but `WIDTH_NONPOSITIVE_OR_NONINT` (priority 1) fires on the same declaration at `driver_width.c:910-916`. The priority system suppresses the lower-priority rule. `LATCH_WIDTH_INVALID` never appears in compiler output, similar to `WIDTH_ASSIGN_MISMATCH_NO_EXT`.
-
-### LATCH_INVALID_TYPE parser aborts module on first error
-- **Severity:** Limitation
-- **Description:** The parser (`parser_register.c:235-248`) checks latch type validity and calls `return -1` on the first invalid type, aborting the entire LATCH block and module. This means only one LATCH_INVALID_TYPE error can be produced per file, and no subsequent declarations in the same module are parsed. Multi-trigger testing across modules is not possible because the module containing the first invalid type is incomplete.
-
-### LATCH_ALIAS_FORBIDDEN with latch on LHS co-fires LATCH_ASSIGN_NON_GUARDED
-- **Severity:** Limitation
-- **Description:** When a latch is on the LHS of an alias (`=`) in ASYNCHRONOUS block, both LATCH_ALIAS_FORBIDDEN and LATCH_ASSIGN_NON_GUARDED fire. This is inherent — the alias is both a forbidden alias relationship AND a non-guarded latch write. Tests for LATCH_ALIAS_FORBIDDEN use latch on the RHS of alias only to avoid this co-fire.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `LATCH_IN_SYNC` → actual: `LATCH_ASSIGN_IN_SYNC`
-  - `LATCH_ENABLE_WIDTH` → actual: `LATCH_ENABLE_WIDTH_NOT_1`
-  - `LATCH_IN_CDC` → actual: `LATCH_AS_CLOCK_OR_CDC`
-  - `LATCH_AS_CLOCK` → listed as missing but exists as `LATCH_AS_CLOCK_OR_CDC`
-  - `LATCH_TYPE_INVALID` → listed as missing but exists as `LATCH_INVALID_TYPE`
-  - `LATCH_SR_WIDTH_MISMATCH` → listed as missing, and indeed not implemented in semantic analysis
-
-## test_4_9-mem_block.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses `MEM_DECL_TYPE_INVALID` but the actual rule ID in rules.c is `MEM_TYPE_INVALID`.
-
-## test_4_10-asynchronous_block.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `ALIAS_IN_CONDITIONAL` → actual: `ASYNC_ALIAS_IN_CONDITIONAL` (already tested in test_4_4)
-  - `ALIAS_LITERAL_BAN` → actual: `ASYNC_ALIAS_LITERAL_RHS` (tested)
-  - `ASSIGN_OP_WRONG_BLOCK` → actual: `ASYNC_ASSIGN_REGISTER` (already tested in test_4_7)
-  - `PORT_INPUT_DRIVEN_INSIDE` → actual: `PORT_DIRECTION_MISMATCH_IN` (already tested in test_4_4)
-  - `PORT_DIRECTION_VIOLATION` → actual: `PORT_DIRECTION_MISMATCH_OUT` (already tested in test_4_4)
-
-### WIDTH_ASSIGN_MISMATCH_NO_EXT suppressed by priority (already documented)
-- **Severity:** Observation
-- **Description:** WIDTH_ASSIGN_MISMATCH_NO_EXT (priority 0) is always suppressed by ASSIGN_WIDTH_NO_MODIFIER (priority 1) on the same line. This is already documented in test_2_3 issues. The test plan's "width mismatch without modifier" scenario is covered by ASSIGN_WIDTH_NO_MODIFIER tests.
-
-### ALIAS_TRUNCATION rule does not exist
-- **Severity:** Gap
-- **Description:** The test plan (Section 6.2 "Rules Missing") lists `ALIAS_TRUNCATION` as a potentially missing rule for "truncation is never implicit" (S4.10). No such rule exists in rules.c. Width mismatch in the truncation direction is covered by `ASSIGN_WIDTH_NO_MODIFIER` / `ASSIGN_TRUNCATES`, not a separate alias-specific truncation rule.
-
-## test_4_11-synchronous_block.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `SYNC_DUPLICATE_BLOCK` → actual: `DUPLICATE_BLOCK`
-  - `SYNC_DOMAIN_CONFLICT` → actual: `DOMAIN_CONFLICT`
-  - `SYNC_MULTI_CLK_ASSIGN` → actual: `MULTI_CLK_ASSIGN`
-  - `SYNC_BOTH_EDGE_WARNING` → actual: `SYNC_EDGE_BOTH_WARNING`
-  - `ASSIGN_OP_WRONG_BLOCK` → actual: `WRITE_WIRE_IN_SYNC`
-
-### Rules listed as missing in test plan but actually exist in rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.2 "Rules Missing") lists three rules as missing, but all exist:
-  - `SYNC_CLK_NOT_1BIT` → exists as `SYNC_CLK_WIDTH_NOT_1` (tested)
-  - `SYNC_RESET_NOT_1BIT` → exists as `SYNC_RESET_WIDTH_NOT_1` (tested)
-  - `SYNC_MISSING_CLK` → exists in rules.c (tested)
-
-## test_4_12-cdc_block.md
-
-### CDC_DEST_ALIAS_ASSIGNED not implemented (dead code)
-- **Severity:** Gap
-- **Description:** The rule `CDC_DEST_ALIAS_ASSIGNED` ("S4.12 CDC destination alias may not be assigned directly in block statements") exists in rules.c but `sem_report_rule` is never called with this rule ID. The code in `driver_clocks.c:491-511` has a comment and loop structure for scanning blocks for assignments to CDC alias names, but the actual diagnostic emission is missing — the inner block only has a comment "The check is conservative... emit the diagnostic as a best-effort alert" with no `sem_report_rule` call. Assigning to a CDC dest alias is not caught.
-- **Reproduction:** CDC entry `BIT src (clk_a) => dest (clk_b);` then `SYNCHRONOUS(CLK=clk_b) { dest <= 1'b0; }` — no diagnostic produced.
-
-### CDC_SOURCE_NOT_PLAIN_REG unreachable via user syntax (dead code)
-- **Severity:** Dead code
-- **Description:** The rule `CDC_SOURCE_NOT_PLAIN_REG` ("S4.12 CDC source must be a plain register identifier, not a slice or expression") exists in rules.c and has semantic checks in `driver_clocks.c:440-462` for `JZ_AST_EXPR_BINARY` and `JZ_AST_EXPR_CONCAT` source nodes. However, the parser (`parser_cdc.c:96-106`) only accepts a single identifier token (optionally followed by a bit-select `[index]`) in the CDC source position. There is no expression parsing path that can produce binary or concat AST nodes. The semantic check is dead code.
-- **Reproduction:** No user syntax can produce the required AST structure. `BIT (a + b) (clk_a) => dest (clk_b);` is a parse error, not a CDC_SOURCE_NOT_PLAIN_REG diagnostic.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `CDC_BIT_WIDTH` → actual: `CDC_BIT_WIDTH_NOT_1`
-  - `CDC_RAW_NO_STAGES` → actual: `CDC_RAW_STAGES_FORBIDDEN`
-  - `CDC_ALIAS_READONLY` → actual: `CDC_DEST_ALIAS_ASSIGNED` (dead code)
-  - `CDC_DOMAIN_CONFLICT` → actual: `DOMAIN_CONFLICT` (already tested in test_1_2)
-  - `CDC_SOURCE_NOT_PLAIN` → actual: `CDC_SOURCE_NOT_PLAIN_REG` (dead code)
-
-### CDC_DEST_ALIAS_DUP inherently co-fires with ID_DUP_IN_MODULE
-- **Severity:** Limitation
-- **Description:** When a CDC destination alias name conflicts with an existing identifier in the module (register, port, const), both `CDC_DEST_ALIAS_DUP` and `ID_DUP_IN_MODULE` fire at the same location. This is inherent because CDC alias names are registered in the module scope and checked by both the CDC-specific check and the general scope uniqueness check.
-
-## test_4_13-module_instantiation.md
-
-### INSTANCE_PORT_WIDTH_MISMATCH does not fire when child port uses CONST width
-- **Severity:** Bug
-- **Description:** The `INSTANCE_PORT_WIDTH_MISMATCH` rule fires correctly when the child module declares port widths with literal integers (e.g., `IN [8] din`), but does NOT fire when the child module uses CONST expressions for port widths (e.g., `CONST { WIDTH = 8; } PORT { IN [WIDTH] din; }`). The `eval_simple_positive_decl_int()` function in `driver_instance.c:435` cannot resolve the child's CONST-based width expression, causing the comparison to be skipped entirely.
-- **Reproduction:** Child module `CONST { WIDTH = 8; } PORT { IN [WIDTH] din; }`, parent `@new inst ChildMod { IN [4] din = _; }` — no diagnostic produced. Compare with child `PORT { IN [8] din; }` which correctly fires the rule.
-
-### INSTANCE_ARRAY_COUNT_INVALID rejects valid CONST expressions in array count
-- **Severity:** Bug
-- **Description:** The spec (S4.13.1) says array count must be "a positive integer literal or a CONST expression", but the compiler rejects all CONST expressions in the array count `[N]` position. `@new inst[VALID_COUNT] mod { ... }` where `VALID_COUNT = 4` fires INSTANCE_ARRAY_COUNT_INVALID. The parser/semantic check only accepts literal integers, not CONST identifiers.
-- **Reproduction:** `CONST { N = 4; } @new inst[N] ChildMod { ... }` → INSTANCE_ARRAY_COUNT_INVALID instead of valid compilation.
-
-### INSTANCE_ARRAY_MULTI_DIMENSIONAL is dead code (parser catches first)
-- **Severity:** Dead code
-- **Description:** The rule `INSTANCE_ARRAY_MULTI_DIMENSIONAL` ("S4.13.1 Multi-dimensional instance arrays are not supported") exists in rules.c but the parser rejects `@new name[2][3] mod { ... }` with PARSE000 ("expected module or blackbox name after instance name") before semantic analysis runs. The second `[` after the first array count is interpreted as the start of the module name position. The semantic rule can never fire.
-- **Reproduction:** `@new inst[2][3] ChildMod { ... }` → PARSE000 instead of INSTANCE_ARRAY_MULTI_DIMENSIONAL.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `INSTANCE_IDX_IN_OVERRIDE` → actual: `INSTANCE_ARRAY_IDX_INVALID_CONTEXT`
-  - `INSTANCE_OVERLAP` / `INSTANCE_ARRAY_OVERLAP` → actual: `INSTANCE_ARRAY_PARENT_BIT_OVERLAP`
-  - `MODULE_SELF_INSTANTIATION` → no rule ID exists in rules.c (already documented in test_4_2 issues)
-  - `SCOPE_DUPLICATE_SIGNAL` → actual: `INSTANCE_NAME_DUP_IN_MODULE` or `INSTANCE_NAME_CONFLICT`
-
-## test_4_14-feature_guards.md
-
-### FEATURE_VALIDATION_BOTH_PATHS is dead code
-- **Severity:** Gap
-- **Description:** The rule `FEATURE_VALIDATION_BOTH_PATHS` ("S4.14 Both branches of @feature guard must pass full semantic validation") exists in rules.c but `sem_report_rule` is never called with this rule ID anywhere in the codebase. The spec requires that both enabled and disabled configurations pass semantic validation, but the compiler does not enforce this. A @feature guard that declares a register in the THEN branch without an @else will not produce an error even though the disabled configuration has an undriven register.
-
-### Feature guard condition validation only runs in ASYNC/SYNC blocks
-- **Severity:** Bug
-- **Description:** The semantic checks for @feature conditions (FEATURE_COND_WIDTH_NOT_1 and FEATURE_EXPR_INVALID_CONTEXT) are only performed in ASYNCHRONOUS and SYNCHRONOUS blocks. The check function `sem_check_feature_guard_cond` is called from `sem_check_block_expressions_inner` (driver_expr.c:810), which is only invoked for blocks where `is_async || is_sync` (driver_expr.c:1279-1283). @feature guards in CONST, PORT, WIRE, REGISTER, LATCH, MEM, MUX, and module-scope blocks do not have their conditions validated for width or reference restrictions.
-- **Reproduction:** `CONST { @feature some_wire == 1'b1 / VALUE = 42; / @endfeat }` where `some_wire` is a WIRE — no FEATURE_EXPR_INVALID_CONTEXT diagnostic produced.
-
-### FEATURE_NESTED not enforced in declaration blocks
-- **Severity:** Bug
-- **Description:** The parser only checks for nested @feature in ASYNC/SYNC statement blocks (`parse_feature_body_stmts` in parser_statements.c:683-691). In declaration blocks (CONST, PORT, WIRE, REGISTER, LATCH, MEM, MUX) and module-scope, the parser uses `parse_feature_guard_in_block` which recursively calls the block body parser for the feature body. When the body parser encounters another `@feature`, it calls `parse_feature_guard_in_block` again — this succeeds, creating nested FEATURE_GUARD AST nodes. The semantic analysis does not check for nesting in these block types (the FEATURE_NESTED check in `sem_check_block_expressions_inner` only runs for ASYNC/SYNC blocks).
-- **Reproduction:** `REGISTER { @feature A == 1 / @feature B == 1 / r [1] = 1'b0; / @endfeat / @endfeat }` — no FEATURE_NESTED diagnostic produced.
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `FEATURE_RUNTIME_REF` → actual: `FEATURE_EXPR_INVALID_CONTEXT`
-  - `PORT_OUTPUT_NOT_DRIVEN` → no matching rule in rules.c for this context
-  - `FEATURE_EXPR_NOT_BOOLEAN` → actual: `FEATURE_COND_WIDTH_NOT_1`
-  - `FEATURE_BOTH_CONFIG_INVALID` → actual: `FEATURE_VALIDATION_BOTH_PATHS` (dead code)
-
-## test_5_0-assignment_operators_summary.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.2 "Rules Missing") lists `ASSIGN_TRUNCATION` as a missing rule, but the actual rule `ASSIGN_TRUNCATES` exists in rules.c and fires correctly for truncation attempts with extension modifiers.
-
-### Test plan references suppressed rule
-- **Severity:** Documentation
-- **Description:** The test plan (Section 4, Input/Output Matrix row 1) expects `WIDTH_ASSIGN_MISMATCH_NO_EXT` for `wide = narrow;` (no modifier). This rule exists but is always suppressed by `ASSIGN_WIDTH_NO_MODIFIER` (priority 1 vs priority 0). The same scenario produces `ASSIGN_WIDTH_NO_MODIFIER` instead. Already documented in test_2_3 issues.
-
-## test_5_1-asynchronous_assignments.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `ALIAS_LITERAL_BAN` → actual: `ASYNC_ALIAS_LITERAL_RHS`
-  - `ASSIGN_OP_WRONG_BLOCK` → actual: `ASYNC_ASSIGN_REGISTER`
-  - `ASSIGN_PARTIAL_COVERAGE` → actual: `ASYNC_UNDEFINED_PATH_NO_DRIVER`
-  - `ASSIGN_MULTI_DRIVER` → actual: `ASSIGN_MULTIPLE_SAME_BITS` or `NET_MULTIPLE_ACTIVE_DRIVERS`
-
-### All rules already tested in earlier sections
-- **Severity:** Observation
-- **Description:** All four rules in this test plan were already tested in earlier test plan sections: ASYNC_ALIAS_LITERAL_RHS (test_4_10), ASYNC_ASSIGN_REGISTER (test_4_7), ASYNC_UNDEFINED_PATH_NO_DRIVER (test_1_5), ASSIGN_MULTIPLE_SAME_BITS (test_1_5). No new test files were needed.
-
-## test_5_2-synchronous_assignments.md
-
-### SYNC_SLICE_WIDTH_MISMATCH suppressed by ASSIGN_SLICE_WIDTH_MISMATCH priority
-- **Severity:** Observation
-- **Description:** The rule `SYNC_SLICE_WIDTH_MISMATCH` (priority 0) fires in `driver_assign.c:1458` but `ASSIGN_SLICE_WIDTH_MISMATCH` (priority 2) always co-fires on the same location. The diagnostic priority system only prints the highest-priority diagnostic per line, so `SYNC_SLICE_WIDTH_MISMATCH` never appears in compiler output. This is the same pattern as `WIDTH_ASSIGN_MISMATCH_NO_EXT` (documented in test_2_3).
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 6.1) uses rule IDs that differ from rules.c:
-  - `ASSIGN_OP_WRONG_BLOCK` → actual: `SYNC_NO_ALIAS` (alias `=` in SYNC), `WRITE_WIRE_IN_SYNC` (wire in SYNC), or `ASSIGN_TO_NON_REGISTER_IN_SYNC` (non-register in SYNC)
-  - `ASSIGN_SHADOW_OUTER` → actual: `SYNC_ROOT_AND_CONDITIONAL_ASSIGN`
-  - `ASSIGN_MULTI_DRIVER` → actual: `SYNC_MULTI_ASSIGN_SAME_REG_BITS`
-  - `WIDTH_ASSIGN_MISMATCH_NO_EXT` → suppressed by `ASSIGN_WIDTH_NO_MODIFIER` (see test_2_3 issues)
-  - `SYNC_WIRE_ASSIGN` (Section 6.2 "Rules Missing") → actual: `WRITE_WIRE_IN_SYNC` (already exists and tested)
-
-## test_5_3-conditional_statements.md
-
-### IF_COND_MISSING_PARENS parser abort prevents multi-context testing
-- **Severity:** Limitation
-- **Description:** The parser aborts the entire file after the first IF_COND_MISSING_PARENS error. This prevents testing the rule in SYNC block context or with ELIF in the same file. Separate test files are needed for IF vs ELIF contexts, and SYNC block context remains untested.
-- **Reproduction:** Any `.jz` file with `IF sel { ... }` — only one error reported, parser does not continue to subsequent modules or blocks.
-
-### Test plan lists IF_COND_NOT_1BIT as missing but rule exists
-- **Severity:** Test plan inaccuracy
-- **Description:** The test plan (Section 6.2 "Rules Missing") lists `IF_COND_NOT_1BIT` as a gap, but the rule exists in rules.c as `IF_COND_WIDTH_NOT_1` in the `CONTROL_FLOW_IF_SELECT` category. Tested in 5_3_IF_COND_WIDTH_NOT_1-condition_not_1bit.
-
-### Test plan rule IDs do not match rules.c
-- `ASSIGN_INDEPENDENT_CHAIN_CONFLICT` → actual: `ASSIGN_INDEPENDENT_IF_SELECT` (already tested in test_1_5)
-- `COMB_LOOP_DETECTED` → actual: `COMB_LOOP_UNCONDITIONAL`
-
-## test_5_4-select_case_statements.md
-
-### CONST identifiers rejected in CASE values
-- **Severity:** Bug / Spec discrepancy
-- **Description:** The spec (S5.4) says "CASE values are integer constants or CONST names" but using a CONST identifier as a CASE value fires `CONST_USED_WHERE_FORBIDDEN` ("CONST identifier used outside compile-time constant expression contexts"). This prevents using CONST names in SELECT/CASE, which the spec explicitly allows.
-- **Reproduction:** `CONST { MY_VAL = 5; } ... SELECT (sel) { CASE MY_VAL { ... } }` → `CONST_USED_WHERE_FORBIDDEN` error.
-
-### WARN_INCOMPLETE_SELECT_ASYNC is dead code
-- **Severity:** Minor (dead code)
-- **Description:** The rule `WARN_INCOMPLETE_SELECT_ASYNC` exists in rules.c (GENERAL_WARNINGS category, line 467) but `sem_report_rule` is never called with this rule ID anywhere in the compiler source. The functionally equivalent `SELECT_DEFAULT_RECOMMENDED_ASYNC` (CONTROL_FLOW_IF_SELECT category) is what actually fires for ASYNC SELECT without DEFAULT. The two rules have nearly identical messages but exist in different categories.
-
-### SELECT_CASE_WIDTH_MISMATCH listed as missing in test plan but exists
-- **Severity:** Documentation error in test plan
-- **Description:** The test plan (Section 6.2 "Rules Missing") lists `SELECT_CASE_WIDTH_MISMATCH` as a gap, but the rule exists in rules.c and is fully implemented in `driver_control.c`. It correctly detects width mismatches between sized CASE literals and the selector expression. Bare integers are correctly exempted (implicitly cast). Tested in 5_4_SELECT_CASE_WIDTH_MISMATCH-case_width_mismatch.
-
-### Test plan rule IDs do not match rules.c
-- `SELECT_DUPLICATE_CASE` → actual: `SELECT_DUP_CASE_VALUE`
-- `WARN_INCOMPLETE_SELECT_ASYNC` → actual: `SELECT_DEFAULT_RECOMMENDED_ASYNC` (WARN_INCOMPLETE_SELECT_ASYNC is dead code)
-
-## test_5_5-intrinsic_operators.md
-
-### strtoul parsing bug for sized literals in intrinsic index arguments
-- **Severity:** Bug
-- **Description:** The INDEX_OUT_OF_RANGE checks for gbit(), sbit(), gslice(), and sslice() use `strtoul(expr->children[1]->text, NULL, 0)` to parse the index argument. When a sized literal like `4'd8` is used, `strtoul` parses "4" (stopping at the `'d'` character) instead of "8". This means `gbit(data, 4'd8)` is treated as index 4 instead of index 8, allowing out-of-range indices to pass validation when expressed as sized literals.
-- **Location:** `compiler/src/sem/driver_operators.c` — all INDEX_OUT_OF_RANGE checks.
-- **Reproduction:** `gbit(data, 4'd8)` where `data` is 8 bits wide — should report index 8 out of range [0..7] but silently accepts it (reads index as 4).
-
-### ASYNC_ALIAS_LITERAL_RHS false positive on intrinsic function calls
-- **Severity:** Bug
-- **Description:** Intrinsic function calls containing literal arguments (e.g., `gbit(data, 8)`, `b2oh(data, 4)`) trigger `ASYNC_ALIAS_LITERAL_RHS` ("S4.10.3 Alias (=) RHS is a literal; use receive-assign (<=)") when used on the RHS of `=` (alias) assignments in ASYNC blocks. The rule is intended to prevent aliasing to bare literals, not to reject function call expressions that happen to contain literal arguments.
-- **Location:** `compiler/src/sem/driver_assign.c` — ASYNC_ALIAS_LITERAL_RHS check.
-- **Reproduction:** `out_a = gbit(data, 8);` in ASYNC block — fires ASYNC_ALIAS_LITERAL_RHS.
-- **Workaround:** Use `<=` (receive-assign) instead of `=` (alias) for intrinsic expressions in ASYNC blocks.
-
-### FUNC_RESULT_TRUNCATED_SILENTLY always suppressed by priority system
-- **Severity:** Design issue
-- **Description:** The rule `FUNC_RESULT_TRUNCATED_SILENTLY` (priority 0) fires in `driver_assign.c:1478-1496` for uadd/sadd/umul/smul result truncation. However, `ASSIGN_WIDTH_NO_MODIFIER` (priority 1) always co-fires on the same line/column for the same width mismatch. The diagnostic priority system suppresses the lower-priority rule, making FUNC_RESULT_TRUNCATED_SILENTLY unreachable in practice.
-- **Location:** `compiler/src/sem/driver_assign.c:1478-1496`
-
-### Dead code rules: WIDTHOF_INVALID_TARGET, WIDTHOF_INVALID_SYNTAX, WIDTHOF_WIDTH_NOT_RESOLVABLE
-- **Severity:** Dead code
-- **Description:** Three WIDTHOF-related rules exist in rules.c (FUNCTIONS_AND_CLOG2 category) but `sem_report_rule` is never called with any of these rule IDs anywhere in the semantic analysis code. They appear to be remnants of planned but unimplemented validation for widthof() edge cases.
-- **Location:** `compiler/src/rules.c`
-
-### Test plan rule IDs do not match rules.c
-- `INTRINSIC_ARG_COUNT` → no matching rule ID; parser handles argument count
-- `INTRINSIC_COMPILE_TIME_ONLY` → actual: `CLOG2_INVALID_CONTEXT` / `WIDTHOF_INVALID_CONTEXT`
-- `INTRINSIC_OPERAND_TYPE` → no matching rule ID; function-specific rules
-- `INTRINSIC_BSWAP_NOT_BYTE` → actual: `BSWAP_WIDTH_NOT_BYTE_ALIGNED`
-- `INTRINSIC_UNDEFINED` → no matching rule ID; parse error
-- `INTRINSIC_LIT_OVERFLOW` → actual: `LIT_VALUE_OVERFLOW`
-- `INTRINSIC_CLOG2_ZERO` → actual: `CLOG2_NONPOSITIVE_ARG`
-- `INTRINSIC_WIDTH_MISMATCH` → no matching rule ID; function-specific rules
-
-## test_6_1-project_purpose.md
-
-### Test plan rule IDs do not match rules.c
-- `PROJECT_CHIP_NOT_FOUND` → actual: `PROJECT_CHIP_DATA_NOT_FOUND`
-- `PROJECT_CHIP_JSON_MALFORMED` → listed as missing in test plan (Section 6.2) but exists as `PROJECT_CHIP_DATA_INVALID`
-
-### No compiler bugs found
-- Both `PROJECT_CHIP_DATA_NOT_FOUND` and `PROJECT_CHIP_DATA_INVALID` fire correctly with expected diagnostics.
-
-## test_6_2-project_canonical_form.md
-
-### Test plan rule IDs do not match rules.c
-- `IMPORT_HAS_PROJECT` → actual: `IMPORT_FILE_HAS_PROJECT`
-- `IMPORT_WRONG_POSITION` → listed as missing in test plan but exists as `IMPORT_NOT_AT_PROJECT_TOP`
-- `IMPORT_FILE_NOT_FOUND` → listed in I/O matrix but no corresponding rule ID in rules.c; handled as generic stderr error
-
-### Test plan missing rules that exist in rules.c
-- `IMPORT_OUTSIDE_PROJECT` — Exists in rules.c but test plan lists `DIRECTIVE_INVALID_CONTEXT` instead. The compiler uses the more specific `IMPORT_OUTSIDE_PROJECT` for `@import` outside `@project`.
-- `IMPORT_DUP_MODULE_OR_BLACKBOX` — Exists in rules.c but not listed in test plan's rules matrix.
-
-### No compiler bugs found
-- All five import-related rules fire correctly with expected diagnostics.
-
-## test_6_3-config_block.md
-
-### CONFIG.X syntax inside CONFIG block fires CONFIG_INVALID_EXPR_TYPE for backward references
-- **Severity:** Bug
-- **Description:** The spec says `CONFIG.<name>` can reference earlier CONFIG entries (backward references). However, using `CONFIG.X` syntax inside the CONFIG block always fires CONFIG_INVALID_EXPR_TYPE, even for valid backward references. The compiler instead supports bare name references (e.g., `B = A;` instead of `B = CONFIG.A;`). The CONFIG_FORWARD_REF check runs first for forward references and masks this bug.
-- **Reproduction:** `CONFIG { A = 8; B = CONFIG.A; }` → fires CONFIG_INVALID_EXPR_TYPE on B. But `CONFIG { A = 8; B = A; }` → no error.
-
-### CONFIG_MULTIPLE_BLOCKS rule not used — parser catches first
-- **Severity:** Discrepancy
-- **Description:** The rule CONFIG_MULTIPLE_BLOCKS exists in rules.c ("S6.3 More than one CONFIG block defined in project") but the parser detects multiple CONFIG blocks first and emits PARSE000 ("multiple CONFIG blocks in a single project are not allowed"). The semantic rule never fires.
-- **Reproduction:** Two CONFIG blocks in @project → PARSE000 instead of CONFIG_MULTIPLE_BLOCKS.
-
-### @file() in MEM does not accept CONFIG references
-- **Severity:** Bug
-- **Description:** The spec says `@file(CONFIG.FIRMWARE)` is valid in MEM declarations (Section 6.3 example). However, the parser rejects CONFIG references in @file() with PARSE000 ("expected string path or CONST/CONFIG reference in @file(...) MEM initializer"), even though the error message mentions CONST/CONFIG references should be valid.
-- **Reproduction:** `MEM { rom [8] [4] = @file(CONFIG.FIRMWARE) { OUT rd ASYNC; }; }` → PARSE000.
-
-### CONST_NUMERIC_IN_STRING_CONTEXT untestable due to @file parser bug
-- **Severity:** Test gap
-- **Description:** The only string context where CONFIG/CONST can be used is @file() in MEM declarations. Since the parser rejects CONFIG references in @file() (see above), CONST_NUMERIC_IN_STRING_CONTEXT cannot be triggered via validation tests.
-
-### CONFIG_CIRCULAR_DEP test includes CONFIG_FORWARD_REF diagnostics
-- **Severity:** Expected behavior (not a bug)
-- **Description:** Circular CONFIG dependencies inherently involve forward references. The compiler correctly fires both CONFIG_FORWARD_REF (for the forward reference aspect) and CONFIG_CIRCULAR_DEP (for the circularity). The test .out file includes both rule IDs.
-
-## test_6_4-clocks_block.md
-
-### CLOCK_SOURCE_AMBIGUOUS cascades with CLOCK_NAME_NOT_IN_PINS and CLOCK_GEN_OUTPUT_HAS_PERIOD
-- **Severity:** Expected behavior (not a bug)
-- **Description:** When a CLOCK_GEN output clock has a period declared in the CLOCKS block, three diagnostics fire: (1) CLOCK_NAME_NOT_IN_PINS because the period implies an external clock but it's not in IN_PINS, (2) CLOCK_SOURCE_AMBIGUOUS because the period implies external source while CLOCK_GEN implies generated source, (3) CLOCK_GEN_OUTPUT_HAS_PERIOD because CLOCK_GEN outputs must not have periods. These are three views of the same root cause and cannot be separated.
-
-### CLOCK_GEN_INPUT_IS_SELF_OUTPUT cascades with CLOCK_GEN_INPUT_NO_PERIOD
-- **Severity:** Expected behavior (not a bug)
-- **Description:** When a CLOCK_GEN input references its own output, CLOCK_GEN_INPUT_NO_PERIOD also fires because the self-referencing clock (as a CLOCK_GEN output) cannot have a period in the CLOCKS block, so the input clock lacks a required period. This is an inherent cascade from the same root cause.
-
-### CONFIG block uses bare names, not CONFIG.X for internal references
-- **Severity:** Spec/implementation divergence
-- **Description:** The spec says CONFIG entries reference earlier entries using `CONFIG.<name>`. The compiler implementation uses bare names instead (e.g., `B = A;` not `B = CONFIG.A;`). Expressions with bare names work (e.g., `C = A + B;`), but `CONFIG.X` syntax inside CONFIG blocks doesn't. Outside CONFIG blocks, `CONFIG.X` works correctly for port widths, CONST initializers, etc.
-
-## test_6_5-pin_blocks.md
-
-### PIN_DIFF_OUT_MISSING_FCLK/PCLK/RESET not enforced on INOUT_PINS
-- **Severity:** Potential gap
-- **Description:** The rules PIN_DIFF_OUT_MISSING_FCLK, PIN_DIFF_OUT_MISSING_PCLK, and PIN_DIFF_OUT_MISSING_RESET only fire for differential pins in OUT_PINS blocks. Differential pins in INOUT_PINS with missing fclk/pclk/reset attributes are not flagged. The spec says these attributes are "required when mode=DIFFERENTIAL on output pins" — INOUT_PINS can also drive outputs, so arguably should require these attributes too.
-
-### PIN_TERM_ON_OUTPUT does not fire for term=OFF on OUT_PINS
-- **Severity:** Expected behavior (not a bug)
-- **Description:** The rule PIN_TERM_ON_OUTPUT only fires when term=ON is explicitly specified on OUT_PINS. Setting term=OFF on an output pin is not flagged, as OFF is the default/no-op value. This is reasonable behavior — the rule catches cases where active termination is mistakenly enabled on outputs.
-
-## test_6_6-map_block.md
-
-### Test plan rule IDs do not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 4, Input/Output Matrix) uses rule IDs that differ from rules.c:
-  - `MAP_PIN_INVALID` → actual: `MAP_INVALID_BOARD_PIN_ID`
-  - `MAP_DUPLICATE` → actual: `MAP_DUP_PHYSICAL_LOCATION`
-  - `MAP_BOARD_PIN_CONFLICT` → not a separate rule; covered by `MAP_DUP_PHYSICAL_LOCATION`
-  - `MAP_REQUIRED_UNMAPPED` → listed as missing (Section 6.2), but exists as `MAP_PIN_DECLARED_NOT_MAPPED`
-  - `MAP_DIFF_NO_PAIR` → listed as missing (Section 6.2), but covered by `MAP_DIFF_EXPECTED_PAIR` and `MAP_DIFF_MISSING_PN`
-
-### MAP_INVALID_BOARD_PIN_ID trigger conditions unclear
-- **Severity:** Test gap
-- **Description:** The rule `MAP_INVALID_BOARD_PIN_ID` ("S6.6/S6.9 Board pin ID format invalid for target device") exists in rules.c but could not be triggered in testing. Without a CHIP= project setting, the compiler does not validate board pin ID format. Integer board pin IDs are always accepted. The trigger conditions likely require chip-specific data that defines valid pin ID ranges or formats, but this could not be confirmed without a complete chip project setup.
-
-### MAP_DIFF_SAME_PIN inherently co-fires MAP_DUP_PHYSICAL_LOCATION
-- **Severity:** Expected behavior (not a bug)
-- **Description:** When a differential MAP entry has the same physical pin for P and N (MAP_DIFF_SAME_PIN), the compiler also reports MAP_DUP_PHYSICAL_LOCATION because the same physical pin is indeed used twice. This is logically correct — the same-pin error is the root cause, and the duplicate physical location is a consequence. Both diagnostics fire on the same line.
-
-### No compiler bugs found
-- All tested MAP rules (MAP_PIN_DECLARED_NOT_MAPPED, MAP_PIN_MAPPED_NOT_DECLARED, MAP_DUP_PHYSICAL_LOCATION, MAP_DIFF_EXPECTED_PAIR, MAP_SINGLE_UNEXPECTED_PAIR, MAP_DIFF_MISSING_PN, MAP_DIFF_SAME_PIN) fire correctly with expected diagnostics and line/column positions.
-
-## test_6_7-blackbox_modules.md
-
-### BLACKBOX_BODY_DISALLOWED incorrectly rejects CONST blocks in blackbox
-- **Severity:** Bug
-- **Description:** The semantic check `sem_check_project_blackboxes` (driver_project.c:1605) only whitelists `JZ_AST_PORT_BLOCK` children. CONST blocks (`JZ_AST_CONST_BLOCK`) are treated as forbidden, triggering `BLACKBOX_BODY_DISALLOWED`. However:
-  1. The parser (`parse_blackbox_body` in parser_module.c:296) explicitly allows CONST blocks in blackbox bodies
-  2. The specification (S6.7, example at line ~4467) shows `CONST { FREQ_MHZ = 100; }` inside a blackbox
-  3. The rule's own description lists only "ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM" as forbidden — CONST is not mentioned
-- **Fix:** Add `if (child->type == JZ_AST_CONST_BLOCK) continue;` alongside the PORT_BLOCK check in `sem_check_project_blackboxes`.
-- **Reproduction:** `@blackbox bb { CONST { VAL = 42; } PORT { IN [1] din; OUT [1] dout; } }` → error BLACKBOX_BODY_DISALLOWED (should be clean)
-
-### BLACKBOX_UNDEFINED_IN_NEW rule defined but never used
-- **Severity:** Dead code / incomplete implementation
-- **Description:** The rule `BLACKBOX_UNDEFINED_IN_NEW` ("S6.7/S6.9 @new references undefined blackbox name") is defined in rules.c (line 338) but is never referenced in any semantic analysis code. When a @new references a non-existent module or blackbox, the compiler reports `INSTANCE_UNDEFINED_MODULE` instead (from both driver_project.c and driver_instance.c). Either the rule should be used in place of INSTANCE_UNDEFINED_MODULE for blackbox-specific cases, or it should be removed from rules.c.
-- **Reproduction:** `@new inst_bad nonexistent_bb { ... }` → error INSTANCE_UNDEFINED_MODULE (never BLACKBOX_UNDEFINED_IN_NEW)
-
-## test_6_8-bus_aggregation.md
-
-No compiler issues discovered during test generation. All BUS definition rules (BUS_DEF_DUP_NAME, BUS_DEF_SIGNAL_DUP_NAME) fire correctly with accurate line/column numbers.
-
-### Test plan lists BUS_SIGNAL_DUPLICATE as missing rule
-- **Severity:** Test plan inaccuracy (not a compiler bug)
-- **Description:** The test plan's "Rules Missing" section lists `BUS_SIGNAL_DUPLICATE` as a gap, but this rule already exists in rules.c as `BUS_DEF_SIGNAL_DUP_NAME` and functions correctly. The test plan should be updated to reflect this.
-
-## test_6_9-top_level_module.md
-
-### TOP_MODULE_NOT_FOUND rule ID not registered in rules.c
-- **Severity:** Bug (minor)
-- **Description:** When @top references a module that does not exist, the compiler emits `TOP_MODULE_NOT_FOUND` as the rule ID. However, this rule ID is not registered in `rules.c`. The test plan expected `INSTANCE_UNDEFINED_MODULE` to fire in this context. The diagnostic message includes an unusual `(orig: TOP_MODULE_NOT_FOUND)` suffix, suggesting the rule lookup falls back to a raw format when the ID is not found in the rules table.
-- **Reproduction:** `@top NonExistentModule { IN [1] clk = _; OUT [1] data = _; }` where `NonExistentModule` is not defined → emits `TOP_MODULE_NOT_FOUND` instead of `INSTANCE_UNDEFINED_MODULE`.
-- **Expected:** Either register `TOP_MODULE_NOT_FOUND` in rules.c with proper category/message, or use `INSTANCE_UNDEFINED_MODULE` for consistency with @new behavior.
-
-### WARN_UNUSED_MODULE fires for modules in file with @top referencing undefined module
-- **Severity:** Minor
-- **Description:** When @top references a non-existent module, valid modules defined in the same file trigger `WARN_UNUSED_MODULE` because no module is actually instantiated as the top. This is technically correct behavior but adds noise to the diagnostic output.
-- **Reproduction:** Define a valid `@module ActualModule` in the same file as `@top NonExistentModule` → `WARN_UNUSED_MODULE` fires for `ActualModule`.
-
-## test_6_10-project_scope_and_uniqueness.md
-
-### Test plan lists PROJECT_MULTIPLE as "Rules Missing" but rule exists
-- **Severity:** Test plan gap
-- **Description:** The test plan section 6.2 "Rules Missing" lists `PROJECT_MULTIPLE` as having no rule ID in rules.c, but the rule `PROJECT_MULTIPLE_PER_FILE` exists in rules.c and works correctly. Test created as `6_10_PROJECT_MULTIPLE_PER_FILE-two_projects_in_file`.
-
-## test_7_0-memory_port_modes.md
-
-### Test plan references non-existent rule MEM_PORT_MODE_INVALID
-- **Severity:** Test plan gap
-- **Description:** The test plan section 4 "Input/Output Matrix" and section 6.1 "Rules Tested" reference rule ID `MEM_PORT_MODE_INVALID`, which does not exist in `rules.c`. The actual rules covering this functionality are `MEM_INVALID_PORT_TYPE` (for ASYNC/SYNC on write ports) and `MEM_INVALID_WRITE_MODE` (for invalid WRITE_MODE values). Tests created for both actual rules.
-
-### Dead code: MEM_INVALID_PORT_TYPE semantic check for OUT port with invalid qualifier
-- **Severity:** Minor (dead code)
-- **Description:** In `driver_mem.c` lines 920-931, there is a semantic check that fires `MEM_INVALID_PORT_TYPE` when an OUT port has a qualifier other than ASYNC or SYNC. However, the parser in `parser_mem.c` only consumes ASYNC/SYNC identifiers after OUT port names — any other identifier is not consumed and causes a parse error at the expected semicolon. This makes the semantic check unreachable through normal parsing paths.
-
-## test_7_1-mem_declaration.md
-
-### Test plan rule IDs don't match rules.c
-- **Severity:** Test plan gap
-- **Description:** The test plan references rule IDs that don't exist in `rules.c`: `MEM_DECL_TYPE_INVALID` (actual: `MEM_TYPE_INVALID`), `MEM_DECL_DEPTH_ZERO` (actual: `MEM_INVALID_DEPTH`), `MEM_DECL_WIDTH_ZERO` (actual: `MEM_INVALID_WORD_WIDTH`), `MEM_DECL_NO_PORTS` (actual: `MEM_EMPTY_PORT_LIST`), `SCOPE_DUPLICATE_SIGNAL` for MEM names (actual: `MEM_DUP_NAME`). Tests created using the actual rule IDs from `rules.c`.
-
-### Invalid MEM declarations still emit port-never-accessed warnings
-- **Severity:** Minor (noise)
-- **Description:** When a MEM has an invalid depth, width, or type, the compiler still parses its port declarations and later emits `MEM_WARN_PORT_NEVER_ACCESSED` warnings for those ports. This is because the invalid MEM cannot be used, so its ports are never accessed. While technically correct, these cascading warnings add noise to error output. Similarly, `NET_DANGLING_UNUSED` fires on helper module ports that exist only to match the top module interface but aren't used because the invalid MEM cannot be accessed.
-
-## test_7_2-port_types_and_semantics.md
-
-### MEM_MULTIPLE_WDATA_ASSIGNS rule does not fire
-- **Severity:** Bug
-- **Description:** The rule `MEM_MULTIPLE_WDATA_ASSIGNS` exists in `rules.c` but does not fire when two `.wdata <=` assignments to the same INOUT port occur in the same SYNCHRONOUS block. The compiler produces no diagnostic at all for this case.
-- **Reproduction:** Two `mem.rw.wdata <= value;` statements in the same SYNCHRONOUS block — no error emitted.
-
-### MEM_MULTIPLE_ADDR_ASSIGNS rule does not fire
-- **Severity:** Bug
-- **Description:** The rule `MEM_MULTIPLE_ADDR_ASSIGNS` exists in `rules.c` but does not fire when two `.addr <=` assignments to the same INOUT port occur in the same SYNCHRONOUS block. The compiler produces no diagnostic at all for this case.
-- **Reproduction:** Two `mem.rw.addr <= value;` statements in the same SYNCHRONOUS block — no error emitted.
-
-### MEM_INOUT_WDATA_WRONG_OP shadowed by SYNC_NO_ALIAS
-- **Severity:** Bug (dead rule)
-- **Description:** The rule `MEM_INOUT_WDATA_WRONG_OP` ("INOUT port .wdata must be assigned with '<=' operator in SYNCHRONOUS blocks") exists in `rules.c` but cannot be triggered. When `.wdata` is assigned using `=` in a SYNCHRONOUS block, the generic `SYNC_NO_ALIAS` check fires first ("Aliasing `=` is forbidden in SYNCHRONOUS blocks"), preventing the MEM-specific rule from ever being reached.
-- **Reproduction:** `mem.rw.wdata = value;` inside SYNCHRONOUS block — fires `SYNC_NO_ALIAS` instead of `MEM_INOUT_WDATA_WRONG_OP`.
-
-## test_7_3-memory_access_syntax.md
-
-### MEM_READ_SYNC_WITH_EQUALS shadowed by SYNC_NO_ALIAS
-- **Severity:** Bug (dead rule)
-- **Description:** The rule `MEM_READ_SYNC_WITH_EQUALS` ("Synchronous MEM read used `=` in SYNCHRONOUS block; did you mean `<=`?") exists in `rules.c` but cannot be triggered. When `=` is used in a SYNCHRONOUS block, the generic `SYNC_NO_ALIAS` check fires first, preventing the MEM-specific rule from ever being reached.
-- **Reproduction:** `r = mem.rd.data;` inside SYNCHRONOUS block — fires `SYNC_NO_ALIAS` instead of `MEM_READ_SYNC_WITH_EQUALS`.
-
-### MEM_SYNC_ADDR_WITHOUT_RECEIVE shadowed by SYNC_NO_ALIAS
-- **Severity:** Bug (dead rule)
-- **Description:** The rule `MEM_SYNC_ADDR_WITHOUT_RECEIVE` ("MEM read address must use `<=` in SYNCHRONOUS block; did you mean `<=` instead of `=`?") exists in `rules.c` but cannot be triggered. When `=` is used in a SYNCHRONOUS block, the generic `SYNC_NO_ALIAS` check fires first.
-- **Reproduction:** `mem.rd.addr = addr;` inside SYNCHRONOUS block — fires `SYNC_NO_ALIAS` instead of `MEM_SYNC_ADDR_WITHOUT_RECEIVE`.
-
-### MEM_SYNC_ADDR_IN_ASYNC_BLOCK shadowed by ASYNC_INVALID_STATEMENT_TARGET
-- **Severity:** Bug (dead rule)
-- **Description:** The rule `MEM_SYNC_ADDR_IN_ASYNC_BLOCK` ("SYNC read addresses must be assigned in SYNCHRONOUS blocks") exists in `rules.c` but cannot be triggered. When `.addr <=` is used in an ASYNCHRONOUS block, the generic `ASYNC_INVALID_STATEMENT_TARGET` check fires first since `<=` is not valid in async blocks.
-- **Reproduction:** `mem.rd.addr <= addr;` inside ASYNCHRONOUS block — fires `ASYNC_INVALID_STATEMENT_TARGET` instead of `MEM_SYNC_ADDR_IN_ASYNC_BLOCK`.
-
-## test_7_4-write_modes.md
-
-### No new issues
-- The only testable rule (`MEM_INVALID_WRITE_MODE`) is already covered by tests under `7_0_MEM_INVALID_WRITE_MODE-bad_write_mode_value`.
-- The shorthand form for invalid write modes (`IN wr INVALID;`) cannot trigger `MEM_INVALID_WRITE_MODE` because the parser only recognizes the three valid keywords (WRITE_FIRST, READ_FIRST, NO_CHANGE) as shorthand qualifiers. An unrecognized identifier after the port name would result in a parse error (PARSE000), not MEM_INVALID_WRITE_MODE. This is arguably correct behavior — the attribute block form `{ WRITE_MODE = INVALID; }` is the proper way to specify write modes when not using shorthand.
-
-## test_7_5-initialization.md
-
-### MEM_INIT_CONTAINS_Z rule missing from rules.c
-- **Severity:** Gap
-- **Description:** The test plan expects a `MEM_INIT_CONTAINS_Z` rule for z bits in memory initialization literals, but no such rule exists in `rules.c`. The spec (S7.5.1) says "Memory initialization literals must not contain x" — z is not explicitly mentioned for literal init. For file-based init, `MEM_INIT_FILE_CONTAINS_X` covers both x and z. If z should also be rejected in literal init, a new rule is needed.
-- **Reproduction:** `MEM { m [8] [4] = 8'bz000_0000 { ... }; }` — no `MEM_INIT_CONTAINS_Z` diagnostic fires (z in binary literal may be treated differently than x).
-
-### PATH_OUTSIDE_SANDBOX masks MEM_INIT_FILE_NOT_FOUND when run from wrong CWD
-- **Severity:** Minor / Environment-dependent
-- **Description:** When the compiler is invoked from a CWD different from the input file's directory, @file() paths for nonexistent files trigger `PATH_OUTSIDE_SANDBOX` instead of `MEM_INIT_FILE_NOT_FOUND`. This is because the sandbox resolver fails before the file existence check. When invoked via `run_validation.sh` (which passes absolute paths), the correct `MEM_INIT_FILE_NOT_FOUND` fires.
-- **Reproduction:** `cd /tmp && jz-hdl --info --lint /path/to/validation/7_5_MEM_INIT_FILE_NOT_FOUND-nonexistent_file.jz` → PATH_OUTSIDE_SANDBOX instead of MEM_INIT_FILE_NOT_FOUND.
-
-## test_7_6-complete_examples.md
-
-No issues. All 9 scenarios are happy-path examples that produce no diagnostics. No validation tests were created since the lint validation framework only tests for expected diagnostic output.
-
-## test_7_7-error_checking_and_validation.md
-
-### WARN_DEAD_CODE_UNREACHABLE fires alongside MEM_WARN_DEAD_CODE_ACCESS
-- **Severity:** Expected behavior (not a bug)
-- **Description:** Any `IF (1'b0)` dead code path triggers both `WARN_DEAD_CODE_UNREACHABLE` (general dead code) and `MEM_WARN_DEAD_CODE_ACCESS` (MEM-specific dead code). The .out file includes both diagnostics. This is correct behavior — the general warning fires on any dead code, while the MEM-specific warning provides additional context.
-
-### MEM_WARN_DEAD_CODE_ACCESS cannot be tested in ASYNCHRONOUS blocks
-- **Severity:** Language constraint (not a bug)
-- **Description:** Memory reads in ASYNCHRONOUS blocks use `=` alias syntax. JZ-HDL forbids alias `=` inside IF/SELECT (ASYNC_ALIAS_IN_CONDITIONAL), which means dead-code MEM reads in ASYNC IF blocks always trigger a parse/semantic error before MEM_WARN_DEAD_CODE_ACCESS can fire. Only SYNCHRONOUS block dead paths are testable.
-
-### MEM_MULTIPLE_WDATA_ASSIGNS .out file is empty
-- **Severity:** Test gap
-- **Description:** The existing test `7_3_MEM_MULTIPLE_WDATA_ASSIGNS-inout_multi_wdata.jz` has an empty `.out` file, meaning the compiler may not be emitting MEM_MULTIPLE_WDATA_ASSIGNS diagnostics for the test case. This needs investigation.
-
-## test_7_8-mem_vs_register_vs_wire.md
-
-### No dedicated rule for REGISTER-with-address-syntax confusion
-- **Severity:** Missing rule / test gap
-- **Description:** Test plan scenario 3.2.2 specifies "REGISTER with address syntax — Error", but no rule ID exists in `rules.c` for this confusion. Using bracket notation on a register (`reg[addr]`) is valid bit-slicing, not an error. Using MEM-style dot-field notation (`reg.port.addr`) would produce a generic parse or undeclared-identifier error, not a specific storage-type-confusion diagnostic. A dedicated rule (e.g., `REGISTER_NOT_ADDRESSABLE`) could improve error messages when users confuse registers with memories.
-
-## test_7_9-mem_in_module_instantiation.md
-
-### No MEM-specific rule for hierarchical access rejection
-- **Severity:** Missing rule / design consideration
-- **Description:** When a parent module attempts to access a child instance's MEM directly (e.g., `inst.child_mem.wr[addr]`), the compiler produces a generic `UNDECLARED_IDENTIFIER` error. A more specific rule (e.g., `MEM_HIERARCHICAL_ACCESS_FORBIDDEN`) could provide a clearer error message explaining that memories are module-internal and must be accessed through ports. The current behavior is correct but the error message could be more helpful.
-
-## test_7_10-const_evaluation_in_mem.md
-
-### Negative CONST corrupts resolution of other CONSTs in same block
-- **Severity:** Bug
-- **Description:** When a CONST block contains a negative value (e.g., `NEG_WIDTH = -2`), the compiler correctly fires `CONST_NEGATIVE_OR_NONINT` for that declaration. However, other valid CONSTs in the same block (e.g., `VALID_WIDTH = 8`) also fail to resolve when used in MEM dimensions, producing spurious `MEM_UNDEFINED_CONST_IN_WIDTH` errors. Valid CONSTs in the same block should still resolve correctly even when a sibling CONST has a negative value.
-- **Reproduction:** Declare `NEG = -2; VALID = 8;` in same CONST block, then `MEM { m [VALID] [16] ... }` → spurious `MEM_UNDEFINED_CONST_IN_WIDTH` on the valid MEM.
-
-## test_7_11-synthesis_implications.md
-
-No compiler issues found. All three testable rules (`MEM_BLOCK_RESOURCE_EXCEEDED`, `MEM_DISTRIBUTED_RESOURCE_EXCEEDED`, `MEM_BLOCK_MULTI`) work as expected.
-
-## test_8_1-global_purpose.md
-
-No compiler issues found. Both testable rules (`GLOBAL_NAMESPACE_DUPLICATE`, `GLOBAL_ASSIGN_FORBIDDEN`) work as expected. The test plan references rule names that don't match rules.c (`GLOBAL_DUPLICATE_NAME` → `GLOBAL_NAMESPACE_DUPLICATE`, `GLOBAL_READONLY` → `GLOBAL_ASSIGN_FORBIDDEN`), but both rules exist and fire correctly.
-
-## test_8_2-global_syntax.md
-
-No compiler issues found. The testable rule (`GLOBAL_INVALID_EXPR_TYPE`) works as expected. The test plan references the rule as `GLOBAL_NOT_SIZED_LITERAL`, but the actual rule ID in rules.c is `GLOBAL_INVALID_EXPR_TYPE`.
-
-## test_8_3-global_semantics.md
-
-No compiler issues found. The testable rule (`GLOBAL_CONST_NAME_DUPLICATE`) works as expected. The test plan references the rule as `GLOBAL_DUPLICATE_CONST`, but the actual rule ID in rules.c is `GLOBAL_CONST_NAME_DUPLICATE`.
-
-## test_8_4-global_value_semantics.md
-
-### Test plan references wrong rule ID
-- **Severity:** Documentation
-- **Description:** The test plan references `WIDTH_ASSIGN_MISMATCH_NO_EXT` but the actual rule ID in rules.c is `ASSIGN_WIDTH_NO_MODIFIER`. The comment in rules.c indicates `ASSIGN_WIDTH_NO_MODIFIER` supersedes `WIDTH_ASSIGN_MISMATCH_NO_EXT`.
-
-## test_8_5-global_errors.md
-
-### LIT_OVERFLOW not fired for overflowing literals in @global blocks
-- **Severity:** Possible bug
-- **Description:** When a sized literal overflows its declared width inside a `@global` block (e.g., `4'hFF`), the compiler reports `GLOBAL_INVALID_EXPR_TYPE` ("Global value must be a sized literal") instead of `LIT_OVERFLOW` ("Literal numeric value exceeds declared width"). The test plan expects `LIT_OVERFLOW` but the compiler subsumes it under the global expression type check. The literal IS properly sized syntax-wise; only the value overflows.
-- **Reproduction:** `@global G  OVER = 4'hFF; @endglob` → `GLOBAL_INVALID_EXPR_TYPE` instead of `LIT_OVERFLOW`.
-
-### Test plan uses rule IDs not in rules.c
-- **Severity:** Documentation
-- **Description:** The test plan references `GLOBAL_DUPLICATE_NAME`, `GLOBAL_DUPLICATE_CONST`, `GLOBAL_NOT_SIZED_LITERAL`, and `GLOBAL_READONLY` — none of which exist in rules.c. The actual rule IDs are `GLOBAL_NAMESPACE_DUPLICATE`, `GLOBAL_CONST_NAME_DUPLICATE`, `GLOBAL_INVALID_EXPR_TYPE`, and `GLOBAL_ASSIGN_FORBIDDEN`.
-
-### Backward references in @global blocks trigger GLOBAL_INVALID_EXPR_TYPE
-- **Severity:** Possible bug / design question
-- **Description:** Referencing an earlier constant within the same `@global` block (e.g., `Y = X;` where X is defined above) triggers `GLOBAL_INVALID_EXPR_TYPE`. The spec says global values must be sized literals, so this may be by design — constants cannot reference other constants, only sized literals. However, if backward references are intentionally forbidden, a more specific diagnostic would be helpful.
-- **Reproduction:** `@global G  X = 8'h01; Y = X; @endglob` → `GLOBAL_INVALID_EXPR_TYPE` on `Y = X`.
-
-## test_9_1-check_syntax.md
-
-### No specific rule IDs for @check parse-level syntax errors
-- **Severity:** Documentation / Feature request
-- **Description:** The test plan lists negative tests for missing parentheses, missing message, missing semicolon, and missing comma in `@check` syntax. All of these produce generic `PARSE000` errors rather than specific rule IDs. The parser emits descriptive messages (e.g., "expected '(' after @check") but these are not defined in `rules.c`. If specific rule IDs are desired for these parse errors, they would need to be added to `rules.c`.
-- **Reproduction:** `@check WIDTH == 8, "msg";` → `PARSE000 parse error near token 'WIDTH': expected '(' after @check`
-
-## test_9_2-check_semantics.md
-
-### No issues found
-- CHECK_FAILED fires correctly in both project scope and module scope contexts.
-- The test plan references CHECK_NON_CONSTANT which does not exist in `rules.c`; the equivalent rule is CHECK_INVALID_EXPR_TYPE, already tested under test_9_1.
-
-## test_9_3-check_placement_rules.md
-
-### Test plan references non-existent rule CHECK_WRONG_CONTEXT
-- **Severity:** Test plan discrepancy
-- **Description:** The test plan references `CHECK_WRONG_CONTEXT` but this rule does not exist in `rules.c`. The actual rule that fires is `DIRECTIVE_INVALID_CONTEXT`. Additionally, `CHECK_INVALID_PLACEMENT` is defined in `rules.c` but is never used anywhere in the compiler source code — it appears to be dead code.
-
-### @check in blocks causes cascading PARSE000 errors
-- **Severity:** Bug (parser recovery)
-- **Description:** When `@check` appears inside an ASYNCHRONOUS or SYNCHRONOUS block, the parser reports `DIRECTIVE_INVALID_CONTEXT` but only advances past the `@check` keyword token, leaving the parenthesized arguments `(expr, "msg");` to be parsed as a statement. This causes a cascading `PARSE000` error ("expected identifier in assignment left-hand side") and aborts parsing of the rest of the file.
-- **Impact:** Only one @check placement violation can be detected per compilation — the parser does not recover to find subsequent violations. Tests must include the cascading PARSE000 in their expected output.
-- **Fix suggestion:** The parser should skip the entire `@check(...)` directive (including parenthesized arguments and semicolon) after reporting DIRECTIVE_INVALID_CONTEXT, similar to how other recovery paths work.
-
-### DIRECTIVE_INVALID_CONTEXT message does not mention @check
-- **Severity:** Minor (UX)
-- **Description:** When `@check` appears in a block, the diagnostic uses the generic `DIRECTIVE_INVALID_CONTEXT` message: "Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location". This message lists structural directives but does not mention `@check`, which is confusing since `@check` is the actual offending token. The unused `CHECK_INVALID_PLACEMENT` rule has a more appropriate message.
-
-## test_9_4-check_expression_rules.md
-
-### Test plan references non-existent rule CHECK_RUNTIME_OPERAND
-- **Severity:** Test plan discrepancy
-- **Description:** The test plan references `CHECK_RUNTIME_OPERAND` but this rule does not exist in `rules.c`. The actual rule that fires for runtime signals in @check is `CHECK_INVALID_EXPR_TYPE`, already tested under test_9_1 (ports, registers, wires, undefined identifiers) and now test_9_4 (signal slices).
-
-### Memory port fields in @check not testable without incidental diagnostics
-- **Severity:** Test limitation
-- **Description:** S9.4 lists "any memory port" as a forbidden operand in @check. While memory port data field references (e.g., `mem.rw.data`) in @check correctly trigger CHECK_INVALID_EXPR_TYPE, structuring a test with memory that avoids all incidental warnings (WARN_UNSINKED_REGISTER, NET_FLOATING_WITH_SINK) proved difficult. The memory port context is not covered by the current test. Signal slices (port, register, wire) are covered instead.
-
-## test_9_5-check_evaluation_order.md
-
-### Undefined CONST in module-scope @check produces UNDECLARED_IDENTIFIER instead of CHECK_INVALID_EXPR_TYPE
-- **Severity:** Possible compiler inconsistency
-- **Description:** At project scope, an undefined identifier in @check produces `CHECK_INVALID_EXPR_TYPE`. At module scope, the same scenario produces `UNDECLARED_IDENTIFIER` instead. This suggests the compiler resolves identifiers before evaluating @check at module scope, but at project scope the @check evaluator handles the undefined reference directly. The behavior is consistent and correct (the error is caught either way), but the rule ID differs depending on scope. The 9_5 test only covers project-scope triggers to avoid mixing rule IDs in the .out file.
-
-## test_9_7-check_error_conditions.md
-
-### Test plan references non-existent rule IDs CHECK_NON_CONSTANT and CHECK_UNDEFINED
-- **Severity:** Test plan discrepancy
-- **Description:** The test plan's Input/Output Matrix references `CHECK_NON_CONSTANT` (for runtime signals) and `CHECK_UNDEFINED` (for undefined identifiers), but neither rule exists in `rules.c`. Both cases are handled by the existing `CHECK_INVALID_EXPR_TYPE` rule. All three test scenarios in the plan are already fully covered by existing validation tests (9_1, 9_2, 9_5), so no new test files were created.
-
-### S9.7 error conditions without rule IDs
-- **Severity:** Spec gap / untestable
-- **Description:** Spec section 9.7 lists five error conditions, but only two have corresponding rule IDs in `rules.c` (CHECK_FAILED for zero expression, CHECK_INVALID_EXPR_TYPE for runtime signals/undefined identifiers). The remaining conditions — "non-integer result" and "disallowed operators" — have no distinct rule IDs and cannot be tested as separate scenarios in the validation framework.
-
-## test_10_2-template_definition.md
-
-No issues found. All rules from the test plan (TEMPLATE_DUP_NAME, TEMPLATE_DUP_PARAM) exist in rules.c and are fully testable.
+No issues found. All happy-path tests pass with clean output.
 
 ## test_10_3-template_allowed_content.md
 
-### TEMPLATE_SCRATCH_WIDTH_INVALID not enforced
-- **Severity:** Bug (unimplemented rule)
-- **Description:** Rule `TEMPLATE_SCRATCH_WIDTH_INVALID` exists in `rules.c` with message "S10.3 @scratch width must be a positive integer constant expression", but the compiler never fires it. `@scratch` declarations with zero width (`@scratch bad [0];`) and parameter-based widths (`@scratch bad [w];` where `w` is a template parameter) produce no diagnostic.
-- **Reproduction:** Any `@scratch` with zero or non-constant width inside a `@template` body compiles cleanly.
+### Bug: TEMPLATE_EXTERNAL_REF rule not implemented
 
-### TEMPLATE_EXTERNAL_REF not enforced
-- **Severity:** Bug (unimplemented rule)
-- **Description:** Rule `TEMPLATE_EXTERNAL_REF` exists in `rules.c` with message "S10.3 Identifier in template body must be a parameter, @scratch wire, or compile-time constant; pass external signals as arguments", but the compiler never fires it. Template bodies can freely reference external wires, registers, and other module-scoped signals without passing them as parameters, violating S10.3 of the specification.
-- **Reproduction:** Define a `@template` that references a module WIRE or REGISTER without passing it as a parameter — no diagnostic is produced.
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `TEMPLATE_EXTERNAL_REF` is defined in `rules.c` with message "S10.3 Identifier in template body must be a parameter, @scratch wire, or compile-time constant; pass external signals as arguments", but the compiler does not emit this diagnostic. Templates that reference external signals (wires, registers) not passed as parameters compile without error.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] din; OUT [1] data; }
+    WIRE { w [1]; }
+    @template ext_ref(a)
+        a <= w;
+    @endtemplate
+    ASYNCHRONOUS { w = din; data = w; }
+@endmod
+```
+Expected: `TEMPLATE_EXTERNAL_REF` error on `w` inside the template.
+Actual: No diagnostic emitted.
+
+**Test file:** `10_3_TEMPLATE_EXTERNAL_REF-external_signal_reference.jz` — test has 6 triggers across multiple contexts but the `.out` file is empty because the compiler does not detect any of them.
+
+### Bug: TEMPLATE_SCRATCH_WIDTH_INVALID rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `TEMPLATE_SCRATCH_WIDTH_INVALID` is defined in `rules.c` with message "S10.3 @scratch width must be a positive integer constant expression", but the compiler does not emit this diagnostic. `@scratch` declarations with zero width or non-constant (parameter-based) width expressions compile without error.
+
+**Minimal reproduction:**
+```jz
+@template bad(a, b)
+    @scratch x [0];
+    a <= b;
+@endtemplate
+
+@template bad2(a, b, n)
+    @scratch x [n];
+    a <= b;
+@endtemplate
+```
+Expected: `TEMPLATE_SCRATCH_WIDTH_INVALID` error on `@scratch x [0]` and `@scratch x [n]`.
+Actual: No diagnostic emitted.
+
+**Test file:** `10_3_TEMPLATE_SCRATCH_WIDTH_INVALID-scratch_width_not_constant.jz` — test has 5 triggers (zero width and param-as-width in file-scoped and module-scoped templates) but the `.out` file is empty because the compiler does not detect any of them.
 
 ## test_10_4-template_forbidden_content.md
 
-### Parser does not recover after TEMPLATE_FORBIDDEN_BLOCK_HEADER
-- **Severity:** Bug (parser recovery)
-- **Description:** When the compiler detects a forbidden SYNCHRONOUS or ASYNCHRONOUS block header inside a template body, it correctly emits `TEMPLATE_FORBIDDEN_BLOCK_HEADER` but then fails to skip/recover past the block body `{ ... }`. The parser treats the `{` as a concatenation brace, producing cascading `PARSE000` errors for the block's content. Tests had to use the bare keyword without `{ ... }` body to avoid these cascading errors.
-- **Reproduction:** `@template t(a, b) ASYNCHRONOUS { a = b; } @endtemplate` — produces TEMPLATE_FORBIDDEN_BLOCK_HEADER on the ASYNCHRONOUS keyword, then PARSE000 on `a = b` inside the block.
+### Bug: Parser does not recover after TEMPLATE_FORBIDDEN_BLOCK_HEADER or TEMPLATE_FORBIDDEN_DIRECTIVE with realistic syntax
 
-### Parser does not recover after TEMPLATE_FORBIDDEN_DIRECTIVE with body
-- **Severity:** Bug (parser recovery)
-- **Description:** When the compiler detects a forbidden structural directive (`@new`, `@module`, etc.) inside a template body, it correctly emits `TEMPLATE_FORBIDDEN_DIRECTIVE` but then fails to skip the directive's arguments/body. This produces cascading `PARSE000` errors. Tests had to use the bare directive keyword without arguments to avoid cascading errors.
-- **Reproduction:** `@template t(a, b) @new inst SomeMod { IN [1] din = a; OUT [1] data = b; }; @endtemplate` — produces TEMPLATE_FORBIDDEN_DIRECTIVE then PARSE000.
+**Severity:** Bug (parser recovery)
 
-### CDC directive not tested as TEMPLATE_FORBIDDEN_DIRECTIVE
-- **Severity:** Test gap (parser recovery prevents testing)
-- **Description:** The `CDC` keyword inside a template body should trigger `TEMPLATE_FORBIDDEN_DIRECTIVE` per S10.4, but could not be tested due to parser recovery issues. The bare `CDC` keyword without arguments may not be parsed correctly to trigger the check. This should be verified once the parser recovery issues above are fixed.
+**Description:** When a forbidden construct (SYNCHRONOUS/ASYNCHRONOUS block header or structural directive like @new/@module/@feature) appears inside a template body with realistic syntax (i.e., with block body `{ ... }` or full arguments), the parser correctly emits the `TEMPLATE_FORBIDDEN_BLOCK_HEADER` or `TEMPLATE_FORBIDDEN_DIRECTIVE` error, but then fails to skip the remaining tokens and produces a cascading `PARSE000` error. After the PARSE000, the parser cannot recover — it does not reach `@endtemplate`, subsequent templates, or module definitions in the rest of the file.
+
+**Impact:** Each forbidden block header or directive trigger must be placed in its own test file. Multiple triggers cannot coexist in a single file because only the first one is reached.
+
+**Note:** When the forbidden construct is a bare keyword (e.g., `ASYNCHRONOUS` alone, or `@new` alone without arguments), the parser DOES recover and can process subsequent templates. The recovery failure only occurs when realistic syntax follows the forbidden keyword.
+
+**Minimal reproduction (ASYNCHRONOUS with block body):**
+```jz
+@template tmpl1(a, b)
+    ASYNCHRONOUS {
+        a = b;
+    }
+@endtemplate
+
+@template tmpl2(a, b)
+    SYNCHRONOUS(CLK=a) {
+        b <= a;
+    }
+@endtemplate
+```
+Output: Only `tmpl1` triggers `TEMPLATE_FORBIDDEN_BLOCK_HEADER`; `tmpl2` is never parsed.
+
+**Minimal reproduction (@new with full instantiation):**
+```jz
+@template tmpl1(a, b)
+    @new inst_inner Mod {
+        IN  [1] din = a;
+        OUT [1] data = b;
+    };
+@endtemplate
+```
+Output: `TEMPLATE_FORBIDDEN_DIRECTIVE` followed by `PARSE000` on the module name token.
+
+**Test files affected:** All `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-*.jz` and `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-*.jz` files were split into one-trigger-per-file to work around this.
+
+### Observation: CDC block in template triggers TEMPLATE_FORBIDDEN_DECL instead of TEMPLATE_FORBIDDEN_BLOCK_HEADER
+
+**Severity:** Observation
+
+**Description:** The spec (S10.4) lists CDC alongside SYNCHRONOUS/ASYNCHRONOUS as a forbidden block header, but the compiler classifies CDC as a declaration block, triggering `TEMPLATE_FORBIDDEN_DECL` instead of `TEMPLATE_FORBIDDEN_BLOCK_HEADER`. The error message says "Declaration blocks (WIRE, REGISTER, etc.)" which does not clearly communicate that CDC was the offending construct. The compiler does correctly reject CDC in templates — the rule ID is just different from what the spec grouping implies.
+
+**Minimal reproduction:**
+```jz
+@template cdc_tmpl(a, b)
+    CDC {
+        a <= b;
+    }
+@endtemplate
+```
+Output: `TEMPLATE_FORBIDDEN_DECL` (expected: `TEMPLATE_FORBIDDEN_BLOCK_HEADER` based on spec grouping).
 
 ## test_10_5-template_application.md
 
-### TEMPLATE_APPLY_OUTSIDE_BLOCK never fires
-- **Severity:** Bug
-- **Description:** The rule `TEMPLATE_APPLY_OUTSIDE_BLOCK` exists in `rules.c` but the compiler never produces this diagnostic. When `@apply` is used at module scope (outside any ASYNCHRONOUS or SYNCHRONOUS block), the compiler silently ignores it instead of reporting an error. The @apply statement has no effect and produces no output at all — no diagnostic, no expansion. Per S10.5, `@apply` may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks.
-- **Reproduction:** Place `@apply simple(w1, din);` at module scope (between PORT and ASYNCHRONOUS blocks). Compiler produces zero output (exit code 0).
+### Bug: TEMPLATE_APPLY_OUTSIDE_BLOCK rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `TEMPLATE_APPLY_OUTSIDE_BLOCK` is defined in `rules.c` with message "S10.5 @apply may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks", but the compiler does not emit this diagnostic. `@apply` statements placed at module scope (between declaration blocks) or at file scope (outside any module) are silently ignored — no error is produced.
+
+**Minimal reproduction (module scope):**
+```jz
+@template simple(a, b)
+    a <= b;
+@endtemplate
+
+@module Mod
+    PORT { IN [1] din; OUT [1] data; }
+    WIRE { w [1]; }
+    @apply simple(w, din);
+    ASYNCHRONOUS { data = din; }
+@endmod
+```
+Expected: `TEMPLATE_APPLY_OUTSIDE_BLOCK` error on the `@apply` at module scope.
+Actual: No diagnostic emitted; `@apply` is silently ignored.
+
+**Minimal reproduction (file scope):**
+```jz
+@template simple(a, b)
+    a <= b;
+@endtemplate
+
+@apply simple(x, y);
+
+@module Mod
+    PORT { IN [1] din; OUT [1] data; }
+    ASYNCHRONOUS { data = din; }
+@endmod
+```
+Expected: `TEMPLATE_APPLY_OUTSIDE_BLOCK` error on the `@apply` at file scope.
+Actual: No diagnostic emitted; `@apply` is silently ignored.
+
+**Test files:** `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_module_scope.jz` and `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_file_scope.jz` — tests have triggers but `.out` files are empty because the compiler does not detect them.
+
+## test_10_2-template_definition.md
+
+No issues found. All tests pass and match expected output.
 
 ## test_10_6-template_exclusive_assignment.md
 
-### Template expansion errors reported at template body, not callsite
-- **Severity:** Observation (not necessarily a bug)
-- **Description:** When two `@apply` calls to the same template target the same wire/register on the same execution path, the exclusive assignment error (`ASSIGN_MULTIPLE_SAME_BITS` or `SYNC_MULTI_ASSIGN_SAME_REG_BITS`) is reported at the template body location (the line inside the `@template` definition) rather than at the `@apply` callsite. This means if the same template is used in multiple modules with the same conflict, the errors are deduplicated to a single diagnostic at the template body location, since they share the same file:line:col.
-- **Impact:** Users see the error pointing at the template definition rather than at the `@apply` call that caused the conflict, which may be confusing. Also, multiple independent violations are collapsed into a single diagnostic.
+### Observation: Duplicate @apply errors deduplicated by template source location
 
-### Test plan rule ID does not match rules.c
-- **Severity:** Documentation
-- **Description:** The test plan (Section 10.6) uses `ASSIGN_MULTI_DRIVER` which does not exist in rules.c. The actual rules are `ASSIGN_MULTIPLE_SAME_BITS` (ASYNC) and `SYNC_MULTI_ASSIGN_SAME_REG_BITS` (SYNC).
+**Severity:** Observation
+
+**Description:** When two separate modules each contain two `@apply` calls to the same template targeting the same wire/register, the compiler reports the error at the assignment line inside the template definition (e.g., `out <= GND;` at the template source location). Because both modules' violations map to the same template source line, the error appears only once in output rather than once per module. This means trigger coverage in multiple modules may not produce distinct error lines — the error is correctly detected but reported at a shared location.
+
+**Impact:** Tests with identical @apply violations in multiple modules may show fewer error lines than the number of triggering contexts. This is not a bug per se — the compiler correctly rejects the code — but it means multi-module coverage for template-based violations is partially collapsed in diagnostic output.
 
 ## test_10_8-template_error_cases.md
 
-No issues. All three rules referenced by Section 10.8 (TEMPLATE_FORBIDDEN_DECL, TEMPLATE_SCRATCH_OUTSIDE, TEMPLATE_NESTED_DEF) are already tested under their respective specification sections (10.3 and 10.4). No new tests required.
-
-## test_11_1-tristate_default_purpose.md
-
-No issues. `WARN_INTERNAL_TRISTATE` fires correctly for internal tri-state nets (WIRE with z driver) and correctly suppresses for INOUT ports. `INFO_TRISTATE_TRANSFORM` cannot be tested via the validation framework as it requires `--tristate-default` CLI flag.
-
-## test_11_2-tristate_default_applicability.md
-
-No validation tests created. All scenarios in this test plan require the `--tristate-default` CLI flag, which the validation framework (`--info --lint`) does not support. The relevant rules (`INFO_TRISTATE_TRANSFORM`, `TRISTATE_TRANSFORM_UNUSED_DEFAULT`, `TRISTATE_TRANSFORM_SINGLE_DRIVER`) all require the transformation pass to be active. These should be tested via golden tests or a custom test script.
-
-## test_11_3-tristate_net_identification.md
-
-### NET_TRI_STATE_ALL_Z_READ never fires — ASYNC_FLOATING_Z_READ fires instead
-- **Severity:** Possible dead rule
-- **Description:** `NET_TRI_STATE_ALL_Z_READ` exists in rules.c (category `NET_DRIVERS_AND_TRI_STATE`) but never fires in any tested scenario. When all drivers assign `z` and the signal is read, `ASYNC_FLOATING_Z_READ` (category `ASYNC_BLOCK_RULES`) fires first. The test file `11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz` documents this behavior — it expects `ASYNC_FLOATING_Z_READ` in the `.out` file.
-- **Impact:** The `NET_TRI_STATE_ALL_Z_READ` rule may be unreachable dead code. If it's intended to fire in a different context than ASYNC_FLOATING_Z_READ, that context is unknown.
-
-### NET_MULTIPLE_ACTIVE_DRIVERS now fires (corrects previous assessment)
-- **Severity:** Note (positive finding)
-- **Description:** Previous test plans (test_1_2) documented that `NET_MULTIPLE_ACTIVE_DRIVERS` did not fire for two unconditional instance outputs bound to the same wire. The 11_3 test `11_3_NET_MULTIPLE_ACTIVE_DRIVERS-multi_driver_non_tristate.jz` demonstrates that this rule DOES fire correctly when two module instances have output ports bound to the same wire. The previous assessment may have been testing a different scenario (same-block multiple assignments, which triggers `ASSIGN_MULTIPLE_SAME_BITS` instead).
-
-## test_11_4-tristate_transformation_algorithm.md
-
-### TRISTATE_TRANSFORM_PER_BIT_FAIL not implemented
-- **Severity:** Missing implementation
-- **Description:** `TRISTATE_TRANSFORM_PER_BIT_FAIL` is defined in `rules.c` but is never emitted anywhere in the compiler source code. The rule is intended to fire when different bits of the same signal have different sets of tri-state drivers, but no code in `ir_tristate_transform.c` (or anywhere else) calls `jz_diagnostic_emit` with this rule ID. This means per-bit tri-state patterns are silently accepted or handled differently than the specification requires.
-- **Impact:** Per-bit tri-state patterns (Section 11.4.2) are not validated. The compiler may produce incorrect transformations or silently ignore the pattern.
-
-### All TRISTATE_TRANSFORM rules untestable via --lint validation
-- **Severity:** Test framework limitation
-- **Description:** All `TRISTATE_TRANSFORM_*` rules fire from the IR transformation pass (`ir_tristate_transform.c`), which only runs during backend code generation with `--tristate-default` flag. The validation test runner uses `--info --lint`, which does not invoke IR passes. None of the TRISTATE_TRANSFORM rules can be tested via the current validation test framework.
-- **Impact:** These rules require a different testing approach (e.g., golden tests with `--tristate-default=GND` flag).
-
-## From test_11_5-tristate_validation_rules.md
-
-### TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL untestable via --lint
-- **Severity:** Test framework limitation
-- **Description:** `TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL` fires from `ir_tristate_transform.c` during the IR tristate transformation pass. This pass only runs when `--tristate-default` is specified with `--ir`, `--verilog`, or `--rtlil` modes. The `--info --lint` mode used by the validation test runner does NOT invoke the IR tristate transform pass (see `main.c` lines 655-671 — lint mode only runs `ir_build` and `div_guard_check`).
-- **Impact:** The only rule in the test_11_5 plan (`TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL`) cannot be tested via the validation framework. It would need golden tests that use `--tristate-default=GND` or similar backend flags.
-
-## From test_11_6-tristate_inout_handling.md
-
-### TRISTATE_TRANSFORM_OE_EXTRACT_FAIL untestable via --lint
-- **Severity:** Test framework limitation
-- **Description:** `TRISTATE_TRANSFORM_OE_EXTRACT_FAIL` fires from `ir_tristate_transform.c` during the IR tristate transformation pass. This pass only runs when `--tristate-default` is specified with `--ir`, `--verilog`, or `--rtlil` modes. The `--info --lint` mode used by the validation test runner does NOT invoke the IR tristate transform pass.
-- **Impact:** The only rule in the test_11_6 plan (`TRISTATE_TRANSFORM_OE_EXTRACT_FAIL`) cannot be tested via the validation framework. It would need golden tests that use `--tristate-default=GND` or similar backend flags.
-
-## From test_11_7-tristate_error_conditions.md
-
-### All 6 TRISTATE_TRANSFORM rules untestable via --lint
-- **Severity:** Test framework limitation
-- **Description:** All 6 rules in the test_11_7 plan fire from `ir_tristate_transform.c` during the IR tristate transformation pass: `TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL`, `TRISTATE_TRANSFORM_PER_BIT_FAIL`, `TRISTATE_TRANSFORM_BLACKBOX_PORT`, `TRISTATE_TRANSFORM_OE_EXTRACT_FAIL`, `TRISTATE_TRANSFORM_SINGLE_DRIVER`, `TRISTATE_TRANSFORM_UNUSED_DEFAULT`. This pass only runs when `--tristate-default` is specified with `--ir`, `--verilog`, or `--rtlil` modes. The `--info --lint` mode used by the validation test runner does NOT invoke the IR tristate transform pass.
-- **Impact:** None of the 6 rules can be tested via the validation framework. They would need golden tests that use `--tristate-default=GND` or `--tristate-default=VCC` backend flags.
-
-## From test_11_8-tristate_portability.md
-
-### No testable rules — entire section is portability guidelines
-- **Severity:** Test framework limitation
-- **Description:** Section 11.8 describes portability best practices (explicit guards, limiting tri-state to I/O boundaries, testing both modes). All scenarios in the test plan are either happy-path (no diagnostics) or require the `--tristate-default` flag which is not supported by the `--info --lint` validation framework. The only relevant diagnostic rule (`WARN_INTERNAL_TRISTATE`) is already tested under section 11.1. No new validation tests can be created for this section.
-- **Impact:** Zero tests generated. Coverage for this section's concepts is provided by existing tests in sections 11.1 (WARN_INTERNAL_TRISTATE) and 11.7 (TRISTATE_TRANSFORM rules, also untestable via validation).
-
-## test_12_2-combinational_loop_errors.md
-
-### Test plan references non-existent rule IDs
-- **Severity:** Test plan discrepancy
-- **Description:** The test plan references `COMB_LOOP_DIRECT` and `COMB_LOOP_INDIRECT` but `rules.c` only contains `COMB_LOOP_UNCONDITIONAL` and `COMB_LOOP_CONDITIONAL_SAFE`. Both existing rules are already tested under the `5_3_` prefix (`5_3_COMB_LOOP_UNCONDITIONAL-unconditional_loop` and `5_3_COMB_LOOP_CONDITIONAL_SAFE-conditional_safe_cycle`).
-
-### Missing rule: COMB_LOOP_THROUGH_INSTANCE
-- **Severity:** Missing rule
-- **Description:** The test plan's "Rules Missing" section identifies `COMB_LOOP_THROUGH_INSTANCE` (S12.2) for detecting combinational loops through instance ports. This rule does not exist in `rules.c` and cannot be tested.
-
-## test_12_3-recommended_warnings.md
-
-### WARN_INCOMPLETE_SELECT_ASYNC not implemented
-- **Severity:** Missing implementation
-- **Description:** Rule `WARN_INCOMPLETE_SELECT_ASYNC` is defined in `rules.c` (line 467) with message "S5.4/S8.3 Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block" but `sem_report_rule` is never called with this rule ID anywhere in the compiler source code. The rule cannot fire.
-
-### WARN_UNUSED_WIRE not implemented
-- **Severity:** Missing implementation
-- **Description:** Rule `WARN_UNUSED_WIRE` is defined in `rules.c` (line 470) with message "S12.3 WIRE declared but never driven or read; remove it if unused" but `sem_report_rule` is never called with this rule ID anywhere in the compiler source code. Unused wires are currently caught by `NET_DANGLING_UNUSED` instead.
-
-### WARN_UNUSED_PORT not implemented
-- **Severity:** Missing implementation
-- **Description:** Rule `WARN_UNUSED_PORT` is defined in `rules.c` (line 471) with message "S12.3 PORT declared but never used; remove it if unused" but `sem_report_rule` is never called with this rule ID anywhere in the compiler source code. The rule cannot fire.
+No new issues. Section 10.8 is a cross-reference summary of all TEMPLATE_* error cases from S10.2-S10.6. All 15 rule IDs have existing tests that pass. Known compiler bugs (TEMPLATE_EXTERNAL_REF, TEMPLATE_SCRATCH_WIDTH_INVALID, and TEMPLATE_APPLY_OUTSIDE_BLOCK not enforced) are documented above in their respective subsection entries.
 
 ## test_12_4-path_security.md
 
-### Import failure aborts compilation before reaching MEM @file() validation
-- **Severity:** Limitation (not a bug)
-- **Description:** When an `@import` directive fails path validation (e.g., PATH_ABSOLUTE_FORBIDDEN or PATH_TRAVERSAL_FORBIDDEN), the compiler aborts compilation immediately. This prevents testing both `@import` and `@file()` path violations in a single test file — each context must use a separate test file. This is expected behavior (fail-fast on import errors) but limits multi-trigger test design.
+### Observation: @import path error stops compilation — prevents combining @import and @file() triggers
 
-### PATH_OUTSIDE_SANDBOX and PATH_SYMLINK_ESCAPE cannot be tested in validation framework
-- **Severity:** Test gap
-- **Description:** PATH_OUTSIDE_SANDBOX requires a real file outside the sandbox root, and PATH_SYMLINK_ESCAPE requires an actual symlink escaping the sandbox. The validation test framework only supports `.jz`/`.out` file pairs and cannot set up filesystem state. These rules would need shell-level integration tests with temporary directories and symlinks.
+**Severity:** Observation
+
+**Description:** When an `@import` directive triggers a path security error (`PATH_ABSOLUTE_FORBIDDEN` or `PATH_TRAVERSAL_FORBIDDEN`), the compiler halts and does not continue parsing the rest of the file. This prevents testing `@import` and `@file()` contexts in the same file — they must be split into separate test files.
+
+**Impact:** Each path security rule requires two test files (one for `@import` context, one for `@file()` context) rather than a single combined file.
+
+### Not testable: PATH_OUTSIDE_SANDBOX and PATH_SYMLINK_ESCAPE
+
+**Severity:** Test gap (by design)
+
+**Description:** `PATH_OUTSIDE_SANDBOX` requires filesystem sandbox configuration at runtime (resolved canonical paths checked against sandbox roots). `PATH_SYMLINK_ESCAPE` requires actual symlinks on the filesystem. Neither can be tested with static `.jz`/`.out` pairs via `--info --lint`. These would need integration tests with filesystem setup.
+
+## test_11_2-tristate_default_applicability.md
+
+No issues found. Section 11.2 defines no diagnostic rules — it specifies the scope of applicability for `--tristate-default` (internal WIREs with tri-state drivers only; INOUT ports, external pins, and top-level signals are excluded). No tests were generated because there are no rule IDs to validate.
+
+## test_11_1-tristate_default_purpose.md
+
+### Observation: TRISTATE_TRANSFORM_UNUSED_DEFAULT reports `File: <input>` instead of actual filename
+
+**Severity:** Observation (cosmetic)
+
+**Description:** When `--tristate-default=GND` (or VCC) is specified but no internal tri-state nets exist to transform, the compiler emits `TRISTATE_TRANSFORM_UNUSED_DEFAULT` at location `0:0` with the file header `File: <input>` instead of the actual source filename. This is inconsistent with all other diagnostics which use the basename of the input file. The diagnostic itself is correct — only the filename in the header is wrong.
+
+**Minimal reproduction:**
+```bash
+jz-hdl --info --lint --tristate-default=GND any_file_without_tristate.jz
+```
+Output:
+```
+File: <input>
+       0:0    warn  TRISTATE_TRANSFORM_UNUSED_DEFAULT S11.7 --tristate-default specified but no internal tri-state nets found to transform
+```
+Expected: `File: any_file_without_tristate.jz`
+
+**Impact:** The `.out` test file must use `File: <input>` to match the actual compiler output. This works but is inconsistent with the convention used by all other tests.
+
+## test_11_3-tristate_net_identification.md
+
+### Observation: NET_TRI_STATE_ALL_Z_READ rule unreachable — ASYNC_FLOATING_Z_READ fires instead
+
+**Severity:** Observation
+
+**Description:** The rule `NET_TRI_STATE_ALL_Z_READ` is defined in `rules.c` (category `NET_DRIVERS_AND_TRI_STATE`) with message "S4.10 All drivers assign `z` (tri-state) but signal is read; at least one driver must provide a value". However, the compiler never emits this diagnostic. Instead, the `ASYNC_FLOATING_Z_READ` rule (category `ASYNC_BLOCK_RULES`) fires first with message "S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)". Both rules cover the same scenario, but `ASYNC_FLOATING_Z_READ` takes precedence.
+
+**Minimal reproduction:**
+```jz
+@project TEST
+    @top Mod { IN [1] en = _; OUT [8] data = _; }
+@endproj
+@module Mod
+    PORT { IN [1] en; OUT [8] data; }
+    WIRE { w [8]; }
+    ASYNCHRONOUS {
+        IF (en) { w <= 8'bzzzz_zzzz; } ELSE { w <= 8'bzzzz_zzzz; }
+        data <= w;
+    }
+@endmod
+```
+Expected: `NET_TRI_STATE_ALL_Z_READ` error.
+Actual: `ASYNC_FLOATING_Z_READ` error (plus `WARN_INTERNAL_TRISTATE` warning).
+
+**Impact:** The test file `11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz` validates the all-z-read scenario but the `.out` file contains `ASYNC_FLOATING_Z_READ` diagnostics instead of `NET_TRI_STATE_ALL_Z_READ`. The behavior is correct (the error is detected), but the rule ID differs from what the test plan specifies.
+
+## test_11_4-tristate_transformation_algorithm.md
+
+### Bug: TRISTATE_TRANSFORM_SINGLE_DRIVER rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `TRISTATE_TRANSFORM_SINGLE_DRIVER` is defined in `rules.c` with message "S11.7 Single-driver tri-state net transformed to default value; original z replaced with GND/VCC", but the compiler never emits this diagnostic. When a single-driver tri-state wire is transformed by `--tristate-default`, only `INFO_TRISTATE_TRANSFORM` is emitted — no additional warning about the single-driver case.
+
+**Minimal reproduction:**
+```bash
+jz-hdl --info --lint --tristate-default=GND single_driver.jz
+```
+With `single_driver.jz` containing a wire driven by one IF/ELSE with z in the else branch.
+Expected: `TRISTATE_TRANSFORM_SINGLE_DRIVER` warning in addition to `INFO_TRISTATE_TRANSFORM`.
+Actual: Only `INFO_TRISTATE_TRANSFORM` info is emitted.
+
+**Test file:** `11_GND_4_TRISTATE_TRANSFORM_SINGLE_DRIVER-single_driver.jz` — test exercises the scenario but `.out` only contains `INFO_TRISTATE_TRANSFORM` because the warning is not emitted.
+
+### Bug: TRISTATE_TRANSFORM_PER_BIT_FAIL rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `TRISTATE_TRANSFORM_PER_BIT_FAIL` is defined in `rules.c` with message "S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed", but the compiler never emits this diagnostic. When individual bit slices of the same signal have different enable conditions (different driver sets per bit group), the compiler transforms them without error.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] en_a; IN [1] en_b; OUT [8] data; }
+    WIRE { w [8]; }
+    ASYNCHRONOUS {
+        IF (en_a) { w[7:4] <= 4'hA; } ELSE { w[7:4] <= 4'bzzzz; }
+        IF (en_b) { w[3:0] <= 4'hB; } ELSE { w[3:0] <= 4'bzzzz; }
+        data <= w;
+    }
+@endmod
+```
+Expected: `TRISTATE_TRANSFORM_PER_BIT_FAIL` error.
+Actual: `INFO_TRISTATE_TRANSFORM` info — transformation succeeds without error.
+
+**Test file:** `11_GND_4_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz` — test exercises the per-bit pattern but `.out` only contains `INFO_TRISTATE_TRANSFORM` because the error is not emitted.
+
+### Bug: TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL unreachable — NET_MULTIPLE_ACTIVE_DRIVERS fires first
+
+**Severity:** Bug (unreachable rule)
+
+**Description:** The rule `TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL` is implemented in `ir_tristate_transform.c` (line ~1610) and fires during post-transform verification when multiple always-active instance drivers remain. However, this situation cannot be reached because `NET_MULTIPLE_ACTIVE_DRIVERS` fires first during semantic analysis, preventing the IR tri-state transform from running.
+
+The spec (S11.3) defines tri-state nets as having "two or more drivers in the same ASYNCHRONOUS block" with z assignments, but the compiler rejects multi-driver patterns earlier:
+- Multiple IF/ELSE blocks assigning to the same wire → `ASSIGN_INDEPENDENT_IF_SELECT`
+- Multiple instances driving the same wire → `NET_MULTIPLE_ACTIVE_DRIVERS`
+
+**Minimal reproduction:**
+```jz
+@module DriverMod
+    PORT { IN [1] en; INOUT [8] data; }
+    ASYNCHRONOUS {
+        IF (en) { data <= 8'hAA; } ELSE { data <= 8'bzzzz_zzzz; }
+    }
+@endmod
+
+@module TopMod
+    PORT { IN [1] en; OUT [8] data; }
+    WIRE { w [8]; }
+    @new inst_a DriverMod { IN [1] en = en; INOUT [8] data = w; };
+    @new inst_b DriverMod { IN [1] en = en; INOUT [8] data = w; };
+    ASYNCHRONOUS { data <= w; }
+@endmod
+```
+Expected: `TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL` (after tri-state transform).
+Actual: `NET_MULTIPLE_ACTIVE_DRIVERS` error (semantic analysis blocks transform).
+
+**Test file:** `11_GND_4_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz` — test exercises the multi-driver pattern but `.out` contains `NET_MULTIPLE_ACTIVE_DRIVERS` because the earlier semantic rule fires first.
+
+## test_11_5-tristate_validation_rules.md
+
+No new issues. Section 11.5 is a cross-reference to `TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL` and `TRISTATE_TRANSFORM_PER_BIT_FAIL`, both already documented under section 11.4 above. No new test files were generated — existing tests under section 11.4 naming provide full coverage.
+
+### Observation: Multi-driver priority chain (S11.4.1) not achievable in current compiler
+
+**Severity:** Observation
+
+**Description:** The spec (S11.4.1) describes a priority-chain conversion for multiple tri-state drivers on the same net. However, the compiler's current semantic rules prevent this pattern from being expressed:
+- Same-block multi-assignment to same signal → blocked by `ASSIGN_INDEPENDENT_IF_SELECT`
+- Multi-instance driving same wire → blocked by `NET_MULTIPLE_ACTIVE_DRIVERS`
+
+The two-driver and three-driver priority chain scenarios from the test plan (Happy Path 1 and 2) cannot be tested because no valid JZ-HDL code can express the multi-driver pattern that would reach the tri-state transformation phase. Only single-driver tri-state (one IF/ELSE with z in else) successfully triggers `INFO_TRISTATE_TRANSFORM`.
+
+## test_11_6-tristate_inout_handling.md
+
+### Bug: TRISTATE_TRANSFORM_BLACKBOX_PORT rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `TRISTATE_TRANSFORM_BLACKBOX_PORT` is defined in `rules.c` with message "S11.7 Tri-state signal driven by blackbox port cannot be transformed; use external pull resistor", but no code in `ir_tristate_transform.c` emits this diagnostic. The blackbox port handling path does not exist in the tri-state transform — there is no `BLACKBOX` string in the entire file. Blackbox modules are not yet handled by the tri-state transform engine.
+
+**Impact:** Cannot test this rule. No validation test is possible.
+
+### Observation: TRISTATE_TRANSFORM_OE_EXTRACT_FAIL reports under `File: <input>` instead of actual filename
+
+**Severity:** Observation (cosmetic)
+
+**Description:** When OE extraction fails during the tri-state transform, the `TRISTATE_TRANSFORM_OE_EXTRACT_FAIL` diagnostic is emitted with `loc.filename = NULL`, which the diagnostic printer renders as `File: <input>`. This is the same cosmetic issue as `TRISTATE_TRANSFORM_UNUSED_DEFAULT` (documented in section 11.1). The diagnostic is correct — only the filename in the header is wrong.
+
+**Impact:** The `.out` file must use `File: <input>` for this diagnostic and place it in a separate file section from the main diagnostics.
+
+### Observation: OE extraction failure requires concatenated z literals
+
+**Severity:** Observation
+
+**Description:** Triggering `TRISTATE_TRANSFORM_OE_EXTRACT_FAIL` requires a narrow set of conditions:
+1. Two or more instance INOUT ports must drive the same parent wire (shared net)
+2. The tristate proof engine must verify mutual exclusion (requires explicit comparison guards like `en == 1'b1`)
+3. At least one child module's INOUT port must be driven with a z pattern the OE extractor cannot parse
+
+The OE extractor handles ternary patterns (`cond ? data : z`) and IF/ELSE patterns (`IF (cond) { port <= data } ELSE { port <= z }`). The only patterns that fail extraction while still passing the proof are those using non-literal z expressions — specifically, concatenated z literals like `{4'bzzzz, 4'bzzzz}`. The AST-level proof engine's `tristate_expr_is_all_z_literal` handles concatenation of z literals, but the IR-level `literal_is_z_or_zero` check only handles scalar `EXPR_LITERAL` nodes, not `EXPR_CONCAT`.
+
+**Minimal reproduction:**
+```jz
+@module DriverB
+    PORT { IN [1] en; IN [8] din; INOUT [8] data; }
+    ASYNCHRONOUS {
+        data <= (en == 1'b0) ? din : {4'bzzzz, 4'bzzzz};
+    }
+@endmod
+```
+The concatenated z `{4'bzzzz, 4'bzzzz}` is semantically equivalent to `8'bzzzz_zzzz` but the OE extractor at the IR level doesn't recognize it as z.
+
+## test_11_7-tristate_error_conditions.md
+
+Section 11.7 is the comprehensive error matrix for `--tristate-default`. All 6 rules in this section are cross-references to rules already documented in earlier sections. No new compiler bugs were discovered — all issues below are re-confirmations of previously documented behavior.
+
+### Bug: TRISTATE_TRANSFORM_SINGLE_DRIVER not emitted (same as 11.4)
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** Same issue documented under section 11.4 above. Single-driver tri-state nets are transformed with only `INFO_TRISTATE_TRANSFORM` — no `TRISTATE_TRANSFORM_SINGLE_DRIVER` warning is emitted.
+
+**Test file:** `11_GND_7_TRISTATE_TRANSFORM_SINGLE_DRIVER-single_driver.jz` — `.out` captures `INFO_TRISTATE_TRANSFORM` only.
+
+### Bug: TRISTATE_TRANSFORM_PER_BIT_FAIL not emitted (same as 11.4)
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** Same issue documented under section 11.4. Per-bit tri-state patterns are transformed without error.
+
+**Test file:** `11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz` — `.out` captures `INFO_TRISTATE_TRANSFORM` only.
+
+### Bug: TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL unreachable (same as 11.4)
+
+**Severity:** Bug (unreachable rule)
+
+**Description:** Same issue documented under section 11.4. `NET_MULTIPLE_ACTIVE_DRIVERS` fires at semantic analysis before the tri-state transform runs.
+
+**Test file:** `11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz` — `.out` captures `NET_MULTIPLE_ACTIVE_DRIVERS` instead.
+
+### Bug: TRISTATE_TRANSFORM_BLACKBOX_PORT not implemented (same as 11.6)
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** Same issue documented under section 11.6. Rule defined in `rules.c` but never emitted. When a blackbox INOUT port shares a wire with a normal tri-state driver, the compiler emits `TRISTATE_TRANSFORM_OE_EXTRACT_FAIL` instead.
+
+**Test file:** `11_GND_7_TRISTATE_TRANSFORM_BLACKBOX_PORT-blackbox_tristate.jz` — `.out` captures `TRISTATE_TRANSFORM_OE_EXTRACT_FAIL`.
+
+## test_11_8-tristate_portability.md
+
+No issues found. Section 11.8 is a best practices section that introduces no new diagnostic rules. All referenced rules are cross-references to rules already tested and documented under sections 11.1, 11.4, and 11.7.
+
+## test_12_1-compile_errors.md
+
+No issues found. Section 12.1 is a cross-reference aggregation section. Both the happy-path and multiple-errors tests pass cleanly. The compiler correctly reports errors from 6 different categories (KEYWORD_AS_IDENTIFIER, REG_INIT_WIDTH_MISMATCH, SLICE_MSB_LESS_THAN_LSB, LIT_OVERFLOW, UNDECLARED_IDENTIFIER, ASSIGN_WIDTH_NO_MODIFIER) in a single file with correct line/column locations.
+
+## test_12_2-combinational_loop_errors.md
+
+No issues found. Both `COMB_LOOP_UNCONDITIONAL` and `COMB_LOOP_CONDITIONAL_SAFE` are correctly detected by the compiler. All tests pass with expected diagnostics. Note: wire assignments in ASYNCHRONOUS blocks must use `<=` (not `=` alias) to properly model combinational dependencies for loop detection; `=` alias inside IF/SELECT triggers `ASYNC_ALIAS_IN_CONDITIONAL`.
+
+## test_12_3-recommended_warnings.md
+
+### Bug: WARN_INCOMPLETE_SELECT_ASYNC rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `WARN_INCOMPLETE_SELECT_ASYNC` is defined in `rules.c` with message "S5.4/S8.3 Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block", but the compiler never emits this diagnostic. Instead, the existing `SELECT_DEFAULT_RECOMMENDED_ASYNC` rule (category `CONTROL_FLOW_IF_SELECT`) fires with message "S5.4/S8.3 ASYNCHRONOUS SELECT without DEFAULT (may cause floating nets)". Both rules cover the same scenario — the `GENERAL_WARNINGS` variant is never used.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [4] sel; OUT [1] data; }
+    ASYNCHRONOUS {
+        SELECT (sel) {
+            CASE 0 { data <= VCC; }
+            CASE 1 { data <= GND; }
+        }
+    }
+@endmod
+```
+Expected: `WARN_INCOMPLETE_SELECT_ASYNC` warning.
+Actual: `SELECT_DEFAULT_RECOMMENDED_ASYNC` warning + `ASYNC_UNDEFINED_PATH_NO_DRIVER` error.
+
+**Test file:** `12_3_WARN_INCOMPLETE_SELECT_ASYNC-incomplete_select.jz` — test captures `SELECT_DEFAULT_RECOMMENDED_ASYNC` and `ASYNC_UNDEFINED_PATH_NO_DRIVER` in `.out` since `WARN_INCOMPLETE_SELECT_ASYNC` is never emitted.
+
+### Bug: WARN_UNUSED_WIRE rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `WARN_UNUSED_WIRE` is defined in `rules.c` with message "S12.3 WIRE declared but never driven or read; remove it if unused", but the compiler never emits this diagnostic. Instead, the existing `NET_DANGLING_UNUSED` rule fires with message "S5.1/S8.3 Signal is neither driven nor read; remove it or connect it". Both rules cover the same scenario.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] din; OUT [1] data; }
+    WIRE { unused_w [8]; }
+    ASYNCHRONOUS { data <= din; }
+@endmod
+```
+Expected: `WARN_UNUSED_WIRE` warning.
+Actual: `NET_DANGLING_UNUSED` warning.
+
+**Test file:** `12_3_WARN_UNUSED_WIRE-unused_wire.jz` — test captures `NET_DANGLING_UNUSED` in `.out` since `WARN_UNUSED_WIRE` is never emitted.
+
+### Bug: WARN_UNUSED_PORT rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `WARN_UNUSED_PORT` is defined in `rules.c` with message "S12.3 PORT declared but never used; remove it if unused", but the compiler never emits this diagnostic. Instead, the existing `NET_DANGLING_UNUSED` rule fires with message "S5.1/S8.3 Signal is neither driven nor read; remove it or connect it". Both rules cover the same scenario for ports that are neither driven nor read within the module.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] clk; IN [1] unused_in; OUT [1] data; }
+    REGISTER { r [1] = 1'b0; }
+    ASYNCHRONOUS { data = r; }
+    SYNCHRONOUS(CLK=clk) { r <= ~r; }
+@endmod
+```
+Expected: `WARN_UNUSED_PORT` warning on `unused_in`.
+Actual: `NET_DANGLING_UNUSED` warning on `unused_in`.
+
+**Test file:** `12_3_WARN_UNUSED_PORT-unused_port.jz` — test captures `NET_DANGLING_UNUSED` in `.out` since `WARN_UNUSED_PORT` is never emitted.
+
+## test_1_1-identifiers.md
+
+### Bug: WIRE block names not validated for lexer-level identifier rules
+
+**Severity:** Bug (missing validation)
+
+**Description:** Identifier names declared inside `WIRE { ... }` blocks are not checked by the lexer-level rules `ID_SYNTAX_INVALID`, `ID_SINGLE_UNDERSCORE`, or `KEYWORD_AS_IDENTIFIER`. A 256-char wire name, `_` as a wire name, or a keyword (`MUX`, `REGISTER`, etc.) as a wire name is silently accepted. The wire gets registered in the symbol table and may later trigger `NET_DANGLING_UNUSED` if unused, but the expected identifier validation error is never emitted.
+
+This contrasts with PORT, CONST, and REGISTER blocks, where identifier names are correctly validated.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] din; OUT [1] data; }
+    WIRE { _ [1]; }
+    ASYNCHRONOUS { data <= din; }
+@endmod
+```
+Expected: `ID_SINGLE_UNDERSCORE` error on `_` in WIRE block.
+Actual: `NET_DANGLING_UNUSED` warning (wire registered but unused; no identifier error).
+
+**Impact:** WIRE name contexts cannot be tested for `ID_SYNTAX_INVALID`, `ID_SINGLE_UNDERSCORE`, or `KEYWORD_AS_IDENTIFIER`. Tests omit the WIRE context for these rules.
+
+### Bug: VCC and GND produce PARSE000 instead of KEYWORD_AS_IDENTIFIER
+
+**Severity:** Bug (wrong diagnostic)
+
+**Description:** The spec lists `VCC` and `GND` as reserved identifiers (semantic drivers). When used as user-declared names (e.g., port name, const name, register name), the compiler produces `PARSE000` ("expected identifier") instead of `KEYWORD_AS_IDENTIFIER`. This is because VCC and GND are tokenized as special expression tokens rather than as keywords, so the parser fails to recognize them in identifier positions.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] clk; OUT [1] VCC; }
+    REGISTER { r [1] = 1'b0; }
+    ASYNCHRONOUS { VCC = r; }
+    SYNCHRONOUS(CLK=clk) { r <= ~r; }
+@endmod
+```
+Expected: `KEYWORD_AS_IDENTIFIER` error on `VCC`.
+Actual: `PARSE000 parse error near token 'VCC': expected port name after width in PORT block`.
+
+**Impact:** VCC and GND cannot be tested for `KEYWORD_AS_IDENTIFIER`. They are handled by a different code path that produces a generic parse error.
+
+### Observation: Most spec-listed reserved identifiers are not actually reserved
+
+**Severity:** Observation (spec/implementation divergence)
+
+**Description:** The spec (S1.1) lists many reserved identifiers across categories: clock types (PLL, DLL, CLKDIV), CDC types (BIT, BUS, FIFO, HANDSHAKE, PULSE, MCP, RAW), memory types (BLOCK, DISTRIBUTED), memory ports (ASYNC, SYNC, WRITE_FIRST, READ_FIRST, NO_CHANGE), and semantic drivers (VCC, GND). However, only `IDX` (template/array) is actually treated as a reserved keyword by the compiler. All others are accepted as valid user identifiers without any diagnostic.
+
+**Impact:** Only IDX can be tested for `KEYWORD_AS_IDENTIFIER` among the "reserved identifiers" category. Tests use IDX across all contexts.
+
+## test_2_3-bit_width_constraints.md
+
+No issues found. All 6 rules from the test plan are correctly detected by the compiler. `WIDTH_ASSIGN_MISMATCH_NO_EXT` co-fires with `ASSIGN_WIDTH_NO_MODIFIER` in `driver_assign.c` but only `ASSIGN_WIDTH_NO_MODIFIER` appears in `--info --lint` output (higher priority). The `WIDTH_NONPOSITIVE_OR_NONINT` test produces expected `NET_DANGLING_UNUSED` warnings for zero-width signals — these are a direct consequence of the construct under test (a zero-width signal cannot be meaningfully connected).
+
+## test_1_4-comments.md
+
+No issues found. Both `COMMENT_IN_TOKEN` and `COMMENT_NESTED_BLOCK` are correctly detected by the compiler in all tested contexts. Multiple triggers per file work without cascading errors. The happy-path test confirms no false positives from valid comments in all whitespace-legal positions.
+
+Note: Unterminated block comments (`/* no end`) produce a lexer error with no rule ID in `rules.c` — this is by design and cannot be tested via the validation framework.
+
+## test_1_2-fundamental_terms.md
+
+No issues found. All 7 error/warning rules and the happy-path test pass with correct diagnostics. DOMAIN_CONFLICT and MULTI_CLK_ASSIGN both fire together when a register is assigned in two different clock domains (expected — the compiler reports both the multi-clock and domain-conflict aspects).
+
+## test_1_5-exclusive_assignment_rule.md
+
+No issues found. All 5 exclusive assignment rules are correctly detected by the compiler in all tested contexts. SYNC-context equivalents (`SYNC_MULTI_ASSIGN_SAME_REG_BITS`, `SYNC_ROOT_AND_CONDITIONAL_ASSIGN`) are separate rules tested under their own sections. `ASSIGN_SLICE_OVERLAP` fires in both ASYNC and SYNC contexts.
+
+## test_2_2-signedness_model.md
+
+No issues found. The happy-path test compiles cleanly with all unsigned arithmetic (+, -, *, ^, &, |, ~), comparison (>, <, ==, !=), and signed intrinsic (sadd, smul) operators. The TYPE_BINOP_WIDTH_MISMATCH error test correctly detects 4 width-mismatch triggers across comparison (>, <, !=) and arithmetic (+) operators in ASYNC and SYNC blocks across 2 modules. No cascading errors, parser recovery issues, or unexpected diagnostics encountered.
+
+## test_2_1-literals.md
+
+### Test gap: Semantic literal rules cannot be tested in async direct-assignment context
+
+**Severity:** Test gap (compiler design constraint)
+
+**Description:** When a sized literal or bare integer appears as the direct RHS of `=` in an ASYNCHRONOUS block (e.g., `data = 8'hFF;`), the compiler fires `ASYNC_ALIAS_LITERAL_RHS` ("Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?") alongside the literal rule under test. This prevents cleanly testing the following literal rules in async direct-assignment context without unrelated diagnostics:
+- `LIT_BARE_INTEGER`
+- `LIT_OVERFLOW`
+- `LIT_WIDTH_NOT_POSITIVE`
+- `LIT_UNDEFINED_CONST_WIDTH`
+
+Parse-level literal errors (`LIT_UNSIZED`, `LIT_UNDERSCORE_AT_EDGES`, `LIT_DECIMAL_HAS_XZ`, `LIT_INVALID_DIGIT_FOR_BASE`) are NOT affected — they fire before `ASYNC_ALIAS_LITERAL_RHS` and suppress it.
+
+**Impact:** The four semantic literal rules are tested only in SYNCHRONOUS and REGISTER init contexts. Async direct-assignment context is omitted from their tests to avoid `ASYNC_ALIAS_LITERAL_RHS` co-firing.
+
+## test_2_4-special_semantic_drivers.md
+
+### Bug: SPECIAL_DRIVER_IN_INDEX unreachable — parser emits PARSE000 instead
+
+**Severity:** Bug (wrong diagnostic)
+
+**Description:** The rule `SPECIAL_DRIVER_IN_INDEX` is defined in `rules.c` with message "S2.3 GND/VCC may not appear in slice/index expressions", but the parser rejects GND/VCC in index position with `PARSE000` before the semantic rule can fire. The parser does not recognize GND/VCC as valid expression tokens in index contexts, producing a generic parse error instead of the specific semantic diagnostic.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] clk; OUT [1] data; }
+    REGISTER { r [8] = 8'h00; }
+    ASYNCHRONOUS { data = r[GND]; }
+    SYNCHRONOUS(CLK=clk) { r <= r; }
+@endmod
+```
+Expected: `SPECIAL_DRIVER_IN_INDEX` error on `GND`.
+Actual: `PARSE000 parse error near token 'GND': expected expression in index`.
+
+**Impact:** The test file `2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz` captures `PARSE000` in its `.out` file since `SPECIAL_DRIVER_IN_INDEX` is never emitted. VCC in index would produce the same result, so only one trigger is included.
+
+## test_1_6-high_impedance_and_tristate.md
+
+No new issues found. All 4 tested rules (`LIT_DECIMAL_HAS_XZ`, `LIT_INVALID_DIGIT_FOR_BASE`, `PORT_TRISTATE_MISMATCH`, `REG_INIT_CONTAINS_Z`) are correctly detected by the compiler in all tested contexts. Two rules from the test plan (`NET_MULTIPLE_ACTIVE_DRIVERS`, `NET_TRI_STATE_ALL_Z_READ`) are not tested under section 1.6 — they have dedicated tests under section 11.3. The `NET_TRI_STATE_ALL_Z_READ` observation (ASYNC_FLOATING_Z_READ fires instead) is already documented under section 11.3 above.
+
+## test_3_1-operator_categories.md
+
+No issues found. Both error rules (`LOGICAL_WIDTH_NOT_1`, `TYPE_BINOP_WIDTH_MISMATCH`) are correctly detected by the compiler in all tested contexts. The happy-path test compiles cleanly with all operator categories. No parser recovery issues or cascading errors encountered.
+
+## test_3_2-operator_definitions.md
+
+No issues found. All 8 rules (`UNARY_ARITH_MISSING_PARENS`, `LOGICAL_WIDTH_NOT_1`, `TERNARY_COND_WIDTH_NOT_1`, `TERNARY_BRANCH_WIDTH_MISMATCH`, `CONCAT_EMPTY`, `DIV_CONST_ZERO`, `DIV_UNGUARDED_RUNTIME_ZERO`, `OBS_X_TO_OBSERVABLE_SINK`) are correctly detected by the compiler in all tested contexts. The happy-path test compiles cleanly with parenthesized unary ops, guarded division patterns (!=, >, ==nonzero, nested), shift operations, ternary, and concatenation. No parser recovery issues or cascading errors encountered.
+
+## test_4_10-asynchronous_block.md
+
+### Observation: WIDTH_ASSIGN_MISMATCH_NO_EXT suppressed by ASSIGN_WIDTH_NO_MODIFIER
+
+**Severity:** Observation (rule priority suppression)
+
+**Description:** The rule `WIDTH_ASSIGN_MISMATCH_NO_EXT` is defined in `rules.c` (category `WIDTHS_AND_SLICING`) and is emitted alongside `ASSIGN_WIDTH_NO_MODIFIER` in `driver_assign.c` (line ~1380) for width-mismatch scenarios. However, only `ASSIGN_WIDTH_NO_MODIFIER` appears in `--info --lint` output due to the priority chain: `ASSIGN_CONCAT_WIDTH_MISMATCH > ASSIGN_WIDTH_NO_MODIFIER > WIDTH_ASSIGN_MISMATCH_NO_EXT` (documented in the `rules.c` header comment). The lower-priority `WIDTH_ASSIGN_MISMATCH_NO_EXT` is never visible in diagnostic output.
+
+**Impact:** `WIDTH_ASSIGN_MISMATCH_NO_EXT` cannot be independently tested via `--info --lint`. The scenario is covered by `ASSIGN_WIDTH_NO_MODIFIER` tests under section 2.3 (`2_3_ASSIGN_WIDTH_NO_MODIFIER-assign_width_mismatch.jz`).
+
+### Observation: ASYNC_FLOATING_Z_READ co-fires WARN_INTERNAL_TRISTATE
+
+**Severity:** Observation (expected co-fire)
+
+**Description:** When testing `ASYNC_FLOATING_Z_READ` (net driven only by z but read), the compiler also emits `WARN_INTERNAL_TRISTATE` ("Internal tri-state logic is not FPGA-compatible"). This is expected behavior — a wire driven by z is tri-state logic, and the internal tristate warning fires for any tri-state wire not on an INOUT port. The test `.out` file includes both diagnostics.
+
+### Observation: ASYNC_UNDEFINED_PATH_NO_DRIVER co-fires SELECT_DEFAULT_RECOMMENDED_ASYNC for SELECT triggers
+
+**Severity:** Observation (expected co-fire)
+
+**Description:** When testing `ASYNC_UNDEFINED_PATH_NO_DRIVER` with a SELECT-without-DEFAULT trigger, the compiler also emits `SELECT_DEFAULT_RECOMMENDED_ASYNC` ("ASYNCHRONOUS SELECT without DEFAULT"). This is expected — missing DEFAULT both leaves signals undriven (error) and is a style warning. The test `.out` file includes both diagnostics.
+
+## test_4_11-synchronous_block.md
+
+### Observation: MULTI_CLK_ASSIGN co-fires DOMAIN_CONFLICT
+
+**Severity:** Observation (expected co-fire)
+
+**Description:** When testing `MULTI_CLK_ASSIGN` (same register assigned in SYNCHRONOUS blocks with different clocks), the compiler also emits `DOMAIN_CONFLICT` ("Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock"). This is expected — a register assigned in two different clock domains violates both the multi-clock assignment rule and the domain conflict rule. The register's home domain is set by its first assignment, and the second assignment in a different domain triggers both diagnostics. The test `.out` file includes both diagnostics.
+
+## test_4_12-cdc_block.md
+
+### Bug: CDC_SOURCE_NOT_PLAIN_REG rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `CDC_SOURCE_NOT_PLAIN_REG` is defined in `rules.c` with message "S4.12 CDC source must be a plain register identifier, not a slice or expression", but the compiler does not emit this diagnostic. When a sliced register (e.g., `wide_reg[0:0]`) is used as a CDC source, the compiler silently drops the CDC entry instead of reporting an error. This causes the register to appear unsinked (`WARN_UNSINKED_REGISTER`) because the CDC entry was not recognized.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] clk_a; IN [1] clk_b; OUT [1] data; }
+    REGISTER { wide_reg [8] = 8'h00; }
+    CDC {
+        BIT wide_reg[0:0] (clk_a) => slice_sync (clk_b);
+    }
+    ASYNCHRONOUS { data = slice_sync; }
+    SYNCHRONOUS(CLK=clk_a) { wide_reg <= 8'hAA; }
+@endmod
+```
+Expected: `CDC_SOURCE_NOT_PLAIN_REG` error on `wide_reg[0:0]`.
+Actual: No `CDC_SOURCE_NOT_PLAIN_REG` emitted. `WARN_UNSINKED_REGISTER` fires because the CDC entry is silently dropped.
+
+**Test file:** `4_12_CDC_SOURCE_NOT_PLAIN_REG-sliced_source.jz` — test has 2 triggers across 2 modules but the `.out` file captures `WARN_UNSINKED_REGISTER` instead of `CDC_SOURCE_NOT_PLAIN_REG` because the rule is not implemented.
+
+### Bug: CDC_DEST_ALIAS_ASSIGNED rule not implemented
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `CDC_DEST_ALIAS_ASSIGNED` is defined in `rules.c` with message "S4.12 CDC destination alias may not be assigned directly in block statements", but the compiler does not emit this diagnostic. When a CDC destination alias is assigned in an ASYNCHRONOUS block (e.g., `dest_sync = din;`), no error is produced. When assigned in a SYNCHRONOUS block (e.g., `top_dest <= din;`), the compiler emits `WRITE_WIRE_IN_SYNC` instead — it treats the alias as a wire rather than recognizing it as a CDC destination alias.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    PORT { IN [1] clk_a; IN [1] clk_b; IN [1] din; OUT [1] data; }
+    REGISTER { src_reg [1] = 1'b0; }
+    CDC {
+        BIT src_reg (clk_a) => dest_sync (clk_b);
+    }
+    ASYNCHRONOUS {
+        dest_sync = din;   // Expected: CDC_DEST_ALIAS_ASSIGNED — Actual: no error
+        data = dest_sync;
+    }
+    SYNCHRONOUS(CLK=clk_a) { src_reg <= din; }
+    SYNCHRONOUS(CLK=clk_b) {
+        dest_sync <= din;  // Expected: CDC_DEST_ALIAS_ASSIGNED — Actual: WRITE_WIRE_IN_SYNC
+    }
+@endmod
+```
+Expected: `CDC_DEST_ALIAS_ASSIGNED` on both assignments to `dest_sync`.
+Actual: ASYNC assignment produces no error; SYNC assignment produces `WRITE_WIRE_IN_SYNC`.
+
+**Test file:** `4_12_CDC_DEST_ALIAS_ASSIGNED-dest_alias_written.jz` — test has 2 triggers (ASYNC alias-assign, SYNC receive-assign) across 2 modules. Only the SYNC trigger produces any diagnostic (`WRITE_WIRE_IN_SYNC` instead of `CDC_DEST_ALIAS_ASSIGNED`). The ASYNC trigger is silently accepted.
+
+### Observation: CDC_DEST_ALIAS_DUP co-fires ID_DUP_IN_MODULE
+
+**Severity:** Observation (expected co-fire)
+
+**Description:** When testing `CDC_DEST_ALIAS_DUP` (CDC destination alias name conflicts with an existing identifier), the compiler also emits `ID_DUP_IN_MODULE` ("Duplicate identifier within module"). This is expected — a CDC dest alias that reuses an existing name violates both the CDC-specific duplicate check and the general module-scope uniqueness check. The test `.out` file includes both diagnostics.
+
+## test_4_13-module_instantiation.md
+
+### Bug: INSTANCE_ARRAY_MULTI_DIMENSIONAL rule never emitted
+
+**Severity:** Bug (missing rule implementation)
+
+**Description:** The rule `INSTANCE_ARRAY_MULTI_DIMENSIONAL` is defined in `rules.c` with message "S4.13.1 Multi-dimensional instance arrays are not supported", but the compiler's parser does not recognize the `@new name[N][M]` syntax. Instead, the parser emits `PARSE000` ("parse error near token '[': expected module or blackbox name after instance name") when it encounters the second `[` after the first array dimension. The semantic rule is never reached.
+
+**Minimal reproduction:**
+```jz
+@project Test
+    @top TopMod { IN [1] clk = _; OUT [1] data = _; }
+@endproj
+@module ChildMod
+    PORT { IN [1] din; OUT [1] data; }
+    ASYNCHRONOUS { data = din; }
+@endmod
+@module TopMod
+    PORT { IN [1] clk; OUT [1] data; }
+    @new inst_a[4][2] ChildMod {
+        IN [1] din = r;
+        OUT [1] data = _;
+    };
+    REGISTER { r [1] = 1'b0; }
+    ASYNCHRONOUS { data = r; }
+    SYNCHRONOUS(CLK=clk) { r <= ~r; }
+@endmod
+```
+Expected: `INSTANCE_ARRAY_MULTI_DIMENSIONAL` error.
+Actual: `PARSE000` at the second `[`.
+
+### Bug: INSTANCE_ARRAY_COUNT_INVALID fires for CONST-based array counts
+
+**Severity:** Bug (false positive)
+
+**Description:** The spec (S4.13.1) states that instance array count can be "a positive integer literal or a CONST expression evaluated in the parent module's scope." However, the compiler rejects CONST-based array counts (e.g., `@new inst[MY_CONST] Mod { ... }`) with `INSTANCE_ARRAY_COUNT_INVALID`, even when the CONST evaluates to a valid positive integer.
+
+**Minimal reproduction:**
+```jz
+@project Test
+    @top TopMod { IN [1] clk = _; OUT [1] data = _; }
+@endproj
+@module ChildMod
+    PORT { IN [1] din; OUT [1] data; }
+    ASYNCHRONOUS { data = din; }
+@endmod
+@module TopMod
+    CONST { COUNT = 4; }
+    PORT { IN [1] clk; OUT [1] data; }
+    @new inst[COUNT] ChildMod {
+        IN [1] din = r;
+        OUT [1] data = _;
+    };
+    REGISTER { r [1] = 1'b0; }
+    ASYNCHRONOUS { data = r; }
+    SYNCHRONOUS(CLK=clk) { r <= ~r; }
+@endmod
+```
+Expected: No error (COUNT = 4 is a valid positive integer CONST).
+Actual: `INSTANCE_ARRAY_COUNT_INVALID` error.
+
+### Observation: INSTANCE_BUS_MISMATCH fires twice for combined id + role mismatch
+
+**Severity:** Observation (expected behavior)
+
+**Description:** When a BUS binding in `@new` has both wrong BUS id AND wrong role (e.g., `BUS BETA_BUS TARGET` when child expects `BUS ALPHA_BUS SOURCE`), the compiler emits `INSTANCE_BUS_MISMATCH` twice on the same line — once for the id mismatch and once for the role mismatch. This is reasonable behavior since both are independent violations.
+
+## test_4_14-feature_guards.md
+
+### Bug: FEATURE_VALIDATION_BOTH_PATHS is not implemented
+
+**Severity:** Gap (unimplemented rule)
+
+**Description:** Rule `FEATURE_VALIDATION_BOTH_PATHS` is defined in `rules.c` but no semantic pass emits it. The compiler does not validate both the enabled and disabled configurations of @feature guards. For example, an OUT port driven only inside `@feature X == 1` with no `@else` branch produces no diagnostic, even though the port is undriven when the feature is disabled. Similarly, a register declared inside `@feature` and referenced outside it produces no error.
+
+**Reproduction:**
+```
+@module example
+    CONST { INC = 1; }
+    PORT { IN [1] clk; OUT [8] data; }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        @feature INC == 1
+            data = r;
+        @endfeat
+        // data is undriven when INC != 1 — no error emitted
+    }
+    SYNCHRONOUS(CLK=clk) { r <= r + 8'd1; }
+@endmod
+```
+
+### Bug: FEATURE_COND_WIDTH_NOT_1 not checked in declaration blocks
+
+**Severity:** Bug
+
+**Description:** The compiler only checks `FEATURE_COND_WIDTH_NOT_1` inside ASYNCHRONOUS and SYNCHRONOUS blocks. Wide-condition @feature guards in REGISTER, WIRE, and CONST declaration blocks are silently accepted without error.
+
+**Reproduction:**
+```
+REGISTER {
+    @feature 8'd255
+        r [1] = 1'b0;
+    @endfeat
+}
+```
+Expected: `FEATURE_COND_WIDTH_NOT_1` error. Actual: no diagnostic.
+
+### Bug: FEATURE_EXPR_INVALID_CONTEXT not checked in declaration blocks
+
+**Severity:** Bug
+
+**Description:** The compiler only checks `FEATURE_EXPR_INVALID_CONTEXT` inside ASYNCHRONOUS and SYNCHRONOUS blocks. Runtime signal references in @feature conditions within REGISTER, WIRE, and CONST declaration blocks are silently accepted.
+
+**Reproduction:**
+```
+REGISTER {
+    @feature din == 1'b1
+        r [1] = 1'b0;
+    @endfeat
+}
+```
+Expected: `FEATURE_EXPR_INVALID_CONTEXT` error. Actual: no diagnostic.
+
+### Bug: FEATURE_NESTED not checked in declaration blocks
+
+**Severity:** Bug
+
+**Description:** The compiler only checks `FEATURE_NESTED` inside ASYNCHRONOUS and SYNCHRONOUS blocks. Nested @feature guards in REGISTER, WIRE, and CONST declaration blocks are silently accepted.
+
+**Reproduction:**
+```
+REGISTER {
+    @feature FLAG == 1
+        @feature MODE == 0
+            r [1] = 1'b0;
+        @endfeat
+    @endfeat
+}
+```
+Expected: `FEATURE_NESTED` error. Actual: no diagnostic.
+
+### Limitation: FEATURE_NESTED stops processing after first occurrence
+
+**Severity:** Limitation
+
+**Description:** When the compiler detects a nested @feature, it stops processing subsequent blocks. Multiple FEATURE_NESTED triggers in different blocks of the same module (or across modules) cannot be tested in a single file — only the first is reported. Tests are split into separate files per context (ASYNC, SYNC, @else body).
+
+## test_4_3-const.md
+
+### Bug: CONST_CIRCULAR_DEP rule is unreachable for module CONSTs
+
+**Severity:** Bug (unreachable rule)
+
+**Description:** The rule `CONST_CIRCULAR_DEP` is defined in `rules.c` with message "S4.3/S7.10 Circular dependency in CONST/CONFIG definitions". The detection code exists in `const_eval.c` (line 624) and would emit the diagnostic when a CONST references another CONST that is currently being evaluated (EVAL_VISITING state). However, the higher-level semantic pass in `driver.c` (line 1372) intentionally suppresses all low-level `CONST00x` diagnostics by passing a zeroed `JZConstEvalOptions` struct (without `diagnostics` set) to `jz_const_eval_all()`. Any evaluation failure — including circular dependencies — is mapped to `CONST_NEGATIVE_OR_NONINT` instead.
+
+**Minimal reproduction:**
+```jz
+@module Mod
+    CONST { A = B; B = A; }
+    PORT { IN [1] din; OUT [1] data; }
+    ASYNCHRONOUS { data = din; }
+@endmod
+```
+Expected: `CONST_CIRCULAR_DEP` error on A and B.
+Actual: `CONST_NEGATIVE_OR_NONINT` error on A and B.
+
+**Impact:** The `CONST_CIRCULAR_DEP` rule ID is never emitted for module-level CONST declarations. The circular dependency test (`4_3_CONST_CIRCULAR_DEP-circular_dependency.jz`) captures the actual behavior (`CONST_NEGATIVE_OR_NONINT`). CONFIG circular dependencies have a separate detection path in `driver_project.c` that may work correctly.
+
+## test_4_5-wire.md
+
+### Bug: WIRE_MULTI_DIMENSIONAL rule unreachable — parser emits PARSE000 instead
+
+**Severity:** Bug (unreachable rule)
+
+**Description:** The rule `WIRE_MULTI_DIMENSIONAL` is defined in `rules.c` with message "S4.5 WIRE declared with multi-dimensional syntax", but the parser cannot parse multi-dimensional wire syntax (`w [8] [4]`). The parser expects `;` after the first `[width]` and emits `PARSE000` when it encounters a second `[`. The semantic check for `WIRE_MULTI_DIMENSIONAL` is never reached.
+
+**Minimal reproduction:**
+```
+@module Mod
+    PORT { IN [1] din; OUT [1] data; }
+    WIRE { w [8] [4]; }
+    ASYNCHRONOUS { data <= din; }
+@endmod
+```
+Expected: `WIRE_MULTI_DIMENSIONAL` error.
+Actual: `PARSE000 parse error near token '[': expected ';' after WIRE declaration`.
+
+**Impact:** The `WIRE_MULTI_DIMENSIONAL` rule ID is never emitted. Tests capture the actual `PARSE000` behavior. The parser would need to be extended to parse multi-dimensional syntax and then reject it at the semantic level to emit the intended rule.
+
+**Test files:** `4_5_WIRE_MULTI_DIMENSIONAL-multi_dim_helper.jz` and `4_5_WIRE_MULTI_DIMENSIONAL-multi_dim_top.jz` — split into two files because the parser stops at the first error and cannot reach a second trigger.
+
+### Observation: WRITE_WIRE_IN_SYNC co-fires SELECT_NO_MATCH_SYNC_OK for SELECT without DEFAULT
+
+**Severity:** Observation (expected co-fire)
+
+**Description:** When testing `WRITE_WIRE_IN_SYNC` with a wire assigned inside a SELECT/CASE in a SYNCHRONOUS block, the compiler also emits `SELECT_NO_MATCH_SYNC_OK` ("In SYNCHRONOUS, missing DEFAULT simply holds registers"). This is expected — the SELECT has no DEFAULT clause, and the compiler informs about register hold behavior. The test `.out` includes both diagnostics.

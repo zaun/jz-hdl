@@ -1,9 +1,9 @@
 File: 1_1_ID_SYNTAX_INVALID-length_exceeded.jz
-      17:17   error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
-      24:9    error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
-      39:9    error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
-      43:16   error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
-      48:9    error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
-      48:270  error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
-      60:9    error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
-      71:17   error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
+      18:17   error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
+      25:9    error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
+      40:9    error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
+      44:16   error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
+      49:9    error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
+      49:270  error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
+      61:9    error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars
+      72:17   error ID_SYNTAX_INVALID S1.1 Identifier does not match identifier regex or exceeds 255 chars

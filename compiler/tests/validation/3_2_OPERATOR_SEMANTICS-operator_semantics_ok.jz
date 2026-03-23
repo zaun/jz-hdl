@@ -1,0 +1,145 @@
+// OPERATOR_SEMANTICS: Happy path verifying detailed operator definition semantics.
+// Exercises parenthesized unary arithmetic, multiply 2N width, guarded division
+// and modulus with multiple guard patterns (!=, >, == nonzero, nested), logical
+// and arithmetic shift, ternary with valid condition and matching widths,
+// concatenation MSB ordering, and edge cases (shift by 0, single-element concat).
+
+@project OPERATOR_SEMANTICS_operator_semantics_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+    @top TopMod {
+        IN  [1]  clk = _;
+        IN  [8]  a = _;
+        IN  [8]  b = _;
+        IN  [3]  sh = _;
+        IN  [1]  flag = _;
+        IN  [4]  nibble = _;
+        OUT [8]  out_unary = _;
+        OUT [16] out_mul = _;
+        OUT [8]  out_shift = _;
+        OUT [8]  out_tern = _;
+        OUT [12] out_cat = _;
+        OUT [8]  out_div = _;
+    }
+@endproj
+
+// Helper module: shift operations and unary arithmetic
+@module HelperOps
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [3] sh;
+        OUT [8] out_unary;
+        OUT [8] out_lsl;
+        OUT [8] out_lsr;
+        OUT [8] out_asr;
+    }
+    REGISTER {
+        r_asr [8] = 8'h00;
+        r_sh0 [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Parenthesized unary minus — valid
+        out_unary = (-a);
+        // Logical shift left — zero-fill from right
+        out_lsl = a << sh;
+        // Logical shift right — zero-fill from left
+        out_lsr = a >> sh;
+        // Arithmetic shift right from register
+        out_asr = r_asr | r_sh0;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Arithmetic shift right — MSB replicated
+        r_asr <= a >>> sh;
+        // Edge case: shift by zero — no change
+        r_sh0 <= a << 3'd0;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1]  clk;
+        IN  [8]  a;
+        IN  [8]  b;
+        IN  [3]  sh;
+        IN  [1]  flag;
+        IN  [4]  nibble;
+        OUT [8]  out_unary;
+        OUT [16] out_mul;
+        OUT [8]  out_shift;
+        OUT [8]  out_tern;
+        OUT [12] out_cat;
+        OUT [8]  out_div;
+    }
+    WIRE {
+        h_unary [8];
+        h_lsl   [8];
+        h_lsr   [8];
+        h_asr   [8];
+    }
+    REGISTER {
+        r_div  [8] = 8'd0;
+        r_mod  [8] = 8'd0;
+        r_gt   [8] = 8'd0;
+        r_eq   [8] = 8'd0;
+        r_nest [8] = 8'd0;
+    }
+
+    @new inst_ops HelperOps {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [3] sh = sh;
+        OUT [8] out_unary = h_unary;
+        OUT [8] out_lsl = h_lsl;
+        OUT [8] out_lsr = h_lsr;
+        OUT [8] out_asr = h_asr;
+    };
+
+    ASYNCHRONOUS {
+        // Parenthesized unary plus — valid
+        out_unary = (+a) | h_unary;
+        // Multiply 8-bit * 8-bit = 16-bit result (2N width)
+        out_mul = a * b;
+        // Shift operations from helper
+        out_shift = h_lsl | h_lsr | h_asr;
+        // Ternary with 1-bit condition and matching 8-bit branches — valid
+        out_tern = flag ? a : b;
+        // Concatenation: MSB ordering, 8+4 = 12 bits
+        out_cat = {a, nibble};
+        // Division results from registers
+        out_div = r_div | r_mod | r_gt | r_eq | r_nest;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Guarded division: != 0 pattern
+        IF (b != 8'd0) {
+            r_div <= a / b;
+            r_mod <= a % b;
+        } ELSE {
+            r_div <= 8'd0;
+            r_mod <= 8'd0;
+        }
+        // Guarded division: > 0 pattern
+        IF (b > 8'd0) {
+            r_gt <= a / b;
+        } ELSE {
+            r_gt <= 8'd0;
+        }
+        // Guarded division: == nonzero constant pattern
+        IF (b == 8'd5) {
+            r_eq <= a / b;
+        } ELSE {
+            r_eq <= 8'd0;
+        }
+        // Nested guard: outer IF proves nonzero, inner uses division
+        IF (b != 8'd0) {
+            IF (a > 8'd10) {
+                r_nest <= a / b;
+            } ELSE {
+                r_nest <= 8'd0;
+            }
+        } ELSE {
+            r_nest <= 8'd0;
+        }
+    }
+@endmod

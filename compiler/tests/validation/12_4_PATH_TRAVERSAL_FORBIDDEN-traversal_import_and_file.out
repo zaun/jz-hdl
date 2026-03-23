@@ -1,2 +1,0 @@
-File: 12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_import_and_file.jz
-       7:5    error PATH_TRAVERSAL_FORBIDDEN S12.2 Path contains '..' traversal without --allow-traversal

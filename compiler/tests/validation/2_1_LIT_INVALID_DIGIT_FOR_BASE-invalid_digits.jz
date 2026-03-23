@@ -9,7 +9,7 @@
     }
 @endproj
 
-// Helper: binary invalid digit and hex with x
+// Helper: binary invalid digit in async, hex with x in sync
 @module HelperA
     PORT {
         IN  [1] clk;

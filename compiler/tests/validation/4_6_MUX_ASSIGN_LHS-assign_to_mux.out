@@ -1,5 +1,0 @@
-File: 4_6_MUX_ASSIGN_LHS-assign_to_mux.jz
-      28:9    error MUX_ASSIGN_LHS S4.6 Assigning to MUX id or its indexed form on LHS is forbidden (MUX is read-only)
-      30:9    error MUX_ASSIGN_LHS S4.6 Assigning to MUX id or its indexed form on LHS is forbidden (MUX is read-only)
-      57:9    error MUX_ASSIGN_LHS S4.6 Assigning to MUX id or its indexed form on LHS is forbidden (MUX is read-only)
-      59:9    error MUX_ASSIGN_LHS S4.6 Assigning to MUX id or its indexed form on LHS is forbidden (MUX is read-only)

@@ -1,0 +1,41 @@
+// TEMPLATE_FORBIDDEN_BLOCK_HEADER: CDC block header in file-scoped template.
+// CDC is treated as a declaration block by the compiler, triggering TEMPLATE_FORBIDDEN_DECL.
+// Split into own file for consistency with other block header tests.
+
+@project TEMPLATE_FORBIDDEN_BLOCK_HEADER_cdc_file_scoped
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger: CDC block header inside file-scoped template
+@template cdc_tmpl(a, b)
+    CDC {
+        a <= b;
+    }
+    a <= b;
+@endtemplate
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

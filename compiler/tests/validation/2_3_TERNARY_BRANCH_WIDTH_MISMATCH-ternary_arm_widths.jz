@@ -33,7 +33,7 @@
         out_b <= sel ? 8'hFF : b;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 3: ternary branch mismatch in SYNC block, reads r (8 vs 4)
+        // Trigger 3: ternary branch mismatch in SYNC block (8 vs 4)
         r <= sel ? r : b;
     }
 @endmod

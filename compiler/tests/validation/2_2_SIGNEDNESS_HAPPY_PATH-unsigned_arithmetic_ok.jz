@@ -1,0 +1,113 @@
+// SIGNEDNESS_HAPPY_PATH: Valid unsigned arithmetic, comparison, and intrinsic operators.
+// All signals and operators are unsigned. sadd/smul intrinsics produce wider results.
+// No diagnostics expected.
+
+@project SIGNEDNESS_HAPPY_PATH_unsigned_arithmetic
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        OUT [8] result = _;
+    }
+@endproj
+
+// Helper: unsigned arithmetic and bitwise operations
+@module HelperArith
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Unsigned add, subtract, XOR with register read — all 8-bit results
+        data = ((a + b) ^ (a - b)) | r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Unsigned bitwise AND, OR — 8-bit results
+        r <= (a & b) | (a ^ b);
+    }
+@endmod
+
+// Helper: unsigned comparisons and signed intrinsics
+@module HelperCmp
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [1] cmp_out;
+        OUT [9] sadd_out;
+        OUT [16] smul_out;
+    }
+    REGISTER {
+        r_sadd [9] = 9'd0;
+        r_smul [16] = 16'd0;
+    }
+    ASYNCHRONOUS {
+        // All unsigned comparisons produce 1-bit results
+        cmp_out = (a > b) | (a < b) | (a == b) | (a != b);
+        // sadd and smul intrinsic results from registers
+        sadd_out = r_sadd;
+        smul_out = r_smul;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // sadd: 8+8 → 9-bit signed result with carry
+        r_sadd <= sadd(a, b);
+        // smul: 8*8 → 16-bit signed product
+        r_smul <= smul(a, b);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] result;
+    }
+
+    WIRE {
+        arith_data [8];
+        cmp_bit [1];
+        sadd_data [9];
+        smul_data [16];
+        mul_result [16];
+    }
+
+    @new inst_arith HelperArith {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] data = arith_data;
+    };
+
+    @new inst_cmp HelperCmp {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [1] cmp_out = cmp_bit;
+        OUT [9] sadd_out = sadd_data;
+        OUT [16] smul_out = smul_data;
+    };
+
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Unsigned multiply: 8 * 8 → 16-bit result
+        mul_result <= a * b;
+        // Combine results: ternary with 1-bit cmp, slices from wider intrinsics
+        result = cmp_bit ? (arith_data | sadd_data[7:0] | smul_data[7:0] | mul_result[7:0]) : r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Unsigned bitwise NOT and addition
+        r <= (~a) + b;
+    }
+@endmod

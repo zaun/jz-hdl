@@ -34,7 +34,6 @@
     }
     SYNCHRONOUS(CLK=clk) {
         // Trigger 2: RHS concat too narrow in SYNC (4+2=6 to 8-bit register)
-        // Also reads r to avoid unsinked warning
         r <= {r[3:0], c};
     }
 @endmod
@@ -76,7 +75,6 @@
     }
     SYNCHRONOUS(CLK=clk) {
         // Trigger 5: RHS concat width mismatch in top module sync (4+2=6 to 8-bit reg)
-        // Also reads r to avoid unsinked warning
         r <= {r[3:0], c};
     }
 @endmod

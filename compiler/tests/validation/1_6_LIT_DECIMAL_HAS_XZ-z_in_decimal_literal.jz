@@ -41,8 +41,7 @@
         OUT [8] data = _;
     };
     ASYNCHRONOUS {
-        // Valid: binary z literal (no error)
-        // Valid: normal decimal literal
+        // Valid: normal decimal — no error
         data = r_ok;
     }
     SYNCHRONOUS(CLK=clk) {

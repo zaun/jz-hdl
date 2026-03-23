@@ -1,6 +1,7 @@
 // TYPE_BINOP_WIDTH_MISMATCH: Binary operators require equal operand widths.
-// Tests width mismatch across arithmetic, bitwise, and comparison operators
-// in both ASYNCHRONOUS and SYNCHRONOUS blocks, across multiple modules.
+// Tests width mismatch across arithmetic (+, -, *, /, %), bitwise (&, |, ^),
+// and comparison (==, !=, <, >, <=, >=) operators in both ASYNCHRONOUS and
+// SYNCHRONOUS blocks, across multiple modules.
 // Valid same-width operations included to verify no false positives.
 
 @project TYPE_BINOP_WIDTH_MISMATCH_mismatched_operand_widths
@@ -13,7 +14,7 @@
     }
 @endproj
 
-// Helper module: width mismatches in ASYNCHRONOUS and SYNCHRONOUS blocks
+// Helper module: arithmetic and comparison mismatches in ASYNC and SYNC
 @module HelperA
     PORT {
         IN  [1] clk;
@@ -26,18 +27,17 @@
         r [8] = 8'h00;
     }
     ASYNCHRONOUS {
-        // Trigger 1: arithmetic ADD width mismatch (8 vs 4), also reads r
+        // Trigger 1: ADD width mismatch (8 vs 4)
         out_a <= r + b;
-        // Trigger 2: comparison EQ width mismatch (8 vs 4)
+        // Trigger 2: EQ comparison width mismatch (8 vs 4)
         out_b <= (a == b) ? 1'b1 : 1'b0;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 3: arithmetic SUB width mismatch in SYNC (8 vs 4)
+        // Trigger 3: SUB width mismatch in SYNC (8 vs 4)
         r <= a - b;
     }
 @endmod
 
-// Second helper to read HelperA's register via instance binding
 @module TopMod
     PORT {
         IN  [1] clk;

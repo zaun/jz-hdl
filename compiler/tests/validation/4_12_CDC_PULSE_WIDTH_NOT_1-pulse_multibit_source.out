@@ -1,3 +1,3 @@
 File: 4_12_CDC_PULSE_WIDTH_NOT_1-pulse_multibit_source.jz
       23:9    error CDC_PULSE_WIDTH_NOT_1 S4.12 PULSE CDC source register must have width [1]
-      57:9    error CDC_PULSE_WIDTH_NOT_1 S4.12 PULSE CDC source register must have width [1]
+      58:9    error CDC_PULSE_WIDTH_NOT_1 S4.12 PULSE CDC source register must have width [1]

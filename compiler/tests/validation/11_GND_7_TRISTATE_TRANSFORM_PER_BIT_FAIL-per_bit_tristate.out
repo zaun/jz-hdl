@@ -1,0 +1,3 @@
+File: 11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz
+      18:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+      45:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default

@@ -1,0 +1,4 @@
+File: 4_10_ASYNC_INVALID_STATEMENT_TARGET-invalid_lhs_in_async.jz
+      35:9    error ASYNC_INVALID_STATEMENT_TARGET S4.10/S5.1/S8.1 LHS in ASYNCHRONOUS assignment is not assignable (e.g. CONST, function call)
+      64:9    error ASYNC_INVALID_STATEMENT_TARGET S4.10/S5.1/S8.1 LHS in ASYNCHRONOUS assignment is not assignable (e.g. CONST, function call)
+     105:9    error ASYNC_INVALID_STATEMENT_TARGET S4.10/S5.1/S8.1 LHS in ASYNCHRONOUS assignment is not assignable (e.g. CONST, function call)

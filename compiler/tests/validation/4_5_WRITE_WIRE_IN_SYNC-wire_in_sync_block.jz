@@ -1,13 +1,15 @@
 // WRITE_WIRE_IN_SYNC: Wire assigned in SYNCHRONOUS block.
-// Tests wire assignment in SYNC root and SYNC IF across multiple modules.
-// Valid wire usage in ASYNCHRONOUS blocks included to verify no false positives.
+// Tests wire assignment in SYNC root, IF body, ELSE body, and SELECT/CASE body
+// across multiple modules. Valid wire usage in ASYNCHRONOUS blocks included
+// to verify no false positives.
 
 @project WRITE_WIRE_IN_SYNC_wire_in_sync_block
     @top TopMod {
         IN  [1] clk = _;
         IN  [1] ctrl = _;
         IN  [8] din = _;
-        OUT [8] dout = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
     }
 @endproj
 
@@ -34,7 +36,7 @@
     }
 
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 1: wire assigned in SYNC root (helper module)
+        // Trigger 1: wire assigned at SYNC root (helper module)
         w_helper <= r;
         r <= data_in;
     }
@@ -45,11 +47,13 @@
         IN  [1] clk;
         IN  [1] ctrl;
         IN  [8] din;
-        OUT [8] dout;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
     }
 
     WIRE {
         w_top [8];
+        w_branch [8];
     }
 
     REGISTER {
@@ -59,21 +63,31 @@
     @new inst_h HelperMod {
         IN  [1] clk = clk;
         IN  [8] data_in = din;
-        OUT [8] data_out = _;
+        OUT [8] data_out = dout_a;
     };
 
     ASYNCHRONOUS {
         // Valid: wire driven in ASYNC
         w_top <= din;
-        dout <= w_top;
+        w_branch <= din;
+        dout_b <= w_top | w_branch;
     }
 
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: wire assigned in SYNC root (top module)
+        // Trigger 2: wire assigned at SYNC root (top module)
         w_top <= r;
-        // Trigger 3: wire assigned inside IF in SYNC
+        // Trigger 3: wire assigned inside IF body in SYNC
         IF (ctrl) {
-            w_top <= din;
+            w_branch <= din;
+        // Trigger 4: wire assigned inside ELSE body in SYNC
+        } ELSE {
+            w_branch <= r;
+        }
+        // Trigger 5: wire assigned inside SELECT/CASE body in SYNC
+        SELECT (din[1:0]) {
+            CASE (2'b00) {
+                w_top <= 8'h00;
+            }
         }
         r <= din;
     }

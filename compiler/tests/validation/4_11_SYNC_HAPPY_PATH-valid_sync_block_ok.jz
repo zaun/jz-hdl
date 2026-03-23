@@ -1,0 +1,115 @@
+// SYNC_HAPPY_PATH: Valid SYNCHRONOUS block constructs.
+// Exercises default Rising edge, Falling edge, EDGE=Both omitted (default),
+// Immediate and Clocked reset types, RESET_ACTIVE High and Low,
+// multiple SYNC blocks with different clocks, empty SYNC body,
+// and register read/write (counter pattern).
+
+@project SYNC_HAPPY_PATH_valid_sync_block_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        IN  [1] rst = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [1] dout_c = _;
+        OUT [8] dout_d = _;
+    }
+@endproj
+
+// Helper module: Falling edge with Immediate reset, RESET_ACTIVE=High
+@module HelperFalling
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        dout = r;
+    }
+
+    // Valid: Falling edge, Immediate reset, RESET_ACTIVE=High
+    SYNCHRONOUS(CLK=clk EDGE=Falling RESET=rst RESET_ACTIVE=High RESET_TYPE=Immediate) {
+        r <= din;
+    }
+@endmod
+
+// Helper module: Clocked reset, RESET_ACTIVE=Low (default)
+@module HelperClocked
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst;
+        OUT [1] dout;
+    }
+
+    REGISTER {
+        counter [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: register read in ASYNC (combinational visibility)
+        dout = counter[0:0];
+    }
+
+    // Valid: Clocked reset, default RESET_ACTIVE=Low
+    SYNCHRONOUS(CLK=clk RESET=rst RESET_TYPE=Clocked) {
+        // Valid: register read and write (counter pattern)
+        counter <= counter + 8'd1;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] rst;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [1] dout_c;
+        OUT [8] dout_d;
+    }
+
+    @new inst_fall HelperFalling {
+        IN  [1] clk = clk_a;
+        IN  [1] rst = rst;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+    };
+
+    @new inst_clk HelperClocked {
+        IN  [1] clk = clk_b;
+        IN  [1] rst = rst;
+        OUT [1] dout = dout_c;
+    };
+
+    REGISTER {
+        r_a [8] = 8'h00;
+        r_b [8] = 8'hFF;
+    }
+
+    ASYNCHRONOUS {
+        dout_b = r_a;
+        dout_d = r_b;
+    }
+
+    // Valid: default Rising edge, no reset
+    SYNCHRONOUS(CLK=clk_a) {
+        r_a <= din;
+    }
+
+    // Valid: multiple SYNC blocks with different clocks
+    SYNCHRONOUS(CLK=clk_b RESET=rst RESET_ACTIVE=Low RESET_TYPE=Clocked) {
+        r_b <= din;
+    }
+@endmod

@@ -1,0 +1,40 @@
+// TEMPLATE_FORBIDDEN_DIRECTIVE: @feature directive in module-scoped template.
+// Realistic syntax with feature guard body. Parser does not recover after
+// the error, producing cascading PARSE000.
+
+@project TEMPLATE_FORBIDDEN_DIRECTIVE_feature_in_mod_template
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger: @feature directive inside module-scoped template
+    @template feat_mod_tmpl(a, b)
+        @feature DEBUG {
+            a <= b;
+        }
+    @endtemplate
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

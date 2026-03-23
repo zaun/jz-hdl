@@ -1,0 +1,2 @@
+File: <input>
+      13:0    error TRISTATE_TRANSFORM_OE_EXTRACT_FAIL S11.7 Could not extract output-enable condition from tri-state port; _oe driven high as fallback

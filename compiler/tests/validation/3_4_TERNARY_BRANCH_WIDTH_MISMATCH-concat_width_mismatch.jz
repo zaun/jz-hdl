@@ -1,0 +1,91 @@
+// TERNARY_BRANCH_WIDTH_MISMATCH: S3.4 ternary+concat example requires matching branch widths.
+// Tests ternary with mismatched concat vs scalar widths in async and sync blocks
+// across modules. Valid same-width ternary expressions included for no false positives.
+
+@project TERNARY_BRANCH_WIDTH_MISMATCH_concat_width_mismatch
+    CONFIG {
+        WIDTH = 8;
+    }
+    @top TopMod {
+        IN  [1]  clk = _;
+        IN  [1]  sel = _;
+        IN  [8]  a = _;
+        IN  [8]  b = _;
+        IN  [8]  c = _;
+        OUT [16] out_a = _;
+        OUT [16] out_b = _;
+        OUT [16] out_c = _;
+        OUT [16] out_d = _;
+    }
+@endproj
+
+// Helper module: ternary mismatch in async and sync
+@module HelperMod
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  sel;
+        IN  [8]  a;
+        IN  [8]  b;
+        IN  [8]  c;
+        OUT [16] out_a;
+        OUT [16] out_b;
+    }
+    REGISTER {
+        r [16] = 16'h0000;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: concat (16) vs scalar (8) in async
+        out_a <= sel ? {a, b} : c;
+        // Valid: matching widths (no false positive)
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: scalar (8) vs concat (16) in sync
+        r <= sel ? c : {a, b};
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1]  clk;
+        IN  [1]  sel;
+        IN  [8]  a;
+        IN  [8]  b;
+        IN  [8]  c;
+        OUT [16] out_a;
+        OUT [16] out_b;
+        OUT [16] out_c;
+        OUT [16] out_d;
+    }
+    WIRE {
+        ha [16];
+        hb [16];
+    }
+    REGISTER {
+        r [16] = 16'h0000;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1]  clk = clk;
+        IN  [1]  sel = sel;
+        IN  [8]  a = a;
+        IN  [8]  b = b;
+        IN  [8]  c = c;
+        OUT [16] out_a = ha;
+        OUT [16] out_b = hb;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: concat (16) vs scalar (8) in top async
+        out_a <= sel ? {a, b} : c;
+        // Trigger 4: scalar (8) vs concat (16) in top async
+        out_b <= sel ? c : {a, b};
+        // Valid: matching concat widths (S3.4 correct form, no false positive)
+        out_c = sel ? {a, b} : {a, c};
+        out_d = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: concat (16) vs scalar (8) in top sync
+        r <= sel ? {a, b} : c;
+    }
+@endmod

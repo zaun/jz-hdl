@@ -1,0 +1,87 @@
+// WARN_INTERNAL_TRISTATE: Internal tri-state logic without --tristate-default flag.
+// Warns when a non-INOUT net is driven with z, indicating FPGA-incompatible tri-state.
+// Valid: INOUT port with z (no warning). Multiple trigger contexts tested.
+
+@project WARN_INTERNAL_TRISTATE_internal_tristate
+    @top TopMod {
+        IN    [1] clk = _;
+        IN    [1] en = _;
+        OUT   [8] data = _;
+        INOUT [8] bidir = _;
+    }
+@endproj
+
+// Helper module with internal tri-state on a WIRE
+@module HelperMod
+    PORT {
+        IN  [1] en;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        // Trigger 1: wire driven with z in helper module
+        w_internal [8];
+    }
+
+    ASYNCHRONOUS {
+        IF (en) {
+            w_internal <= din;
+        } ELSE {
+            w_internal <= 8'bzzzz_zzzz;
+        }
+        data <= w_internal;
+    }
+@endmod
+
+// Top module with multiple tri-state contexts and valid INOUT usage
+@module TopMod
+    PORT {
+        IN    [1] clk;
+        IN    [1] en;
+        OUT   [8] data;
+        INOUT [8] bidir;
+    }
+
+    REGISTER {
+        r [8] = 8'b0000_0000;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] en = en;
+        IN  [8] din = r;
+        OUT [8] data = _;
+    };
+
+    WIRE {
+        // Trigger 2: wire driven with z in top module
+        w_top [8];
+        // Valid: wire not driven with z (no warning)
+        w_safe [8];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2 driver: conditional z to wire
+        IF (en) {
+            w_top <= r;
+        } ELSE {
+            w_top <= 8'bzzzz_zzzz;
+        }
+
+        // Valid: no z here
+        w_safe <= r;
+
+        // Valid: INOUT port with z does NOT trigger warning
+        IF (en) {
+            bidir <= r;
+        } ELSE {
+            bidir <= 8'bzzzz_zzzz;
+        }
+
+        data <= w_top;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

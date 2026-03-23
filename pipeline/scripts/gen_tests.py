@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 PIPELINE_DIR = os.path.join(os.path.dirname(__file__), "..")
-PROMPT_FILE = os.path.join(PIPELINE_DIR, "prompts", "3.md")
+PROMPT_FILE = os.path.join(PIPELINE_DIR, "prompts", "tests", "2.md")
 
 
 def load_prompt(test_filename: str) -> str:
@@ -28,12 +28,21 @@ def load_prompt(test_filename: str) -> str:
     return prompt
 
 
-def get_test_files(filter_pattern: str | None = None) -> list[str]:
+def get_test_files(filter_pattern: str | None = None, start_at: str | None = None) -> list[str]:
     """Find all test_*.md files in the pipeline directory."""
     pattern = os.path.join(PIPELINE_DIR, "test_*.md")
     files = sorted(glob.glob(pattern))
     if filter_pattern:
         files = [f for f in files if filter_pattern in os.path.basename(f)]
+    if start_at:
+        idx = next(
+            (i for i, f in enumerate(files) if start_at in os.path.basename(f)),
+            None,
+        )
+        if idx is None:
+            print(f"Warning: --start-at '{start_at}' not found, running all files.", file=sys.stderr)
+        else:
+            files = files[idx:]
     return files
 
 
@@ -66,6 +75,12 @@ def main():
         help="Only process test files matching this substring (e.g. 'test_4_1')",
     )
     parser.add_argument(
+        "--start-at",
+        type=str,
+        default=None,
+        help="Start from the first test matching this substring (e.g. 'test_4_10')",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print what would be run without executing",
@@ -77,7 +92,7 @@ def main():
     )
     args = parser.parse_args()
 
-    test_files = get_test_files(args.filter)
+    test_files = get_test_files(args.filter, args.start_at)
 
     if not test_files:
         print("No test_*.md files found.", file=sys.stderr)
