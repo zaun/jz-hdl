@@ -13,12 +13,16 @@ PROMPT_FILE = os.path.join(PIPELINE_DIR, "prompts", "tests", "2.md")
 
 # Sentinels that indicate "Rules Not Tested" has no real entries
 _NO_WORK_PATTERNS = re.compile(
-    r"^\|\s*(?:\(none\)|—|--|)\s*\|"   # table row with placeholder rule ID
-    r"|^No rules to test"               # prose "no rules" line
-    r"|All .* rules (?:covered|have validation)"  # "all rules covered" inside a cell
-    r"|All section .* rules covered"
-    r"|No new rules"
-    r"|All mapped rules have",
+    r"^\|\s*(?:\(none\)|\(all[^)]*\)|—|--|)\s*\|"  # table row with placeholder rule ID
+    r"|^No rules to test"                            # prose "no rules" line
+    r"|^All .* rules"                                # "All ... rules ..." (covered/tested/have)
+    r"|^All rules"                                   # "All rules for this section are tested"
+    r"|^All section"                                 # "All section N.N rules covered"
+    r"|^All TESTBENCH"                               # "All TESTBENCH rules are now covered"
+    r"|^No new rules"
+    r"|^No rules defined"
+    r"|^Full MEM coverage"
+    r"|^Aggregate gap analysis",
     re.IGNORECASE,
 )
 
@@ -46,13 +50,16 @@ def has_untested_rules(test_path: str) -> bool:
     for line in section.strip().splitlines():
         line = line.strip()
         # Skip blank lines, table headers, and separator rows
-        if not line or line.startswith("|---") or line.startswith("| Rule ID"):
+        if not line or line.startswith("|---") or line.startswith("| Rule ID") or line.startswith("| Expected Rule"):
             continue
-        # Skip lines that match "no work" sentinels
+        # Skip lines that match "no work" sentinels (prose lines or table rows)
         if _NO_WORK_PATTERNS.search(line):
             continue
-        # If we find a table row with a real rule ID, there's work to do
+        # For table rows, extract the first cell and check if it's a real rule ID
         if line.startswith("|"):
+            first_cell = line.split("|")[1].strip() if "|" in line[1:] else ""
+            if not re.match(r"^[A-Z][A-Z_0-9]{3,}$", first_cell):
+                continue  # Not a real rule ID (placeholder, prose, etc.)
             return True
 
     return False
