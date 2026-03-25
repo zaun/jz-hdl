@@ -1,0 +1,60 @@
+// LATCH_WIDTH_INVALID: LATCH width must be a positive integer.
+// Tests zero-width latch declaration across modules.
+// Note: compiler emits WIDTH_NONPOSITIVE_OR_NONINT instead of LATCH_WIDTH_INVALID
+// for zero-width latches. The latch-specific rule is unreachable (see issues.md).
+// Valid positive-width latches included to verify no false positives.
+
+@project LATCH_WIDTH_INVALID_invalid_latch_width
+    @top TopMod {
+        IN  [1] enable = _;
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: zero-width latch declaration
+@module HelperMod
+    PORT {
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    LATCH {
+        // Valid: positive width (should NOT trigger)
+        lat_ok [1] D;
+        // Trigger 1: zero-width latch in helper module
+        lat_zero [0] D;
+    }
+
+    ASYNCHRONOUS {
+        lat_ok <= enable : din;
+        data <= lat_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] enable = enable;
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    LATCH {
+        // Valid: positive width
+        lat_top_ok [1] D;
+        // Trigger 2: zero-width latch in top module
+        lat_top_zero [0] D;
+    }
+
+    ASYNCHRONOUS {
+        lat_top_ok <= enable : din;
+        data <= lat_top_ok;
+    }
+@endmod

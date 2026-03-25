@@ -9,7 +9,7 @@
     }
 @endproj
 
-// Trigger 1: = instead of <= for sync read in helper
+// Helper: = instead of <= for sync read
 @module HelperMod
     PORT {
         IN  [1] clk;

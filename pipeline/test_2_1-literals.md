@@ -72,6 +72,7 @@ Verify sized literal syntax (`<width>'<base><value>`), base-specific digit rules
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 2_1_LIT_HAPPY_PATH-valid_literals_ok.jz | -- | Happy path: valid literal forms accepted |
 | 2_1_LIT_BARE_INTEGER-bare_int_in_expression.jz | LIT_BARE_INTEGER | Bare integer used in runtime expression |
 | 2_1_LIT_DECIMAL_HAS_XZ-xz_in_decimal.jz | LIT_DECIMAL_HAS_XZ | x or z digit in decimal literal |
 | 2_1_LIT_INVALID_DIGIT_FOR_BASE-invalid_digits.jz | LIT_INVALID_DIGIT_FOR_BASE | Digit not valid for base |

@@ -1,6 +1,6 @@
 // PIN_TERM_INVALID_FOR_STANDARD: Termination not supported for this I/O standard.
-// Tests term=ON on standards that don't support termination (e.g. LVCMOS).
-// Valid termination on SSTL/HSTL standards verifies no false positives.
+// Tests term=ON on standards that do not support termination (e.g., LVCMOS).
+// term=ON on SSTL/HSTL standards is valid (no trigger).
 
 @project PIN_TERM_INVALID_FOR_STANDARD_term_unsupported
     CLOCKS {
@@ -9,21 +9,21 @@
 
     IN_PINS {
         sys_clk = { standard=LVCMOS33 };
-        // Valid: term=ON on SSTL (supports termination, no trigger)
+        // Valid: term=ON on SSTL18_I (supported, no trigger)
         valid_sstl = { standard=SSTL18_I, term=ON };
-        // Trigger 1: term=ON on LVCMOS33 input (does not support termination)
+        // Trigger 1: term=ON on LVCMOS33 (unsupported) in IN_PINS
         bad_term_in = { standard=LVCMOS33, term=ON };
     }
 
     OUT_PINS {
-        // Valid: no term on LVCMOS output (no trigger)
+        // Valid: no termination on output (no trigger)
         valid_out = { standard=LVCMOS33, drive=8 };
     }
 
     INOUT_PINS {
-        // Valid: term=ON on SSTL INOUT (supports termination, no trigger)
+        // Valid: term=ON on SSTL18_I (supported, no trigger)
         valid_sstl_io = { standard=SSTL18_I, drive=4, term=ON };
-        // Trigger 2: term=ON on LVCMOS18 INOUT (does not support termination)
+        // Trigger 2: term=ON on LVCMOS18 (unsupported) in INOUT_PINS
         bad_term_io = { standard=LVCMOS18, drive=4, term=ON };
     }
 

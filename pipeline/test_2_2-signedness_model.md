@@ -21,10 +21,11 @@ Verify that all signals, literals, and operators are treated as unsigned by defa
 
 ### 2.2 Error Cases
 
-| # | Test Case | Description |
-|---|-----------|-------------|
-| 1 | No signed keyword | No `signed` keyword exists; using it would be a parse error |
-| 2 | Width mismatch on binary op | `8'd10 + 4'd5` triggers TYPE_BINOP_WIDTH_MISMATCH (width matching enforced for all binary operators) |
+| # | Test Case | Description | Rule ID |
+|---|-----------|-------------|---------|
+| 1 | No signed keyword | No `signed` keyword exists; using it would be a parse error | -- (syntax) |
+| 2 | Width mismatch on binary op | `8'd10 + 4'd5` triggers width mismatch (width matching enforced for all binary operators) | TYPE_BINOP_WIDTH_MISMATCH |
+| 3 | Zero-width signal in expression | `0'd0` or zero-width declared signal | WIDTH_NONPOSITIVE_OR_NONINT |
 
 ### 2.3 Edge Cases
 
@@ -48,7 +49,9 @@ Verify that all signals, literals, and operators are treated as unsigned by defa
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
-| -- | -- | No validation tests directly mapped to this section |
+| 2_2_SIGNEDNESS_HAPPY_PATH-unsigned_arithmetic_ok.jz | -- | Happy path: unsigned arithmetic operations accepted |
+| 2_2_TYPE_BINOP_WIDTH_MISMATCH-width_mismatch.jz | TYPE_BINOP_WIDTH_MISMATCH | Binary operator operands have mismatched widths |
+| 2_3_WIDTH_NONPOSITIVE_OR_NONINT-zero_width.jz | WIDTH_NONPOSITIVE_OR_NONINT | Signal or literal width is zero, negative, or non-integer (cross-ref S2.3) |
 
 ## 5. Rules Matrix
 
@@ -56,10 +59,11 @@ Verify that all signals, literals, and operators are treated as unsigned by defa
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| TYPE_BINOP_WIDTH_MISMATCH | error | Binary operator requires equal operand widths | Error 2 |
+| TYPE_BINOP_WIDTH_MISMATCH | error | S2.2/3.2/8.1 Binary operator requires equal-width operands | 2_2_TYPE_BINOP_WIDTH_MISMATCH-width_mismatch.jz |
+| WIDTH_NONPOSITIVE_OR_NONINT | error | S2.2/S8.1 Signal or expression width is zero, negative, or non-integer | 2_3_WIDTH_NONPOSITIVE_OR_NONINT-zero_width.jz |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| TYPE_BINOP_WIDTH_MISMATCH | error | Primarily tested in section 2.3; no dedicated 2.2 validation test exists |
+| (none) | -- | All rules assigned to this section have validation tests |

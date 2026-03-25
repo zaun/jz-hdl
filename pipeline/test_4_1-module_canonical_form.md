@@ -4,7 +4,7 @@
 
 ## 1. Objective
 
-Verify module canonical form, section ordering, structural directives. Confirm that modules accept all optional sections (CONST, PORT, WIRE, REGISTER, MEM, @template, ASYNCHRONOUS, SYNCHRONOUS), enforce correct ordering, reject duplicate blocks, require at least one PORT, and warn on input-only modules.
+Verify module canonical form, section ordering, structural directives. Confirm that modules accept all optional sections (CONST, PORT, WIRE, REGISTER, MEM, MUX, LATCH, @template, ASYNCHRONOUS, SYNCHRONOUS, CDC), enforce correct ordering, reject duplicate blocks, require at least one PORT, and warn on input-only modules.
 
 ## 2. Test Scenarios
 
@@ -12,8 +12,8 @@ Verify module canonical form, section ordering, structural directives. Confirm t
 
 | # | Test Case | Description |
 |---|-----------|-------------|
-| 1 | Full canonical form | Module with all sections: CONST, PORT, WIRE, REGISTER, MEM, @template, ASYNCHRONOUS, SYNCHRONOUS |
-| 2 | Minimal module | `@module m PORT { IN [1] clk; } @endmod` -- just a port |
+| 1 | Full canonical form | Module with all sections: CONST, PORT, WIRE, REGISTER, MEM, MUX, LATCH, @template, ASYNCHRONOUS, SYNCHRONOUS |
+| 2 | Minimal module | `@module m PORT { IN [1] clk; OUT [1] out; } @endmod` -- just ports |
 | 3 | Module without CONST | No CONST block, but PORT + WIRE + ASYNC |
 | 4 | Module without REGISTER | No registers, pure combinational |
 | 5 | Module without WIRE | Only ports and registers |
@@ -39,18 +39,19 @@ Verify module canonical form, section ordering, structural directives. Confirm t
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|-----------------|---------|----------|-------|
-| 1 | Full canonical module | AST with all sections | -- | -- | Valid |
-| 2 | Nested @module inside @module | Error: structural directive in wrong location | DIRECTIVE_INVALID_CONTEXT | error | Modules cannot nest |
-| 3 | Two SYNCHRONOUS blocks for same clock | Error: duplicate block | DUPLICATE_BLOCK | error | Only one SYNC per clock per module |
-| 4 | Module with no PORT block | Error: missing port block | MODULE_MISSING_PORT | error | Every module needs at least one port |
-| 5 | Module with only IN ports | Warning: only input ports | MODULE_PORT_IN_ONLY | warning | Likely dead code |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|-----------------|----------|
+| 1 | Full canonical module | All sections present and valid | -- | -- (pass) |
+| 2 | Nested @module inside @module | `@module inner` inside `@module outer` | DIRECTIVE_INVALID_CONTEXT | error |
+| 3 | Two SYNCHRONOUS blocks for same clock | Two `SYNCHRONOUS(CLK=clk)` in one module | DUPLICATE_BLOCK | error |
+| 4 | Module with no PORT block | `@module m WIRE { ... } @endmod` | MODULE_MISSING_PORT | error |
+| 5 | Module with only IN ports | `PORT { IN [1] clk; }` -- no OUT/INOUT | MODULE_PORT_IN_ONLY | warning |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 4_1_MODULE_CANONICAL_FORM-full_canonical_ok.jz | -- | Happy path: full canonical form with all sections |
 | 4_1_DIRECTIVE_INVALID_CONTEXT-nested_structural_directives.jz | DIRECTIVE_INVALID_CONTEXT | Structural directives (@module etc.) used in invalid nesting context |
 | 4_1_DUPLICATE_BLOCK-duplicate_sync_block.jz | DUPLICATE_BLOCK | Two SYNCHRONOUS blocks for the same clock signal |
 | 4_1_MODULE_MISSING_PORT-no_port_block.jz | MODULE_MISSING_PORT | Module declared without a PORT block |

@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: .addr on ASYNC port in helper
+// Helper: .addr on ASYNC port
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -28,6 +28,7 @@
         };
     }
 
+    // Valid: bracket access on ASYNC port
     ASYNCHRONOUS {
         data = mem_a.rd[addr];
     }

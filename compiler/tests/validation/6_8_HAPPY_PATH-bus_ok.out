@@ -1,0 +1,4 @@
+File: 6_8_HAPPY_PATH-bus_ok.jz
+      35:28   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect
+      58:28   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect
+      80:31   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it

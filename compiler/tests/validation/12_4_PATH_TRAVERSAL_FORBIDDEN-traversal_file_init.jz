@@ -10,12 +10,27 @@
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [8] din;
+        OUT [8] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         IN  [4] addr;
         OUT [8] data;
     }
+
+    @new inst_h Helper {
+        IN  [8] din = r;
+        OUT [8] dout = _;
+    };
 
     REGISTER {
         r [8] = 8'h00;

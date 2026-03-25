@@ -1,0 +1,128 @@
+// HAPPY_PATH: Valid MEM port mode declarations produce no diagnostics.
+// Exercises OUT ASYNC, OUT SYNC, IN (implicit SYNC), INOUT with all write modes,
+// IN with explicit write modes, and mixed port configurations.
+
+@project HAPPY_PATH_mem_port_modes_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] rdata_a = _;
+        OUT [8] rdata_b = _;
+        OUT [8] rdata_c = _;
+    }
+@endproj
+
+// Helper module: OUT ASYNC, OUT SYNC, IN with write modes
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    // Valid: OUT ASYNC read port, IN with WRITE_FIRST shorthand
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd_a ASYNC;
+            IN  wr_a WRITE_FIRST;
+        };
+    }
+
+    // Valid: OUT SYNC read port, IN with READ_FIRST shorthand
+    MEM(type=BLOCK) {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd_b SYNC;
+            IN  wr_b READ_FIRST;
+        };
+    }
+
+    REGISTER {
+        r_rdata [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        rdata = mem_a.rd_a[addr] ^ r_rdata;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_b.rd_b.addr <= addr;
+        r_rdata <= mem_b.rd_b.data;
+        mem_a.wr_a[addr] <= wdata;
+        mem_b.wr_b[addr] <= wdata;
+    }
+@endmod
+
+// Top module: INOUT with all three write modes, IN plain, OUT without mode
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata_a;
+        OUT [8] rdata_b;
+        OUT [8] rdata_c;
+    }
+
+    // Valid: INOUT with WRITE_FIRST (shorthand)
+    MEM(type=BLOCK) {
+        mem_sp1 [8] [16] = 8'h00 {
+            INOUT rw1 WRITE_FIRST;
+        };
+    }
+
+    // Valid: INOUT with READ_FIRST (shorthand)
+    MEM(type=BLOCK) {
+        mem_sp2 [8] [16] = 8'h00 {
+            INOUT rw2 READ_FIRST;
+        };
+    }
+
+    // Valid: INOUT with NO_CHANGE (shorthand)
+    MEM(type=BLOCK) {
+        mem_sp3 [8] [16] = 8'h00 {
+            INOUT rw3 NO_CHANGE;
+        };
+    }
+
+    // Valid: IN with NO_CHANGE shorthand, OUT ASYNC
+    MEM {
+        mem_sdp [8] [16] = 8'h00 {
+            OUT rd_sdp ASYNC;
+            IN  wr_sdp NO_CHANGE;
+        };
+    }
+
+    // Valid: plain IN (default WRITE_FIRST), OUT ASYNC
+    MEM {
+        mem_plain [8] [16] = 8'h00 {
+            OUT rd_plain ASYNC;
+            IN  wr_plain;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = _;
+    };
+
+    ASYNCHRONOUS {
+        rdata_a = mem_sp1.rw1.data;
+        rdata_b = mem_sdp.rd_sdp[addr] ^ mem_plain.rd_plain[addr];
+        rdata_c = mem_sp2.rw2.data ^ mem_sp3.rw3.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_sp1.rw1.addr <= addr;
+        mem_sp1.rw1.wdata <= wdata;
+        mem_sp2.rw2.addr <= addr;
+        mem_sp2.rw2.wdata <= wdata;
+        mem_sp3.rw3.addr <= addr;
+        mem_sp3.rw3.wdata <= wdata;
+        mem_sdp.wr_sdp[addr] <= wdata;
+        mem_plain.wr_plain[addr] <= wdata;
+    }
+@endmod

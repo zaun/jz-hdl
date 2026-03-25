@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: .wdata assigned in ASYNC block in helper
+// Trigger 1: .wdata assigned in ASYNC block in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -72,8 +72,10 @@
         mem_b.rw.wdata = wdata;
     }
 
+    // Valid: .wdata assigned in SYNC block (no error expected)
     SYNCHRONOUS(CLK=clk) {
         r <= r;
         mem_b.rw.addr <= addr;
+        mem_b.rw.wdata <= wdata;
     }
 @endmod

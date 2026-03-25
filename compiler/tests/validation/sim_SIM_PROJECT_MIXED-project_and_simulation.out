@@ -1,0 +1,2 @@
+File: sim_SIM_PROJECT_MIXED-project_and_simulation.jz
+      21:1    error SIM_PROJECT_MIXED SIM-020 A file may not contain both @project and @simulation

@@ -29,6 +29,7 @@ Verify @template syntax, parameter list, module-scoped and file-scoped placement
 ## 4. Existing Validation Tests
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| `10_2_HAPPY_PATH-template_definition_ok.jz` | — | Happy-path: valid template definitions (module-scoped, file-scoped, zero params) |
 | `10_2_TEMPLATE_DUP_NAME-duplicate_template_names.jz` | TEMPLATE_DUP_NAME | Two templates with the same name in one scope |
 | `10_2_TEMPLATE_DUP_PARAM-duplicate_param_names.jz` | TEMPLATE_DUP_PARAM | Repeated parameter identifier in definition |
 
@@ -37,8 +38,8 @@ Verify @template syntax, parameter list, module-scoped and file-scoped placement
 ### 5.1 Rules Tested
 | Rule ID | Description | Test Case(s) |
 |---------|-------------|-------------|
-| TEMPLATE_DUP_NAME | Duplicate template name in the same scope | Error 1 |
-| TEMPLATE_DUP_PARAM | Duplicate parameter name in template definition | Error 2 |
+| TEMPLATE_DUP_NAME | Duplicate template name in the same scope | `10_2_TEMPLATE_DUP_NAME-duplicate_template_names.jz` |
+| TEMPLATE_DUP_PARAM | Duplicate parameter name in template definition | `10_2_TEMPLATE_DUP_PARAM-duplicate_param_names.jz` |
 
 ### 5.2 Rules Not Tested
 | Expected Rule | Spec Reference | Gap Description |

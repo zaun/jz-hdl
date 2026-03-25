@@ -43,7 +43,17 @@ Verify all tristate transform errors and warnings are correctly detected and rep
 
 ## 4. Existing Validation Tests
 
-No validation tests directly mapped to this subsection. All TRISTATE_TRANSFORM_* rules require the `--tristate-default` flag, which is outside the `--info --lint` framework.
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| `11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz` | TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | Non-mutually-exclusive enables (GND default) |
+| `11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz` | TRISTATE_TRANSFORM_PER_BIT_FAIL | Per-bit tri-state pattern (GND default) |
+| `11_GND_7_TRISTATE_TRANSFORM_BLACKBOX_PORT-blackbox_tristate.jz` | TRISTATE_TRANSFORM_BLACKBOX_PORT | Tri-state driven by blackbox port (GND default) |
+| `11_GND_7_TRISTATE_TRANSFORM_OE_EXTRACT_FAIL-ambiguous_oe.jz` | TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | Ambiguous output-enable extraction (GND default) |
+| `11_GND_7_TRISTATE_TRANSFORM_SINGLE_DRIVER-single_driver.jz` | TRISTATE_TRANSFORM_SINGLE_DRIVER | Single-driver tri-state net (GND default) |
+| `11_GND_7_TRISTATE_TRANSFORM_UNUSED_DEFAULT-no_tristate_nets.jz` | TRISTATE_TRANSFORM_UNUSED_DEFAULT | No internal tri-state nets found (GND default) |
+| `11_GND_4_INFO_TRISTATE_TRANSFORM-gnd_transform.jz` | INFO_TRISTATE_TRANSFORM | Successful transform info (GND default) |
+| `11_GND_4_INFO_TRISTATE_TRANSFORM-single_bit_fullwidth_z.jz` | INFO_TRISTATE_TRANSFORM | Single-bit full-width z transform (GND default) |
+| `11_VCC_4_INFO_TRISTATE_TRANSFORM-vcc_transform.jz` | INFO_TRISTATE_TRANSFORM | Successful transform info (VCC default) |
 
 ## 5. Rules Matrix
 
@@ -51,20 +61,15 @@ No validation tests directly mapped to this subsection. All TRISTATE_TRANSFORM_*
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Non-mutually-exclusive enable conditions; cannot build safe priority chain | Error 1 |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Per-bit tri-state pattern; only full-width z can be transformed | Error 2 |
-| TRISTATE_TRANSFORM_BLACKBOX_PORT | error | Tri-state driven by blackbox port; use external pull resistor | Error 3 |
-| TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | error | Could not extract output-enable condition; _oe driven high as fallback | Error 4 |
-| TRISTATE_TRANSFORM_SINGLE_DRIVER | warning | Single-driver tri-state net; z replaced with GND/VCC | Edge 1 |
-| TRISTATE_TRANSFORM_UNUSED_DEFAULT | warning | --tristate-default specified but no internal tri-state nets found | Edge 2 |
+| INFO_TRISTATE_TRANSFORM | info | Tri-state net successfully transformed | `11_GND_4_INFO_TRISTATE_TRANSFORM-gnd_transform.jz`, `11_GND_4_INFO_TRISTATE_TRANSFORM-single_bit_fullwidth_z.jz`, `11_VCC_4_INFO_TRISTATE_TRANSFORM-vcc_transform.jz` |
+| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Non-mutually-exclusive enable conditions; cannot build safe priority chain | `11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz` |
+| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Per-bit tri-state pattern; only full-width z can be transformed | `11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz` |
+| TRISTATE_TRANSFORM_BLACKBOX_PORT | error | Tri-state driven by blackbox port; use external pull resistor | `11_GND_7_TRISTATE_TRANSFORM_BLACKBOX_PORT-blackbox_tristate.jz` |
+| TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | error | Could not extract output-enable condition; _oe driven high as fallback | `11_GND_7_TRISTATE_TRANSFORM_OE_EXTRACT_FAIL-ambiguous_oe.jz` |
+| TRISTATE_TRANSFORM_SINGLE_DRIVER | warning | Single-driver tri-state net; z replaced with GND/VCC | `11_GND_7_TRISTATE_TRANSFORM_SINGLE_DRIVER-single_driver.jz` |
+| TRISTATE_TRANSFORM_UNUSED_DEFAULT | warning | --tristate-default specified but no internal tri-state nets found | `11_GND_7_TRISTATE_TRANSFORM_UNUSED_DEFAULT-no_tristate_nets.jz` |
+| WARN_INTERNAL_TRISTATE | warning | S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC | 11_1_WARN_INTERNAL_TRISTATE-internal_tristate_warning.jz, 12_3_WARN_INTERNAL_TRISTATE-internal_tristate.jz |
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_BLACKBOX_PORT | error | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | error | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_SINGLE_DRIVER | warning | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_UNUSED_DEFAULT | warning | Requires `--tristate-default` flag; not testable via `--info --lint` |
+All rules for this section are tested.

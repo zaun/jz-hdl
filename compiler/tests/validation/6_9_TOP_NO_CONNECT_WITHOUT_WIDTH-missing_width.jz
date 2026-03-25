@@ -1,5 +1,5 @@
 // TOP_NO_CONNECT_WITHOUT_WIDTH: Port bound to _ without explicit width in @top.
-// Tests empty width brackets on no-connect bindings.
+// Tests empty width brackets on no-connect bindings for IN and OUT ports.
 // Valid: no-connect with explicit width included for no false positives.
 
 @project TOP_NO_CONNECT_WITHOUT_WIDTH_missing_width

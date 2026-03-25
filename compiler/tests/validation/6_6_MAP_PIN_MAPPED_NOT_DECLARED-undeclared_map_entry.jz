@@ -1,5 +1,5 @@
 // MAP_PIN_MAPPED_NOT_DECLARED: MAP entry references a pin not declared in any PIN block.
-// Tests undeclared scalar pin and undeclared bus pin in MAP.
+// Triggers: undeclared scalar pin, undeclared bus bit, undeclared differential pin in MAP.
 // Valid declared+mapped pins included to verify no false positives.
 
 @project MAP_PIN_MAPPED_NOT_DECLARED_undeclared_map_entry
@@ -7,12 +7,19 @@
         valid_out = { standard=LVCMOS33, drive=8 };
     }
 
+    IN_PINS {
+        valid_in = { standard=LVCMOS33 };
+    }
+
     MAP {
         valid_out = 1;
+        valid_in = 2;
         // Trigger 1: scalar pin not declared in any PIN block
-        ghost_pin = 2;
+        ghost_pin = 3;
         // Trigger 2: bus bit of undeclared pin
-        ghost_bus[0] = 3;
+        ghost_bus[0] = 4;
+        // Trigger 3: undeclared pin with differential syntax
+        ghost_diff = { P=5, N=6 };
     }
 
     @top TopMod {

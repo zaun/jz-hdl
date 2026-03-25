@@ -36,19 +36,22 @@ Verify @apply syntax, argument count matching, count parameter (0/1/N), IDX subs
 ## 4. Existing Validation Tests
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| `10_5_HAPPY_PATH-template_application_ok.jz` | — | Happy-path: valid @apply with correct args, count, IDX |
 | `10_5_TEMPLATE_UNDEFINED-undefined_template_ref.jz` | TEMPLATE_UNDEFINED | @apply references a template that does not exist |
 | `10_5_TEMPLATE_ARG_COUNT_MISMATCH-wrong_arg_count.jz` | TEMPLATE_ARG_COUNT_MISMATCH | Argument count differs from parameter count |
 | `10_5_TEMPLATE_COUNT_NOT_NONNEG_INT-bad_count_expr.jz` | TEMPLATE_COUNT_NOT_NONNEG_INT | Count expression is negative or non-integer |
+| `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_file_scope.jz` | TEMPLATE_APPLY_OUTSIDE_BLOCK | @apply used at file scope outside any block |
+| `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_module_scope.jz` | TEMPLATE_APPLY_OUTSIDE_BLOCK | @apply used at module scope outside any block |
 
 ## 5. Rules Matrix
 
 ### 5.1 Rules Tested
 | Rule ID | Description | Test Case(s) |
 |---------|-------------|-------------|
-| TEMPLATE_UNDEFINED | @apply references undefined template | Error 1 |
-| TEMPLATE_ARG_COUNT_MISMATCH | @apply argument count does not match template parameter count | Error 2 |
-| TEMPLATE_COUNT_NOT_NONNEG_INT | @apply count expression does not resolve to a non-negative integer | Error 3 |
-| TEMPLATE_APPLY_OUTSIDE_BLOCK | @apply may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks | Error 4 |
+| TEMPLATE_UNDEFINED | @apply references undefined template | `10_5_TEMPLATE_UNDEFINED-undefined_template_ref.jz` |
+| TEMPLATE_ARG_COUNT_MISMATCH | @apply argument count does not match template parameter count | `10_5_TEMPLATE_ARG_COUNT_MISMATCH-wrong_arg_count.jz` |
+| TEMPLATE_COUNT_NOT_NONNEG_INT | @apply count expression does not resolve to a non-negative integer | `10_5_TEMPLATE_COUNT_NOT_NONNEG_INT-bad_count_expr.jz` |
+| TEMPLATE_APPLY_OUTSIDE_BLOCK | @apply may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks | `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_file_scope.jz`, `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_module_scope.jz` |
 
 ### 5.2 Rules Not Tested
 | Expected Rule | Spec Reference | Gap Description |

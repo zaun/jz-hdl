@@ -1,6 +1,6 @@
 // CONFIG_USED_WHERE_FORBIDDEN: CONFIG.<name> used in runtime expression contexts.
 // Tests CONFIG used in ASYNCHRONOUS and SYNCHRONOUS blocks across modules.
-// Valid compile-time uses (port widths) included to verify no false positives.
+// Valid compile-time uses (port widths, register widths) included to verify no false positives.
 
 @project CONFIG_USED_WHERE_FORBIDDEN_runtime_use
     CONFIG {

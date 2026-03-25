@@ -30,7 +30,7 @@
         OUT [1] data;
     }
 
-    // Trigger 2: OVERRIDE in blackbox @new inside non-top module
+    // Trigger 1: OVERRIDE in blackbox @new inside non-top module
     @new inst_bb2 bb_ip2 {
         OVERRIDE {
             MODE = 1;
@@ -59,7 +59,7 @@
         OUT [1] data;
     }
 
-    // Trigger 1: OVERRIDE in blackbox @new with single param
+    // Trigger 2: OVERRIDE in blackbox @new with single param
     @new inst_bb bb_ip {
         OVERRIDE {
             FREQ = 100;

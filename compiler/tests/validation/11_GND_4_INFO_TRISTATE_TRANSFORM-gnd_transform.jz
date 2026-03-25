@@ -14,7 +14,7 @@
     }
 @endproj
 
-// Helper module with internal tri-state wire
+// Helper module with internal tri-state wire (single-driver conditional z)
 @module HelperMod
     PORT {
         IN  [1] en;
@@ -36,7 +36,7 @@
     }
 @endmod
 
-// Top module with internal tri-state wire, INOUT z preserved, and non-tri-state wire
+// Top module with internal tri-state wire, INOUT z preserved, non-tri-state wire
 @module TopMod
     PORT {
         IN    [1] clk;

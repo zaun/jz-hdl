@@ -1,0 +1,2 @@
+File: 6_3_CONST_NUMERIC_IN_STRING_CONTEXT-numeric_as_string.jz
+      27:42   error PARSE000 parse error near token 'CONFIG': expected string path or CONST/CONFIG reference in @file(...) MEM initializer (orig: PARSE000)

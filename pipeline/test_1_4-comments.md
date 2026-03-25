@@ -57,6 +57,7 @@ Verify that the lexer correctly handles line comments (`//`), block comments (`/
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 1_4_COMMENT_HAPPY_PATH-valid_comments_ok.jz | -- | Happy path: valid comment patterns accepted |
 | 1_4_COMMENT_IN_TOKEN-comment_inside_token.jz | COMMENT_IN_TOKEN | Comment appears inside a token (identifier/number/operator/literal) |
 | 1_4_COMMENT_NESTED_BLOCK-nested_block_comment.jz | COMMENT_NESTED_BLOCK | Nested block comment `/* ... /* ... */ ... */` detected |
 

@@ -1,5 +1,5 @@
 File: 7_3_MEM_ADDR_WIDTH_TOO_WIDE-wide_address.jz
-      36:16   error MEM_ADDR_WIDTH_TOO_WIDE S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way
-      42:9    error MEM_ADDR_WIDTH_TOO_WIDE S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way
-      74:16   error MEM_ADDR_WIDTH_TOO_WIDE S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way
-      80:9    error MEM_ADDR_WIDTH_TOO_WIDE S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way
+      40:16   error MEM_ADDR_WIDTH_TOO_WIDE S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way
+      48:9    error MEM_ADDR_WIDTH_TOO_WIDE S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way
+      83:16   error MEM_ADDR_WIDTH_TOO_WIDE S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way
+      90:28   error MEM_ADDR_WIDTH_TOO_WIDE S7.2/S7.3/S7.7.2 Address width exceeds ceil(log2(depth)) in constant-time-provable way

@@ -11,7 +11,7 @@
     }
 @endproj
 
-// Triggers in helper module
+// Helper: .addr and .data on IN port
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -79,9 +79,9 @@
     SYNCHRONOUS(CLK=clk) {
         r <= r;
         mem_b.wr[addr] <= wdata;
-        // Trigger 3: .addr on IN port in top module
+        // Trigger 3: .addr on IN port in top
         mem_b.wr.addr <= addr;
-        // Trigger 4: .data on IN port in top module
+        // Trigger 4: .data on IN port in top
         mem_b.wr.data <= wdata;
     }
 @endmod

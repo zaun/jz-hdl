@@ -1,5 +1,6 @@
 // PROJECT_MISSING_TOP_MODULE: Project has no @top directive.
 // Single trigger: project-level error, only one @project per file.
+// A valid module is defined but the project has no @top to reference it.
 
 @project PROJECT_MISSING_TOP_MODULE_no_top_directive
     CONFIG {

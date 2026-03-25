@@ -33,6 +33,7 @@ Verify allowed content inside templates: directional/alias assignments, IF/ELIF/
 ## 4. Existing Validation Tests
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| `10_3_HAPPY_PATH-template_allowed_content_ok.jz` | — | Happy-path: assignments, IF/ELSE, @scratch, CONST refs inside template |
 | `10_3_TEMPLATE_EXTERNAL_REF-external_signal_reference.jz` | TEMPLATE_EXTERNAL_REF | References signal not passed as parameter |
 | `10_3_TEMPLATE_SCRATCH_OUTSIDE-scratch_outside_template.jz` | TEMPLATE_SCRATCH_OUTSIDE | @scratch used outside a template body |
 | `10_3_TEMPLATE_SCRATCH_WIDTH_INVALID-scratch_width_not_constant.jz` | TEMPLATE_SCRATCH_WIDTH_INVALID | @scratch width is not a positive integer constant |
@@ -42,9 +43,9 @@ Verify allowed content inside templates: directional/alias assignments, IF/ELIF/
 ### 5.1 Rules Tested
 | Rule ID | Description | Test Case(s) |
 |---------|-------------|-------------|
-| TEMPLATE_EXTERNAL_REF | Identifier in template body must be a parameter, @scratch wire, or compile-time constant | Error 1 |
-| TEMPLATE_SCRATCH_OUTSIDE | @scratch may only appear inside a @template body | Error 2 |
-| TEMPLATE_SCRATCH_WIDTH_INVALID | @scratch width must be a positive integer constant expression | Error 3 |
+| TEMPLATE_EXTERNAL_REF | Identifier in template body must be a parameter, @scratch wire, or compile-time constant | `10_3_TEMPLATE_EXTERNAL_REF-external_signal_reference.jz` |
+| TEMPLATE_SCRATCH_OUTSIDE | @scratch may only appear inside a @template body | `10_3_TEMPLATE_SCRATCH_OUTSIDE-scratch_outside_template.jz` |
+| TEMPLATE_SCRATCH_WIDTH_INVALID | @scratch width must be a positive integer constant expression | `10_3_TEMPLATE_SCRATCH_WIDTH_INVALID-scratch_width_not_constant.jz` |
 
 ### 5.2 Rules Not Tested
 | Expected Rule | Spec Reference | Gap Description |

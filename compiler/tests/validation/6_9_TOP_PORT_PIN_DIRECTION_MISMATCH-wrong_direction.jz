@@ -1,6 +1,6 @@
 // TOP_PORT_PIN_DIRECTION_MISMATCH: Module port direction incompatible with pin category.
 // Tests IN port bound to OUT_PINS, OUT port bound to IN_PINS.
-// Valid direction matches included for no false positives.
+// Valid direction matches included for no false positives (IN→IN_PINS, OUT→OUT_PINS).
 
 @project TOP_PORT_PIN_DIRECTION_MISMATCH_wrong_direction
     IN_PINS {

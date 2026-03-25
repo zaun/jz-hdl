@@ -1,3 +1,4 @@
 File: 4_9_MEM_TYPE_INVALID-invalid_storage_type.jz
       25:5    error MEM_TYPE_INVALID S7.1 MEM TYPE value is not recognized; expected BLOCK or DISTRIBUTED
       53:5    error MEM_TYPE_INVALID S7.1 MEM TYPE value is not recognized; expected BLOCK or DISTRIBUTED
+      60:5    error MEM_TYPE_INVALID S7.1 MEM TYPE value is not recognized; expected BLOCK or DISTRIBUTED

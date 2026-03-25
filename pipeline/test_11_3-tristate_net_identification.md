@@ -41,6 +41,7 @@ Verify the compiler correctly identifies internal tri-state nets (nets with z as
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| `11_3_TRISTATE_NET_IDENTIFICATION-valid_tristate_ok.jz` | — | Happy-path: valid tri-state net identified correctly |
 | `11_3_NET_MULTIPLE_ACTIVE_DRIVERS-multi_driver_non_tristate.jz` | NET_MULTIPLE_ACTIVE_DRIVERS | Multiple active drivers on non-tristate net |
 | `11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz` | NET_TRI_STATE_ALL_Z_READ | All drivers assign z but signal is read |
 
@@ -48,10 +49,10 @@ Verify the compiler correctly identifies internal tri-state nets (nets with z as
 
 ### 5.1 Rules Tested
 
-| Rule ID | Severity | Description | Test Case(s) |
-|---------|----------|-------------|--------------|
-| NET_MULTIPLE_ACTIVE_DRIVERS | error | Multiple active drivers on same signal; for tri-state, all but one must assign z | Error 1 |
-| NET_TRI_STATE_ALL_Z_READ | error | All drivers assign z but signal is read; at least one driver must provide a value | Error 2 |
+| Rule ID | Severity | Description | Test Case(s) | Also Tested In |
+|---------|----------|-------------|--------------|----------------|
+| NET_MULTIPLE_ACTIVE_DRIVERS | error | Multiple active drivers on same signal; for tri-state, all but one must assign z | `11_3_NET_MULTIPLE_ACTIVE_DRIVERS-multi_driver_non_tristate.jz` | test_1_6-high_impedance_and_tristate.md |
+| NET_TRI_STATE_ALL_Z_READ | error | All drivers assign z but signal is read; at least one driver must provide a value | `11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz` | test_1_6-high_impedance_and_tristate.md |
 
 ### 5.2 Rules Not Tested
 

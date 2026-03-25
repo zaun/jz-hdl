@@ -1,0 +1,8 @@
+File: 7_1_MEM_UNDEFINED_CONST_IN_WIDTH-undefined_const.jz
+      17:17   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      27:9    error MEM_UNDEFINED_CONST_IN_WIDTH S7.1/S7.7.1 CONST in word_width/depth not declared
+      28:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      29:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      60:9    error MEM_UNDEFINED_CONST_IN_WIDTH S7.1/S7.7.1 CONST in word_width/depth not declared
+      61:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      62:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used

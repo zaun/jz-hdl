@@ -1,5 +1,5 @@
 File: 5_5_CLOG2_NONPOSITIVE_ARG-zero_argument.jz
-      19:9    error CLOG2_NONPOSITIVE_ARG S5.5.5 Argument to clog2() <= 0
-      21:9    error CLOG2_NONPOSITIVE_ARG S5.5.5 Argument to clog2() <= 0
-      46:9    error CLOG2_NONPOSITIVE_ARG S5.5.5 Argument to clog2() <= 0
-      48:9    error CLOG2_NONPOSITIVE_ARG S5.5.5 Argument to clog2() <= 0
+      18:9    error CLOG2_NONPOSITIVE_ARG S5.5.5 Argument to clog2() <= 0
+      20:9    error CLOG2_NONPOSITIVE_ARG S5.5.5 Argument to clog2() <= 0
+      45:9    error CLOG2_NONPOSITIVE_ARG S5.5.5 Argument to clog2() <= 0
+      47:9    error CLOG2_NONPOSITIVE_ARG S5.5.5 Argument to clog2() <= 0

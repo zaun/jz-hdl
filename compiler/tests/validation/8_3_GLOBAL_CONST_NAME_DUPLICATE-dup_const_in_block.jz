@@ -11,8 +11,8 @@
 
 // Valid: same const_id as OPCODES.OP_ADD, but in a different block (should NOT trigger)
 @global ALU
-    OP_ADD = 8'h01;
-    OP_MUL = 8'h02;
+    OP_ADD = 4'b0100;
+    OP_MUL = 4'b0101;
 @endglob
 
 // Trigger 2: multiple duplicates in same block — two pairs
@@ -38,11 +38,33 @@
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [4] dout;
+    }
+    REGISTER {
+        r [4] = 4'b0000;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= OPCODES.OP_SUB;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [4] data;
     }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [4] dout = _;
+    };
+
     REGISTER {
         r [4] = 4'b0000;
     }
@@ -50,6 +72,6 @@
         data = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        r <= OPCODES.OP_SUB;
+        r <= ALU.OP_ADD;
     }
 @endmod

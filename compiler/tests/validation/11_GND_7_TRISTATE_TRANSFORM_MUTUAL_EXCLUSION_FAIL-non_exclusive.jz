@@ -2,9 +2,9 @@
 // conditions on multiple tri-state drivers of the same signal.
 // This scenario cannot be directly tested because the multi-driver pattern is
 // blocked by NET_MULTIPLE_ACTIVE_DRIVERS at semantic analysis before the
-// tri-state transform runs. The test uses two instances driving the same wire
-// via INOUT with the same enable (non-exclusive), which triggers the earlier
-// semantic error. See issues.md.
+// tri-state transform runs. Two instances driving the same wire via INOUT with
+// the same enable (non-exclusive) triggers the earlier semantic error.
+// See issues.md for details.
 
 @project TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL_non_exclusive
     @top TopMod {
@@ -37,20 +37,20 @@
     }
 
     WIRE {
-        w [8];
+        bus [8];
     }
 
     @new inst_a DriverMod {
         IN    [1] en = en;
-        INOUT [8] data = w;
+        INOUT [8] data = bus;
     };
 
     @new inst_b DriverMod {
         IN    [1] en = en;
-        INOUT [8] data = w;
+        INOUT [8] data = bus;
     };
 
     ASYNCHRONOUS {
-        data <= w;
+        data <= bus;
     }
 @endmod

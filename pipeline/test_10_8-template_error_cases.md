@@ -52,18 +52,37 @@ Cross-references to all template validation tests:
 
 | Test File | Rule ID | Source Section |
 |-----------|---------|----------------|
+| `10_2_HAPPY_PATH-template_definition_ok.jz` | — (happy-path) | S10.2 |
 | `10_2_TEMPLATE_DUP_NAME-duplicate_template_names.jz` | TEMPLATE_DUP_NAME | S10.2 |
 | `10_2_TEMPLATE_DUP_PARAM-duplicate_param_names.jz` | TEMPLATE_DUP_PARAM | S10.2 |
+| `10_3_HAPPY_PATH-template_allowed_content_ok.jz` | — (happy-path) | S10.3 |
 | `10_3_TEMPLATE_EXTERNAL_REF-external_signal_reference.jz` | TEMPLATE_EXTERNAL_REF | S10.3 |
 | `10_3_TEMPLATE_SCRATCH_OUTSIDE-scratch_outside_template.jz` | TEMPLATE_SCRATCH_OUTSIDE | S10.3 |
 | `10_3_TEMPLATE_SCRATCH_WIDTH_INVALID-scratch_width_not_constant.jz` | TEMPLATE_SCRATCH_WIDTH_INVALID | S10.3 |
+| `10_4_HAPPY_PATH-template_forbidden_content_ok.jz` | — (happy-path) | S10.4 |
 | `10_4_TEMPLATE_FORBIDDEN_DECL-declaration_blocks_in_template.jz` | TEMPLATE_FORBIDDEN_DECL | S10.4 |
-| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_async_in_template.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | S10.4 |
-| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-structural_directives_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-async_file_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-async_mod_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-cdc_file_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-cdc_mod_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_file_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_mod_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-feature_in_mod_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-feature_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-module_in_mod_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-module_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-new_in_mod_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-new_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-project_in_mod_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-project_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | S10.4 |
 | `10_4_TEMPLATE_NESTED_DEF-nested_template_definition.jz` | TEMPLATE_NESTED_DEF | S10.4 |
+| `10_5_HAPPY_PATH-template_application_ok.jz` | — (happy-path) | S10.5 |
 | `10_5_TEMPLATE_UNDEFINED-undefined_template_ref.jz` | TEMPLATE_UNDEFINED | S10.5 |
 | `10_5_TEMPLATE_ARG_COUNT_MISMATCH-wrong_arg_count.jz` | TEMPLATE_ARG_COUNT_MISMATCH | S10.5 |
 | `10_5_TEMPLATE_COUNT_NOT_NONNEG_INT-bad_count_expr.jz` | TEMPLATE_COUNT_NOT_NONNEG_INT | S10.5 |
+| `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_file_scope.jz` | TEMPLATE_APPLY_OUTSIDE_BLOCK | S10.5 |
+| `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_module_scope.jz` | TEMPLATE_APPLY_OUTSIDE_BLOCK | S10.5 |
+| `10_6_HAPPY_PATH-template_exclusive_ok.jz` | — (happy-path) | S10.6 |
 | `10_6_ASSIGN_MULTIPLE_SAME_BITS-template_double_apply_async.jz` | ASSIGN_MULTIPLE_SAME_BITS | S10.6 |
 | `10_6_SYNC_MULTI_ASSIGN_SAME_REG_BITS-template_double_apply_sync.jz` | SYNC_MULTI_ASSIGN_SAME_REG_BITS | S10.6 |
 

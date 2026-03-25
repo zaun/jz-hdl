@@ -51,8 +51,8 @@
     }
 
     ASYNCHRONOUS {
-        sbus.tx <= r;
-        data <= sbus.rx;
+        sbus.tx = r;
+        data = sbus.rx;
     }
 
     SYNCHRONOUS(CLK=clk) {
@@ -72,8 +72,8 @@
     }
 
     ASYNCHRONOUS {
-        tbus.rx <= r;
-        data <= tbus.tx;
+        tbus.rx = r;
+        data = tbus.tx;
     }
 
     SYNCHRONOUS(CLK=clk) {
@@ -100,6 +100,6 @@
     };
 
     ASYNCHRONOUS {
-        // TopMod passes through instance outputs
+        inst_s.sbus = inst_t.tbus;
     }
 @endmod

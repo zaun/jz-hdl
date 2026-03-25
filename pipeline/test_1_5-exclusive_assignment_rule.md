@@ -57,6 +57,7 @@ Verify that the compiler enforces the Exclusive Assignment Rule: for any assigna
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 1_5_EXCLUSIVE_ASSIGNMENT-valid_assignments_ok.jz | -- | Happy path: valid exclusive assignment patterns accepted |
 | 1_5_ASSIGN_MULTIPLE_SAME_BITS-double_assign_same_path.jz | ASSIGN_MULTIPLE_SAME_BITS | Same bits assigned more than once on a single execution path |
 | 1_5_ASSIGN_INDEPENDENT_IF_SELECT-independent_chains.jz | ASSIGN_INDEPENDENT_IF_SELECT | Same identifier assigned in multiple independent IF/SELECT chains at same nesting level |
 | 1_5_ASSIGN_SHADOWING-sequential_shadow.jz | ASSIGN_SHADOWING | Assignment at higher nesting level followed by nested assignment to same bits |

@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: INOUT with ASYNC keyword in helper
+// Trigger 1: INOUT with ASYNC keyword in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;

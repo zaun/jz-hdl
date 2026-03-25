@@ -1,6 +1,5 @@
 // TEMPLATE_FORBIDDEN_BLOCK_HEADER: CDC block header in module-scoped template.
 // CDC is treated as a declaration block by the compiler, triggering TEMPLATE_FORBIDDEN_DECL.
-// Split into own file for consistency with other block header tests.
 
 @project TEMPLATE_FORBIDDEN_BLOCK_HEADER_cdc_mod_scoped
     CONFIG {

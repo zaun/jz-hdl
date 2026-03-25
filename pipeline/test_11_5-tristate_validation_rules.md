@@ -38,22 +38,20 @@ Verify the validation rules applied before and after transformation: mutual excl
 
 ## 4. Existing Validation Tests
 
-No validation tests specific to this subsection. These rules are cross-references to TRISTATE_TRANSFORM_* rules that require the `--tristate-default` flag.
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| `11_GND_5_HAPPY_PATH-tristate_validation_ok.jz` | — | Happy-path: validation passes after transformation |
+
+The TRISTATE_TRANSFORM_* rules cross-referenced here are tested in test_11_7-tristate_error_conditions.md.
 
 ## 5. Rules Matrix
 
 ### 5.1 Rules Tested
 
-Cross-references to rules tested in Sections 11.4 and 11.7:
-
-| Rule ID | Severity | Description | Test Case(s) |
-|---------|----------|-------------|--------------|
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Non-mutually-exclusive enable conditions | Error 1 |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Per-bit tri-state pattern | Error 2 |
+This subsection introduces no new rules. It cross-references TRISTATE_TRANSFORM_* rules defined in Section 11.7. This is a happy-path-only plan; error cases are covered in test_11_7-tristate_error_conditions.md.
+| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | S11.7 Tri-state drivers for same signal have non-mutually-exclusive enable conditions; cannot build safe priority chain | 11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz |
+| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed | 11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz |
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Requires `--tristate-default` flag; not testable via `--info --lint` |
+All rules for this section are tested.

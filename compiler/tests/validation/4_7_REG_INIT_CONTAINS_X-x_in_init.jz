@@ -1,0 +1,70 @@
+// REG_INIT_CONTAINS_X: Register initialization literal must not contain x bits.
+// Each trigger tests x in register init in different formats and modules.
+// Valid registers without x included for no false positives.
+
+@project REG_INIT_CONTAINS_X_x_in_init
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout = _;
+        OUT [8] dout_h = _;
+    }
+@endproj
+
+// Helper module: register init with x bits
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        // Trigger 1: binary literal with x bits in helper module
+        r_xbin [8] = 8'bxxxx_0000;
+        // Trigger 2: single x bit in binary
+        r_xone [8] = 8'b0000_000x;
+        // Valid: no x bits
+        r_ok [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data_out = r_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_xbin <= ~r_xbin;
+        r_xone <= ~r_xone;
+        r_ok <= ~r_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+        OUT [8] dout_h;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] data_out = dout_h;
+    };
+
+    REGISTER {
+        // Trigger 3: all x bits in top module
+        r_xall [8] = 8'bxxxx_xxxx;
+        // Trigger 4: 1-bit x
+        r_x1 [1] = 1'bx;
+        // Valid: no x bits
+        r_ok [8] = 8'hFF;
+    }
+
+    ASYNCHRONOUS {
+        dout = r_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_xall <= ~r_xall;
+        r_x1 <= ~r_x1;
+        r_ok <= ~r_ok;
+    }
+@endmod

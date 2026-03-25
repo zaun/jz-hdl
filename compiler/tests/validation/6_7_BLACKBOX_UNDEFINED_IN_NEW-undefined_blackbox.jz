@@ -1,0 +1,79 @@
+// BLACKBOX_UNDEFINED_IN_NEW: @new references undefined blackbox name.
+// NOTE: The compiler emits INSTANCE_UNDEFINED_MODULE instead of
+// BLACKBOX_UNDEFINED_IN_NEW because the rule is defined in rules.c but
+// never emitted by any semantic pass. See issues.md.
+
+@project BLACKBOX_UNDEFINED_IN_NEW_undefined_blackbox
+    @blackbox bb_real {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module SubMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 1: @new references non-existent blackbox in sub module
+    @new inst_bad bb_nonexistent {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 2: @new references non-existent blackbox in top module
+    @new inst_bad2 bb_also_missing {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    // Valid: @new references existing blackbox (no error)
+    @new inst_ok bb_real {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    @new inst_sub SubMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

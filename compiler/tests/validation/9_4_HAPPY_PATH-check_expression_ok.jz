@@ -1,0 +1,95 @@
+// HAPPY_PATH: Valid @check expressions — all allowed operand types produce no diagnostics.
+// Exercises literals, CONST, CONFIG, clog2, comparisons, logical operators,
+// and nested expressions mixing allowed operands.
+
+@project HAPPY_PATH_check_expression_ok
+    CONFIG {
+        WIDTH = 8;
+        DEPTH = 256;
+    }
+
+    // Valid: CONFIG equality at project scope
+    @check (CONFIG.WIDTH == 8, "width is 8");
+
+    // Valid: CONFIG comparison at project scope
+    @check (CONFIG.DEPTH > 0, "depth positive");
+
+    // Valid: clog2 of CONFIG at project scope
+    @check (clog2(CONFIG.DEPTH) == 8, "clog2 depth ok");
+
+    // Valid: logical AND of CONFIG comparisons
+    @check (CONFIG.WIDTH > 0 && CONFIG.DEPTH > 0, "both positive");
+
+    // Valid: logical OR of CONFIG comparisons
+    @check (CONFIG.WIDTH == 8 || CONFIG.WIDTH == 16, "valid width");
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST { LOCAL_W = 4; }
+
+    // Valid: CONST in helper module
+    @check (LOCAL_W > 0, "local width ok");
+
+    // Valid: CONST arithmetic
+    @check (LOCAL_W * 2 == 8, "double width ok");
+
+    // Valid: nested CONST + literal
+    @check (LOCAL_W + 4 == 8, "const plus literal ok");
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST { SIZE = 16; }
+    CONST { ADDR_W = 4; }
+
+    // Valid: CONST equality
+    @check (SIZE == 16, "size ok");
+
+    // Valid: clog2 of CONST
+    @check (ADDR_W == clog2(SIZE), "addr width ok");
+
+    // Valid: literal nonzero
+    @check (1, "literal one ok");
+
+    // Valid: nested clog2 + CONFIG + CONST
+    @check (clog2(SIZE) + CONFIG.WIDTH > 0, "nested ok");
+
+    // Valid: comparison operators
+    @check (SIZE >= 16, "gte ok");
+    @check (SIZE != 0, "neq ok");
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -62,6 +62,4 @@ None specific -- operator precedence is verified by AST structure comparison, no
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Spec Reference | Gap Description |
-|---------|----------|----------------|-----------------|
-| -- | -- | -- | S3.3 defines parse behavior, not diagnostic rules; correctness is verified via AST structure |
+All rules for this section are tested. S3.3 defines parse behavior, not diagnostic rules; expression-level diagnostic rules are tested in S3.1 and S3.2 test plans.

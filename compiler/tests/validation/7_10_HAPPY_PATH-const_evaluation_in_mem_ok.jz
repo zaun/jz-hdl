@@ -1,0 +1,105 @@
+// HAPPY_PATH: Valid CONST and CONFIG usage in MEM dimensions.
+// Exercises CONST in width, CONST in depth, CONFIG in depth,
+// CONST expressions in dimensions, power-of-2 and non-power-of-2 depths,
+// minimal depth (1), and clog2 address width derivation.
+// No diagnostics expected.
+
+@project HAPPY_PATH_const_evaluation_in_mem_ok
+    CONFIG {
+        CFG_DEPTH = 256;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] rdata = _;
+    }
+@endproj
+
+// Helper module: CONST width and depth in MEM, non-power-of-2 depth
+@module HelperMod
+    CONST {
+        H_WIDTH = 8;
+        H_DEPTH = 7;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [3] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    // Valid: CONST in both width and depth, non-power-of-2 depth (clog2(7)=3)
+    MEM {
+        mem_a [H_WIDTH] [H_DEPTH] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_a.wr[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        WIDTH = 8;
+        DEPTH = 16;
+        MULTIPLIER = 2;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [8] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    // Valid: CONST in width and depth
+    MEM {
+        mem_const [WIDTH] [DEPTH] = 8'h00 {
+            OUT rd_const ASYNC;
+            IN  wr_const;
+        };
+    }
+
+    // Valid: CONFIG in depth
+    MEM {
+        mem_cfg [8] [CONFIG.CFG_DEPTH] = 8'h00 {
+            OUT rd_cfg ASYNC;
+            IN  wr_cfg;
+        };
+    }
+
+    // Valid: CONST expression in depth (4 * 2 = 8)
+    MEM {
+        mem_expr [WIDTH] [DEPTH * MULTIPLIER] = 8'h00 {
+            OUT rd_expr ASYNC;
+            IN  wr_expr;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [3] addr = addr[2:0];
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = _;
+    };
+
+    ASYNCHRONOUS {
+        rdata = mem_const.rd_const[addr[3:0]] ^ mem_cfg.rd_cfg[addr] ^ mem_expr.rd_expr[addr[4:0]];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_const.wr_const[addr[3:0]] <= wdata;
+        mem_cfg.wr_cfg[addr] <= wdata;
+        mem_expr.wr_expr[addr[4:0]] <= wdata;
+    }
+@endmod

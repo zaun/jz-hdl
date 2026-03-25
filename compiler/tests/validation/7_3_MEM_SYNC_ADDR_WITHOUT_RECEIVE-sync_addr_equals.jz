@@ -9,7 +9,7 @@
     }
 @endproj
 
-// Trigger 1: = instead of <= for .addr in helper
+// Helper: = instead of <= for .addr
 @module HelperMod
     PORT {
         IN  [1] clk;

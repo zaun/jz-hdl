@@ -28,16 +28,17 @@ Verify template expansion does not bypass the exclusive assignment rule. Multipl
 ## 4. Existing Validation Tests
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| `10_6_HAPPY_PATH-template_exclusive_ok.jz` | — | Happy-path: exclusive @apply patterns (IF/ELSE branches, non-overlapping slices) |
 | `10_6_ASSIGN_MULTIPLE_SAME_BITS-template_double_apply_async.jz` | ASSIGN_MULTIPLE_SAME_BITS | Double @apply to same wire in ASYNCHRONOUS block |
 | `10_6_SYNC_MULTI_ASSIGN_SAME_REG_BITS-template_double_apply_sync.jz` | SYNC_MULTI_ASSIGN_SAME_REG_BITS | Double @apply to same register in SYNCHRONOUS block |
 
 ## 5. Rules Matrix
 
 ### 5.1 Rules Tested
-| Rule ID | Description | Test Case(s) |
-|---------|-------------|-------------|
-| ASSIGN_MULTIPLE_SAME_BITS | Same bits assigned more than once on a single execution path (via template expansion) | Error 1 |
-| SYNC_MULTI_ASSIGN_SAME_REG_BITS | Same register bits assigned more than once along any execution path in SYNCHRONOUS block (via template expansion) | Error 2 |
+| Rule ID | Description | Test Case(s) | Also Tested In |
+|---------|-------------|-------------|----------------|
+| ASSIGN_MULTIPLE_SAME_BITS | Same bits assigned more than once on a single execution path (via template expansion) | `10_6_ASSIGN_MULTIPLE_SAME_BITS-template_double_apply_async.jz` | test_1_5-exclusive_assignment_rule.md, test_5_0-assignment_operators_summary.md |
+| SYNC_MULTI_ASSIGN_SAME_REG_BITS | Same register bits assigned more than once along any execution path in SYNCHRONOUS block (via template expansion) | `10_6_SYNC_MULTI_ASSIGN_SAME_REG_BITS-template_double_apply_sync.jz` | test_5_2-synchronous_assignments.md |
 
 ### 5.2 Rules Not Tested
 | Expected Rule | Spec Reference | Gap Description |

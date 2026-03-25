@@ -1,0 +1,94 @@
+// MUX_AGG_SOURCE_WIDTH_MISMATCH: Aggregation form sources must all have identical bit-width.
+// Tests width mismatch with ports, wires, and registers of different widths.
+// Valid same-width aggregations included to verify no false positives.
+
+@project MUX_AGG_SOURCE_WIDTH_MISMATCH_source_width_mismatch
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [4] b = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: width mismatch between port sources
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w8 [8];
+    }
+
+    // Trigger 1: port sources with mismatched widths (8-bit vs 4-bit)
+    MUX {
+        bad_mux = a, b;
+        // Valid: same-width aggregation (no false positive)
+        ok_mux = a, w8;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        w8 = a;
+        data = bad_mux[sel] | ok_mux[sel] | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ok_mux[sel];
+    }
+@endmod
+
+// Top module: width mismatch with wire and register sources
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w4 [4];
+        helper_out [8];
+    }
+
+    REGISTER {
+        r8 [8] = 8'h00;
+    }
+
+    // Trigger 2: register vs wire width mismatch (8-bit reg vs 4-bit wire)
+    MUX {
+        top_bad = r8, w4;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [4] b = b;
+        IN  [1] sel = sel;
+        OUT [8] data = helper_out;
+    };
+
+    ASYNCHRONOUS {
+        w4 = b;
+        data = top_bad[sel] | helper_out | r8;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r8 <= a;
+    }
+@endmod

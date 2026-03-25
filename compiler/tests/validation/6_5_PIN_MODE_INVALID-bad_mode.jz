@@ -1,42 +1,48 @@
 // PIN_MODE_INVALID: Invalid pin mode value (must be SINGLE or DIFFERENTIAL).
-// Tests invalid mode values in IN_PINS, OUT_PINS, and INOUT_PINS blocks.
+// Tests invalid mode values in IN_PINS, OUT_PINS, and INOUT_PINS.
 // Valid modes included to verify no false positives.
 
 @project PIN_MODE_INVALID_bad_mode
     CLOCKS {
         sys_clk = { period=10 };
+        fast_clk = { period=2 };
     }
 
     IN_PINS {
         sys_clk = { standard=LVCMOS33 };
+        fast_clk = { standard=LVCMOS33 };
         // Valid: mode=SINGLE (no trigger)
-        valid_in = { standard=LVCMOS33, mode=SINGLE };
+        valid_single = { standard=LVCMOS33, mode=SINGLE };
+        // Valid: mode=DIFFERENTIAL (no trigger)
+        valid_diff = { standard=LVDS25, mode=DIFFERENTIAL };
         // Trigger 1: invalid mode in IN_PINS
-        bad_in = { standard=LVCMOS33, mode=BIDIR };
+        bad_mode_in = { standard=LVCMOS33, mode=BIDIR };
     }
 
     OUT_PINS {
-        // Valid: mode=SINGLE (no trigger)
+        // Valid: explicit SINGLE mode (no trigger)
         valid_out = { standard=LVCMOS33, drive=8, mode=SINGLE };
         // Trigger 2: invalid mode in OUT_PINS
-        bad_out = { standard=LVCMOS33, drive=8, mode=TRISTATE };
+        bad_mode_out = { standard=LVCMOS33, drive=8, mode=TRISTATE };
     }
 
     INOUT_PINS {
-        // Valid: mode=SINGLE (no trigger)
-        valid_io = { standard=LVCMOS33, drive=4, mode=SINGLE };
+        // Valid: no mode specified (defaults to SINGLE, no trigger)
+        valid_io = { standard=LVCMOS33, drive=4 };
         // Trigger 3: invalid mode in INOUT_PINS
-        bad_io = { standard=LVCMOS33, drive=4, mode=HALFDUP };
+        bad_mode_io = { standard=LVCMOS33, drive=4, mode=HALFDUP };
     }
 
     MAP {
         sys_clk = 1;
-        valid_in = 2;
-        bad_in = 3;
-        valid_out = 4;
-        bad_out = 5;
-        valid_io = 6;
-        bad_io = 7;
+        fast_clk = 2;
+        valid_single = 3;
+        valid_diff = { P=4, N=5 };
+        bad_mode_in = 6;
+        valid_out = 7;
+        bad_mode_out = 8;
+        valid_io = 9;
+        bad_mode_io = 10;
     }
 
     @top TopMod {

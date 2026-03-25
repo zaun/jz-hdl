@@ -55,9 +55,17 @@ Verify all recommended warnings are correctly detected and reported: unused regi
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
-| `12_3_WARN_DEAD_CODE_UNREACHABLE-unreachable_branches.jz` | WARN_DEAD_CODE_UNREACHABLE | Unreachable branches detected |
+| `12_3_WARN_UNUSED_REGISTER-unused_register.jz` | WARN_UNUSED_REGISTER | Register never read or written |
+| `12_3_WARN_UNSINKED_REGISTER-written_never_read.jz` | WARN_UNSINKED_REGISTER | Register written but value never read |
+| `12_3_WARN_UNDRIVEN_REGISTER-read_never_written.jz` | WARN_UNDRIVEN_REGISTER | Register read but never written |
 | `12_3_WARN_UNCONNECTED_OUTPUT-unconnected_output_port.jz` | WARN_UNCONNECTED_OUTPUT | Output port with no assignment |
+| `12_3_WARN_INCOMPLETE_SELECT_ASYNC-incomplete_select.jz` | WARN_INCOMPLETE_SELECT_ASYNC | SELECT without DEFAULT in ASYNCHRONOUS block |
+| `12_3_WARN_DEAD_CODE_UNREACHABLE-unreachable_branches.jz` | WARN_DEAD_CODE_UNREACHABLE | Unreachable branches detected |
 | `12_3_WARN_UNUSED_MODULE-unused_module.jz` | WARN_UNUSED_MODULE | Module declared but never instantiated |
+| `12_3_WARN_UNUSED_WIRE-unused_wire.jz` | WARN_UNUSED_WIRE | WIRE declared but never driven or read |
+| `12_3_WARN_UNUSED_PORT-unused_port.jz` | WARN_UNUSED_PORT | PORT declared but never used |
+| `12_3_WARN_INTERNAL_TRISTATE-internal_tristate.jz` | WARN_INTERNAL_TRISTATE | Internal tri-state without --tristate-default flag |
+| `12_3_HAPPY_PATH-recommended_warnings_ok.jz` | — | Happy path: clean design with no warnings |
 
 ## 5. Rules Matrix
 
@@ -65,16 +73,16 @@ Verify all recommended warnings are correctly detected and reported: unused regi
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| WARN_UNUSED_REGISTER | warning | Register never read or written | Error 1 |
-| WARN_UNSINKED_REGISTER | warning | Register written but value never read | Error 2 |
-| WARN_UNDRIVEN_REGISTER | warning | Register read but never written | Error 3 |
-| WARN_UNCONNECTED_OUTPUT | warning | Output port unconnected | Error 4 |
-| WARN_INCOMPLETE_SELECT_ASYNC | warning | Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block | Error 5 |
-| WARN_DEAD_CODE_UNREACHABLE | warning | Dead code (unreachable statements) | Error 6 |
-| WARN_UNUSED_MODULE | warning | Module declared but never instantiated | Error 7 |
-| WARN_UNUSED_WIRE | warning | WIRE declared but never driven or read | Error 8 |
-| WARN_UNUSED_PORT | warning | PORT declared but never used | Error 9 |
-| WARN_INTERNAL_TRISTATE | warning | Internal tri-state without --tristate-default flag | Error 10 |
+| WARN_UNUSED_REGISTER | warning | Register never read or written | `12_3_WARN_UNUSED_REGISTER-unused_register.jz` |
+| WARN_UNSINKED_REGISTER | warning | Register written but value never read | `12_3_WARN_UNSINKED_REGISTER-written_never_read.jz` |
+| WARN_UNDRIVEN_REGISTER | warning | Register read but never written | `12_3_WARN_UNDRIVEN_REGISTER-read_never_written.jz` |
+| WARN_UNCONNECTED_OUTPUT | warning | Output port unconnected | `12_3_WARN_UNCONNECTED_OUTPUT-unconnected_output_port.jz` |
+| WARN_INCOMPLETE_SELECT_ASYNC | warning | Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block | `12_3_WARN_INCOMPLETE_SELECT_ASYNC-incomplete_select.jz` |
+| WARN_DEAD_CODE_UNREACHABLE | warning | Dead code (unreachable statements) | `12_3_WARN_DEAD_CODE_UNREACHABLE-unreachable_branches.jz` |
+| WARN_UNUSED_MODULE | warning | Module declared but never instantiated | `12_3_WARN_UNUSED_MODULE-unused_module.jz` |
+| WARN_UNUSED_WIRE | warning | WIRE declared but never driven or read | `12_3_WARN_UNUSED_WIRE-unused_wire.jz` |
+| WARN_UNUSED_PORT | warning | PORT declared but never used | `12_3_WARN_UNUSED_PORT-unused_port.jz` |
+| WARN_INTERNAL_TRISTATE | warning | Internal tri-state without --tristate-default flag | `12_3_WARN_INTERNAL_TRISTATE-internal_tristate.jz` |
 
 ### 5.2 Rules Not Tested
 

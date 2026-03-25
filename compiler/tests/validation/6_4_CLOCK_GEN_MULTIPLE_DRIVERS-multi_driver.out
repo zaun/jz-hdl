@@ -1,0 +1,2 @@
+File: 6_4_CLOCK_GEN_MULTIPLE_DRIVERS-multi_driver.jz
+      38:13   error CLOCK_GEN_MULTIPLE_DRIVERS S6.4.1 Clock is driven by multiple CLOCK_GEN outputs

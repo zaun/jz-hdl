@@ -1,5 +1,5 @@
 // MEM_INOUT_INDEXED: INOUT port may not be indexed with brackets.
-// Valid .addr/.data/.wdata access included for no false positives.
+// Valid .addr/.data/.wdata pseudo-field access included for no false positives.
 
 @project MEM_INOUT_INDEXED_inout_bracket_access
     @top TopMod {
@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: INOUT indexed in helper module
+// Trigger 1: INOUT indexed with bracket write in helper module SYNC block
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -29,15 +29,17 @@
         };
     }
 
+    // Valid: .data readable in ASYNC
     ASYNCHRONOUS {
         data = mem_a.rw.data;
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
+        // Valid: .addr and .wdata pseudo-field access
         mem_a.rw.addr <= addr;
         mem_a.rw.wdata <= wdata;
-        // Trigger 1: bracket index on INOUT port (write)
+        // Trigger 1: bracket index on INOUT port (write in SYNC)
         mem_a.rw[addr] <= wdata;
     }
 @endmod
@@ -68,7 +70,7 @@
     };
 
     ASYNCHRONOUS {
-        // Trigger 2: bracket index on INOUT port (read)
+        // Trigger 2: bracket index on INOUT port (read in ASYNC)
         data = mem_b.rw[addr];
     }
 

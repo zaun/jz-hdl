@@ -1,5 +1,6 @@
 // PIN_PULL_INVALID: Invalid pull value (must be UP, DOWN, or NONE).
-// Tests invalid pull values in IN_PINS and INOUT_PINS blocks.
+// Tests invalid pull values in IN_PINS and INOUT_PINS.
+// OUT_PINS cannot have pull at all (separate rule), so not tested here.
 // Valid pull values included to verify no false positives.
 
 @project PIN_PULL_INVALID_bad_pull
@@ -15,19 +16,19 @@
         valid_down = { standard=LVCMOS33, pull=DOWN };
         // Valid: pull=NONE (no trigger)
         valid_none = { standard=LVCMOS33, pull=NONE };
-        // Trigger 1: invalid pull in IN_PINS
+        // Trigger 1: invalid pull value in IN_PINS
         bad_pull_in = { standard=LVCMOS33, pull=HIGH };
     }
 
     OUT_PINS {
-        // Valid: no pull on output (no trigger)
+        // Valid: no pull attribute on OUT_PINS (no trigger)
         valid_out = { standard=LVCMOS33, drive=8 };
     }
 
     INOUT_PINS {
-        // Valid: pull=UP on INOUT (no trigger)
-        valid_io = { standard=LVCMOS33, drive=4, pull=UP };
-        // Trigger 2: invalid pull in INOUT_PINS
+        // Valid: pull=UP on INOUT_PINS (no trigger)
+        valid_io_pull = { standard=LVCMOS33, drive=4, pull=UP };
+        // Trigger 2: invalid pull value in INOUT_PINS
         bad_pull_io = { standard=LVCMOS33, drive=4, pull=WEAK };
     }
 
@@ -38,7 +39,7 @@
         valid_none = 4;
         bad_pull_in = 5;
         valid_out = 6;
-        valid_io = 7;
+        valid_io_pull = 7;
         bad_pull_io = 8;
     }
 

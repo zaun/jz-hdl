@@ -1,0 +1,53 @@
+// HAPPY_PATH: Valid simple ROM with asynchronous read-only port (S7.6.1).
+// Exercises read-only MEM (no write port), ASYNC read access, combinational path,
+// and cross-module instantiation of a ROM module.
+
+@project HAPPY_PATH_simple_rom
+    @top TopMod {
+        IN  [8] index = _;
+        OUT [8] output = _;
+        OUT [8] helper_out = _;
+    }
+@endproj
+
+// Helper: simple read-only ROM with ASYNC port
+@module RomHelper
+    PORT {
+        IN  [8] addr;
+        OUT [8] data;
+    }
+
+    MEM {
+        lut [8] [256] = 8'hAA {
+            OUT rd ASYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = lut.rd[addr];
+    }
+@endmod
+
+// Top module: instantiates RomHelper, has its own ROM
+@module TopMod
+    PORT {
+        IN  [8] index;
+        OUT [8] output;
+        OUT [8] helper_out;
+    }
+
+    MEM {
+        rom [8] [256] = 8'h00 {
+            OUT rd ASYNC;
+        };
+    }
+
+    @new inst_rom RomHelper {
+        IN  [8] addr = index;
+        OUT [8] data = helper_out;
+    };
+
+    ASYNCHRONOUS {
+        output = rom.rd[index];
+    }
+@endmod

@@ -1,6 +1,6 @@
 // PIN_DUP_NAME_WITHIN_BLOCK: Duplicate pin names within same PIN block.
-// Tests duplicate names in IN_PINS, OUT_PINS, and INOUT_PINS blocks.
-// Valid unique pins included to verify no false positives.
+// Tests duplicate names in IN_PINS, OUT_PINS, and INOUT_PINS.
+// Unique pins included to verify no false positives.
 
 @project PIN_DUP_NAME_WITHIN_BLOCK_duplicate_within_block
     CLOCKS {
@@ -9,33 +9,39 @@
 
     IN_PINS {
         sys_clk = { standard=LVCMOS33 };
-        valid_in = { standard=LVCMOS33 };
-        // Trigger 1: duplicate in IN_PINS
+        // Valid: unique input (no trigger)
+        unique_in = { standard=LVCMOS33 };
+        // Trigger 1: first declaration of dup_in
         dup_in = { standard=LVCMOS33 };
+        // Trigger 1: duplicate of dup_in in same IN_PINS block
         dup_in = { standard=LVCMOS18 };
     }
 
     OUT_PINS {
-        valid_out = { standard=LVCMOS33, drive=8 };
-        // Trigger 2: duplicate in OUT_PINS
+        // Valid: unique output (no trigger)
+        unique_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 2: first declaration of dup_out
         dup_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 2: duplicate of dup_out in same OUT_PINS block
         dup_out = { standard=LVCMOS18, drive=4 };
     }
 
     INOUT_PINS {
-        valid_io = { standard=LVCMOS33, drive=4 };
-        // Trigger 3: duplicate in INOUT_PINS
+        // Valid: unique inout (no trigger)
+        unique_io = { standard=LVCMOS33, drive=4 };
+        // Trigger 3: first declaration of dup_io
         dup_io = { standard=LVCMOS33, drive=4 };
+        // Trigger 3: duplicate of dup_io in same INOUT_PINS block
         dup_io = { standard=LVCMOS18, drive=8 };
     }
 
     MAP {
         sys_clk = 1;
-        valid_in = 2;
+        unique_in = 2;
         dup_in = 3;
-        valid_out = 4;
+        unique_out = 4;
         dup_out = 5;
-        valid_io = 6;
+        unique_io = 6;
         dup_io = 7;
     }
 

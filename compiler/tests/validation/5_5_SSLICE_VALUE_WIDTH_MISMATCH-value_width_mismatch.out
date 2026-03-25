@@ -1,5 +1,5 @@
 File: 5_5_SSLICE_VALUE_WIDTH_MISMATCH-value_width_mismatch.jz
-      31:40   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter
-      36:36   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter
-      68:40   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter
-      76:36   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter
+      29:38   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter
+      34:34   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter
+      64:39   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter
+      69:35   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter

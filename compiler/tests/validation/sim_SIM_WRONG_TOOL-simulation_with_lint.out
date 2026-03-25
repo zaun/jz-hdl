@@ -1,0 +1,2 @@
+File: sim_SIM_WRONG_TOOL-simulation_with_lint.jz
+      16:1    error SIM_WRONG_TOOL File contains @simulation blocks; use --simulate to run simulations

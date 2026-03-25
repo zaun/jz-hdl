@@ -27,6 +27,7 @@
         out_a = VCC[0:0];
         // Trigger 2: GND sliced in async RHS
         out_b = GND[0:0];
+        // Valid: unsliced register (no false positive)
         out_c = r;
     }
     SYNCHRONOUS(CLK=clk) {

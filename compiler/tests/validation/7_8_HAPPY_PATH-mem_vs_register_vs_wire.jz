@@ -1,0 +1,112 @@
+// HAPPY_PATH: Valid usage of all three storage types — MEM, REGISTER, and WIRE (S7.8).
+// Demonstrates correct side-by-side usage: MEM for indexed storage with ports,
+// REGISTER for clocked single-value storage, WIRE for combinational intermediates.
+// Includes DISTRIBUTED MEM as register file, single-element MEM, and cross-module instantiation.
+
+@project HAPPY_PATH_mem_vs_register_vs_wire
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] din = _;
+        IN  [1] we = _;
+        OUT [8] reg_out = _;
+        OUT [8] wire_out = _;
+        OUT [8] mem_out = _;
+        OUT [8] helper_out = _;
+    }
+@endproj
+
+// Helper: uses all three storage types internally
+@module StorageHelper
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] din;
+        IN  [1] we;
+        OUT [8] dout;
+    }
+
+    // MEM: indexed, address-based storage (DISTRIBUTED for small register file)
+    MEM {
+        regfile [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // REGISTER: single-value clocked storage
+    REGISTER {
+        cached [8] = 8'h00;
+    }
+
+    // WIRE: combinational intermediate
+    WIRE {
+        selected [8];
+    }
+
+    ASYNCHRONOUS {
+        selected = regfile.rd[addr];
+        dout = cached;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        cached <= selected;
+        IF (we) {
+            regfile.wr[addr] <= din;
+        }
+    }
+@endmod
+
+// Top module: demonstrates each storage type and instantiates helper
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] din;
+        IN  [1] we;
+        OUT [8] reg_out;
+        OUT [8] wire_out;
+        OUT [8] mem_out;
+        OUT [8] helper_out;
+    }
+
+    // MEM: single-element MEM (depth=1) — valid alternative to REGISTER
+    MEM {
+        single_mem [8] [1] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // REGISTER: simple flip-flop
+    REGISTER {
+        counter [8] = 8'h00;
+    }
+
+    // WIRE: combinational path
+    WIRE {
+        combo [8];
+    }
+
+    @new inst_helper StorageHelper {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] din = din;
+        IN  [1] we = we;
+        OUT [8] dout = helper_out;
+    };
+
+    ASYNCHRONOUS {
+        combo = din;
+        wire_out = combo;
+        mem_out = single_mem.rd[1'b0];
+        reg_out = counter;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        counter <= counter;
+        IF (we) {
+            single_mem.wr[1'b0] <= din;
+        }
+    }
+@endmod

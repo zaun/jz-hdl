@@ -1,0 +1,2 @@
+File: 6_2_PROJECT_MISSING_ENDPROJ-missing_endproj.jz
+      25:1    error PROJECT_MISSING_ENDPROJ S6.2 @project block missing @endproj terminator

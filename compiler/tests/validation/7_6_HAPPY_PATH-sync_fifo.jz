@@ -1,0 +1,90 @@
+// HAPPY_PATH: Valid synchronous FIFO with read/write pointers and MEM storage (S7.6.3).
+// Exercises MEM with ASYNC read and SYNC write, register-based pointer management,
+// pointer slicing for memory address, arithmetic increment, and cross-module instantiation.
+
+@project HAPPY_PATH_sync_fifo
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout = _;
+        IN  [1] wr_en = _;
+        IN  [1] rd_en = _;
+        IN  [4] helper_addr = _;
+        OUT [8] helper_dout = _;
+    }
+@endproj
+
+// Helper: simple MEM with ASYNC read and SYNC write
+@module FifoHelper
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        IN  [1] we;
+        IN  [4] addr;
+        OUT [8] dout;
+    }
+
+    MEM {
+        mem [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        dout = mem.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            mem.wr[addr] <= din;
+        }
+    }
+@endmod
+
+// Top module: FIFO with register-based pointers
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout;
+        IN  [1] wr_en;
+        IN  [1] rd_en;
+        IN  [4] helper_addr;
+        OUT [8] helper_dout;
+    }
+
+    REGISTER {
+        wr_ptr [5] = 5'b00000;
+        rd_ptr [5] = 5'b00000;
+    }
+
+    MEM {
+        fifo_mem [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_fifo FifoHelper {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        IN  [1] we = wr_en;
+        IN  [4] addr = helper_addr;
+        OUT [8] dout = helper_dout;
+    };
+
+    ASYNCHRONOUS {
+        dout = fifo_mem.rd[rd_ptr[3:0]];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (wr_en) {
+            fifo_mem.wr[wr_ptr[3:0]] <= din;
+            wr_ptr <= wr_ptr + 5'd1;
+        }
+        IF (rd_en) {
+            rd_ptr <= rd_ptr + 5'd1;
+        }
+    }
+@endmod

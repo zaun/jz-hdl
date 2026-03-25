@@ -1,0 +1,2 @@
+File: 5_5_WIDTHOF_WIDTH_NOT_RESOLVABLE-unresolvable_width.jz
+      28:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it

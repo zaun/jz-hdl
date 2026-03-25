@@ -1,6 +1,6 @@
 // MEM_DISTRIBUTED_RESOURCE_EXCEEDED: Total DISTRIBUTED memory exceeds chip capacity.
-// Uses gw1nr-9 chip with 16384 bits of distributed memory.
-// Creates two modules each with distributed MEMs totaling > 16384 bits.
+// Uses gw1nr-9 chip with limited distributed memory bits.
+// Creates two modules each with distributed MEMs totaling more than the limit.
 
 @project(CHIP="gw1nr-9-qn88-c6-i5") MEM_DISTRIBUTED_RESOURCE_EXCEEDED_exceeds_distributed_capacity
     @top TopMod {
@@ -41,7 +41,7 @@
     }
 @endmod
 
-// Trigger: TopMod has 8192 bits distributed + 2 instances of DistChild (2*8192) = 24576 > 16384
+// Trigger: TopMod has 8192 bits distributed + 2 instances of DistChild (2*8192) = 24576 > limit
 @module TopMod
     PORT {
         IN  [1] clk;

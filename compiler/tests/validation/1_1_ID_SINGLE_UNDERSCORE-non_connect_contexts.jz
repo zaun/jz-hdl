@@ -1,5 +1,6 @@
 // ID_SINGLE_UNDERSCORE: Single underscore `_` used as regular identifier outside no-connect context.
-// Tests _ in port name, register name, const name, and @new port binding contexts.
+// Tests _ in port name, register name, const name, instance name,
+// assignment LHS/RHS, sync LHS/RHS, and @new port binding contexts.
 // Valid uses of _ in @top and @new port bindings are included to verify no false positives.
 
 @project ID_SINGLE_UNDERSCORE_non_connect_contexts
@@ -50,13 +51,38 @@
     }
 @endmod
 
+// Helper module with _ as instance name
+@module HelperC
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 7: _ used as instance name in @new
+    @new _ HelperA {
+        IN  [1] clk = clk;
+        // Trigger 8: _ used as @new port binding name (matches HelperA port _)
+        OUT [1] _ = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [1] data;
     }
 
-    // Trigger 7: _ used as const name
+    // Trigger 9: _ used as const name
     CONST {
         _ = 8;
     }
@@ -68,6 +94,11 @@
     };
 
     @new inst_b HelperB {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    @new inst_c HelperC {
         IN  [1] clk = clk;
         OUT [1] data = _;
     };

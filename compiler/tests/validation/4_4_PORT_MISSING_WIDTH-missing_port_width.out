@@ -1,0 +1,2 @@
+File: 4_4_PORT_MISSING_WIDTH-missing_port_width.jz
+      17:13   error PARSE000 parse error near token 'din_nowidth': expected '[' after port direction (orig: PARSE000)

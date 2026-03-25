@@ -1,5 +1,5 @@
 File: 5_5_B2OH_WIDTH_INVALID-width_below_two.jz
-      27:18   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2
-      32:14   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2
-      60:18   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2
-      65:14   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2
+      27:19   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2
+      32:15   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2
+      60:19   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2
+      65:15   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2

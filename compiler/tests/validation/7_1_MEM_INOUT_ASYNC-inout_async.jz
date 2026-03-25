@@ -1,0 +1,83 @@
+// MEM_INOUT_ASYNC: INOUT ports with ASYNC/SYNC keyword triggers error.
+// Tests INOUT with ASYNC and INOUT with SYNC. Bare INOUT for no false positives.
+
+@project MEM_INOUT_ASYNC_inout_async
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: INOUT with ASYNC in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        mem_a [8] [16] = 8'h00 {
+            INOUT rw ASYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: INOUT with SYNC in top module
+    MEM(type=BLOCK) {
+        mem_b [8] [16] = 8'h00 {
+            INOUT rw SYNC;
+        };
+    }
+
+    // Valid: bare INOUT without keyword (no error expected)
+    MEM(type=BLOCK) {
+        mem_ok [8] [16] = 8'h00 {
+            INOUT rw_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_ok.rw_ok.addr <= addr;
+        r <= mem_ok.rw_ok.data;
+        mem_ok.rw_ok.wdata <= wdata;
+    }
+@endmod

@@ -1,0 +1,74 @@
+// LIT_INVALID_CONTEXT: lit() used where a compile-time integer constant is required.
+// Tests lit() in CONST block where only compile-time integers are valid.
+// lit() is a runtime intrinsic and cannot appear in CONST initializers.
+// Valid lit() in ASYNC block included to verify no false positives.
+// NOTE: Known cascading issue — lit() in CONST causes subsequent valid lit() in
+// ASYNC to fire LIT_WIDTH_INVALID. See issues.md.
+
+@project LIT_INVALID_CONTEXT_non_constant_context
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: lit() in CONST block (compile-time context)
+@module HelperMod
+    CONST {
+        // Trigger 1: lit() in CONST initializer in helper
+        BAD_CONST = lit(8, 5);
+    }
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Valid: lit() in ASYNC is fine (runtime context)
+        // NOTE: cascading LIT_WIDTH_INVALID fires here due to compiler bug
+        out_a <= lit(8, 42);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= lit(8, 10);
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        // Trigger 2: lit() in CONST initializer in top
+        BAD_CONST2 = lit(4, 3);
+    }
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: lit() in ASYNC is fine (runtime context)
+        // NOTE: cascading LIT_WIDTH_INVALID fires here due to compiler bug
+        out_a <= lit(8, 100);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= lit(8, 20);
+    }
+@endmod

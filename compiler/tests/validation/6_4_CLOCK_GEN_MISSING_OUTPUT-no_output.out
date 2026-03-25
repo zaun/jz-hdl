@@ -1,0 +1,2 @@
+File: 6_4_CLOCK_GEN_MISSING_OUTPUT-no_output.jz
+      21:9    error CLOCK_GEN_MISSING_OUTPUT S6.4.1 CLOCK_GEN unit must have at least one OUT clock declaration

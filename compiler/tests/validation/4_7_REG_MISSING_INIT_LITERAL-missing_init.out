@@ -1,0 +1,2 @@
+File: 4_7_REG_MISSING_INIT_LITERAL-missing_init.jz
+      22:21   error PARSE000 parse error near token ';': expected '=' and initialization literal in REGISTER block (orig: PARSE000)

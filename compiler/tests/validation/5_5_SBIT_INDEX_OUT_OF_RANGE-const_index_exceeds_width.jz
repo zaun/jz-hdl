@@ -1,5 +1,5 @@
-// SBIT_INDEX_OUT_OF_RANGE: sbit() with constant index >= source width.
-// Tests sbit() with out-of-range constant index in async and sync blocks.
+// SBIT_INDEX_OUT_OF_RANGE: sbit() index is out of range for source width.
+// Tests sbit() with constant index >= source width in ASYNC and SYNC blocks.
 // Valid sbit() with in-range index included to verify no false positives.
 
 @project SBIT_INDEX_OUT_OF_RANGE_const_index_exceeds_width
@@ -11,11 +11,11 @@
     }
 @endproj
 
-// Helper module with out-of-range sbit indices
+// Helper module: sbit() with out-of-range constant index
 @module HelperMod
     PORT {
         IN  [1] clk;
-        IN  [8] data;
+        IN  [8] src;
         OUT [8] out_a;
         OUT [8] out_b;
     }
@@ -23,13 +23,13 @@
         r [8] = 8'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: sbit index 8 on 8-bit source (valid 0-7) in async
-        out_a <= sbit(data, 8, 1'b1);
+        // Trigger 1: sbit() index 8 on 8-bit source in helper ASYNC
+        out_a <= sbit(src, 4'd8, 1'b1);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: sbit index 10 on 8-bit source in sync
-        r <= sbit(data, 10, 1'b0);
+        // Trigger 2: sbit() index 8 in helper SYNC
+        r <= sbit(src, 4'd8, 1'b1);
     }
 @endmod
 
@@ -41,8 +41,8 @@
         OUT [8] out_b;
     }
     WIRE {
-        h_a [8];
-        h_b [8];
+        ha_a [8];
+        ha_b [8];
     }
     REGISTER {
         r [8] = 8'd0;
@@ -50,18 +50,18 @@
 
     @new inst_h HelperMod {
         IN  [1] clk = clk;
-        IN  [8] data = data;
-        OUT [8] out_a = h_a;
-        OUT [8] out_b = h_b;
+        IN  [8] src = data;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: sbit index 9 on 8-bit source in top async
-        out_a <= sbit(data, 9, 1'b1);
+        // Trigger 3: sbit() index 8 in top ASYNC
+        out_a <= sbit(data, 4'd8, 1'b1);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: sbit index 15 on 8-bit source in top sync
-        r <= sbit(data, 15, 1'b1);
+        // Trigger 4: sbit() index 8 in top SYNC
+        r <= sbit(data, 4'd8, 1'b1);
     }
 @endmod

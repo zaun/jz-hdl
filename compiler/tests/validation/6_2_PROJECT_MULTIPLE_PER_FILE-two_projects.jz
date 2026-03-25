@@ -1,0 +1,33 @@
+// PROJECT_MULTIPLE_PER_FILE: Multiple @project directives in same file.
+// Tests that a second @project block in the same file triggers an error.
+
+@project PROJECT_MULTIPLE_PER_FILE_two_projects
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: second @project block in same file
+@project SecondProject
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

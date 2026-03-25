@@ -1,66 +1,67 @@
 // PRIENC_INPUT_TOO_NARROW: prienc() source must be at least 2 bits wide.
-// Tests prienc() with 1-bit source in async and sync blocks across modules.
+// Tests prienc() with 1-bit source in ASYNC and SYNC blocks across modules.
+// Valid prienc() with 8-bit source included to verify no false positives.
 
 @project PRIENC_INPUT_TOO_NARROW_single_bit_source
     @top TopMod {
         IN  [1] clk = _;
-        IN  [1] narrow = _;
-        OUT [2] out_a = _;
-        OUT [2] out_b = _;
+        IN  [1] flag = _;
+        OUT [3] out_a = _;
+        OUT [3] out_b = _;
     }
 @endproj
 
-// Helper module with 1-bit prienc source
+// Helper module: prienc() with 1-bit source
 @module HelperMod
     PORT {
         IN  [1] clk;
-        IN  [1] narrow;
-        OUT [2] out_a;
-        OUT [2] out_b;
+        IN  [1] flag;
+        OUT [3] out_a;
+        OUT [3] out_b;
     }
     REGISTER {
-        r [2] = 2'd0;
+        r [3] = 3'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: prienc with 1-bit source in async
-        out_a <= prienc(narrow);
+        // Trigger 1: prienc(1-bit) in helper ASYNC
+        out_a <=z prienc(flag);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: prienc with 1-bit source in sync
-        r <= prienc(narrow);
+        // Trigger 2: prienc(1-bit) in helper SYNC
+        r <=z prienc(flag);
     }
 @endmod
 
 @module TopMod
     PORT {
         IN  [1] clk;
-        IN  [1] narrow;
-        OUT [2] out_a;
-        OUT [2] out_b;
+        IN  [1] flag;
+        OUT [3] out_a;
+        OUT [3] out_b;
     }
     WIRE {
-        h_a [2];
-        h_b [2];
+        ha_a [3];
+        ha_b [3];
     }
     REGISTER {
-        r [2] = 2'd0;
+        r [3] = 3'd0;
     }
 
     @new inst_h HelperMod {
         IN  [1] clk = clk;
-        IN  [1] narrow = narrow;
-        OUT [2] out_a = h_a;
-        OUT [2] out_b = h_b;
+        IN  [1] flag = flag;
+        OUT [3] out_a = ha_a;
+        OUT [3] out_b = ha_b;
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: prienc with 1-bit source in top async
-        out_a <= prienc(narrow);
+        // Trigger 3: prienc(1-bit) in top ASYNC
+        out_a <=z prienc(flag);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: prienc with 1-bit source in top sync
-        r <= prienc(narrow);
+        // Trigger 4: prienc(1-bit) in top SYNC
+        r <=z prienc(flag);
     }
 @endmod

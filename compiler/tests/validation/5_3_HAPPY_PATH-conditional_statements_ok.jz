@@ -1,0 +1,112 @@
+// HAPPY_PATH: Valid conditional statement forms produce no diagnostics.
+// Exercises simple IF/ELSE, IF/ELIF/ELSE chains, nested IFs, IF without
+// ELSE in SYNC (register holds), multiple ELIFs, deeply nested conditionals.
+
+@project HAPPY_PATH_conditional_statements_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        IN  [1] sel_b = _;
+        IN  [1] sel_c = _;
+        IN  [1] sel_d = _;
+        IN  [8] din = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper: exercises IF/ELSE and nested IFs
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [1] sel_b;
+        IN  [8] din;
+        OUT [8] out_a;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Valid: simple IF/ELSE in ASYNC
+        IF (sel) {
+            out_a <= r;
+        } ELSE {
+            out_a <= din;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: nested IF in SYNC
+        IF (sel) {
+            IF (sel_b) {
+                r <= din;
+            } ELSE {
+                r <= 8'hFF;
+            }
+        } ELSE {
+            r <= 8'h00;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [1] sel_b;
+        IN  [1] sel_c;
+        IN  [1] sel_d;
+        IN  [8] din;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r_hold  [8] = 8'h00;
+        r_elif  [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] sel = sel;
+        IN  [1] sel_b = sel_b;
+        IN  [8] din = din;
+        OUT [8] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r_hold;
+        out_b = r_elif;
+
+        // Valid: IF/ELIF/ELSE chain in ASYNC
+        IF (sel) {
+            out_c <= din;
+        } ELIF (sel_b) {
+            out_c <= 8'hAA;
+        } ELIF (sel_c) {
+            out_c <= 8'hBB;
+        } ELSE {
+            out_c <= 8'h00;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: IF without ELSE in SYNC (register holds)
+        IF (sel) {
+            r_hold <= din;
+        }
+
+        // Valid: multiple ELIFs in SYNC
+        IF (sel) {
+            r_elif <= din;
+        } ELIF (sel_b) {
+            r_elif <= 8'hFF;
+        } ELIF (sel_c) {
+            r_elif <= 8'hAA;
+        } ELIF (sel_d) {
+            r_elif <= 8'h55;
+        } ELSE {
+            r_elif <= 8'h00;
+        }
+    }
+@endmod

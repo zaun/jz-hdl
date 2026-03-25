@@ -1,5 +1,6 @@
 // MEM_CONST_ADDR_OUT_OF_RANGE: Constant address >= depth.
 // mem [8] [4] has depth 4, so valid addresses are 0-3.
+// Triggers in async read and sync write contexts.
 // Valid constant address included for no false positives.
 
 @project MEM_CONST_ADDR_OUT_OF_RANGE_const_addr_overflow
@@ -10,7 +11,7 @@
     }
 @endproj
 
-// Trigger 1: constant addr >= depth in async read and sync write
+// Helper: constant addr >= depth in async read and sync write
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -76,7 +77,8 @@
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_b.wr[0] <= wdata;
+        // Valid: addr 3 is last valid (depth-1)
+        mem_b.wr[3] <= wdata;
         // Trigger 4: addr 100 >= depth 4 in sync write in top
         mem_b.wr2[100] <= 8'hBB;
     }

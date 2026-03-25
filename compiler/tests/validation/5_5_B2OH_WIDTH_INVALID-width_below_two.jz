@@ -1,67 +1,67 @@
 // B2OH_WIDTH_INVALID: b2oh() width must be a positive constant >= 2.
-// Tests b2oh() with width parameter of 1 and 0 in async and sync blocks.
-// Valid b2oh() with width=4 included to verify no false positives.
+// Tests b2oh() with width < 2 in ASYNC and SYNC blocks across modules.
+// Valid b2oh() with width=8 included to verify no false positives.
 
 @project B2OH_WIDTH_INVALID_width_below_two
     @top TopMod {
         IN  [1] clk = _;
-        IN  [2] data = _;
-        OUT [4] out_a = _;
-        OUT [4] out_b = _;
+        IN  [3] idx = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
     }
 @endproj
 
-// Helper module with b2oh width < 2
+// Helper module: b2oh() with width < 2
 @module HelperMod
     PORT {
         IN  [1] clk;
-        IN  [2] data;
-        OUT [4] out_a;
-        OUT [4] out_b;
+        IN  [3] idx;
+        OUT [8] out_a;
+        OUT [8] out_b;
     }
     REGISTER {
-        r [4] = 4'd0;
+        r [8] = 8'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: b2oh with width=1 in async
-        out_a <= b2oh(data, 1);
+        // Trigger 1: b2oh(idx, 1) in helper ASYNC — width 1 < 2
+        out_a <=z b2oh(idx, 1);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: b2oh with width=0 in sync
-        r <= b2oh(data, 0);
+        // Trigger 2: b2oh(idx, 0) in helper SYNC — width 0 < 2
+        r <=z b2oh(idx, 0);
     }
 @endmod
 
 @module TopMod
     PORT {
         IN  [1] clk;
-        IN  [2] data;
-        OUT [4] out_a;
-        OUT [4] out_b;
+        IN  [3] idx;
+        OUT [8] out_a;
+        OUT [8] out_b;
     }
     WIRE {
-        h_a [4];
-        h_b [4];
+        ha_a [8];
+        ha_b [8];
     }
     REGISTER {
-        r [4] = 4'd0;
+        r [8] = 8'd0;
     }
 
     @new inst_h HelperMod {
         IN  [1] clk = clk;
-        IN  [2] data = data;
-        OUT [4] out_a = h_a;
-        OUT [4] out_b = h_b;
+        IN  [3] idx = idx;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: b2oh with width=1 in top async
-        out_a <= b2oh(data, 1);
+        // Trigger 3: b2oh(idx, 1) in top ASYNC
+        out_a <=z b2oh(idx, 1);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: b2oh with width=0 in top sync
-        r <= b2oh(data, 0);
+        // Trigger 4: b2oh(idx, 0) in top SYNC
+        r <=z b2oh(idx, 0);
     }
 @endmod

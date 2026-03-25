@@ -1,0 +1,108 @@
+// HAPPY_PATH: Valid true dual-port memory with 2 INOUT ports in BLOCK mode (S7.6.9).
+// Exercises dual INOUT ports with independent .addr/.data/.wdata access,
+// simultaneous read/write on both ports, and cross-module instantiation.
+
+@project HAPPY_PATH_true_dual_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] addr_a = _;
+        IN  [8] addr_b = _;
+        IN  [16] wr_data_a = _;
+        IN  [16] wr_data_b = _;
+        IN  [1] wr_en_a = _;
+        IN  [1] wr_en_b = _;
+        OUT [16] rd_data_a = _;
+        OUT [16] rd_data_b = _;
+        OUT [16] helper_data = _;
+    }
+@endproj
+
+// Helper: single INOUT port memory
+@module DpHelper
+    PORT {
+        IN  [1] clk;
+        IN  [8] addr;
+        IN  [16] wdata;
+        IN  [1] we;
+        OUT [16] rdata;
+    }
+
+    REGISTER {
+        r_data [16] = 16'h0000;
+    }
+
+    MEM(type=BLOCK) {
+        mem [16] [256] = 16'h0000 {
+            INOUT rw;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = r_data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem.rw.addr <= addr;
+        r_data <= mem.rw.data;
+        IF (we) {
+            mem.rw.wdata <= wdata;
+        }
+    }
+@endmod
+
+// Top module: true dual-port RAM with 2 INOUT ports
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] addr_a;
+        IN  [8] addr_b;
+        IN  [16] wr_data_a;
+        IN  [16] wr_data_b;
+        IN  [1] wr_en_a;
+        IN  [1] wr_en_b;
+        OUT [16] rd_data_a;
+        OUT [16] rd_data_b;
+        OUT [16] helper_data;
+    }
+
+    REGISTER {
+        r_data_a [16] = 16'h0000;
+        r_data_b [16] = 16'h0000;
+    }
+
+    MEM(type=BLOCK) {
+        mem [16] [256] = 16'h0000 {
+            INOUT port_a;
+            INOUT port_b;
+        };
+    }
+
+    @new inst_dp DpHelper {
+        IN  [1] clk = clk;
+        IN  [8] addr = addr_a;
+        IN  [16] wdata = wr_data_a;
+        IN  [1] we = wr_en_a;
+        OUT [16] rdata = helper_data;
+    };
+
+    ASYNCHRONOUS {
+        rd_data_a = r_data_a;
+        rd_data_b = r_data_b;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Port A: independent read/write
+        mem.port_a.addr <= addr_a;
+        r_data_a <= mem.port_a.data;
+        IF (wr_en_a) {
+            mem.port_a.wdata <= wr_data_a;
+        }
+
+        // Port B: independent read/write (simultaneous with port A)
+        mem.port_b.addr <= addr_b;
+        r_data_b <= mem.port_b.data;
+        IF (wr_en_b) {
+            mem.port_b.wdata <= wr_data_b;
+        }
+    }
+@endmod

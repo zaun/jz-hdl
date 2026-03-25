@@ -7,10 +7,13 @@
         // Valid: unique names
         ALPHA = 8;
         BETA = 16;
+        GAMMA = 32;
         // Trigger 1: duplicate of ALPHA
-        ALPHA = 32;
+        ALPHA = 64;
         // Trigger 2: duplicate of BETA
-        BETA = 64;
+        BETA = 128;
+        // Trigger 3: duplicate of GAMMA (string value, different type still duplicates)
+        GAMMA = 256;
     }
 
     @top TopMod {
@@ -19,17 +22,35 @@
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [1] data;
     }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
     REGISTER {
         r [1] = 1'b0;
     }
+
     ASYNCHRONOUS {
         data = r;
     }
+
     SYNCHRONOUS(CLK=clk) {
         r <= ~r;
     }

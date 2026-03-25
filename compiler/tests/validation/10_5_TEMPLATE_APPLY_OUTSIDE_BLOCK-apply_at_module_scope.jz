@@ -1,5 +1,6 @@
 // TEMPLATE_APPLY_OUTSIDE_BLOCK: @apply may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks.
-// Trigger 1: @apply at module scope (between declaration blocks).
+// Trigger 1: @apply at module scope in HelperMod (between declaration blocks).
+// Trigger 2: @apply at module scope in TopMod.
 // Valid @apply in ASYNC included for negative testing.
 
 @project TEMPLATE_APPLY_OUTSIDE_BLOCK_apply_at_module_scope

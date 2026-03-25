@@ -1,7 +1,6 @@
 // WIDTHOF_INVALID_CONTEXT: widthof() used outside compile-time constant context.
-// Tests widthof() in ASYNC and SYNC blocks where it is forbidden.
-// widthof() is compile-time only and must not appear in runtime expressions.
-// Valid widthof() in CONST block included to verify no false positives.
+// Tests widthof() in ASYNCHRONOUS and SYNCHRONOUS blocks across modules.
+// Valid widthof() in CONST included to verify no false positives.
 
 @project WIDTHOF_INVALID_CONTEXT_runtime_expression
     @top TopMod {
@@ -12,10 +11,10 @@
     }
 @endproj
 
-// Helper module: widthof() in async and sync blocks
+// Helper module: widthof() in runtime contexts
 @module HelperMod
     CONST {
-        // Valid: widthof() in CONST block (no false positive)
+        // Valid: widthof() in CONST (compile-time, no false positive)
         VAL_W = widthof(val);
     }
     PORT {
@@ -28,20 +27,20 @@
         r [VAL_W] = 8'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: widthof() in helper async expression
-        out_a <= widthof(val);
+        // Trigger 1: widthof() in ASYNC block
+        out_a <=z widthof(val);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: widthof() in helper sync expression
-        r <= widthof(val);
+        // Trigger 2: widthof() in SYNC block
+        r <=z widthof(val);
     }
 @endmod
 
 @module TopMod
     CONST {
-        // Valid: widthof() in CONST block (no false positive)
-        DATA_W = widthof(data_in);
+        // Valid: widthof() in CONST (compile-time, no false positive)
+        DIN_W = widthof(data_in);
     }
     PORT {
         IN  [1] clk;
@@ -54,7 +53,7 @@
         ha_b [8];
     }
     REGISTER {
-        r [DATA_W] = 8'd0;
+        r [DIN_W] = 8'd0;
     }
 
     @new inst_h HelperMod {
@@ -65,12 +64,12 @@
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: widthof() in top async expression
-        out_a <= widthof(data_in);
+        // Trigger 3: widthof() in ASYNC block
+        out_a <=z widthof(data_in);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: widthof() in top sync expression
-        r <= widthof(data_in);
+        // Trigger 4: widthof() in SYNC block
+        r <=z widthof(data_in);
     }
 @endmod

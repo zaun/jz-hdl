@@ -1,0 +1,4 @@
+File: 7_1_MEM_UNDEFINED_NAME-undefined_mem_name.jz
+      24:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      28:16   error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
+      71:9    error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement

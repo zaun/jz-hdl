@@ -1,0 +1,50 @@
+// CLOCK_EXTERNAL_NO_PERIOD: External clock (IN_PINS) must have period in CLOCKS.
+// Tests IN_PINS clocks without period declared in CLOCKS block.
+// Valid external clock with period included to verify no false positives.
+
+@project CLOCK_EXTERNAL_NO_PERIOD_no_period
+    CLOCKS {
+        // Valid: external clock with period (no trigger)
+        good_clk = { period=10 };
+        // Trigger 1: external clock without period
+        bare_clk;
+        // Trigger 2: external clock with edge but no period
+        edge_clk = { edge=Falling };
+    }
+
+    IN_PINS {
+        good_clk = { standard=LVCMOS33 };
+        bare_clk = { standard=LVCMOS33 };
+        edge_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        good_clk = 1;
+        bare_clk = 2;
+        edge_clk = 3;
+    }
+
+    @top TopMod {
+        IN  [1] clk = good_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

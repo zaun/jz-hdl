@@ -2,3 +2,5 @@ File: 6_8_BUS_DEF_DUP_NAME-duplicate_bus_name.jz
       20:5    error BUS_DEF_DUP_NAME S6.8 Duplicate BUS definition name in project
       26:5    error BUS_DEF_DUP_NAME S6.8 Duplicate BUS definition name in project
       31:5    error BUS_DEF_DUP_NAME S6.8 Duplicate BUS definition name in project
+      45:30   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect
+      66:30   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect

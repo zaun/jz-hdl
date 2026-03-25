@@ -62,8 +62,8 @@
             } ELSE {
                 out_a <= r;
             }
+        // Trigger 4: ELIF with 8-bit condition in ASYNC
         } ELIF (wide) {
-            // Trigger 4: ELIF with 8-bit condition in ASYNC
             out_a <= r;
         } ELSE {
             out_a <= GND;

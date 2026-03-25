@@ -1,0 +1,130 @@
+// HAPPY_PATH: Valid MEM port type usage produces no diagnostics.
+// Exercises OUT ASYNC read, OUT SYNC read, IN write, INOUT with write modes,
+// single-port memories, and cross-module instantiation.
+
+@project HAPPY_PATH_port_types_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] rdata_a = _;
+        OUT [8] rdata_b = _;
+        OUT [8] rdata_c = _;
+    }
+@endproj
+
+// Helper: OUT ASYNC read, IN write — basic read/write port semantics
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    MEM {
+        mem_h [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // Valid: combinational read from OUT ASYNC port in ASYNC block
+    ASYNCHRONOUS {
+        rdata = mem_h.rd[addr];
+    }
+
+    // Valid: synchronous write to IN port in SYNC block
+    SYNCHRONOUS(CLK=clk) {
+        mem_h.wr[addr] <= wdata;
+    }
+@endmod
+
+// Top module: OUT SYNC, INOUT write modes, single-port edge cases
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata_a;
+        OUT [8] rdata_b;
+        OUT [8] rdata_c;
+    }
+
+    REGISTER {
+        r_data [8] = 8'h00;
+    }
+
+    // Valid: OUT SYNC read port with .addr/.data pseudo-fields
+    MEM(type=BLOCK) {
+        mem_sync [8] [16] = 8'h00 {
+            OUT rd_s SYNC;
+            IN  wr_s;
+        };
+    }
+
+    // Valid: INOUT with WRITE_FIRST write mode
+    MEM(type=BLOCK) {
+        mem_wf [8] [16] = 8'h00 {
+            INOUT rw_wf WRITE_FIRST;
+        };
+    }
+
+    // Valid: INOUT with READ_FIRST write mode
+    MEM(type=BLOCK) {
+        mem_rf [8] [16] = 8'h00 {
+            INOUT rw_rf READ_FIRST;
+        };
+    }
+
+    // Valid: INOUT with NO_CHANGE write mode
+    MEM(type=BLOCK) {
+        mem_nc [8] [16] = 8'h00 {
+            INOUT rw_nc NO_CHANGE;
+        };
+    }
+
+    // Valid: single OUT port only (read-only memory)
+    MEM(type=DISTRIBUTED) {
+        mem_ro [8] [16] = 8'h00 {
+            OUT rd_ro ASYNC;
+        };
+    }
+
+    // Valid: single INOUT port only
+    MEM(type=BLOCK) {
+        mem_io [8] [16] = 8'h00 {
+            INOUT rw_io;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = _;
+    };
+
+    ASYNCHRONOUS {
+        rdata_a = r_data;
+        // Valid: INOUT .data readable in ASYNC block
+        rdata_b = mem_wf.rw_wf.data ^ mem_rf.rw_rf.data;
+        rdata_c = mem_ro.rd_ro[addr] ^ mem_nc.rw_nc.data ^ mem_io.rw_io.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: OUT SYNC .addr set and .data read in SYNC block
+        mem_sync.rd_s.addr <= addr;
+        r_data <= mem_sync.rd_s.data;
+        mem_sync.wr_s[addr] <= wdata;
+        // Valid: INOUT .addr and .wdata assigned in SYNC block
+        mem_wf.rw_wf.addr <= addr;
+        mem_wf.rw_wf.wdata <= wdata;
+        mem_rf.rw_rf.addr <= addr;
+        mem_rf.rw_rf.wdata <= wdata;
+        mem_nc.rw_nc.addr <= addr;
+        mem_nc.rw_nc.wdata <= wdata;
+        mem_io.rw_io.addr <= addr;
+        mem_io.rw_io.wdata <= wdata;
+    }
+@endmod

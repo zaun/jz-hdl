@@ -1,11 +1,11 @@
-// CONST_NEGATIVE_OR_NONINT: Negative CONST value intended for MEM depth/width.
-// Tests that negative CONST values trigger error at declaration site.
+// CONST_NEGATIVE_OR_NONINT: Negative CONST value used for MEM dimension.
+// Tests negative CONST in helper module (depth) and top module (width).
 // Valid positive CONST values in MEM included to verify no false positives.
 
 @project CONST_NEGATIVE_OR_NONINT_negative_const_mem_depth
     @top TopMod {
         IN  [1] clk = _;
-        IN  [1] addr = _;
+        IN  [4] addr = _;
         IN  [8] wdata = _;
         OUT [8] data = _;
     }
@@ -36,7 +36,7 @@
     }
 @endmod
 
-// Trigger 2: negative CONST declared for MEM width in second module
+// Trigger 2: negative CONST declared for MEM width in second helper
 @module HelperMod2
     CONST {
         NEG_WIDTH = -2;
@@ -69,7 +69,7 @@
 
     PORT {
         IN  [1] clk;
-        IN  [1] addr;
+        IN  [4] addr;
         IN  [8] wdata;
         OUT [8] data;
     }

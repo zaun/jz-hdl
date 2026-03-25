@@ -22,17 +22,35 @@
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [1] data;
     }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
     REGISTER {
         r [1] = 1'b0;
     }
+
     ASYNCHRONOUS {
         data = r;
     }
+
     SYNCHRONOUS(CLK=clk) {
         r <= ~r;
     }

@@ -50,7 +50,11 @@ Verify that the canonical operator examples from the specification compile corre
 
 ## 4. Existing Validation Tests
 
-None directly mapped. S3.4 provides illustrative examples; the underlying rules are tested via S3.2 validation tests.
+| Test File | Rule Tested |
+|-----------|-------------|
+| `3_4_OPERATOR_EXAMPLES-spec_examples_ok.jz` | — (happy-path) |
+| `3_4_TERNARY_BRANCH_WIDTH_MISMATCH-concat_width_mismatch.jz` | TERNARY_BRANCH_WIDTH_MISMATCH |
+| `3_4_UNARY_ARITH_MISSING_PARENS-negate_without_parens.jz` | UNARY_ARITH_MISSING_PARENS |
 
 ## 5. Rules Matrix
 
@@ -58,11 +62,19 @@ None directly mapped. S3.4 provides illustrative examples; the underlying rules 
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| UNARY_ARITH_MISSING_PARENS | error | Unary `-`/`+` without required parentheses | Error 1 |
-| TERNARY_BRANCH_WIDTH_MISMATCH | error | Ternary true/false branches have mismatched widths | Error 2 |
+| UNARY_ARITH_MISSING_PARENS | error | Unary `-`/`+` without required parentheses | `3_4_UNARY_ARITH_MISSING_PARENS-negate_without_parens.jz` |
+| TERNARY_BRANCH_WIDTH_MISMATCH | error | Ternary true/false branches have mismatched widths | `3_4_TERNARY_BRANCH_WIDTH_MISMATCH-concat_width_mismatch.jz` |
+| LOGICAL_WIDTH_NOT_1 | error | S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`? | 3_1_LOGICAL_WIDTH_NOT_1-logical_ops_multibit.jz, 3_2_LOGICAL_WIDTH_NOT_1-multibit_logical_operands.jz |
+| CONCAT_EMPTY | error | S3.2/S8.1 Empty concatenation `{}` is not allowed | 3_2_CONCAT_EMPTY-empty_concatenation.jz |
+| DIV_CONST_ZERO | error | S3.2 Division/modulus by compile-time constant zero divisor | 3_2_DIV_CONST_ZERO-constant_zero_divisor.jz |
+| DIV_UNGUARDED_RUNTIME_ZERO | warning | S3.2 Divisor may be zero at runtime; guard with IF (divisor != 0) or use a compile-time constant | 3_2_DIV_UNGUARDED_RUNTIME_ZERO-unguarded_division.jz |
+| TERNARY_COND_WIDTH_NOT_1 | error | S3.2/S8.1 Ternary `?:` condition must be 1 bit wide; use a comparison or reduction operator | 3_2_TERNARY_COND_WIDTH_NOT_1-multibit_condition.jz |
+| TYPE_BINOP_WIDTH_MISMATCH | error | S2.2/3.2/8.1 Binary operator requires equal operand widths but receives mismatched widths | 2_2_TYPE_BINOP_WIDTH_MISMATCH-width_mismatch.jz, 2_3_TYPE_BINOP_WIDTH_MISMATCH-mismatched_operand_widths.jz, 3_1_TYPE_BINOP_WIDTH_MISMATCH-width_mismatch.jz |
+| SPECIAL_DRIVER_IN_EXPRESSION | error | S2.3 GND/VCC may not appear in arithmetic/logical expressions | 2_4_SPECIAL_DRIVER_IN_EXPRESSION-gnd_vcc_in_expr.jz |
+| SPECIAL_DRIVER_IN_CONCAT | error | S2.3 GND/VCC may not appear in concatenations | 2_4_SPECIAL_DRIVER_IN_CONCAT-gnd_vcc_in_concat.jz |
+| SPECIAL_DRIVER_SLICED | error | S2.3 GND/VCC may not be sliced or indexed | 1_3_SPECIAL_DRIVER_SLICED-vcc_gnd_sliced.jz, 2_4_SPECIAL_DRIVER_SLICED-gnd_vcc_sliced.jz |
+| SPECIAL_DRIVER_IN_INDEX | error | S2.3 GND/VCC may not appear in slice/index expressions | 2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz |
 
-### 5.2 Rules Not Tested
+### 5.2 Rules Not Tested Here (covered by S3.1/S3.2 tests)
 
-| Rule ID | Severity | Spec Reference | Gap Description |
-|---------|----------|----------------|-----------------|
-| -- | -- | -- | S3.4 is examples only; no new rules introduced beyond those in S3.1-3.2 |
+All rules for this section are tested.

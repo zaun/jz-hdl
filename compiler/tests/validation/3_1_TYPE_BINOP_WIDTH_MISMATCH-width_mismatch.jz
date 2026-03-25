@@ -1,7 +1,7 @@
 // TYPE_BINOP_WIDTH_MISMATCH: Binary operators require equal operand widths.
 // Tests width mismatch across arithmetic (+, -), bitwise (&, |, ^),
-// comparison (==), and multiplication operators in ASYNCHRONOUS and
-// SYNCHRONOUS blocks across multiple modules.
+// comparison (==, !=, <), and multiplication operators in ASYNCHRONOUS
+// and SYNCHRONOUS blocks across multiple modules.
 // Valid same-width operations included to verify no false positives.
 
 @project TYPE_BINOP_WIDTH_MISMATCH_width_mismatch
@@ -11,10 +11,11 @@
         IN  [4] b = _;
         OUT [8] out_a = _;
         OUT [8] out_b = _;
+        OUT [1] out_c = _;
     }
 @endproj
 
-// Helper module: arithmetic and comparison width mismatches
+// Helper module: arithmetic, comparison, and bitwise width mismatches
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -22,6 +23,7 @@
         IN  [4] b;
         OUT [8] out_a;
         OUT [1] out_b;
+        OUT [1] out_c;
     }
     REGISTER {
         r [8] = 8'h00;
@@ -31,9 +33,11 @@
         out_a = r + b;
         // Trigger 2: EQ comparison width mismatch (8 vs 4) in ASYNC
         out_b = (a == b);
+        // Trigger 3: NOT-EQ comparison width mismatch (8 vs 4) in ASYNC
+        out_c = (a != b);
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 3: SUB width mismatch in SYNC (8 vs 4)
+        // Trigger 4: SUB width mismatch in SYNC (8 vs 4)
         r <= a - b;
     }
 @endmod
@@ -45,11 +49,13 @@
         IN  [4] b;
         OUT [8] out_a;
         OUT [8] out_b;
+        OUT [1] out_c;
     }
     WIRE {
         w    [8];
         ha_a [8];
         ha_b [1];
+        ha_c [1];
     }
     REGISTER {
         r [8] = 8'h00;
@@ -61,18 +67,21 @@
         IN  [4] b = b;
         OUT [8] out_a = ha_a;
         OUT [1] out_b = ha_b;
+        OUT [1] out_c = ha_c;
     };
 
     ASYNCHRONOUS {
-        // Trigger 4: bitwise OR width mismatch (8 vs 4) in ASYNC
-        w = a | b;
-        // Trigger 5: bitwise XOR width mismatch (8 vs 4) in ASYNC
+        // Trigger 5: bitwise AND width mismatch (8 vs 4) in ASYNC
+        w = a & b;
+        // Trigger 6: bitwise XOR width mismatch (8 vs 4) in ASYNC
         out_a = a ^ b;
-        // Valid: same-width addition (no false positive)
-        out_b = ha_a + r;
+        // Trigger 7: less-than comparison width mismatch (8 vs 4) in ASYNC
+        out_c = (a < b) | ha_b | ha_c;
+        // Valid: same-width bitwise OR (no false positive); sinks w, r, ha_a
+        out_b = ha_a | r | w;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 6: MUL width mismatch in SYNC (8 vs 4)
+        // Trigger 8: MUL width mismatch in SYNC (8 vs 4)
         r <= a * b;
     }
 @endmod

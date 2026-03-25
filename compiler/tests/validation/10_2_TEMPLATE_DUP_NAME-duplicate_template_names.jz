@@ -28,7 +28,7 @@
     a <= b;
 @endtemplate
 
-// Trigger 2: Second duplicate at file scope
+// Trigger 2: Second duplicate at file scope (different template name)
 @template file_other(c, d)
     c <= d;
 @endtemplate

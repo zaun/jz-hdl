@@ -4,7 +4,7 @@
 
 ## 1. Objective
 
-Verify IF/ELIF/ELSE syntax (parenthesized conditions, width-1 condition requirement), branch exclusivity for assignments, nesting, combinational loop detection with flow-sensitivity, and interaction with exclusive assignment rule.
+Verify IF/ELIF/ELSE syntax (parenthesized conditions, width-1 condition requirement), branch exclusivity for assignments, nesting, combinational loop detection with flow-sensitivity, alias-in-conditional prohibition, control-flow-outside-block detection, and interaction with exclusive assignment rule.
 
 ## 2. Test Scenarios
 
@@ -18,6 +18,8 @@ Verify IF/ELIF/ELSE syntax (parenthesized conditions, width-1 condition requirem
 | 4 | IF without ELSE in SYNC | `IF (load) { reg <= val; }` | Valid, register holds |
 | 5 | Flow-sensitive no loop | `IF (sel) { a = b; } ELSE { b = a; }` | Valid, no cycle in any single path |
 | 6 | Multiple ELIFs | `IF ... ELIF ... ELIF ... ELSE ...` | Valid |
+| 7 | Nested IF in both ASYNC and SYNC | IF inside ASYNC and SYNC blocks | Valid |
+| 8 | Empty ELSE body | `IF (c) { w <= a; } ELSE { }` | Valid |
 
 ### 2.2 Error Cases
 
@@ -25,10 +27,10 @@ Verify IF/ELIF/ELSE syntax (parenthesized conditions, width-1 condition requirem
 |---|-----------|-------|----------|---------|
 | 1 | Missing parens on IF | `IF c { ... }` | Error | IF_COND_MISSING_PARENS |
 | 2 | Missing parens on ELIF | `ELIF c { ... }` | Error | IF_COND_MISSING_PARENS |
-| 3 | Condition not 1-bit | `IF (8'd5) { ... }` | Error | IF_COND_WIDTH_NOT_1 |
-| 4 | Control flow outside block | IF/SELECT outside ASYNC/SYNC block | Error | CONTROL_FLOW_OUTSIDE_BLOCK |
-| 5 | Unconditional combinational loop | `a = b; b = a;` in ASYNC | Error | COMB_LOOP_UNCONDITIONAL |
-| 6 | Conditional safe cycle | Cycle only within mutually exclusive branches | Warning | COMB_LOOP_CONDITIONAL_SAFE |
+| 3 | Missing parens on IF in SYNC | `IF c { ... }` in SYNC block | Error | IF_COND_MISSING_PARENS |
+| 4 | Condition not 1-bit | `IF (8'd5) { ... }` | Error | IF_COND_WIDTH_NOT_1 |
+| 5 | Control flow outside block | IF statement outside ASYNC/SYNC block | Error | CONTROL_FLOW_OUTSIDE_BLOCK |
+| 6 | Alias inside conditional in ASYNC | `IF (c) { a = b; }` alias in branch | Error | ASYNC_ALIAS_IN_CONDITIONAL |
 
 ### 2.3 Edge Cases
 
@@ -41,24 +43,30 @@ Verify IF/ELIF/ELSE syntax (parenthesized conditions, width-1 condition requirem
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|----------------|---------|----------|-------|
-| 1 | `IF c { ... }` | Compile error | IF_COND_MISSING_PARENS | error | Parentheses required |
-| 2 | `ELIF c { ... }` | Compile error | IF_COND_MISSING_PARENS | error | ELIF also requires parens |
-| 3 | `IF (8'd5) { ... }` | Compile error | IF_COND_WIDTH_NOT_1 | error | Condition must be 1 bit |
-| 4 | IF outside ASYNC/SYNC | Compile error | CONTROL_FLOW_OUTSIDE_BLOCK | error | Must be inside block |
-| 5 | `a = b; b = a;` in ASYNC | Compile error | COMB_LOOP_UNCONDITIONAL | error | Unconditional feedback |
-| 6 | Cycle in exclusive branches | Warning | COMB_LOOP_CONDITIONAL_SAFE | warning | Safe if mutually exclusive |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|-----------------|----------|
+| 1 | IF condition missing parentheses | `IF c { ... }` | IF_COND_MISSING_PARENS | error |
+| 2 | ELIF condition missing parentheses | `ELIF c { ... }` | IF_COND_MISSING_PARENS | error |
+| 3 | IF parens missing in SYNC | `IF c { ... }` in SYNCHRONOUS | IF_COND_MISSING_PARENS | error |
+| 4 | IF condition wider than 1 bit | `IF (8'd5) { ... }` | IF_COND_WIDTH_NOT_1 | error |
+| 5 | IF/SELECT outside any block | IF at module scope | CONTROL_FLOW_OUTSIDE_BLOCK | error |
+| 6 | Alias operator inside IF branch in ASYNC | `IF (c) { a = b; }` | ASYNC_ALIAS_IN_CONDITIONAL | error |
+| 7 | Valid IF/ELSE in ASYNC | `IF (sel) { a <= x; } ELSE { a <= y; }` | -- | pass |
+| 8 | Flow-sensitive mutually exclusive | `IF (s) { a=b; } ELSE { b=a; }` | -- | pass |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
-| 5_3_IF_COND_MISSING_PARENS-missing_parentheses.jz | IF_COND_MISSING_PARENS | IF condition missing required parentheses |
-| 5_3_IF_COND_MISSING_PARENS-elif_missing_parens.jz | IF_COND_MISSING_PARENS | ELIF condition missing required parentheses |
-| 5_3_IF_COND_WIDTH_NOT_1-condition_not_1bit.jz | IF_COND_WIDTH_NOT_1 | IF/ELIF condition wider than 1 bit |
+| 5_3_HAPPY_PATH-conditional_statements_ok.jz | -- | Valid IF/ELIF/ELSE forms accepted |
+| 5_3_ASYNC_ALIAS_IN_CONDITIONAL-alias_in_conditional.jz | ASYNC_ALIAS_IN_CONDITIONAL | Alias operator inside conditional branch in ASYNC |
 | 5_3_COMB_LOOP_UNCONDITIONAL-unconditional_loop.jz | COMB_LOOP_UNCONDITIONAL | Unconditional combinational feedback loop in ASYNC |
 | 5_3_COMB_LOOP_CONDITIONAL_SAFE-conditional_safe_cycle.jz | COMB_LOOP_CONDITIONAL_SAFE | Cycle only within mutually exclusive branches (safe warning) |
+| 5_3_CONTROL_FLOW_OUTSIDE_BLOCK-if_outside_block.jz | CONTROL_FLOW_OUTSIDE_BLOCK | IF statement placed outside any ASYNC/SYNC block |
+| 5_3_IF_COND_MISSING_PARENS-missing_parentheses.jz | IF_COND_MISSING_PARENS | IF condition missing required parentheses |
+| 5_3_IF_COND_MISSING_PARENS-elif_missing_parens.jz | IF_COND_MISSING_PARENS | ELIF condition missing required parentheses |
+| 5_3_IF_COND_MISSING_PARENS-sync_missing_parens.jz | IF_COND_MISSING_PARENS | IF condition missing parentheses in SYNC block |
+| 5_3_IF_COND_WIDTH_NOT_1-condition_not_1bit.jz | IF_COND_WIDTH_NOT_1 | IF/ELIF condition wider than 1 bit |
 
 ## 5. Rules Matrix
 
@@ -66,13 +74,20 @@ Verify IF/ELIF/ELSE syntax (parenthesized conditions, width-1 condition requirem
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| IF_COND_MISSING_PARENS | error | S5.3 IF/ELIF condition missing required parentheses | 5_3_IF_COND_MISSING_PARENS-missing_parentheses.jz, 5_3_IF_COND_MISSING_PARENS-elif_missing_parens.jz |
+| ASYNC_ALIAS_IN_CONDITIONAL | error | S4.10/S5.3 Alias operator inside conditional branch in ASYNC | 5_3_ASYNC_ALIAS_IN_CONDITIONAL-alias_in_conditional.jz |
+| CONTROL_FLOW_OUTSIDE_BLOCK | error | S5.3/S5.4/S8.1 IF/SELECT outside ASYNC/SYNC block | 5_3_CONTROL_FLOW_OUTSIDE_BLOCK-if_outside_block.jz |
+| IF_COND_MISSING_PARENS | error | S5.3 IF/ELIF condition missing required parentheses | 5_3_IF_COND_MISSING_PARENS-missing_parentheses.jz, 5_3_IF_COND_MISSING_PARENS-elif_missing_parens.jz, 5_3_IF_COND_MISSING_PARENS-sync_missing_parens.jz |
 | IF_COND_WIDTH_NOT_1 | error | S5.3 IF/ELIF condition must be 1 bit wide | 5_3_IF_COND_WIDTH_NOT_1-condition_not_1bit.jz |
-| COMB_LOOP_UNCONDITIONAL | error | S5.3/S8.2 Combinational loop: signal feeds back to itself | 5_3_COMB_LOOP_UNCONDITIONAL-unconditional_loop.jz |
-| COMB_LOOP_CONDITIONAL_SAFE | warning | S5.3/S8.2 Cycles only within mutually exclusive branches | 5_3_COMB_LOOP_CONDITIONAL_SAFE-conditional_safe_cycle.jz |
 
-### 5.2 Rules Not Tested
+### 5.2 Rules Not Tested (in this section)
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| CONTROL_FLOW_OUTSIDE_BLOCK | error | No dedicated 5_3-prefixed test for control flow outside ASYNC/SYNC block |
+| (all S5.3 rules have test files) | -- | -- |
+
+### 5.3 Additional Rules Tested (not in primary S5.3 assignment)
+
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| COMB_LOOP_UNCONDITIONAL | error | S12.2 Unconditional combinational feedback loop | 5_3_COMB_LOOP_UNCONDITIONAL-unconditional_loop.jz |
+| COMB_LOOP_CONDITIONAL_SAFE | warning | S12.2 Cycle only within mutually exclusive branches | 5_3_COMB_LOOP_CONDITIONAL_SAFE-conditional_safe_cycle.jz |

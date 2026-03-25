@@ -1,7 +1,6 @@
 // PIN_DRIVE_MISSING_OR_INVALID: Missing or nonpositive drive for OUT/INOUT pins.
-// Tests missing drive in OUT_PINS, missing drive in INOUT_PINS,
-// zero drive, and negative drive values.
-// Valid drive values and IN_PINS (no drive needed) verify no false positives.
+// Tests missing drive, zero drive, and negative drive in OUT_PINS and INOUT_PINS.
+// IN_PINS do not require drive. Valid drive values verify no false positives.
 
 @project PIN_DRIVE_MISSING_OR_INVALID_drive_problems
     CLOCKS {
@@ -10,27 +9,27 @@
 
     IN_PINS {
         sys_clk = { standard=LVCMOS33 };
-        // Valid: IN_PINS never needs drive (no trigger)
+        // Valid: IN_PINS never need drive (no trigger)
         valid_in = { standard=LVCMOS33 };
     }
 
     OUT_PINS {
         // Valid: positive drive (no trigger)
         valid_out = { standard=LVCMOS33, drive=8 };
-        // Trigger 1: OUT_PIN missing drive
-        no_drive_out = { standard=LVCMOS33 };
-        // Trigger 2: OUT_PIN with zero drive
-        zero_drive_out = { standard=LVCMOS33, drive=0 };
-        // Trigger 3: OUT_PIN with negative drive
-        neg_drive_out = { standard=LVCMOS33, drive=-4 };
+        // Trigger 1: missing drive in OUT_PINS
+        no_drive = { standard=LVCMOS33 };
+        // Trigger 2: zero drive in OUT_PINS
+        zero_drive = { standard=LVCMOS33, drive=0 };
+        // Trigger 3: negative drive in OUT_PINS
+        neg_drive = { standard=LVCMOS33, drive=-4 };
     }
 
     INOUT_PINS {
         // Valid: positive drive (no trigger)
         valid_io = { standard=LVCMOS33, drive=4 };
-        // Trigger 4: INOUT_PIN missing drive
+        // Trigger 4: missing drive in INOUT_PINS
         no_drive_io = { standard=LVCMOS33 };
-        // Trigger 5: INOUT_PIN with zero drive
+        // Trigger 5: zero drive in INOUT_PINS
         zero_drive_io = { standard=LVCMOS33, drive=0 };
     }
 
@@ -38,9 +37,9 @@
         sys_clk = 1;
         valid_in = 2;
         valid_out = 3;
-        no_drive_out = 4;
-        zero_drive_out = 5;
-        neg_drive_out = 6;
+        no_drive = 4;
+        zero_drive = 5;
+        neg_drive = 6;
         valid_io = 7;
         no_drive_io = 8;
         zero_drive_io = 9;

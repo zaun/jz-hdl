@@ -1,0 +1,73 @@
+// MEM_UNDEFINED_NAME: Access to MEM name not declared in module triggers error.
+// NOTE: Compiler currently emits UNDECLARED_IDENTIFIER instead of MEM_UNDEFINED_NAME
+// for undeclared MEM names. See issues.md.
+
+@project MEM_UNDEFINED_NAME_undefined_mem_name
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: undefined MEM access in helper async block
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = undef_mem.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Valid: declared MEM (no error expected)
+    MEM {
+        mem_ok [8] [16] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_ok.rd_ok[addr];
+    }
+
+    // Trigger 2: undefined MEM write access in sync block
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_ok.wr_ok[addr] <= wdata;
+        no_such_mem.wr[addr] <= wdata;
+    }
+@endmod

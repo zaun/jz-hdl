@@ -1,0 +1,2 @@
+File: 6_3_CONFIG_MULTIPLE_BLOCKS-multiple_config.jz
+      11:5    error PARSE000 parse error near token 'CONFIG': multiple CONFIG blocks in a single project are not allowed (orig: PARSE000)

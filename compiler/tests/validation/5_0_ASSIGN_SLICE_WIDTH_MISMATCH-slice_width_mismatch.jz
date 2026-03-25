@@ -1,0 +1,76 @@
+// ASSIGN_SLICE_WIDTH_MISMATCH: Slice assignment where source and destination
+// slice widths differ. Tests mismatched slices on LHS and RHS in ASYNC and SYNC
+// blocks across multiple modules. Valid same-width slices verify no false positives.
+
+@project ASSIGN_SLICE_WIDTH_MISMATCH_slice_width_mismatch
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: slice width mismatches in ASYNC and SYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: LHS slice narrower than RHS slice (4 vs 5, ASYNC helper)
+        dout[7:4] <= din[4:0];
+        // Trigger 2: LHS slice wider than RHS slice (4 vs 3, ASYNC helper)
+        dout[3:0] <= r[2:0];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: slice width mismatch in SYNC (4 vs 3)
+        r[7:4] <= din[6:4];
+        // Valid: same-width slice in SYNC (4 = 4, no error)
+        r[3:0] <= din[3:0];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 4: slice mismatch with receive operator (4 vs 6, ASYNC top)
+        dout_b[7:4] <= din[5:0];
+        // Valid: same-width slice assignment (4 = 4, no error)
+        dout_b[3:0] <= r[3:0];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: slice mismatch in SYNC top module (4 vs 2)
+        r[7:4] <= din[1:0];
+        // Valid: same-width slice (4 = 4, no error)
+        r[3:0] <= din[7:4];
+    }
+@endmod

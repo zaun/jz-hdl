@@ -4,7 +4,7 @@
 
 ## 1. Objective
 
-Verify that all 9 canonical MEM examples from the specification compile without errors and produce valid IR. No new rules are introduced; all MEM rules from Sections 7.1-7.5 apply.
+Verify that all 9 canonical MEM examples from the specification compile without errors and produce valid IR. These examples exercise rules from Sections 7.1-7.5 in combination. No new rules are introduced in this section.
 
 ## 2. Test Scenarios
 
@@ -12,15 +12,15 @@ Verify that all 9 canonical MEM examples from the specification compile without 
 
 | # | Test Case | Input | Expected |
 |---|-----------|-------|----------|
-| 1 | Simple ROM | Read-only MEM with ASYNC read port (S7.6.1) | Valid, compiles without errors |
-| 2 | Dual-Port Register File | 1 read port, 1 write port (S7.6.2) | Valid, compiles without errors |
-| 3 | Synchronous FIFO | FIFO with read/write ports (S7.6.3) | Valid, compiles without errors |
-| 4 | Registered Read Cache | SYNC read port (S7.6.4) | Valid, compiles without errors |
-| 5 | Triple-Port | 2 read ports, 1 write port (S7.6.5) | Valid, compiles without errors |
-| 6 | Quad-Port | 2 read ports, 2 write ports (S7.6.6) | Valid, compiles without errors |
-| 7 | Configurable Memory | CONST/CONFIG parameters for dimensions (S7.6.7) | Valid, compiles without errors |
-| 8 | Single Port INOUT | Single INOUT port (S7.6.8) | Valid, compiles without errors |
-| 9 | True Dual Port | 2 INOUT ports (S7.6.9) | Valid, compiles without errors |
+| 1 | Simple ROM (S7.6.1) | Read-only MEM with single ASYNC read port, @file init | Valid, compiles without errors |
+| 2 | Dual-Port Register File (S7.6.2) | 2 ASYNC read ports + 1 write port, literal init | Valid, compiles without errors |
+| 3 | Synchronous FIFO (S7.6.3) | 1 ASYNC read + 1 write, pointer-based addressing | Valid, compiles without errors |
+| 4 | Registered Read Cache (S7.6.4) | 1 SYNC read + 1 write port | Valid, compiles without errors |
+| 5 | Triple-Port (S7.6.5) | 2 ASYNC read ports + 1 write port | Valid, compiles without errors |
+| 6 | Quad-Port (S7.6.6) | 2 ASYNC read ports + 2 write ports | Valid, compiles without errors |
+| 7 | Configurable Memory (S7.6.7) | CONST-parameterized width/depth, SYNC read + write | Valid, compiles without errors |
+| 8 | Single Port INOUT (S7.6.8) | Single INOUT port, TYPE=BLOCK | Valid, compiles without errors |
+| 9 | True Dual Port (S7.6.9) | 2 INOUT ports, TYPE=BLOCK | Valid, compiles without errors |
 
 ### 2.2 Error Cases
 
@@ -30,26 +30,36 @@ No error cases specific to this section. Examples are canonical happy-path demon
 
 | # | Test Case | Input | Expected |
 |---|-----------|-------|----------|
-| 1 | Configurable memory at minimum dimensions | CONFIG.WIDTH=1, CONFIG.DEPTH=1 | Valid, compiles without errors |
-| 2 | True Dual Port simultaneous access pattern | Both INOUT ports active | Valid, no conflict with distinct port names |
+| 1 | Configurable memory at minimum dimensions | WIDTH=1, DEPTH=1 | Valid, compiles without errors |
+| 2 | True Dual Port simultaneous access pattern | Both INOUT ports active in same SYNC block | Valid, no conflict with distinct port names |
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|----------------|---------|----------|-------|
-| 1-9 | Canonical spec examples | No errors, valid IR | (none) | — | Examples exercise rules from S7.1-7.5 |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|-----------------|----------|
+| 1-9 | Canonical spec examples | Complete module declarations | (none) | -- |
+| 10 | Minimum dimensions edge case | WIDTH=1, DEPTH=1 MEM | (none) | -- |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
-| (none) | — | No validation tests specific to S7.6; examples are integration-level |
+| 7_6_HAPPY_PATH-simple_rom.jz | — | S7.6.1: Simple ROM with ASYNC read |
+| 7_6_HAPPY_PATH-dual_port_regfile.jz | — | S7.6.2: Dual-port register file (2R1W) |
+| 7_6_HAPPY_PATH-sync_fifo.jz | — | S7.6.3: Synchronous FIFO |
+| 7_6_HAPPY_PATH-registered_read_cache.jz | — | S7.6.4: Registered read cache with SYNC read |
+| 7_6_HAPPY_PATH-triple_port.jz | — | S7.6.5: Triple-port memory (2R1W) |
+| 7_6_HAPPY_PATH-quad_port.jz | — | S7.6.6: Quad-port memory (2R2W) |
+| 7_6_HAPPY_PATH-configurable_mem.jz | — | S7.6.7: Configurable memory with CONST parameters |
+| 7_6_HAPPY_PATH-single_port_inout.jz | — | S7.6.8: Single-port INOUT |
+| 7_6_HAPPY_PATH-true_dual_port.jz | — | S7.6.9: True dual-port (2x INOUT) |
+| 7_6_HAPPY_PATH-min_dimensions.jz | — | Edge case: minimum dimensions (WIDTH=1, DEPTH=1) |
 
 ## 5. Rules Matrix
 
 ### 5.1 Rules Tested
 
-No new rules introduced. This section exercises rules from Sections 7.1-7.5 in combination.
+No new rules introduced. This is a happy-path-only plan. The tests exercise rules from Sections 7.1-7.5 in combination.
 
 ### 5.2 Rules Not Tested
 

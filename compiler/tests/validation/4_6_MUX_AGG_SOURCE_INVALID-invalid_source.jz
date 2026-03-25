@@ -1,0 +1,86 @@
+// MUX_AGG_SOURCE_INVALID: Aggregation source not a valid readable signal in module scope.
+// Tests invalid MUX sources including undefined identifiers.
+// Valid sources included to verify no false positives.
+
+@project MUX_AGG_SOURCE_INVALID_invalid_source
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: undefined source in aggregation
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    // Trigger 1: undefined identifier as MUX source
+    MUX {
+        bad_mux = a, nonexistent;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        w = a;
+        data = bad_mux[sel] | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= a;
+    }
+@endmod
+
+// Top module: undefined source in aggregation
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    WIRE {
+        helper_out [8];
+    }
+
+    // Trigger 2: undefined identifier as MUX source in top module
+    MUX {
+        top_bad = a, undefined_sig;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [1] sel = sel;
+        OUT [8] data = helper_out;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = top_bad[sel] | helper_out | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= a;
+    }
+@endmod

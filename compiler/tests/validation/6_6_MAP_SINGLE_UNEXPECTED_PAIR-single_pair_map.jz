@@ -1,5 +1,5 @@
 // MAP_SINGLE_UNEXPECTED_PAIR: Single-ended pin must not use { P, N } MAP syntax.
-// Tests single-ended IN, OUT, and INOUT pins with differential {P,N} MAP syntax.
+// Triggers: single-ended IN, OUT, and INOUT pins with differential {P,N} MAP syntax.
 // Valid scalar mapping included to verify no false positives.
 
 @project MAP_SINGLE_UNEXPECTED_PAIR_single_pair_map

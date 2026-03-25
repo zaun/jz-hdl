@@ -1,5 +1,5 @@
 // PIN_INVALID_STANDARD: Invalid electrical standard in PIN declaration.
-// Tests invalid standards in IN_PINS, OUT_PINS, and INOUT_PINS blocks.
+// Tests unrecognized standards in IN_PINS, OUT_PINS, and INOUT_PINS.
 // Valid standards included to verify no false positives.
 
 @project PIN_INVALID_STANDARD_bad_standard
@@ -9,21 +9,21 @@
 
     IN_PINS {
         sys_clk = { standard=LVCMOS33 };
-        // Valid: recognized standard
+        // Valid: recognized standard (no trigger)
         valid_in = { standard=LVCMOS18 };
         // Trigger 1: invalid standard in IN_PINS
         bad_in = { standard=FAKESTD };
     }
 
     OUT_PINS {
-        // Valid: recognized standard with drive
+        // Valid: recognized standard (no trigger)
         valid_out = { standard=LVCMOS33, drive=8 };
         // Trigger 2: invalid standard in OUT_PINS
         bad_out = { standard=NOTREAL, drive=8 };
     }
 
     INOUT_PINS {
-        // Valid: recognized standard with drive
+        // Valid: recognized standard (no trigger)
         valid_io = { standard=LVCMOS25, drive=4 };
         // Trigger 3: invalid standard in INOUT_PINS
         bad_io = { standard=BADSTD, drive=4 };

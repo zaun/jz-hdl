@@ -20,12 +20,16 @@ Error conditions are defined and tested in their respective section test plans:
 
 | Category | Errors | Covered By |
 |----------|--------|------------|
-| Clock Errors | Name mismatch, width != 1, duplicates, period <= 0, invalid edge | test_6_4-clocks_block.md |
-| PIN Declaration Errors | Multi-block pin, invalid standard, missing drive, width <= 0, duplicates | test_6_5-pin_blocks.md |
-| MAP Errors | Unmapped pin, undeclared map entry, duplicate physical location, invalid board pin | test_6_6-map_block.md |
-| Instantiation Errors | Missing top module, port not listed, width mismatch, direction mismatch, missing pin decl, undefined blackbox | test_6_9-top_level_module.md |
-| Import Errors | Duplicate file import | test_6_1-project_purpose.md |
-| Global Errors | Project/module name conflict, multiple @project, missing @endproj | test_6_10-project_scope_and_uniqueness.md |
+| Chip Data Errors | Unknown chip ID, malformed JSON | test_6_1-project_purpose.md |
+| Clock Errors | Name mismatch, width != 1, duplicates, period <= 0, invalid edge, all CLOCK_GEN rules | test_6_4-clocks_block.md |
+| PIN Declaration Errors | Multi-block pin, invalid standard, missing drive, width <= 0, duplicates, mode/pull/term errors, diff output missing attributes | test_6_5-pin_blocks.md |
+| MAP Errors | Unmapped pin, undeclared map entry, duplicate physical location, differential mapping errors | test_6_6-map_block.md |
+| Blackbox Errors | Body disallowed, undefined in @new, override unchecked | test_6_7-blackbox_modules.md |
+| BUS Errors | Duplicate BUS name, duplicate signal name, invalid direction, bulk mismatch/role conflict | test_6_8-bus_aggregation.md |
+| Instantiation Errors | Missing top module, port not listed, width mismatch, direction mismatch, missing pin decl, literal on OUT, no-connect without width | test_6_9-top_level_module.md |
+| Import Errors | Outside project, not at top, file has project, duplicate module, duplicate file, missing endproj | test_6_2-project_canonical_form.md |
+| Scope Errors | Multiple projects per file, project/module name conflict, duplicate module names | test_6_10-project_scope_and_uniqueness.md |
+| CONFIG Errors | Multiple blocks, duplicate name, invalid expression, forward ref, undeclared, circular dep, runtime use, type context errors | test_6_3-config_block.md |
 
 ### 2.3 Edge Cases
 

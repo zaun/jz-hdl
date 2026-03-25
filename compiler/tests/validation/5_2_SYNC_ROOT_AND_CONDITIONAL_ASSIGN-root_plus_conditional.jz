@@ -74,7 +74,7 @@
         IF (sel) {
             r_x <= b;
         }
-        // Trigger 3: root + SELECT case (with DEFAULT to avoid SELECT_NO_MATCH_SYNC_OK)
+        // Trigger 3: root + SELECT case
         r_y <= a;
         SELECT (sel) {
             CASE (1'b0) {

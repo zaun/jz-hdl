@@ -20,38 +20,40 @@ Verify MEM block declaration within module. Full MEM coverage is in Section 7 te
 
 | # | Test Case | Description |
 |---|-----------|-------------|
-| 1 | Invalid type keyword | `MEM(type=INVALID) { ... }` — Error |
-| 2 | MEM outside module | MEM block at top level — Error |
+| 1 | Invalid type keyword | `MEM(type=INVALID) { ... }` -- Error |
+| 2 | MEM outside module | MEM block at top level -- Error |
 
 ### 2.3 Edge Cases
 
 | # | Test Case | Description |
 |---|-----------|-------------|
-| 1 | Module without MEM | Valid — MEM is optional |
+| 1 | Module without MEM | Valid -- MEM is optional |
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Notes |
-|---|-------|----------------|---------|-------|
-| 1 | `MEM(type=BLOCK)` | Valid | — | Happy path |
-| 2 | `MEM(type=INVALID)` | Error | MEM_TYPE_INVALID | S4.9/S7.1 |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|-----------------|----------|
+| 1 | Invalid storage type keyword | `MEM(type=INVALID)` | MEM_TYPE_INVALID | error |
+| 2 | Valid BLOCK type | `MEM(type=BLOCK) { ... }` | -- | -- (pass) |
+| 3 | Valid DISTRIBUTED type | `MEM(type=DISTRIBUTED) { ... }` | -- | -- (pass) |
 
 ## 4. Existing Validation Tests
 
-| Test File | Rule Tested |
-|-----------|-------------|
-| 4_9_MEM_TYPE_INVALID-invalid_storage_type.jz | MEM_TYPE_INVALID |
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| 4_9_MEM_HAPPY_PATH-mem_ok.jz | -- | Happy path: valid MEM declarations |
+| 4_9_MEM_TYPE_INVALID-invalid_storage_type.jz | MEM_TYPE_INVALID | Invalid MEM storage type keyword |
 
 ## 5. Rules Matrix
 
 ### 5.1 Rules Tested
 
-| Rule ID | Severity | Test File(s) |
-|---------|----------|--------------|
-| MEM_TYPE_INVALID | error | 4_9_MEM_TYPE_INVALID-invalid_storage_type.jz |
+| Rule ID | Severity | Description | Test Case(s) |
+|---------|----------|-------------|--------------|
+| MEM_TYPE_INVALID | error | S4.9/S7.1 Invalid MEM storage type keyword | 4_9_MEM_TYPE_INVALID-invalid_storage_type.jz |
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Gap Description |
-|---------|----------|-----------------|
-| — | — | Full MEM coverage in Section 7 test plans |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| -- | -- | Full MEM coverage is in Section 7 test plans (test_7_1 through test_7_8) |

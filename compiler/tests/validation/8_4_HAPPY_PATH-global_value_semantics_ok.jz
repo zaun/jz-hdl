@@ -1,0 +1,77 @@
+// HAPPY_PATH: Valid global constant value semantics.
+// Exercises globals as RHS of ASYNC and SYNC assignments, in expressions,
+// concatenations, conditionals, and with extension modifiers.
+// No diagnostics expected.
+
+@global ISA
+    INST_ADD = 4'b0001;
+    INST_SUB = 4'b0010;
+@endglob
+
+@global FLAGS
+    ACTIVE = 8'hAA;
+    DONE   = 8'hBB;
+@endglob
+
+@project HAPPY_PATH_global_value_semantics_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [4] out_c = _;
+        OUT [4] out_d = _;
+    }
+@endproj
+
+// Helper module: global used in ASYNC and SYNC with matching widths
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [4] dout_a;
+        OUT [4] dout_b;
+    }
+    REGISTER {
+        r [4] = 4'b0000;
+    }
+    ASYNCHRONOUS {
+        // Valid: global in ASYNC = with matching width
+        dout_a = ISA.INST_ADD;
+        dout_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: global in SYNC <= with matching width
+        r <= ISA.INST_SUB;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [4] out_c;
+        OUT [4] out_d;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [4] dout_a = out_c;
+        OUT [4] dout_b = out_d;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: global in ASYNC = with matching width
+        out_a = FLAGS.ACTIVE;
+        // Valid: register sink + global with zero-extend modifier (4 -> 8)
+        out_b = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: global in SYNC <= with matching width
+        r <= FLAGS.DONE;
+    }
+@endmod

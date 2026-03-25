@@ -1,0 +1,96 @@
+// HAPPY_PATH: Valid configurable memory with CONST parameters (S7.6.7).
+// Exercises CONST-parameterized MEM dimensions, CONST-based port widths,
+// SYNC read with .addr/.data, conditional SYNC write, and cross-module instantiation.
+
+@project HAPPY_PATH_configurable_mem
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] rd_addr = _;
+        IN  [8] wr_addr = _;
+        IN  [32] wr_data = _;
+        IN  [1] wr_en = _;
+        OUT [32] rd_data = _;
+        OUT [8] helper_data = _;
+    }
+@endproj
+
+// Helper: configurable memory with different CONST params
+@module ConfigHelper
+    CONST {
+        W = 8;
+        D = 256;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [8] addr;
+        OUT [W] rdata;
+    }
+
+    REGISTER {
+        r_data [W] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        mem [W] [D] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = r_data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem.rd.addr <= addr;
+        r_data <= mem.rd.data;
+    }
+@endmod
+
+// Top module: configurable memory with CONST-based widths and depths
+@module TopMod
+    CONST {
+        WORD_WIDTH = 32;
+        DEPTH = 256;
+        ADDR_WIDTH = 8;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [ADDR_WIDTH] rd_addr;
+        IN  [ADDR_WIDTH] wr_addr;
+        IN  [WORD_WIDTH] wr_data;
+        IN  [1] wr_en;
+        OUT [WORD_WIDTH] rd_data;
+        OUT [8] helper_data;
+    }
+
+    REGISTER {
+        r_read [WORD_WIDTH] = 32'h0000_0000;
+    }
+
+    MEM(type=BLOCK) {
+        storage [WORD_WIDTH] [DEPTH] = 32'h0000_0000 {
+            OUT rd SYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_cfg ConfigHelper {
+        IN  [1] clk = clk;
+        IN  [8] addr = rd_addr;
+        OUT [8] rdata = helper_data;
+    };
+
+    ASYNCHRONOUS {
+        rd_data = r_read;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        storage.rd.addr <= rd_addr;
+        r_read <= storage.rd.data;
+        IF (wr_en) {
+            storage.wr[wr_addr] <= wr_data;
+        }
+    }
+@endmod

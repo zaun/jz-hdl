@@ -60,8 +60,8 @@
     }
 
     ASYNCHRONOUS {
-        sbus.tx <= r;
-        data <= sbus.rx;
+        sbus.tx = r;
+        data = sbus.rx;
     }
 
     SYNCHRONOUS(CLK=clk) {

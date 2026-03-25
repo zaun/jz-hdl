@@ -1,10 +1,9 @@
 // CHECK_INVALID_EXPR_TYPE: @check references undefined identifiers at project scope.
-// Tests evaluation order: @check evaluates after CONST/CONFIG resolution,
-// so undefined references in project-scope @check are caught as
-// CHECK_INVALID_EXPR_TYPE. Valid CONST and CONFIG references are included
-// to verify no false positives (evaluation order resolves them correctly).
-// Note: At module scope, undefined identifiers produce UNDECLARED_IDENTIFIER
-// instead, so module-scope triggers are not included here.
+// S9.5 evaluation order: @check evaluates after CONST/CONFIG resolution,
+// so undefined references at project scope fire CHECK_INVALID_EXPR_TYPE.
+// At module scope, undefined identifiers produce UNDECLARED_IDENTIFIER instead,
+// so module-scope triggers are not included for this rule.
+// Valid CONST and CONFIG references included to verify no false positives.
 
 @project CHECK_INVALID_EXPR_TYPE_undefined_const_in_check
     CONFIG {
@@ -12,13 +11,13 @@
         DEPTH = 16;
     }
 
-    // Valid: @check with CONFIG at project scope (no error)
+    // Valid: CONFIG reference at project scope (no error)
     @check (CONFIG.WIDTH >= 8, "width ok");
 
-    // Trigger 1: undefined identifier at project scope
+    // Trigger 1: bare undefined identifier at project scope
     @check (UNDEF_A > 0, "undefined A");
 
-    // Valid: @check with CONFIG arithmetic (no error)
+    // Valid: CONFIG arithmetic (no error)
     @check (CONFIG.WIDTH + CONFIG.DEPTH > 0, "config arith ok");
 
     // Trigger 2: undefined identifier in arithmetic at project scope
@@ -26,6 +25,9 @@
 
     // Trigger 3: undefined identifier in comparison at project scope
     @check (UNDEF_C == CONFIG.DEPTH, "undefined C in compare");
+
+    // Trigger 4: undefined identifier inside clog2 at project scope
+    @check (clog2(UNDEF_D) > 0, "undefined D in clog2");
 
     @top TopMod {
         IN  [1] clk = _;

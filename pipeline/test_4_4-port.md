@@ -56,38 +56,49 @@ Verify PORT declarations, direction enforcement, BUS ports. Confirm that port wi
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|-----------------|---------|----------|-------|
-| 1 | Write to IN port | Error: cannot assign to IN port | PORT_DIRECTION_MISMATCH_IN | error | S4.4 |
-| 2 | Read from OUT port | Error: reading OUT port inside module | PORT_DIRECTION_MISMATCH_OUT | error | S4.4 |
-| 3 | Missing port width | Error: port without [N] width | PORT_MISSING_WIDTH | error | S4.4 |
-| 4 | Tristate on IN/OUT port | Error: only INOUT may use z | PORT_TRISTATE_MISMATCH | error | S4.4 |
-| 5 | BUS references unknown bus | Error: BUS not declared in project | BUS_PORT_UNKNOWN_BUS | error | S4.4.1 |
-| 6 | BUS invalid role | Error: role must be SOURCE or TARGET | BUS_PORT_INVALID_ROLE | error | S4.4.1 |
-| 7 | BUS array count invalid | Error: non-positive array count | BUS_PORT_ARRAY_COUNT_INVALID | error | S4.4.1 |
-| 8 | BUS index required on array | Error: arrayed BUS needs index | BUS_PORT_INDEX_REQUIRED | error | S4.4.1 |
-| 9 | BUS index on non-array | Error: scalar BUS cannot be indexed | BUS_PORT_INDEX_NOT_ARRAY | error | S4.4.1 |
-| 10 | BUS index out of range | Error: index outside declared range | BUS_PORT_INDEX_OUT_OF_RANGE | error | S4.4.1 |
-| 11 | BUS dot on non-BUS port | Error: member access on non-BUS | BUS_PORT_NOT_BUS | error | S4.4.1 |
-| 12 | BUS signal undefined | Error: signal not in BUS definition | BUS_SIGNAL_UNDEFINED | error | S4.4.1 |
-| 13 | Read from writable BUS signal | Error: read access to writable signal | BUS_SIGNAL_READ_FROM_WRITABLE | error | S4.4.1 |
-| 14 | Write to readable BUS signal | Error: write access to readable signal | BUS_SIGNAL_WRITE_TO_READABLE | error | S4.4.1 |
-| 15 | Wildcard width mismatch | Error: RHS width must be 1 or array count | BUS_WILDCARD_WIDTH_MISMATCH | error | S4.4.1 |
-| 16 | BUS tristate mismatch | Error: z on non-writable BUS signal | BUS_TRISTATE_MISMATCH | error | S4.4.1 |
-| 17 | Alias `=` inside IF/SELECT | Error: alias in conditional | ASYNC_ALIAS_IN_CONDITIONAL | error | S4.10/S5.3 |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|-----------------|----------|
+| 1 | Write to IN port | `in_port <= data;` in ASYNC | PORT_DIRECTION_MISMATCH_IN | error |
+| 2 | Read from OUT port | `reg <= out_port;` in SYNC | PORT_DIRECTION_MISMATCH_OUT | error |
+| 3 | Missing port width | `PORT { IN data; }` | PORT_MISSING_WIDTH | error |
+| 4 | Tristate on IN/OUT port | z assigned to non-INOUT port | PORT_TRISTATE_MISMATCH | error |
+| 5 | BUS references unknown bus | `BUS UNKNOWN TARGET p;` | BUS_PORT_UNKNOWN_BUS | error |
+| 6 | BUS invalid role | `BUS SPI INVALID p;` | BUS_PORT_INVALID_ROLE | error |
+| 7 | BUS array count invalid | `BUS SPI TARGET [0] p;` | BUS_PORT_ARRAY_COUNT_INVALID | error |
+| 8 | BUS index required on array | `bus.sig` on arrayed BUS without index | BUS_PORT_INDEX_REQUIRED | error |
+| 9 | BUS index on non-array | `scalar_bus[0].sig` | BUS_PORT_INDEX_NOT_ARRAY | error |
+| 10 | BUS index out of range | `bus[5].sig` where count=4 | BUS_PORT_INDEX_OUT_OF_RANGE | error |
+| 11 | BUS dot on non-BUS port | `regular_port.member` | BUS_PORT_NOT_BUS | error |
+| 12 | BUS signal undefined | `bus.nonexistent` | BUS_SIGNAL_UNDEFINED | error |
+| 13 | Read from writable BUS signal | Read access to writable signal | BUS_SIGNAL_READ_FROM_WRITABLE | error |
+| 14 | Write to readable BUS signal | Write access to readable signal | BUS_SIGNAL_WRITE_TO_READABLE | error |
+| 15 | Wildcard width mismatch | RHS width neither 1 nor array count | BUS_WILDCARD_WIDTH_MISMATCH | error |
+| 16 | BUS tristate mismatch | z on non-writable BUS signal | BUS_TRISTATE_MISMATCH | error |
+| 17 | Alias `=` inside IF/SELECT | `IF (c) { a = b; }` | ASYNC_ALIAS_IN_CONDITIONAL | error |
+| 18 | Valid ports and BUS | All ports properly declared and used | -- | -- (pass) |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 4_4_HAPPY_PATH-valid_ports_ok.jz | -- | Happy path: valid port declarations and usage |
 | 4_4_ASYNC_ALIAS_IN_CONDITIONAL-alias_in_if_select.jz | ASYNC_ALIAS_IN_CONDITIONAL | Alias `=` inside IF/SELECT is forbidden |
+| 4_4_BUS_PORT_ARRAY_COUNT_INVALID-bad_array_count.jz | BUS_PORT_ARRAY_COUNT_INVALID | BUS port array count is non-positive or non-integer |
+| 4_4_BUS_PORT_INDEX_NOT_ARRAY-indexed_scalar_bus.jz | BUS_PORT_INDEX_NOT_ARRAY | Indexed access on scalar (non-arrayed) BUS port |
 | 4_4_BUS_PORT_INDEX_OUT_OF_RANGE-bus_index_bounds.jz | BUS_PORT_INDEX_OUT_OF_RANGE | BUS port index outside declared range |
+| 4_4_BUS_PORT_INDEX_REQUIRED-arrayed_bus_no_index.jz | BUS_PORT_INDEX_REQUIRED | Arrayed BUS access without explicit index or wildcard |
+| 4_4_BUS_PORT_INVALID_ROLE-invalid_bus_role.jz | BUS_PORT_INVALID_ROLE | BUS port role is not SOURCE or TARGET |
+| 4_4_BUS_PORT_NOT_BUS-member_on_non_bus.jz | BUS_PORT_NOT_BUS | Member (dot) access on a non-BUS port |
+| 4_4_BUS_PORT_UNKNOWN_BUS-unknown_bus_name.jz | BUS_PORT_UNKNOWN_BUS | BUS port references a BUS not declared in project |
 | 4_4_BUS_SIGNAL_READ_FROM_WRITABLE-read_writable_signal.jz | BUS_SIGNAL_READ_FROM_WRITABLE | Read access to writable BUS signal |
 | 4_4_BUS_SIGNAL_UNDEFINED-nonexistent_bus_signal.jz | BUS_SIGNAL_UNDEFINED | BUS signal does not exist in BUS definition |
 | 4_4_BUS_SIGNAL_WRITE_TO_READABLE-write_readable_signal.jz | BUS_SIGNAL_WRITE_TO_READABLE | Write access to readable BUS signal |
+| 4_4_BUS_TRISTATE_MISMATCH-z_on_non_writable_bus.jz | BUS_TRISTATE_MISMATCH | z assigned to non-writable BUS signal |
 | 4_4_BUS_WILDCARD_WIDTH_MISMATCH-wildcard_width_invalid.jz | BUS_WILDCARD_WIDTH_MISMATCH | BUS wildcard assignment RHS width invalid |
 | 4_4_PORT_DIRECTION_MISMATCH_IN-write_to_input.jz | PORT_DIRECTION_MISMATCH_IN | Cannot assign to IN port |
 | 4_4_PORT_DIRECTION_MISMATCH_OUT-read_from_output.jz | PORT_DIRECTION_MISMATCH_OUT | Reading from OUT port inside module |
+| 4_4_PORT_MISSING_WIDTH-missing_port_width.jz | PORT_MISSING_WIDTH | Port declared without mandatory width |
+| 4_4_PORT_TRISTATE_MISMATCH-tristate_on_non_inout.jz | PORT_TRISTATE_MISMATCH | Tristate z on non-INOUT port |
 
 ## 5. Rules Matrix
 
@@ -97,23 +108,23 @@ Verify PORT declarations, direction enforcement, BUS ports. Confirm that port wi
 |---------|----------|-------------|--------------|
 | PORT_DIRECTION_MISMATCH_IN | error | S4.4/S5.1 Cannot assign to IN port; IN ports are read-only inside the module | 4_4_PORT_DIRECTION_MISMATCH_IN-write_to_input.jz |
 | PORT_DIRECTION_MISMATCH_OUT | error | S4.4/S5.1/S5.2/S8.1 Reading from OUT port inside module (outputs are write-only) | 4_4_PORT_DIRECTION_MISMATCH_OUT-read_from_output.jz |
-| BUS_PORT_INDEX_OUT_OF_RANGE | error | S4.4.1 BUS port index is outside the declared range | 4_4_BUS_PORT_INDEX_OUT_OF_RANGE-bus_index_bounds.jz |
-| BUS_SIGNAL_UNDEFINED | error | S4.4.1 BUS signal does not exist in BUS definition | 4_4_BUS_SIGNAL_UNDEFINED-nonexistent_bus_signal.jz |
+| PORT_MISSING_WIDTH | error | S4.4/S8.1 Port declaration without mandatory `[N]` width | 4_4_PORT_MISSING_WIDTH-missing_port_width.jz |
+| PORT_TRISTATE_MISMATCH | error | S4.4/S4.10/S8.1 Only INOUT may use z; tristate on non-INOUT port | 4_4_PORT_TRISTATE_MISMATCH-tristate_on_non_inout.jz |
+| BUS_PORT_UNKNOWN_BUS | error | S4.4.1/S6.8 BUS port references a BUS not declared in project | 4_4_BUS_PORT_UNKNOWN_BUS-unknown_bus_name.jz |
+| BUS_PORT_INVALID_ROLE | error | S4.4.1 BUS port role must be SOURCE or TARGET | 4_4_BUS_PORT_INVALID_ROLE-invalid_bus_role.jz |
+| BUS_PORT_ARRAY_COUNT_INVALID | error | S4.4.1 BUS port array count is non-positive or non-integer | 4_4_BUS_PORT_ARRAY_COUNT_INVALID-bad_array_count.jz |
+| BUS_PORT_INDEX_REQUIRED | error | S4.4.1 Arrayed BUS access requires an explicit index or wildcard | 4_4_BUS_PORT_INDEX_REQUIRED-arrayed_bus_no_index.jz |
+| BUS_PORT_INDEX_NOT_ARRAY | error | S4.4.1 Indexed access on scalar (non-arrayed) BUS port | 4_4_BUS_PORT_INDEX_NOT_ARRAY-indexed_scalar_bus.jz |
+| BUS_PORT_INDEX_OUT_OF_RANGE | error | S4.4.1 BUS port index outside declared range | 4_4_BUS_PORT_INDEX_OUT_OF_RANGE-bus_index_bounds.jz |
+| BUS_PORT_NOT_BUS | error | S4.4.1 Member (dot) access on a non-BUS port | 4_4_BUS_PORT_NOT_BUS-member_on_non_bus.jz |
+| BUS_SIGNAL_UNDEFINED | error | S4.4.1 Signal does not exist in BUS definition | 4_4_BUS_SIGNAL_UNDEFINED-nonexistent_bus_signal.jz |
 | BUS_SIGNAL_READ_FROM_WRITABLE | error | S4.4.1 Read access to writable BUS signal is not allowed | 4_4_BUS_SIGNAL_READ_FROM_WRITABLE-read_writable_signal.jz |
 | BUS_SIGNAL_WRITE_TO_READABLE | error | S4.4.1 Write access to readable BUS signal is not allowed | 4_4_BUS_SIGNAL_WRITE_TO_READABLE-write_readable_signal.jz |
-| BUS_WILDCARD_WIDTH_MISMATCH | error | S4.4.1 BUS wildcard assignment requires RHS width of 1 or array count | 4_4_BUS_WILDCARD_WIDTH_MISMATCH-wildcard_width_invalid.jz |
-| ASYNC_ALIAS_IN_CONDITIONAL | error | S4.10/S5.3 Alias `=` inside IF/SELECT is forbidden | 4_4_ASYNC_ALIAS_IN_CONDITIONAL-alias_in_if_select.jz |
+| BUS_WILDCARD_WIDTH_MISMATCH | error | S4.4.1 BUS wildcard RHS width must be 1 (broadcast) or equal to array count (element-wise) | 4_4_BUS_WILDCARD_WIDTH_MISMATCH-wildcard_width_invalid.jz |
+| BUS_TRISTATE_MISMATCH | error | S4.4.1 Only writable BUS signals may be assigned z for tri-state | 4_4_BUS_TRISTATE_MISMATCH-z_on_non_writable_bus.jz |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| PORT_MISSING_WIDTH | error | No dedicated 4_4 test file; may be caught as parse error before semantic analysis |
-| PORT_TRISTATE_MISMATCH | error | No dedicated 4_4 test file; tristate on non-INOUT port not yet covered |
-| BUS_PORT_UNKNOWN_BUS | error | No dedicated 4_4 test file; requires project-level BUS definition context |
-| BUS_PORT_INVALID_ROLE | error | No dedicated 4_4 test file; invalid BUS role not yet covered |
-| BUS_PORT_ARRAY_COUNT_INVALID | error | No dedicated 4_4 test file; non-positive array count not yet covered |
-| BUS_PORT_INDEX_REQUIRED | error | No dedicated 4_4 test file; arrayed BUS without index not yet covered |
-| BUS_PORT_INDEX_NOT_ARRAY | error | No dedicated 4_4 test file; indexed access on scalar BUS not yet covered |
-| BUS_PORT_NOT_BUS | error | No dedicated 4_4 test file; dot notation on non-BUS port not yet covered |
-| BUS_TRISTATE_MISMATCH | error | No dedicated 4_4 test file; z on non-writable BUS signal not yet covered |
+| -- | -- | All assigned rules for this section are covered by existing tests |

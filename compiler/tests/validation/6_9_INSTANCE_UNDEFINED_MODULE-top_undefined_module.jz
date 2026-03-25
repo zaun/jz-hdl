@@ -1,6 +1,6 @@
 // INSTANCE_UNDEFINED_MODULE: @top references a module not defined in the project.
-// Single trigger: only one @top directive allowed per project.
-// Valid module definition included but not referenced by @top.
+// Single trigger: only one @top directive per project, so only one context.
+// A valid module is defined but not referenced by @top.
 
 @project INSTANCE_UNDEFINED_MODULE_top_undefined_module
     @top NonExistentModule {

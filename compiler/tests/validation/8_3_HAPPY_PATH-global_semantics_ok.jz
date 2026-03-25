@@ -1,0 +1,61 @@
+// HAPPY_PATH: Valid global semantics — namespace roots, uniqueness, and proper usage.
+// Multiple @global blocks with disjoint namespaces, identically named constants across
+// different blocks, and valid references in ASYNCHRONOUS and SYNCHRONOUS contexts.
+// No diagnostics expected.
+
+@global ISA
+    INST_ADD = 4'b0001;
+    INST_SUB = 4'b0010;
+    INST_AND = 4'b0011;
+@endglob
+
+@global FLAGS
+    INST_ADD = 8'h01;
+    ACTIVE   = 8'h02;
+    DONE     = 8'h03;
+@endglob
+
+@project HAPPY_PATH_global_semantics_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [4] dout;
+    }
+    REGISTER {
+        r [4] = 4'b0000;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ISA.INST_ADD;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [4] dout = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= FLAGS.INST_ADD;
+    }
+@endmod

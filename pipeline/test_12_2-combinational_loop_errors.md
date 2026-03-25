@@ -44,7 +44,13 @@ Verify combinational loop detection: unconditional cycles (e.g., `a=b; b=a;`), f
 
 ## 4. Existing Validation Tests
 
-Combinational loop tests are covered by Section 5.3 test files. See test plan `test_5_3-conditional_statements.md` for specific validation test coverage.
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| `12_2_COMB_LOOP_UNCONDITIONAL-two_signal_cycle.jz` | COMB_LOOP_UNCONDITIONAL | Direct two-signal combinational cycle |
+| `12_2_COMB_LOOP_UNCONDITIONAL-three_signal_cycle.jz` | COMB_LOOP_UNCONDITIONAL | Three-signal combinational cycle |
+| `12_2_COMB_LOOP_UNCONDITIONAL-conditional_same_path.jz` | COMB_LOOP_UNCONDITIONAL | Cycle through conditional on same execution path |
+| `12_2_COMB_LOOP_UNCONDITIONAL-valid_no_loop_ok.jz` | COMB_LOOP_UNCONDITIONAL | Happy path: no combinational loop |
+| `12_2_COMB_LOOP_CONDITIONAL_SAFE-mutually_exclusive_cycle.jz` | COMB_LOOP_CONDITIONAL_SAFE | Cycle only in mutually exclusive branches |
 
 ## 5. Rules Matrix
 
@@ -52,8 +58,8 @@ Combinational loop tests are covered by Section 5.3 test files. See test plan `t
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| COMB_LOOP_UNCONDITIONAL | error | Combinational loop: signal feeds back through ASYNCHRONOUS assignments | Error 1, 2, 3, 4 |
-| COMB_LOOP_CONDITIONAL_SAFE | warning | Cycles only within mutually exclusive branches considered safe | Edge 3 |
+| COMB_LOOP_UNCONDITIONAL | error | Combinational loop: signal feeds back through ASYNCHRONOUS assignments | `12_2_COMB_LOOP_UNCONDITIONAL-two_signal_cycle.jz`, `12_2_COMB_LOOP_UNCONDITIONAL-three_signal_cycle.jz`, `12_2_COMB_LOOP_UNCONDITIONAL-conditional_same_path.jz` |
+| COMB_LOOP_CONDITIONAL_SAFE | warning | Cycles only within mutually exclusive branches considered safe | `12_2_COMB_LOOP_CONDITIONAL_SAFE-mutually_exclusive_cycle.jz` |
 
 ### 5.2 Rules Not Tested
 

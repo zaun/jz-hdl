@@ -1,0 +1,78 @@
+// LATCH_IN_CONST_CONTEXT: LATCH identifier may not be used in compile-time
+// constant contexts (@check/@feature conditions).
+// Tests latch used in @check condition across modules.
+// Valid uses of CONST in @check included for no false positives.
+// Note: rule not implemented — compiler does not emit this diagnostic (see issues.md).
+
+@project LATCH_IN_CONST_CONTEXT_latch_in_const
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] enable = _;
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: latch used in @check condition
+@module HelperMod
+    PORT {
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST {
+        SIZE = 8;
+    }
+
+    LATCH {
+        lat_h [1] D;
+    }
+
+    // Valid: CONST in @check (should NOT trigger)
+    @check (SIZE > 0, "size ok");
+
+    // Trigger 1: latch in @check in helper module
+    @check (lat_h == 1'b0, "latch in check");
+
+    ASYNCHRONOUS {
+        lat_h <= enable : din;
+        data <= lat_h;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] enable = enable;
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    CONST {
+        TOP_SIZE = 8;
+    }
+
+    LATCH {
+        lat_top [1] D;
+    }
+
+    // Valid: CONST in @check
+    @check (TOP_SIZE > 0, "top size ok");
+
+    // Trigger 2: latch in @check in top module
+    @check (lat_top == 1'b0, "latch in top check");
+
+    ASYNCHRONOUS {
+        lat_top <= enable : din;
+        data <= lat_top;
+    }
+@endmod

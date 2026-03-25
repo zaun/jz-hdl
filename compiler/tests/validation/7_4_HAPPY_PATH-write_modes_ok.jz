@@ -1,0 +1,196 @@
+// HAPPY_PATH: Valid write mode declarations produce no diagnostics.
+// Tests WRITE_FIRST, READ_FIRST, NO_CHANGE via shorthand and attribute block
+// syntax on both IN and INOUT ports. Includes default (unspecified) write mode.
+
+@project HAPPY_PATH_write_modes_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] rdata_a = _;
+        OUT [8] rdata_b = _;
+        OUT [8] rdata_c = _;
+    }
+@endproj
+
+// Helper module: IN ports with shorthand write modes
+@module HelperShorthand
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    // Valid: IN WRITE_FIRST shorthand, IN READ_FIRST shorthand, IN NO_CHANGE shorthand
+    MEM {
+        mem_wf [8] [16] = 8'h00 {
+            OUT rd_wf ASYNC;
+            IN  wr_wf WRITE_FIRST;
+        };
+    }
+
+    MEM {
+        mem_rf [8] [16] = 8'h00 {
+            OUT rd_rf ASYNC;
+            IN  wr_rf READ_FIRST;
+        };
+    }
+
+    MEM {
+        mem_nc [8] [16] = 8'h00 {
+            OUT rd_nc ASYNC;
+            IN  wr_nc NO_CHANGE;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = mem_wf.rd_wf[addr] ^ mem_rf.rd_rf[addr] ^ mem_nc.rd_nc[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_wf.wr_wf[addr] <= wdata;
+        mem_rf.wr_rf[addr] <= wdata;
+        mem_nc.wr_nc[addr] <= wdata;
+    }
+@endmod
+
+// Helper module: IN ports with attribute block write modes
+@module HelperAttrBlock
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    // Valid: IN with attribute block WRITE_MODE = WRITE_FIRST
+    MEM {
+        mem_ab_wf [8] [16] = 8'h00 {
+            OUT rd_ab ASYNC;
+            IN  wr_ab { WRITE_MODE = WRITE_FIRST; };
+        };
+    }
+
+    // Valid: IN with attribute block WRITE_MODE = READ_FIRST
+    MEM {
+        mem_ab_rf [8] [16] = 8'h00 {
+            OUT rd_ab_rf ASYNC;
+            IN  wr_ab_rf { WRITE_MODE = READ_FIRST; };
+        };
+    }
+
+    // Valid: IN with attribute block WRITE_MODE = NO_CHANGE
+    MEM {
+        mem_ab_nc [8] [16] = 8'h00 {
+            OUT rd_ab_nc ASYNC;
+            IN  wr_ab_nc { WRITE_MODE = NO_CHANGE; };
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = mem_ab_wf.rd_ab[addr] ^ mem_ab_rf.rd_ab_rf[addr] ^ mem_ab_nc.rd_ab_nc[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_ab_wf.wr_ab[addr] <= wdata;
+        mem_ab_rf.wr_ab_rf[addr] <= wdata;
+        mem_ab_nc.wr_ab_nc[addr] <= wdata;
+    }
+@endmod
+
+// Top module: INOUT ports with all write modes (shorthand + attribute block) + default
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata_a;
+        OUT [8] rdata_b;
+        OUT [8] rdata_c;
+    }
+
+    REGISTER {
+        r_a [8] = 8'h00;
+        r_b [8] = 8'h00;
+    }
+
+    // Valid: INOUT WRITE_FIRST shorthand
+    MEM(type=BLOCK) {
+        mem_inout_wf [8] [16] = 8'h00 {
+            INOUT rw_wf WRITE_FIRST;
+        };
+    }
+
+    // Valid: INOUT READ_FIRST shorthand
+    MEM(type=BLOCK) {
+        mem_inout_rf [8] [16] = 8'h00 {
+            INOUT rw_rf READ_FIRST;
+        };
+    }
+
+    // Valid: INOUT NO_CHANGE shorthand
+    MEM(type=BLOCK) {
+        mem_inout_nc [8] [16] = 8'h00 {
+            INOUT rw_nc NO_CHANGE;
+        };
+    }
+
+    // Valid: INOUT with attribute block WRITE_MODE
+    MEM(type=BLOCK) {
+        mem_inout_ab [8] [16] = 8'h00 {
+            INOUT rw_ab { WRITE_MODE = READ_FIRST; };
+        };
+    }
+
+    // Valid: INOUT default (no write mode specified, defaults to WRITE_FIRST)
+    MEM(type=BLOCK) {
+        mem_inout_def [8] [16] = 8'h00 {
+            INOUT rw_def;
+        };
+    }
+
+    // Valid: IN default (no write mode specified)
+    MEM {
+        mem_in_def [8] [16] = 8'h00 {
+            OUT rd_def ASYNC;
+            IN  wr_def;
+        };
+    }
+
+    @new inst_sh HelperShorthand {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = _;
+    };
+
+    @new inst_ab HelperAttrBlock {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = _;
+    };
+
+    ASYNCHRONOUS {
+        rdata_a = r_a;
+        rdata_b = r_b ^ mem_in_def.rd_def[addr];
+        rdata_c = mem_inout_wf.rw_wf.data ^ mem_inout_nc.rw_nc.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_inout_wf.rw_wf.addr <= addr;
+        mem_inout_wf.rw_wf.wdata <= wdata;
+        mem_inout_rf.rw_rf.addr <= addr;
+        mem_inout_rf.rw_rf.wdata <= wdata;
+        mem_inout_nc.rw_nc.addr <= addr;
+        mem_inout_nc.rw_nc.wdata <= wdata;
+        mem_inout_ab.rw_ab.addr <= addr;
+        mem_inout_ab.rw_ab.wdata <= wdata;
+        mem_inout_def.rw_def.addr <= addr;
+        mem_inout_def.rw_def.wdata <= wdata;
+        mem_in_def.wr_def[addr] <= wdata;
+        r_a <= mem_inout_rf.rw_rf.data ^ mem_inout_ab.rw_ab.data;
+        r_b <= mem_inout_def.rw_def.data;
+    }
+@endmod

@@ -1,5 +1,6 @@
 // TEMPLATE_APPLY_OUTSIDE_BLOCK: @apply may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks.
 // Trigger: @apply at file scope (outside any module).
+// Valid @apply inside ASYNC included for negative testing.
 
 @project TEMPLATE_APPLY_OUTSIDE_BLOCK_apply_at_file_scope
     CONFIG {

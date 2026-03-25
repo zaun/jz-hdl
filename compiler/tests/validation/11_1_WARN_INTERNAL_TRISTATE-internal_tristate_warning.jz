@@ -1,17 +1,19 @@
 // WARN_INTERNAL_TRISTATE: Internal tri-state logic without --tristate-default flag.
 // Warns when a non-INOUT net is driven with z, indicating FPGA-incompatible tri-state.
-// Valid: INOUT port with z (no warning). Multiple trigger contexts tested.
+// Valid: INOUT port with z (no warning), wire not driven with z (no warning).
 
 @project WARN_INTERNAL_TRISTATE_internal_tristate_warning
     @top TopMod {
         IN    [1] clk = _;
         IN    [1] en = _;
-        OUT   [8] data = _;
+        IN    [1] sel = _;
+        IN    [8] din = _;
+        OUT   [8] dout = _;
         INOUT [8] bidir = _;
     }
 @endproj
 
-// Helper module with internal tri-state on a WIRE
+// Helper module: wire driven with z in IF/ELSE
 @module HelperMod
     PORT {
         IN  [1] en;
@@ -21,16 +23,16 @@
 
     WIRE {
         // Trigger 1: wire driven with z in helper module
-        w_internal [8];
+        w_help [8];
     }
 
     ASYNCHRONOUS {
         IF (en) {
-            w_internal <= din;
+            w_help <= din;
         } ELSE {
-            w_internal <= 8'bzzzz_zzzz;
+            w_help <= 8'bzzzz_zzzz;
         }
-        data <= w_internal;
+        data <= w_help;
     }
 @endmod
 
@@ -39,12 +41,14 @@
     PORT {
         IN    [1] clk;
         IN    [1] en;
-        OUT   [8] data;
+        IN    [1] sel;
+        IN    [8] din;
+        OUT   [8] dout;
         INOUT [8] bidir;
     }
 
     REGISTER {
-        r [8] = 8'b0000_0000;
+        r [8] = 8'h00;
     }
 
     @new inst_h HelperMod {
@@ -54,18 +58,33 @@
     };
 
     WIRE {
-        // Trigger 2: wire driven with z in top module
+        // Trigger 2: wire driven with z in top module IF/ELSE
         w_top [8];
-        // Valid: wire not driven with z (no warning)
+        // Trigger 3: wire driven with z in SELECT/CASE
+        w_sel [8];
+        // Valid: wire not driven with z (no warning expected)
         w_safe [8];
     }
 
     ASYNCHRONOUS {
-        // Trigger 2 driver: conditional z to wire
+        // Trigger 2 driver: conditional z to wire in IF/ELSE
         IF (en) {
             w_top <= r;
         } ELSE {
             w_top <= 8'bzzzz_zzzz;
+        }
+
+        // Trigger 3 driver: conditional z to wire in SELECT/CASE
+        SELECT (sel) {
+            CASE (1'b0) {
+                w_sel <= din;
+            }
+            CASE (1'b1) {
+                w_sel <= 8'bzzzz_zzzz;
+            }
+            DEFAULT {
+                w_sel <= 8'bzzzz_zzzz;
+            }
         }
 
         // Valid: no z here
@@ -78,7 +97,7 @@
             bidir <= 8'bzzzz_zzzz;
         }
 
-        data <= w_top;
+        dout <= w_top;
     }
 
     SYNCHRONOUS(CLK=clk) {

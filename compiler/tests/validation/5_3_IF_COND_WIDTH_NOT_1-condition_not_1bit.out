@@ -2,5 +2,5 @@ File: 5_3_IF_COND_WIDTH_NOT_1-condition_not_1bit.jz
       25:13   error IF_COND_WIDTH_NOT_1 S5.3 IF/ELIF condition must be 1 bit wide; use a comparison or reduction operator
       33:13   error IF_COND_WIDTH_NOT_1 S5.3 IF/ELIF condition must be 1 bit wide; use a comparison or reduction operator
       60:17   error IF_COND_WIDTH_NOT_1 S5.3 IF/ELIF condition must be 1 bit wide; use a comparison or reduction operator
-      65:17   error IF_COND_WIDTH_NOT_1 S5.3 IF/ELIF condition must be 1 bit wide; use a comparison or reduction operator
+      66:17   error IF_COND_WIDTH_NOT_1 S5.3 IF/ELIF condition must be 1 bit wide; use a comparison or reduction operator
       76:17   error IF_COND_WIDTH_NOT_1 S5.3 IF/ELIF condition must be 1 bit wide; use a comparison or reduction operator

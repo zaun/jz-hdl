@@ -1,25 +1,28 @@
 // MAP_PIN_DECLARED_NOT_MAPPED: Pin declared in PIN blocks but not mapped in MAP.
-// Tests unmapped pins in IN_PINS, OUT_PINS, INOUT_PINS, and partially mapped bus.
+// Triggers: unmapped IN scalar, unmapped OUT scalar, partially mapped bus,
+//           unmapped INOUT scalar, unmapped differential IN pin.
 // Valid mapped pins included to verify no false positives.
 
 @project MAP_PIN_DECLARED_NOT_MAPPED_unmapped_pins
     IN_PINS {
         mapped_in = { standard=LVCMOS33 };
-        // Trigger 1: unmapped IN pin
+        // Trigger 1: unmapped IN scalar pin
         unmapped_in = { standard=LVCMOS33 };
+        // Trigger 2: unmapped differential IN pin
+        unmapped_diff = { mode=DIFFERENTIAL, standard=LVDS25 };
     }
 
     OUT_PINS {
         mapped_out = { standard=LVCMOS33, drive=8 };
-        // Trigger 2: unmapped OUT pin
+        // Trigger 3: unmapped OUT scalar pin
         unmapped_out = { standard=LVCMOS33, drive=8 };
-        // Trigger 3: bus with bit 1 unmapped
+        // Trigger 4: bus with bit 1 unmapped
         bus_out[2] = { standard=LVCMOS33, drive=8 };
     }
 
     INOUT_PINS {
         mapped_io = { standard=LVCMOS33, drive=4 };
-        // Trigger 4: unmapped INOUT pin
+        // Trigger 5: unmapped INOUT pin
         unmapped_io = { standard=LVCMOS33, drive=4 };
     }
 

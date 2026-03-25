@@ -1,0 +1,64 @@
+// HAPPY_PATH: Valid @global blocks with no forward references, circular deps, or overflows.
+// Multiple @global blocks with sized literals, referenced across modules. No diagnostics expected.
+
+@global OPCODES
+    ADD  = 4'b0001;
+    SUB  = 4'b0010;
+    LOAD = 4'b0100;
+    NOP  = 4'b0000;
+@endglob
+
+@global FLAGS
+    CARRY = 8'h01;
+    ZERO  = 8'h02;
+    NEG   = 8'h04;
+@endglob
+
+@project HAPPY_PATH_global_errors_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [8] result;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        result = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: global constant used in sync RHS
+        r <= FLAGS.CARRY;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [8] result = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: global constant used in sync RHS
+        r <= FLAGS.ZERO;
+    }
+@endmod

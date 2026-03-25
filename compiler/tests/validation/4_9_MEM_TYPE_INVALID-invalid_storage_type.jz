@@ -37,7 +37,7 @@
     }
 @endmod
 
-// Top module — valid MEM plus invalid MEM, instantiates HelperMod
+// Top module — valid MEM types plus invalid, instantiates HelperMod
 @module TopMod
     PORT {
         IN  [1] clk;
@@ -56,10 +56,25 @@
         };
     }
 
+    // Trigger 3: invalid type "REGISTER" — another invalid string
+    MEM(type=REGISTER) {
+        mem_c [8] [16] = 8'h00 {
+            OUT rd_c ASYNC;
+        };
+    }
+
     // Valid: type=DISTRIBUTED (no error expected)
     MEM(type=DISTRIBUTED) {
         mem_ok [8] [16] = 8'h00 {
             OUT rd_ok ASYNC;
+        };
+    }
+
+    // Valid: type=BLOCK (no error expected)
+    MEM(type=BLOCK) {
+        mem_blk [8] [16] = 8'h00 {
+            OUT rd_blk SYNC;
+            IN  wr_blk;
         };
     }
 
@@ -70,10 +85,12 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_b.rd_b[addr] ^ mem_ok.rd_ok[addr];
+        data = mem_b.rd_b[addr] ^ mem_c.rd_c[addr] ^ mem_ok.rd_ok[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
+        mem_blk.rd_blk.addr <= addr;
+        mem_blk.wr_blk[addr] <= r;
     }
 @endmod

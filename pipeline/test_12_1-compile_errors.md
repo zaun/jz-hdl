@@ -33,7 +33,10 @@ See individual section test plans (1.x through 11.x) for per-rule error matrices
 
 ## 4. Existing Validation Tests
 
-No validation tests specific to this subsection. Section 12.1 is a summary section; individual error rules are tested in their respective section test plans.
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| `12_1_COMPILE_ERRORS-valid_program_ok.jz` | — | Happy-path: valid program with no errors |
+| `12_1_COMPILE_ERRORS-multiple_errors.jz` | — | Multiple compile errors reported in a single program |
 
 ## 5. Rules Matrix
 

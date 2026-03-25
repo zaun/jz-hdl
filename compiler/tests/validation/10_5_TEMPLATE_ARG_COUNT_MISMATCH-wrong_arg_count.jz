@@ -1,6 +1,6 @@
 // TEMPLATE_ARG_COUNT_MISMATCH: @apply argument count does not match template parameter count.
 // Tests too few args, too many args, zero args when params expected,
-// in both ASYNCHRONOUS and SYNCHRONOUS blocks.
+// in both ASYNCHRONOUS and SYNCHRONOUS blocks across multiple modules.
 // Valid @apply calls included to verify no false positives.
 
 @project TEMPLATE_ARG_COUNT_MISMATCH_wrong_arg_count
@@ -63,7 +63,7 @@
     };
 
     REGISTER {
-        r  [1] = 1'b0;
+        r [1] = 1'b0;
     }
 
     WIRE {

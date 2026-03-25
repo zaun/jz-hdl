@@ -1,6 +1,7 @@
-// GLOBAL_NAMESPACE_DUPLICATE: Duplicate @global block names in a compilation unit.
-// Two @global blocks share the name "COLORS", triggering the duplicate namespace error.
-// A valid @global block "SIZES" is included to verify no false positive.
+// GLOBAL_NAMESPACE_DUPLICATE: Duplicate @global block names in the compilation root.
+// Trigger 1: second "COLORS" block duplicates the first.
+// Trigger 2: third "COLORS" block is also a duplicate.
+// Valid: unique @global names "SIZES" and "FLAGS" verify no false positives.
 
 @global COLORS
     RED   = 3'b001;
@@ -21,6 +22,18 @@
     MAGENTA = 3'b101;
 @endglob
 
+// Valid: another unique @global name (should NOT trigger)
+@global FLAGS
+    ACTIVE = 1'b1;
+    IDLE   = 1'b0;
+@endglob
+
+// Trigger 2: third duplicate @global name "COLORS"
+@global COLORS
+    WHITE = 3'b111;
+    BLACK = 3'b000;
+@endglob
+
 @project GLOBAL_NAMESPACE_DUPLICATE_duplicate_global_name
     @top TopMod {
         IN  [1] clk = _;
@@ -28,11 +41,33 @@
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [3] dout;
+    }
+    REGISTER {
+        r [3] = 3'b000;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= COLORS.RED;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [3] data;
     }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [3] dout = _;
+    };
+
     REGISTER {
         r [3] = 3'b000;
     }
@@ -40,6 +75,6 @@
         data = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        r <= COLORS.RED;
+        r <= COLORS.BLUE;
     }
 @endmod

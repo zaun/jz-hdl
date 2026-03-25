@@ -1,5 +1,5 @@
 // TOP_PORT_NOT_LISTED: Module ports omitted from @top binding.
-// Tests omission of IN and OUT ports from @top.
+// Tests omission of both IN and OUT ports from @top.
 // Valid port bindings included for no false positives.
 
 @project TOP_PORT_NOT_LISTED_port_omitted
@@ -8,6 +8,22 @@
         OUT [1] data = _;
     }
 @endproj
+
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [1] result;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        result = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
 
 @module TopMod
     PORT {
@@ -18,13 +34,21 @@
         // Trigger 2: OUT port not listed in @top
         OUT [1] extra_out;
     }
+
+    @new helper_inst Helper {
+        IN  [1] clk = clk;
+        OUT [1] result = _;
+    };
+
     REGISTER {
         r [1] = 1'b0;
     }
+
     ASYNCHRONOUS {
         data = r;
         extra_out = extra_in;
     }
+
     SYNCHRONOUS(CLK=clk) {
         r <= ~r;
     }

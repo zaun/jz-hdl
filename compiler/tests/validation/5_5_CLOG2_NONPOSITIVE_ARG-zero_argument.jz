@@ -1,6 +1,5 @@
 // CLOG2_NONPOSITIVE_ARG: clog2() argument must be positive (> 0).
 // Tests clog2(0) in CONST blocks across modules.
-// clog2() is compile-time only: valid in CONST initializers and width specs.
 // Valid clog2(256) included to verify no false positives.
 
 @project CLOG2_NONPOSITIVE_ARG_zero_argument

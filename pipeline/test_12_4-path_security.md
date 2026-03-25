@@ -49,9 +49,9 @@ Verify path security enforcement: absolute paths are rejected without `--allow-a
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
 | `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_file_init.jz` | PATH_ABSOLUTE_FORBIDDEN | Absolute path in file init |
-| `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_import_and_file.jz` | PATH_ABSOLUTE_FORBIDDEN | Absolute path in import and file context |
+| `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_import.jz` | PATH_ABSOLUTE_FORBIDDEN | Absolute path in import |
 | `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_file_init.jz` | PATH_TRAVERSAL_FORBIDDEN | Traversal path in file init |
-| `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_import_and_file.jz` | PATH_TRAVERSAL_FORBIDDEN | Traversal path in import and file context |
+| `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_import.jz` | PATH_TRAVERSAL_FORBIDDEN | Traversal path in import |
 
 ## 5. Rules Matrix
 
@@ -59,14 +59,12 @@ Verify path security enforcement: absolute paths are rejected without `--allow-a
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| PATH_ABSOLUTE_FORBIDDEN | error | Absolute path used without --allow-absolute-paths | Error 1, 2 |
-| PATH_TRAVERSAL_FORBIDDEN | error | Path contains `..` traversal without --allow-traversal | Error 3, 4 |
-| PATH_OUTSIDE_SANDBOX | error | Resolved path falls outside all permitted sandbox roots | Error 5 |
-| PATH_SYMLINK_ESCAPE | error | Symbolic link resolves to target outside sandbox root | Error 6 |
+| PATH_ABSOLUTE_FORBIDDEN | error | Absolute path used without --allow-absolute-paths | `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_file_init.jz`, `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_import.jz` |
+| PATH_TRAVERSAL_FORBIDDEN | error | Path contains `..` traversal without --allow-traversal | `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_file_init.jz`, `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_import.jz` |
+| PATH_OUTSIDE_SANDBOX | error | S12.2 Resolved path falls outside all permitted sandbox roots | `12_4_PATH_OUTSIDE_SANDBOX-outside_sandbox.jz` |
+| PATH_SYMLINK_ESCAPE | error | S12.2 Symbolic link resolves to target outside sandbox root | `12_4_PATH_SYMLINK_ESCAPE-symlink_escape.jz` |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| PATH_OUTSIDE_SANDBOX | error | Requires filesystem sandbox configuration; may need integration test outside `--info --lint` |
-| PATH_SYMLINK_ESCAPE | error | Requires actual symlinks on filesystem; may need integration test outside `--info --lint` |

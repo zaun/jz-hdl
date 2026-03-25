@@ -1,7 +1,6 @@
 // CLOG2_INVALID_CONTEXT: clog2() used outside compile-time constant context.
-// Tests clog2() in ASYNC and SYNC blocks where it is forbidden.
-// clog2() is compile-time only and must not appear in runtime expressions.
-// Valid clog2() in CONST block included to verify no false positives.
+// Tests clog2() in ASYNCHRONOUS and SYNCHRONOUS blocks across modules.
+// Valid clog2() in CONST included to verify no false positives.
 
 @project CLOG2_INVALID_CONTEXT_runtime_expression
     @top TopMod {
@@ -12,11 +11,11 @@
     }
 @endproj
 
-// Helper module: clog2() in async and sync blocks
+// Helper module: clog2() in runtime contexts
 @module HelperMod
     CONST {
-        // Valid: clog2() in CONST block (no false positive)
-        BITS = clog2(16);
+        // Valid: clog2() in CONST (compile-time, no false positive)
+        LOG_VAL = clog2(128);
     }
     PORT {
         IN  [1] clk;
@@ -28,20 +27,20 @@
         r [8] = 8'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: clog2() in helper async expression
-        out_a <= clog2(256);
+        // Trigger 1: clog2() in ASYNC block
+        out_a <=z clog2(val);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: clog2() in helper sync expression
-        r <= val | clog2(16);
+        // Trigger 2: clog2() in SYNC block
+        r <=z clog2(val);
     }
 @endmod
 
 @module TopMod
     CONST {
-        // Valid: clog2() in CONST block (no false positive)
-        ADDR_W = clog2(64);
+        // Valid: clog2() in CONST (compile-time, no false positive)
+        LOG_W = clog2(256);
     }
     PORT {
         IN  [1] clk;
@@ -54,7 +53,7 @@
         ha_b [8];
     }
     REGISTER {
-        r [8] = 8'd0;
+        r [LOG_W] = 8'd0;
     }
 
     @new inst_h HelperMod {
@@ -65,12 +64,12 @@
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: clog2() in top async expression
-        out_a <= clog2(32);
+        // Trigger 3: clog2() in ASYNC block
+        out_a <=z clog2(data_in);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: clog2() in top sync expression
-        r <= data_in | clog2(8);
+        // Trigger 4: clog2() in SYNC block
+        r <=z clog2(data_in);
     }
 @endmod

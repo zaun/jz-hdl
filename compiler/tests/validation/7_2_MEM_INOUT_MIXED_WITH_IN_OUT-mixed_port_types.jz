@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: INOUT + OUT in helper module
+// Trigger 1: INOUT mixed with OUT in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;

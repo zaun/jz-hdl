@@ -1,5 +1,5 @@
 // IF_COND_MISSING_PARENS: ELIF condition missing required parentheses.
-// Parser aborts after first parse error, so only one trigger per file is possible.
+// Parser aborts after first parse error, so only one trigger per file.
 // Tests ELIF without parens in ASYNCHRONOUS block.
 
 @project IF_COND_MISSING_PARENS_elif_missing_parens

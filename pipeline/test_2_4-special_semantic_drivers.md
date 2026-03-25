@@ -57,8 +57,11 @@ Verify that `GND` (Logic 0) and `VCC` (Logic 1) semantic drivers correctly expan
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 2_4_SPECIAL_DRIVER_HAPPY_PATH-valid_gnd_vcc_ok.jz | -- | Happy path: valid GND/VCC usage patterns accepted |
 | 2_4_SPECIAL_DRIVER_IN_CONCAT-gnd_vcc_in_concat.jz | SPECIAL_DRIVER_IN_CONCAT | GND/VCC used in concatenation |
 | 2_4_SPECIAL_DRIVER_IN_EXPRESSION-gnd_vcc_in_expr.jz | SPECIAL_DRIVER_IN_EXPRESSION | GND/VCC used in arithmetic/logical expression |
+| 2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz | SPECIAL_DRIVER_IN_INDEX | GND/VCC used as an index expression |
+| 2_4_SPECIAL_DRIVER_SLICED-gnd_vcc_sliced.jz | SPECIAL_DRIVER_SLICED | GND/VCC subjected to bit-slice or index access |
 
 ## 5. Rules Matrix
 
@@ -66,12 +69,13 @@ Verify that `GND` (Logic 0) and `VCC` (Logic 1) semantic drivers correctly expan
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| SPECIAL_DRIVER_IN_EXPRESSION | error | GND/VCC may not appear in arithmetic/logical expressions | Error 1, 2, 6; 2_4_SPECIAL_DRIVER_IN_EXPRESSION-gnd_vcc_in_expr.jz |
-| SPECIAL_DRIVER_IN_CONCAT | error | GND/VCC may not appear in concatenations | Error 3; 2_4_SPECIAL_DRIVER_IN_CONCAT-gnd_vcc_in_concat.jz |
+| SPECIAL_DRIVER_IN_EXPRESSION | error | S2.3 GND/VCC may not appear in arithmetic/logical expressions | 2_4_SPECIAL_DRIVER_IN_EXPRESSION-gnd_vcc_in_expr.jz |
+| SPECIAL_DRIVER_IN_CONCAT | error | S2.3 GND/VCC may not appear in concatenations | 2_4_SPECIAL_DRIVER_IN_CONCAT-gnd_vcc_in_concat.jz |
+| SPECIAL_DRIVER_IN_INDEX | error | S2.3 GND/VCC may not be used as an index expression | 2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz |
+| SPECIAL_DRIVER_SLICED | error | S2.3 GND/VCC may not be sliced or indexed | 2_4_SPECIAL_DRIVER_SLICED-gnd_vcc_sliced.jz |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| SPECIAL_DRIVER_SLICED | error | No dedicated validation test file exists for slicing GND/VCC |
-| SPECIAL_DRIVER_IN_INDEX | error | No dedicated validation test file exists for GND/VCC as index |
+| (none) | -- | All rules assigned to this section have validation tests |

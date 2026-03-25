@@ -1,5 +1,5 @@
 // PORT_DIRECTION_MISMATCH_IN: Cannot assign to IN port inside module.
-// Tests writing to IN port in ASYNC root and ASYNC IF across multiple modules.
+// Tests writing to IN port in ASYNC root, ASYNC IF, and SYNC across multiple modules.
 // Valid reads from IN ports included to verify no false positives.
 
 @project PORT_DIRECTION_MISMATCH_IN_write_to_input

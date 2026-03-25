@@ -21,7 +21,7 @@ Verify @project with CHIP property, chip ID resolution (case-insensitive, JSON f
 
 | # | Test Case | Description |
 |---|-----------|-------------|
-| 1 | Unknown chip ID | CHIP=INVALID -- no matching chip data |
+| 1 | Unknown chip ID | CHIP=INVALID -- no matching chip data in local dir or built-in database |
 | 2 | Malformed chip JSON | Chip JSON file exists but is not valid JSON |
 
 ### 2.3 Edge Cases
@@ -33,16 +33,18 @@ Verify @project with CHIP property, chip ID resolution (case-insensitive, JSON f
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|-----------------|---------|----------|-------|
-| 1 | Unknown CHIP=INVALID | Error | PROJECT_CHIP_DATA_NOT_FOUND | error | S6.1 |
-| 2 | Malformed chip JSON file | Error | PROJECT_CHIP_DATA_INVALID | error | S6.1 |
-| 3 | CHIP=GENERIC | Valid AST | -- | -- | Default chip |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|------------------|----------|
+| 1 | Unknown CHIP value | `@project(CHIP=INVALID) test` | PROJECT_CHIP_DATA_NOT_FOUND | error |
+| 2 | Malformed chip JSON file | `@project(CHIP=broken) test` with broken JSON | PROJECT_CHIP_DATA_INVALID | error |
+| 3 | Valid CHIP=GENERIC | `@project(CHIP=GENERIC) test` | -- (clean compile) | -- |
+| 4 | Valid specific chip | `@project(CHIP=GW2AR18) test` | -- (clean compile) | -- |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 6_1_HAPPY_PATH-project_chip_ok.jz | -- | Valid project with chip ID (clean compile) |
 | 6_1_PROJECT_CHIP_DATA_INVALID-malformed_json.jz | PROJECT_CHIP_DATA_INVALID | Chip JSON data could not be parsed |
 | 6_1_PROJECT_CHIP_DATA_NOT_FOUND-unknown_chip_id.jz | PROJECT_CHIP_DATA_NOT_FOUND | Chip data not found for CHIP id |
 

@@ -42,6 +42,7 @@ Verify the `--tristate-default` flag converts internal tri-state nets to priorit
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| `11_1_HAPPY_PATH-tristate_default_ok.jz` | — | Happy-path: design compiles cleanly with --tristate-default flag |
 | `11_1_WARN_INTERNAL_TRISTATE-internal_tristate_warning.jz` | WARN_INTERNAL_TRISTATE | Internal tri-state without flag emits warning |
 
 ## 5. Rules Matrix
@@ -51,10 +52,9 @@ Verify the `--tristate-default` flag converts internal tri-state nets to priorit
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
 | WARN_INTERNAL_TRISTATE | warning | Internal tri-state logic without `--tristate-default` flag | Happy 3 |
+| INFO_TRISTATE_TRANSFORM | info | S11 Tri-state net transformed by --tristate-default | 11_GND_4_INFO_TRISTATE_TRANSFORM-gnd_transform.jz, 11_GND_4_INFO_TRISTATE_TRANSFORM-single_bit_fullwidth_z.jz, 11_VCC_4_INFO_TRISTATE_TRANSFORM-vcc_transform.jz |
+| TRISTATE_TRANSFORM_UNUSED_DEFAULT | warning | S11.7 --tristate-default specified but no internal tri-state nets found to transform | 11_GND_7_TRISTATE_TRANSFORM_UNUSED_DEFAULT-no_tristate_nets.jz |
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| INFO_TRISTATE_TRANSFORM | info | Requires `--tristate-default` flag (backend-oriented); not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_UNUSED_DEFAULT | warning | Requires `--tristate-default` flag; not testable via `--info --lint` |
+All rules for this section are tested.

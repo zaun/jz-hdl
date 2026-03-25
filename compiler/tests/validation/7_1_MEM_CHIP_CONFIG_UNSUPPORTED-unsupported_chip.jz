@@ -1,0 +1,76 @@
+// MEM_CHIP_CONFIG_UNSUPPORTED: MEM config not supported by selected chip triggers error.
+// Tests DISTRIBUTED type exceeding chip configs (gw1nr-9 max distributed width=16).
+
+@project(CHIP="gw1nr-9-qn88-c6-i5") MEM_CHIP_CONFIG_UNSUPPORTED_unsupported_chip
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [32] wdata = _;
+        OUT [32] data = _;
+    }
+@endproj
+
+// Trigger 1: DISTRIBUTED width=32 exceeds chip max in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [32] wdata;
+        OUT [32] data;
+    }
+
+    REGISTER {
+        r [32] = 32'h0000_0000;
+    }
+
+    MEM(type=DISTRIBUTED) {
+        mem_a [32] [16] = 32'h0000_0000 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [32] wdata;
+        OUT [32] data;
+    }
+
+    REGISTER {
+        r [32] = 32'h0000_0000;
+    }
+
+    // Trigger 2: DISTRIBUTED width=32 exceeds chip max in top module
+    MEM(type=DISTRIBUTED) {
+        mem_b [32] [16] = 32'h0000_0000 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [32] wdata = wdata;
+        OUT [32] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod

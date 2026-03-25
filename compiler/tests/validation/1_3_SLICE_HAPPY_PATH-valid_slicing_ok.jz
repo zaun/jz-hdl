@@ -1,5 +1,6 @@
 // SLICE_HAPPY_PATH: Valid bit-slicing and indexing operations.
-// Exercises full-width, partial, single-bit, CONST-based, zero-CONST, and cross-module slices.
+// Exercises full-width, partial, single-bit, MSB==LSB, CONST indices,
+// zero-CONST, LHS slices, 1-bit signal sliced, cross-module slices.
 // No diagnostics expected — all slices are within range with MSB >= LSB.
 
 @project SLICE_HAPPY_PATH_valid_slicing
@@ -33,7 +34,7 @@
         r [8] = 8'h00;
     }
     ASYNCHRONOUS {
-        // Full-width slice narrowed via chained slice
+        // Full-width slice
         out_a = bus[15:0][15:8];
         // Single-bit slice with literal index
         out_b = bus[0:0];

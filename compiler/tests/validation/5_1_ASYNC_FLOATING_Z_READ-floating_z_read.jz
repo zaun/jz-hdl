@@ -1,0 +1,84 @@
+// ASYNC_FLOATING_Z_READ: Net has sinks but all drivers assign z.
+// Tests that reading a wire where every driver assigns z triggers the
+// ASYNC_FLOATING_Z_READ error. Valid patterns: conditional z with non-z path,
+// INOUT with z (valid tri-state).
+// WARN_INTERNAL_TRISTATE co-fires as expected when z is used on non-INOUT nets.
+
+@project ASYNC_FLOATING_Z_READ_floating_z_read
+    @top TopMod {
+        IN    [1] en = _;
+        IN    [8] din = _;
+        OUT   [8] dout_a = _;
+        OUT   [8] dout_b = _;
+        OUT   [8] dout_c = _;
+        INOUT [8] bidir = _;
+    }
+@endproj
+
+// Helper module: wire driven only with z and read
+@module HelperMod
+    PORT {
+        IN  [1] sel;
+        OUT [8] data;
+        OUT [8] data_ok;
+    }
+
+    WIRE {
+        w_z [8];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: wire driven only with z unconditionally, then read
+        w_z <= 8'bzzzz_zzzz;
+        data <= w_z;
+        // Valid: constant drive (no z, no error)
+        data_ok <= sel ? 8'hAA : 8'h55;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN    [1] en;
+        IN    [8] din;
+        OUT   [8] dout_a;
+        OUT   [8] dout_b;
+        OUT   [8] dout_c;
+        INOUT [8] bidir;
+    }
+
+    WIRE {
+        w_all_z [8];
+        w_cond_z [8];
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] sel = en;
+        OUT [8] data = dout_a;
+        OUT [8] data_ok = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: wire driven with z on all conditional paths, then read
+        IF (en) {
+            w_all_z <= 8'bzzzz_zzzz;
+        } ELSE {
+            w_all_z <= 8'bzzzz_zzzz;
+        }
+        dout_b <= w_all_z;
+
+        // Valid: conditional z with non-z alternative (no floating z)
+        IF (en) {
+            w_cond_z <= din;
+        } ELSE {
+            w_cond_z <= 8'bzzzz_zzzz;
+        }
+        dout_c <= w_cond_z;
+
+        // Valid: INOUT port with z (tri-state I/O, not an error)
+        IF (en) {
+            bidir <= din;
+        } ELSE {
+            bidir <= 8'bzzzz_zzzz;
+        }
+    }
+@endmod

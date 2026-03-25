@@ -1,0 +1,66 @@
+// BUS_PORT_NOT_BUS: BUS member access used on non-BUS port.
+// Tests dot-notation member access on regular IN port.
+// NOTE: BUS_PORT_NOT_BUS is not emitted by the compiler — see issues.md.
+// Instead, the dot access fires UNDECLARED_IDENTIFIER.
+// Valid dot access on BUS port included to verify no false positives.
+
+@project BUS_PORT_NOT_BUS_member_on_non_bus
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: dot on regular IN port
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        BUS MY_BUS SOURCE sbus;
+        OUT [8] data_out;
+        OUT [8] data_err;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: dot access on BUS port (no error)
+        sbus.tx <= r;
+        data_out <= sbus.rx;
+        // Trigger 1: dot access on regular IN port (fires UNDECLARED_IDENTIFIER instead)
+        data_err <= data_in.tx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= data_in;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data_in = din;
+        BUS MY_BUS SOURCE sbus = _;
+        OUT [8] data_out = dout_a;
+        OUT [8] data_err = dout_b;
+    };
+
+    ASYNCHRONOUS {
+    }
+@endmod

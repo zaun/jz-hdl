@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: write to IN port in ASYNC block in helper
+// Helper: write to IN port in ASYNC block
 @module HelperMod
     PORT {
         IN  [1] clk;

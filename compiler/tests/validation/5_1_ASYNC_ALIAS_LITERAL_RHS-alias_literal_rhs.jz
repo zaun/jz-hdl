@@ -1,0 +1,61 @@
+// ASYNC_ALIAS_LITERAL_RHS: Alias (=, =z, =s) with literal RHS in ASYNC block.
+// Tests alias with literal at ASYNC root with =, =z, and =s modifiers, and
+// in a helper module. Valid uses: <= with literal, = with signal RHS.
+
+@project ASYNC_ALIAS_LITERAL_RHS_alias_literal_rhs
+    @top TopMod {
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+        OUT [8] dout_d = _;
+        OUT [8] dout_ok1 = _;
+        OUT [8] dout_ok2 = _;
+    }
+@endproj
+
+// Helper module: alias with literal in ASYNC root
+@module HelperMod
+    PORT {
+        OUT [8] out_err;
+        OUT [8] out_ok;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: alias (=) with literal RHS at root (helper module)
+        out_err = 8'hAA;
+        // Valid: receive (<=) with literal (no error)
+        out_ok <= 8'h55;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+        OUT [8] dout_d;
+        OUT [8] dout_ok1;
+        OUT [8] dout_ok2;
+    }
+
+    @new inst_h HelperMod {
+        OUT [8] out_err = dout_a;
+        OUT [8] out_ok = dout_ok1;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: alias (=) with literal RHS at root (top module)
+        dout_b = 8'hBB;
+
+        // Trigger 3: alias (=z) with literal RHS (zero-extend modifier)
+        dout_c =z 4'hD;
+
+        // Trigger 4: alias (=s) with literal RHS (sign-extend modifier)
+        dout_d =s 4'b0110;
+
+        // Valid: alias (=) with signal RHS (no error)
+        dout_ok2 = din;
+    }
+@endmod

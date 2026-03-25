@@ -1,5 +1,5 @@
 File: 5_5_LIT_WIDTH_INVALID-non_positive_width.jz
-      28:18   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression
-      33:20   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression
-      61:18   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression
-      67:24   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression
+      25:19   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression
+      30:15   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression
+      56:19   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression
+      61:15   error LIT_WIDTH_INVALID S5.5.11 lit() width must be a positive integer constant expression

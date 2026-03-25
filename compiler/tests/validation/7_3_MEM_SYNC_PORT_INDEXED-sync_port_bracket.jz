@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: bracket index on SYNC port in helper
+// Helper: bracket index on SYNC port
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -35,7 +35,7 @@
     SYNCHRONOUS(CLK=clk) {
         mem_a.rd.addr <= addr;
         r <= mem_a.rd.data;
-        // Trigger 1: bracket index on SYNC read port
+        // Trigger 1: bracket index on SYNC read port in helper
         r <= mem_a.rd[addr];
     }
 @endmod
@@ -70,7 +70,7 @@
     SYNCHRONOUS(CLK=clk) {
         mem_b.rd.addr <= addr;
         r <= mem_b.rd.data;
-        // Trigger 2: bracket index on SYNC read port in top module
+        // Trigger 2: bracket index on SYNC read port in top
         r <= mem_b.rd[addr];
     }
 @endmod

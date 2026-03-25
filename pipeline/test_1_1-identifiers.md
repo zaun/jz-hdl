@@ -72,12 +72,11 @@ Verify that the lexer and parser correctly accept valid identifiers, reject inva
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| ID_SYNTAX_INVALID | error | S1.1 Identifier does not match identifier regex or exceeds 255 chars | 1_1_ID_SYNTAX_INVALID-length_exceeded.jz |
+| ID_SYNTAX_INVALID | error | S1.1 Identifier does not match identifier regex or exceeds 255 chars | 1_1_ID_SYNTAX_INVALID-length_exceeded.jz, 1_1_ID_SYNTAX_INVALID-valid_identifiers_ok.jz |
 | ID_SINGLE_UNDERSCORE | error | S1.1 Single underscore `_` used as regular identifier outside no-connect context | 1_1_ID_SINGLE_UNDERSCORE-non_connect_contexts.jz |
 | KEYWORD_AS_IDENTIFIER | error | S1.1 Reserved keyword used as identifier | 1_1_KEYWORD_AS_IDENTIFIER-keyword_in_declarations.jz, 1_1_KEYWORD_AS_IDENTIFIER-reserved_identifier.jz |
+| DIRECTIVE_INVALID_CONTEXT | error | S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location | 4_1_DIRECTIVE_INVALID_CONTEXT-nested_structural_directives.jz, 9_3_DIRECTIVE_INVALID_CONTEXT-check_in_async.jz, 9_3_DIRECTIVE_INVALID_CONTEXT-check_in_sync.jz |
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (none) | -- | All identifier-related rules have validation tests |
+All rules for this section are tested.

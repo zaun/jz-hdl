@@ -1,5 +1,5 @@
 // MAP_DIFF_EXPECTED_PAIR: Differential pin must use { P=<id>, N=<id> } MAP syntax.
-// Tests differential IN pin mapped with scalar syntax.
+// Triggers: differential IN, OUT, INOUT pins mapped with scalar syntax.
 // Valid differential mapping with {P,N} included to verify no false positives.
 
 @project MAP_DIFF_EXPECTED_PAIR_diff_scalar_map
@@ -10,9 +10,21 @@
         valid_diff = { mode=DIFFERENTIAL, standard=LVDS25 };
     }
 
+    OUT_PINS {
+        // Trigger 2: differential OUT pin with scalar MAP
+        diff_out = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=diff_in, pclk=diff_in, reset=diff_in };
+    }
+
+    INOUT_PINS {
+        // Trigger 3: differential INOUT pin with scalar MAP
+        diff_io = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5 };
+    }
+
     MAP {
         diff_in = 10;
         valid_diff = { P=30, N=31 };
+        diff_out = 12;
+        diff_io = 14;
     }
 
     @top TopMod {

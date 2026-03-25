@@ -30,8 +30,8 @@
     }
 
     ASYNCHRONOUS {
-        data_a <= r_narrow;
-        data_b <= r_wide;
+        data_a = r_narrow;
+        data_b = r_wide;
     }
 
     SYNCHRONOUS(CLK=clk) {
@@ -66,8 +66,8 @@
     }
 
     ASYNCHRONOUS {
-        dout_c <= r_narrow_top;
-        dout_d <= r_wide_top;
+        dout_c = r_narrow_top;
+        dout_d = r_wide_top;
     }
 
     SYNCHRONOUS(CLK=clk) {

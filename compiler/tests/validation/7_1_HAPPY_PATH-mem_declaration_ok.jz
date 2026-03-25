@@ -1,0 +1,197 @@
+// HAPPY_PATH: Valid MEM declarations produce no diagnostics.
+// Tests BLOCK, DISTRIBUTED, CONST width/depth, multiple ports,
+// multiple MEM blocks, INOUT ports, edge-case depths/widths.
+
+@project HAPPY_PATH_mem_declaration_ok
+    CONFIG {
+        WIDTH = 8;
+        DEPTH = 16;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] rdata_a = _;
+        OUT [8] rdata_b = _;
+        OUT [8] rdata_c = _;
+        OUT [8] rdata_d = _;
+        OUT [8] rdata_e = _;
+        OUT [1] rdata_f = _;
+    }
+@endproj
+
+// Helper module: DISTRIBUTED MEM with ASYNC read
+@module HelperDistributed
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] rdata;
+    }
+
+    MEM(type=DISTRIBUTED) {
+        mem_d [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = mem_d.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+    }
+@endmod
+
+// Helper module: BLOCK MEM with SYNC read and write
+@module HelperBlock
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    REGISTER {
+        r_data [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd SYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = r_data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_b.rd.addr <= addr;
+        r_data <= mem_b.rd.data;
+        mem_b.wr[addr] <= wdata;
+    }
+@endmod
+
+// Helper module: INOUT port MEM
+@module HelperInout
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        IN  [1] we;
+        OUT [8] rdata;
+    }
+
+    REGISTER {
+        r_data [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        mem_io [8] [16] = 8'h00 {
+            INOUT rw;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = r_data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_io.rw.addr <= addr;
+        r_data <= mem_io.rw.data;
+        IF (we) {
+            mem_io.rw.wdata <= wdata;
+        }
+    }
+@endmod
+
+// Top module: multiple MEM blocks, CONST width/depth, multi-port, edge cases
+@module TopMod
+    CONST {
+        MEM_WIDTH = 8;
+        MEM_DEPTH = 16;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata_a;
+        OUT [8] rdata_b;
+        OUT [8] rdata_c;
+        OUT [8] rdata_d;
+        OUT [8] rdata_e;
+        OUT [1] rdata_f;
+    }
+
+    REGISTER {
+        r_a [8] = 8'h00;
+    }
+
+    // Valid: CONST width and depth
+    MEM {
+        mem_const [MEM_WIDTH] [MEM_DEPTH] = 8'h00 {
+            OUT rd_const ASYNC;
+            IN  wr_const;
+        };
+    }
+
+    // Valid: multiple OUT ports (ASYNC + SYNC mix)
+    MEM(type=BLOCK) {
+        mem_multi [8] [16] = 8'h00 {
+            OUT rd_sync SYNC;
+            IN  wr_multi;
+        };
+    }
+
+    // Valid: depth=1 (minimum depth)
+    MEM(type=DISTRIBUTED) {
+        mem_min [8] [1] = 8'h00 {
+            OUT rd_min ASYNC;
+        };
+    }
+
+    // Valid: 1-bit word width
+    MEM(type=DISTRIBUTED) {
+        mem_1bit [1] [16] = 1'b0 {
+            OUT rd_1bit ASYNC;
+        };
+    }
+
+    @new inst_dist HelperDistributed {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] rdata = rdata_c;
+    };
+
+    @new inst_blk HelperBlock {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = _;
+    };
+
+    @new inst_io HelperInout {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        IN  [1] we = 1'b0;
+        OUT [8] rdata = rdata_d;
+    };
+
+    ASYNCHRONOUS {
+        rdata_a = mem_const.rd_const[addr];
+        rdata_b = r_a;
+        rdata_e = mem_min.rd_min[1'b0];
+        rdata_f = mem_1bit.rd_1bit[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_const.wr_const[addr] <= wdata;
+        mem_multi.rd_sync.addr <= addr;
+        r_a <= mem_multi.rd_sync.data;
+        mem_multi.wr_multi[addr] <= wdata;
+    }
+@endmod

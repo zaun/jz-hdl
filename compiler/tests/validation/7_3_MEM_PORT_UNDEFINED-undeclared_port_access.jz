@@ -1,4 +1,5 @@
 // MEM_PORT_UNDEFINED: Access a port name not declared in the MEM block.
+// Triggers in async read, sync write, and sync read contexts.
 // Valid port accesses included for no false positives.
 
 @project MEM_PORT_UNDEFINED_undeclared_port_access
@@ -10,7 +11,7 @@
     }
 @endproj
 
-// Triggers in helper module: async read and sync write
+// Helper: triggers in async read and sync write contexts
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -77,7 +78,7 @@
         r <= r;
         mem_b.wr[addr] <= wdata;
         mem_b.rd.addr <= addr;
-        // Trigger 3: sync read from undefined port
+        // Trigger 3: sync field access on undefined port
         mem_b.missing.addr <= addr;
     }
 @endmod

@@ -1,5 +1,5 @@
-// GBIT_INDEX_OUT_OF_RANGE: gbit() with constant index >= source width.
-// Tests gbit() with out-of-range constant index in async and sync blocks.
+// GBIT_INDEX_OUT_OF_RANGE: gbit() index is out of range for source width.
+// Tests gbit() with constant index >= source width in ASYNC and SYNC blocks.
 // Valid gbit() with in-range index included to verify no false positives.
 
 @project GBIT_INDEX_OUT_OF_RANGE_const_index_exceeds_width
@@ -11,11 +11,11 @@
     }
 @endproj
 
-// Helper module with out-of-range gbit indices
+// Helper module: gbit() with out-of-range constant index
 @module HelperMod
     PORT {
         IN  [1] clk;
-        IN  [8] data;
+        IN  [8] src;
         OUT [1] out_a;
         OUT [1] out_b;
     }
@@ -23,13 +23,13 @@
         r [1] = 1'b0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: gbit index 8 on 8-bit source (valid 0-7) in async
-        out_a <= gbit(data, 8);
+        // Trigger 1: gbit() index 8 on 8-bit source (max valid = 7) in helper ASYNC
+        out_a <= gbit(src, 4'd8);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: gbit index 10 on 8-bit source in sync
-        r <= gbit(data, 10);
+        // Trigger 2: gbit() index 8 in helper SYNC
+        r <= gbit(src, 4'd8);
     }
 @endmod
 
@@ -41,8 +41,8 @@
         OUT [1] out_b;
     }
     WIRE {
-        h_a [1];
-        h_b [1];
+        ha_a [1];
+        ha_b [1];
     }
     REGISTER {
         r [1] = 1'b0;
@@ -50,18 +50,18 @@
 
     @new inst_h HelperMod {
         IN  [1] clk = clk;
-        IN  [8] data = data;
-        OUT [1] out_a = h_a;
-        OUT [1] out_b = h_b;
+        IN  [8] src = data;
+        OUT [1] out_a = ha_a;
+        OUT [1] out_b = ha_b;
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: gbit index 9 on 8-bit source in top async
-        out_a <= gbit(data, 9);
+        // Trigger 3: gbit() index 8 in top ASYNC
+        out_a <= gbit(data, 4'd8);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: gbit index 15 on 8-bit source in top sync
-        r <= gbit(data, 15);
+        // Trigger 4: gbit() index 8 in top SYNC
+        r <= gbit(data, 4'd8);
     }
 @endmod

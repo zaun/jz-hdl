@@ -1,5 +1,4 @@
 File: 7_3_MEM_PORT_FIELD_UNDEFINED-invalid_field_name.jz
-      39:9    error SYNC_MULTI_ASSIGN_SAME_REG_BITS S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block
-      39:14   error MEM_PORT_FIELD_UNDEFINED S7.2/S7.7.2 Invalid MEM port field; expected '.addr', '.data', or '.wdata'
-      74:9    error SYNC_MULTI_ASSIGN_SAME_REG_BITS S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block
-      74:14   error MEM_PORT_FIELD_UNDEFINED S7.2/S7.7.2 Invalid MEM port field; expected '.addr', '.data', or '.wdata'
+      40:9    error MEM_PORT_FIELD_UNDEFINED S7.2/S7.7.2 Invalid MEM port field; expected '.addr', '.data', or '.wdata'
+      84:9    error MEM_PORT_FIELD_UNDEFINED S7.2/S7.7.2 Invalid MEM port field; expected '.addr', '.data', or '.wdata'
+      86:9    error MEM_PORT_FIELD_UNDEFINED S7.2/S7.7.2 Invalid MEM port field; expected '.addr', '.data', or '.wdata'

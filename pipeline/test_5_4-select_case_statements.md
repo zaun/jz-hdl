@@ -4,7 +4,7 @@
 
 ## 1. Objective
 
-Verify SELECT/CASE syntax, duplicate CASE detection, DEFAULT behavior (optional in SYNC where registers hold, recommended in ASYNC), CASE value width matching against selector, and incomplete coverage warnings.
+Verify SELECT/CASE syntax, duplicate CASE detection, DEFAULT behavior (optional in SYNC where registers hold, recommended in ASYNC), CASE value width matching against selector, fall-through semantics for naked CASE labels, x-wildcard CASE values as don't-care pattern matching, and incomplete coverage warnings.
 
 ## 2. Test Scenarios
 
@@ -19,6 +19,7 @@ Verify SELECT/CASE syntax, duplicate CASE detection, DEFAULT behavior (optional 
 | 5 | SYNC without DEFAULT | SELECT in SYNC, no DEFAULT | Valid, registers hold |
 | 6 | CONST in CASE | `CASE MY_CONST { ... }` | Valid, compile-time constant |
 | 7 | Nested SELECT | SELECT inside CASE body | Valid |
+| 8 | Partial x-wildcard | `CASE 8'b10xx_0011` | Valid, partial don't-care |
 
 ### 2.2 Error Cases
 
@@ -28,7 +29,6 @@ Verify SELECT/CASE syntax, duplicate CASE detection, DEFAULT behavior (optional 
 | 2 | CASE width mismatch | CASE value width differs from selector width | Error | SELECT_CASE_WIDTH_MISMATCH |
 | 3 | ASYNC SELECT no DEFAULT | SELECT in ASYNC without DEFAULT | Warning | SELECT_DEFAULT_RECOMMENDED_ASYNC |
 | 4 | SYNC SELECT no DEFAULT | SELECT in SYNC without DEFAULT | Warning | SELECT_NO_MATCH_SYNC_OK |
-| 5 | Incomplete async coverage | SELECT in ASYNC with missing cases, no DEFAULT | Warning | WARN_INCOMPLETE_SELECT_ASYNC |
 
 ### 2.3 Edge Cases
 
@@ -38,26 +38,29 @@ Verify SELECT/CASE syntax, duplicate CASE detection, DEFAULT behavior (optional 
 | 2 | Many CASEs (256) | One per possible value of 8-bit selector | Valid |
 | 3 | All-x CASE | `CASE 8'bxxxx_xxxx` | Valid, matches everything like DEFAULT |
 | 4 | x-wildcard with non-x mix | `CASE 8'b10xx_0011` | Valid, partial don't-care |
+| 5 | Empty CASE body | `CASE 0 { }` | Valid |
+| 6 | SYNC hold on no match | No CASE matches, no DEFAULT | Valid, registers hold state |
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|----------------|---------|----------|-------|
-| 1 | Duplicate CASE 0 | Compile error | SELECT_DUP_CASE_VALUE | error | Same value in two CASE labels |
-| 2 | CASE value width != selector width | Compile error | SELECT_CASE_WIDTH_MISMATCH | error | Widths must match |
-| 3 | ASYNC SELECT without DEFAULT | Warning | SELECT_DEFAULT_RECOMMENDED_ASYNC | warning | May cause floating nets |
-| 4 | SYNC SELECT without DEFAULT | Warning | SELECT_NO_MATCH_SYNC_OK | warning | Registers hold, not an error |
-| 5 | Incomplete ASYNC coverage | Warning | WARN_INCOMPLETE_SELECT_ASYNC | warning | Missing cases without DEFAULT |
-| 6 | x-wildcard in CASE | Accepted | -- | -- | Valid pattern matching |
-| 7 | Fall-through CASE 0 CASE 1 | Accepted | -- | -- | Shared handler |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|-----------------|----------|
+| 1 | Duplicate CASE value in SELECT | `CASE 0 { ... } CASE 0 { ... }` | SELECT_DUP_CASE_VALUE | error |
+| 2 | CASE value width != selector width | `SELECT (8-bit) { CASE 4'd0 { ... } }` | SELECT_CASE_WIDTH_MISMATCH | error |
+| 3 | ASYNC SELECT without DEFAULT | SELECT in ASYNCHRONOUS, no DEFAULT arm | SELECT_DEFAULT_RECOMMENDED_ASYNC | warning |
+| 4 | SYNC SELECT without DEFAULT | SELECT in SYNCHRONOUS, no DEFAULT arm | SELECT_NO_MATCH_SYNC_OK | warning |
+| 5 | Valid SELECT with DEFAULT | `SELECT (s) { CASE 0 { ... } DEFAULT { ... } }` | -- | pass |
+| 6 | Valid fall-through | `CASE 0 CASE 1 { ... }` | -- | pass |
+| 7 | Valid x-wildcard CASE | `CASE 8'b1010_xxxx { ... }` | -- | pass |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
-| 5_4_SELECT_DUP_CASE_VALUE-duplicate_case_values.jz | SELECT_DUP_CASE_VALUE | Multiple CASE labels with same value in SELECT |
+| 5_4_HAPPY_PATH-select_case_ok.jz | -- | Valid SELECT/CASE forms accepted |
 | 5_4_SELECT_CASE_WIDTH_MISMATCH-case_width_mismatch.jz | SELECT_CASE_WIDTH_MISMATCH | CASE value width does not match selector expression width |
 | 5_4_SELECT_DEFAULT_RECOMMENDED_ASYNC-async_select_no_default.jz | SELECT_DEFAULT_RECOMMENDED_ASYNC | ASYNC SELECT without DEFAULT (warning) |
+| 5_4_SELECT_DUP_CASE_VALUE-duplicate_case_values.jz | SELECT_DUP_CASE_VALUE | Multiple CASE labels with same value in SELECT |
 | 5_4_SELECT_NO_MATCH_SYNC_OK-sync_select_no_default.jz | SELECT_NO_MATCH_SYNC_OK | SYNC SELECT without DEFAULT, registers hold (warning) |
 
 ## 5. Rules Matrix
@@ -66,13 +69,13 @@ Verify SELECT/CASE syntax, duplicate CASE detection, DEFAULT behavior (optional 
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| SELECT_DUP_CASE_VALUE | error | S5.4/S8.1 Multiple CASE labels with same value | 5_4_SELECT_DUP_CASE_VALUE-duplicate_case_values.jz |
 | SELECT_CASE_WIDTH_MISMATCH | error | S5.4 CASE value width does not match selector width | 5_4_SELECT_CASE_WIDTH_MISMATCH-case_width_mismatch.jz |
 | SELECT_DEFAULT_RECOMMENDED_ASYNC | warning | S5.4/S8.3 ASYNC SELECT without DEFAULT | 5_4_SELECT_DEFAULT_RECOMMENDED_ASYNC-async_select_no_default.jz |
-| SELECT_NO_MATCH_SYNC_OK | warning | S5.4 SYNC SELECT missing DEFAULT, registers hold | 5_4_SELECT_NO_MATCH_SYNC_OK-sync_select_no_default.jz |
+| SELECT_DUP_CASE_VALUE | error | S5.4/S8.1 Multiple CASE labels with same value | 5_4_SELECT_DUP_CASE_VALUE-duplicate_case_values.jz |
+| SELECT_NO_MATCH_SYNC_OK | warning | S5.4 Missing DEFAULT holds registers in SYNC | 5_4_SELECT_NO_MATCH_SYNC_OK-sync_select_no_default.jz |
 
-### 5.2 Rules Not Tested
+### 5.2 Rules Not Tested (in this section)
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| WARN_INCOMPLETE_SELECT_ASYNC | warning | No dedicated 5_4-prefixed test; overlaps with SELECT_DEFAULT_RECOMMENDED_ASYNC |
+| (all S5.4 rules have test files) | -- | -- |

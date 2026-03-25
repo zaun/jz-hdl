@@ -1,4 +1,5 @@
 // MEM_PORT_ADDR_READ: Try to read .addr which is a write-only input.
+// Triggers on SYNC OUT .addr read in helper and top modules.
 // Valid .data read included for no false positives.
 
 @project MEM_PORT_ADDR_READ_read_addr_input
@@ -9,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: read .addr in helper
+// Helper: read SYNC .addr
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -33,7 +34,7 @@
 
     SYNCHRONOUS(CLK=clk) {
         mem_a.rd.addr <= addr;
-        // Trigger 1: read .addr (write-only input)
+        // Trigger 1: read .addr (write-only input) on SYNC port
         r <= mem_a.rd.addr;
     }
 @endmod
@@ -67,7 +68,7 @@
 
     SYNCHRONOUS(CLK=clk) {
         mem_b.rd.addr <= addr;
-        // Trigger 2: read .addr in top module
+        // Trigger 2: read .addr on SYNC port in top
         r <= mem_b.rd.addr;
     }
 @endmod

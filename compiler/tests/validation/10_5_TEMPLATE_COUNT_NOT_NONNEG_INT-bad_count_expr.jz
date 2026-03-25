@@ -1,5 +1,5 @@
 // TEMPLATE_COUNT_NOT_NONNEG_INT: @apply count expression must resolve to a non-negative integer.
-// Tests negative count in ASYNC and SYNC blocks.
+// Tests negative count in ASYNC and SYNC blocks across multiple modules.
 // Valid @apply with count=0 and count=1 included for negative testing.
 
 @project TEMPLATE_COUNT_NOT_NONNEG_INT_bad_count_expr

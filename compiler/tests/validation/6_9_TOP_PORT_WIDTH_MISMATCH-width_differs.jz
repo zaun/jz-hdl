@@ -14,6 +14,22 @@
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [1] result;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        result = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
@@ -21,13 +37,21 @@
         OUT [8] data_out;
         OUT [1] valid_out;
     }
+
+    @new helper_inst Helper {
+        IN  [1] clk = clk;
+        OUT [1] result = _;
+    };
+
     REGISTER {
         r [8] = 8'b0000_0000;
     }
+
     ASYNCHRONOUS {
         data_out = r;
         valid_out = r[0:0];
     }
+
     SYNCHRONOUS(CLK=clk) {
         r <= data_in;
     }

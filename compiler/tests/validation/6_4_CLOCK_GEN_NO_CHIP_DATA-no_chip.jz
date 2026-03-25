@@ -1,0 +1,56 @@
+// CLOCK_GEN_NO_CHIP_DATA: No chip specified; CLOCK_GEN parameters cannot be validated.
+// Tests CLOCK_GEN usage without a CHIP specification.
+// This should produce an info-level diagnostic.
+
+@project CLOCK_GEN_NO_CHIP_DATA_no_chip
+    CLOCKS {
+        ref_clk = { period=10 };
+        gen_out;
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+    }
+
+    CLOCK_GEN {
+        // Trigger 1: no chip data to validate against
+        PLL {
+            IN REF_CLK ref_clk;
+            OUT BASE gen_out;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

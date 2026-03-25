@@ -1,5 +1,5 @@
 // IF_COND_MISSING_PARENS: IF condition missing required parentheses.
-// Parser aborts after first parse error, so only one trigger per file is possible.
+// Parser aborts after first parse error, so only one trigger per file.
 // Tests IF without parens in ASYNCHRONOUS block.
 
 @project IF_COND_MISSING_PARENS_missing_parentheses

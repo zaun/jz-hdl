@@ -1,0 +1,12 @@
+File: 7_1_MEM_INOUT_MIXED_WITH_IN_OUT-mixed_inout.jz
+      17:17   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      27:9    error MEM_INOUT_MIXED_WITH_IN_OUT S7.1 INOUT ports cannot be mixed with IN/OUT ports in the same MEM declaration
+      28:19   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      29:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      56:9    error MEM_INOUT_MIXED_WITH_IN_OUT S7.1 INOUT ports cannot be mixed with IN/OUT ports in the same MEM declaration
+      57:19   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      58:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      64:9    error MEM_INOUT_MIXED_WITH_IN_OUT S7.1 INOUT ports cannot be mixed with IN/OUT ports in the same MEM declaration
+      65:19   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      66:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      67:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used

@@ -41,7 +41,11 @@ Verify the priority-chain conversion algorithm: z assignments are replaced with 
 
 ## 4. Existing Validation Tests
 
-No validation tests directly mapped to this subsection. Transformation is backend-oriented and requires the `--tristate-default` flag, which is outside the `--info --lint` framework.
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| `11_GND_4_INFO_TRISTATE_TRANSFORM-gnd_transform.jz` | INFO_TRISTATE_TRANSFORM | GND-default tri-state transformation emits info |
+| `11_GND_4_INFO_TRISTATE_TRANSFORM-single_bit_fullwidth_z.jz` | INFO_TRISTATE_TRANSFORM | Single-bit full-width z transform with GND default |
+| `11_VCC_4_INFO_TRISTATE_TRANSFORM-vcc_transform.jz` | INFO_TRISTATE_TRANSFORM | VCC-default tri-state transformation emits info |
 
 ## 5. Rules Matrix
 
@@ -49,16 +53,11 @@ No validation tests directly mapped to this subsection. Transformation is backen
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Per-bit tri-state pattern detected; only full-width z can be transformed | Error 1 |
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Non-mutually-exclusive enable conditions | Error 2 |
-| TRISTATE_TRANSFORM_SINGLE_DRIVER | warning | Single-driver tri-state net transformed | Happy 3 |
-| INFO_TRISTATE_TRANSFORM | info | Net transformed by --tristate-default | Happy 1, 2 |
+| INFO_TRISTATE_TRANSFORM | info | Net transformed by --tristate-default | `11_GND_4_INFO_TRISTATE_TRANSFORM-gnd_transform.jz`, `11_GND_4_INFO_TRISTATE_TRANSFORM-single_bit_fullwidth_z.jz`, `11_VCC_4_INFO_TRISTATE_TRANSFORM-vcc_transform.jz` |
+| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed | 11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz |
+| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | S11.7 Tri-state drivers for same signal have non-mutually-exclusive enable conditions; cannot build safe priority chain | 11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz |
+| TRISTATE_TRANSFORM_SINGLE_DRIVER | warning | S11.7 Single-driver tri-state net transformed to default value; original z replaced with GND/VCC | 11_GND_7_TRISTATE_TRANSFORM_SINGLE_DRIVER-single_driver.jz |
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| TRISTATE_TRANSFORM_SINGLE_DRIVER | warning | Requires `--tristate-default` flag; not testable via `--info --lint` |
-| INFO_TRISTATE_TRANSFORM | info | Requires `--tristate-default` flag; not testable via `--info --lint` |
+All rules for this section are tested.

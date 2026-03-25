@@ -1,6 +1,7 @@
 // KEYWORD_AS_IDENTIFIER: Reserved keywords used as identifiers in declaration contexts.
 // Tests keywords in module name, const name, port name, instance name,
 // register name, and @new port binding contexts.
+// Keywords tested: SELECT (module name), CONFIG (port, register, @new binding), WIRE (const), MUX (instance).
 // Valid identifiers are included alongside invalid ones to verify no false positives.
 
 @project KEYWORD_AS_IDENTIFIER_keyword_in_declarations

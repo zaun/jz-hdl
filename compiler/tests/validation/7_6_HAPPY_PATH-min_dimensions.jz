@@ -1,0 +1,94 @@
+// HAPPY_PATH: Valid configurable memory at minimum dimensions (edge case).
+// Exercises MEM with WIDTH=1, DEPTH=1, minimal address width,
+// both ASYNC and SYNC read modes, and cross-module instantiation.
+
+@project HAPPY_PATH_min_dimensions
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] din = _;
+        IN  [1] we = _;
+        OUT [1] dout_async = _;
+        OUT [1] dout_sync = _;
+        OUT [1] helper_dout = _;
+    }
+@endproj
+
+// Helper: minimum dimension memory with ASYNC read
+@module MinHelper
+    PORT {
+        IN  [1] clk;
+        IN  [1] din;
+        IN  [1] we;
+        OUT [1] dout;
+    }
+
+    MEM {
+        mem [1] [1] = 1'b0 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        dout = mem.rd[1'b0];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            mem.wr[1'b0] <= din;
+        }
+    }
+@endmod
+
+// Top module: minimum dimensions with both ASYNC and SYNC read
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] din;
+        IN  [1] we;
+        OUT [1] dout_async;
+        OUT [1] dout_sync;
+        OUT [1] helper_dout;
+    }
+
+    REGISTER {
+        r_sync [1] = 1'b0;
+    }
+
+    // Minimum dimension ASYNC read
+    MEM {
+        mem_async [1] [1] = 1'b0 {
+            OUT rd ASYNC;
+            IN  wr_a;
+        };
+    }
+
+    // Minimum dimension SYNC read
+    MEM(type=BLOCK) {
+        mem_sync [1] [1] = 1'b0 {
+            OUT rd SYNC;
+            IN  wr_s;
+        };
+    }
+
+    @new inst_min MinHelper {
+        IN  [1] clk = clk;
+        IN  [1] din = din;
+        IN  [1] we = we;
+        OUT [1] dout = helper_dout;
+    };
+
+    ASYNCHRONOUS {
+        dout_async = mem_async.rd[1'b0];
+        dout_sync = r_sync;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            mem_async.wr_a[1'b0] <= din;
+            mem_sync.wr_s[1'b0] <= din;
+        }
+        mem_sync.rd.addr <= 1'b0;
+        r_sync <= mem_sync.rd.data;
+    }
+@endmod

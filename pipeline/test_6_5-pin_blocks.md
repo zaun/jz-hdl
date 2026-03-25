@@ -4,7 +4,7 @@
 
 ## 1. Objective
 
-Verify PIN blocks (IN_PINS, OUT_PINS, INOUT_PINS): electrical standards, drive strength, bus syntax, pin name uniqueness across all categories, differential signaling modes, pull resistors, termination, and chip-specific standard validation.
+Verify PIN blocks (IN_PINS, OUT_PINS, INOUT_PINS): electrical standards, drive strength, bus syntax, pin name uniqueness across all categories, differential signaling modes, pull resistors, termination, serialization attributes (fclk, pclk, reset), and chip-specific standard validation.
 
 ## 2. Test Scenarios
 
@@ -18,7 +18,8 @@ Verify PIN blocks (IN_PINS, OUT_PINS, INOUT_PINS): electrical standards, drive s
 | 4 | Bus pins | `button[4] = { standard=LVCMOS33 };` -- multi-bit bus |
 | 5 | Differential input | `lvds_in = { standard=LVDS25, mode=DIFFERENTIAL };` |
 | 6 | Pin with pull resistor | `btn = { standard=LVCMOS33, pull=UP };` -- input with pull-up |
-| 7 | Pin with termination | `data = { standard=SSTL18, term=ON };` -- input with termination |
+| 7 | Pin with termination | `data = { standard=SSTL18_I, term=ON };` -- input with termination |
+| 8 | Differential output with serializer | Output pin with fclk, pclk, reset for LVDS serialization |
 
 ### 2.2 Error Cases
 
@@ -47,31 +48,33 @@ Verify PIN blocks (IN_PINS, OUT_PINS, INOUT_PINS): electrical standards, drive s
 | 1 | Width = 1 scalar pin | Explicit [1] width same as scalar |
 | 2 | Large bus | `data[32] = { ... }` -- wide bus pin |
 | 3 | All supported I/O standards | Each standard validated against chip |
+| 4 | INOUT pin with pull | Bidirectional pin with pull-up or pull-down |
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|-----------------|---------|----------|-------|
-| 1 | Pin in IN and OUT blocks | Error | PIN_DECLARED_MULTIPLE_BLOCKS | error | S6.5 |
-| 2 | Invalid standard | Error | PIN_INVALID_STANDARD | error | S6.5 |
-| 3 | OUT without drive or bad drive | Error | PIN_DRIVE_MISSING_OR_INVALID | error | S6.5 |
-| 4 | Bus width <= 0 | Error | PIN_BUS_WIDTH_INVALID | error | S6.5 |
-| 5 | Duplicate pin in same block | Error | PIN_DUP_NAME_WITHIN_BLOCK | error | S6.5 |
-| 6 | Invalid mode value | Error | PIN_MODE_INVALID | error | S6.5 |
-| 7 | Mode conflicts with standard | Error | PIN_MODE_STANDARD_MISMATCH | error | S6.5 |
-| 8 | Invalid pull value | Error | PIN_PULL_INVALID | error | S6.5 |
-| 9 | Pull on output pin | Error | PIN_PULL_ON_OUTPUT | error | S6.5 |
-| 10 | Invalid termination value | Error | PIN_TERM_INVALID | error | S6.5 |
-| 11 | Termination on output pin | Error | PIN_TERM_ON_OUTPUT | error | S6.5 |
-| 12 | Termination unsupported for standard | Error | PIN_TERM_INVALID_FOR_STANDARD | error | S6.5 |
-| 13 | Diff output missing fclk | Error | PIN_DIFF_OUT_MISSING_FCLK | error | S6.5 |
-| 14 | Diff output missing pclk | Error | PIN_DIFF_OUT_MISSING_PCLK | error | S6.5 |
-| 15 | Diff output missing reset | Error | PIN_DIFF_OUT_MISSING_RESET | error | S6.5 |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|------------------|----------|
+| 1 | Pin in IN and OUT blocks | Same name in IN_PINS and OUT_PINS | PIN_DECLARED_MULTIPLE_BLOCKS | error |
+| 2 | Invalid standard | `standard=INVALID` | PIN_INVALID_STANDARD | error |
+| 3 | OUT without drive or bad drive | `OUT_PINS { led = { standard=LVCMOS33 }; }` | PIN_DRIVE_MISSING_OR_INVALID | error |
+| 4 | Bus width <= 0 | `pin[0] = { standard=LVCMOS33 };` | PIN_BUS_WIDTH_INVALID | error |
+| 5 | Duplicate pin in same block | Two `led` entries in OUT_PINS | PIN_DUP_NAME_WITHIN_BLOCK | error |
+| 6 | Invalid mode value | `mode=TRISTATE` | PIN_MODE_INVALID | error |
+| 7 | Mode conflicts with standard | `mode=DIFFERENTIAL, standard=LVCMOS33` | PIN_MODE_STANDARD_MISMATCH | error |
+| 8 | Invalid pull value | `pull=KEEPER` | PIN_PULL_INVALID | error |
+| 9 | Pull on output pin | `OUT_PINS { led = { ..., pull=UP }; }` | PIN_PULL_ON_OUTPUT | error |
+| 10 | Invalid termination value | `term=MAYBE` | PIN_TERM_INVALID | error |
+| 11 | Termination on output pin | `OUT_PINS { led = { ..., term=ON }; }` | PIN_TERM_ON_OUTPUT | error |
+| 12 | Termination unsupported for standard | `term=ON` with LVCMOS33 | PIN_TERM_INVALID_FOR_STANDARD | error |
+| 13 | Diff output missing fclk | Differential OUT missing fclk attribute | PIN_DIFF_OUT_MISSING_FCLK | error |
+| 14 | Diff output missing pclk | Differential OUT missing pclk attribute | PIN_DIFF_OUT_MISSING_PCLK | error |
+| 15 | Diff output missing reset | Differential OUT missing reset attribute | PIN_DIFF_OUT_MISSING_RESET | error |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 6_5_HAPPY_PATH-pin_blocks_ok.jz | -- | Valid IN_PINS/OUT_PINS/INOUT_PINS declarations (clean compile) |
 | 6_5_PIN_BUS_WIDTH_INVALID-bad_bus_width.jz | PIN_BUS_WIDTH_INVALID | Bus pin width non-integer or <= 0 |
 | 6_5_PIN_DECLARED_MULTIPLE_BLOCKS-cross_block_duplicate.jz | PIN_DECLARED_MULTIPLE_BLOCKS | Same pin name in more than one PIN block |
 | 6_5_PIN_DIFF_OUT_MISSING_FCLK-no_fclk.jz | PIN_DIFF_OUT_MISSING_FCLK | Differential output pin missing required fclk attribute |
@@ -114,4 +117,5 @@ Verify PIN blocks (IN_PINS, OUT_PINS, INOUT_PINS): electrical standards, drive s
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All rules for this section are covered by existing tests |
+| INFO_SERIALIZER_CASCADE | info | Serializer cascade is a chip-specific optimization note; no dedicated validation test file exists |
+| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Serializer width exceeds ratio is chip-specific; no dedicated validation test file exists |

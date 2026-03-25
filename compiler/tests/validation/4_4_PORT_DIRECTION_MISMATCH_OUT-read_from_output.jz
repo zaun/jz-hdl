@@ -1,5 +1,5 @@
 // PORT_DIRECTION_MISMATCH_OUT: Reading from OUT port inside module.
-// Tests reading OUT port in ASYNC RHS and SYNC RHS across modules.
+// Tests reading OUT port in ASYNC RHS, SYNC RHS, and IF condition across modules.
 // Valid writes to OUT ports included to verify no false positives.
 
 @project PORT_DIRECTION_MISMATCH_OUT_read_from_output

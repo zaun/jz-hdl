@@ -1,9 +1,6 @@
 // CONFIG_INVALID_EXPR_TYPE: CONFIG value not a nonnegative integer expression.
-// Tests undefined bare names and CONFIG.X syntax inside CONFIG block.
+// Tests undefined bare names and expressions with undefined names inside CONFIG block.
 // Valid entries (simple integers, bare refs, strings) verify no false positives.
-// NOTE: CONFIG.X syntax inside CONFIG block incorrectly fires this rule even
-// for valid backward references. The compiler uses bare names for intra-CONFIG
-// references, not CONFIG.X. See issues.md.
 
 @project CONFIG_INVALID_EXPR_TYPE_invalid_value
     CONFIG {
@@ -29,17 +26,35 @@
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [1] data;
     }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
     REGISTER {
         r [1] = 1'b0;
     }
+
     ASYNCHRONOUS {
         data = r;
     }
+
     SYNCHRONOUS(CLK=clk) {
         r <= ~r;
     }

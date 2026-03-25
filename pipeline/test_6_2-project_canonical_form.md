@@ -4,7 +4,7 @@
 
 ## 1. Objective
 
-Verify project structure (canonical ordering), @import directive rules (placement, semantics, de-duplication, path normalization, nested imports), and imported file constraints (no @project in imported files).
+Verify project structure (canonical ordering), @import directive rules (placement, semantics, de-duplication, path normalization, nested imports), imported file constraints (no @project in imported files), @endproj requirement, and single-project-per-file constraint.
 
 ## 2. Test Scenarios
 
@@ -40,30 +40,34 @@ Verify project structure (canonical ordering), @import directive rules (placemen
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|-----------------|---------|----------|-------|
-| 1 | @import at file scope | Error | IMPORT_OUTSIDE_PROJECT | error | S6.2.1 |
-| 2 | @import after CONFIG | Error | IMPORT_NOT_AT_PROJECT_TOP | error | S6.2.1 |
-| 3 | Imported file has @project | Error | IMPORT_FILE_HAS_PROJECT | error | S6.2.1 |
-| 4 | Duplicate module/blackbox name | Error | IMPORT_DUP_MODULE_OR_BLACKBOX | error | S6.2.1/S6.10 |
-| 5 | Same file imported twice | Error | IMPORT_FILE_MULTIPLE_TIMES | error | S6.2.1 |
-| 6 | Two @project in one file | Error | PROJECT_MULTIPLE_PER_FILE | error | S6.2/S6.9 |
-| 7 | Missing @endproj | Error | PROJECT_MISSING_ENDPROJ | error | S6.2 |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|------------------|----------|
+| 1 | @import at file scope | `@import "lib.jz";` outside @project | IMPORT_OUTSIDE_PROJECT | error |
+| 2 | @import after CONFIG | `CONFIG { ... } @import "lib.jz";` | IMPORT_NOT_AT_PROJECT_TOP | error |
+| 3 | Imported file has @project | Imported file contains `@project ... @endproj` | IMPORT_FILE_HAS_PROJECT | error |
+| 4 | Duplicate module/blackbox name | Two imports with same module name | IMPORT_DUP_MODULE_OR_BLACKBOX | error |
+| 5 | Same file imported twice | `@import "lib.jz"; @import "lib.jz";` | IMPORT_FILE_MULTIPLE_TIMES | error |
+| 6 | Two @project in one file | `@project a ... @endproj @project b ...` | PROJECT_MULTIPLE_PER_FILE | error |
+| 7 | Missing @endproj | `@project test` with no `@endproj` | PROJECT_MISSING_ENDPROJ | error |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 6_2_HAPPY_PATH-canonical_form_ok.jz | -- | Valid project in canonical form (clean compile) |
+| 6_2_HAPPY_PATH-canonical_form_ok_lib.jz | -- | Support library file for canonical form happy path |
 | 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision.jz | IMPORT_DUP_MODULE_OR_BLACKBOX | Imported module/blackbox name duplicates existing project name |
-| 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libA.jz | IMPORT_DUP_MODULE_OR_BLACKBOX | Support file for name collision test (library A) |
-| 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libB.jz | IMPORT_DUP_MODULE_OR_BLACKBOX | Support file for name collision test (library B) |
+| 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libA.jz | -- | Support file for name collision test (library A) |
+| 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libB.jz | -- | Support file for name collision test (library B) |
 | 6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project.jz | IMPORT_FILE_HAS_PROJECT | Imported file contains its own @project/@endproj |
-| 6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project_lib.jz | IMPORT_FILE_HAS_PROJECT | Support file for imported-has-project test |
+| 6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project_lib.jz | -- | Support file for imported-has-project test |
 | 6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import.jz | IMPORT_FILE_MULTIPLE_TIMES | Same source file imported more than once |
-| 6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import_lib.jz | IMPORT_FILE_MULTIPLE_TIMES | Support file for duplicate import test |
+| 6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import_lib.jz | -- | Support file for duplicate import test |
 | 6_2_IMPORT_NOT_AT_PROJECT_TOP-import_after_config.jz | IMPORT_NOT_AT_PROJECT_TOP | @import appears after CONFIG/CLOCKS/PIN blocks |
-| 6_2_IMPORT_NOT_AT_PROJECT_TOP-import_after_config_lib.jz | IMPORT_NOT_AT_PROJECT_TOP | Support file for import-after-config test |
+| 6_2_IMPORT_NOT_AT_PROJECT_TOP-import_after_config_lib.jz | -- | Support file for import-after-config test |
 | 6_2_IMPORT_OUTSIDE_PROJECT-import_at_file_scope.jz | IMPORT_OUTSIDE_PROJECT | @import used outside @project block |
+| 6_2_PROJECT_MISSING_ENDPROJ-missing_endproj.jz | PROJECT_MISSING_ENDPROJ | @project block missing @endproj terminator |
+| 6_2_PROJECT_MULTIPLE_PER_FILE-two_projects.jz | PROJECT_MULTIPLE_PER_FILE | Multiple @project directives in same file |
 
 ## 5. Rules Matrix
 
@@ -76,12 +80,11 @@ Verify project structure (canonical ordering), @import directive rules (placemen
 | IMPORT_FILE_HAS_PROJECT | error | S6.2.1 Imported file contains its own @project/@endproj (forbidden) | 6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project.jz |
 | IMPORT_DUP_MODULE_OR_BLACKBOX | error | S6.2.1/S6.10 Imported module/blackbox name duplicates existing project name | 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision.jz |
 | IMPORT_FILE_MULTIPLE_TIMES | error | S6.2.1 Same source file imported more than once into a single project | 6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import.jz |
-| PROJECT_MULTIPLE_PER_FILE | error | S6.2/S6.9 Multiple @project directives in same file | -- (no dedicated test file) |
-| PROJECT_MISSING_ENDPROJ | error | S6.2 @project block missing @endproj terminator | -- (no dedicated test file) |
+| PROJECT_MULTIPLE_PER_FILE | error | S6.2/S6.9 Multiple @project directives in same file | 6_2_PROJECT_MULTIPLE_PER_FILE-two_projects.jz |
+| PROJECT_MISSING_ENDPROJ | error | S6.2 @project block missing @endproj terminator | 6_2_PROJECT_MISSING_ENDPROJ-missing_endproj.jz |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| PROJECT_MULTIPLE_PER_FILE | error | No dedicated validation test file exists |
-| PROJECT_MISSING_ENDPROJ | error | No dedicated validation test file exists |
+| -- | -- | All rules for this section are covered by existing tests |

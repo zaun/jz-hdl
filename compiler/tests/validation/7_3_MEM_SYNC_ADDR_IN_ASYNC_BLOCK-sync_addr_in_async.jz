@@ -9,7 +9,7 @@
     }
 @endproj
 
-// Trigger 1: .addr in ASYNC block in helper
+// Helper: .addr in ASYNC block
 @module HelperMod
     PORT {
         IN  [1] clk;

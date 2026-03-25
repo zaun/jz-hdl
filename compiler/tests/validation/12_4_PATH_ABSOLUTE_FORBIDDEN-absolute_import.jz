@@ -1,5 +1,6 @@
-// PATH_ABSOLUTE_FORBIDDEN: Absolute paths forbidden without --allow-absolute-paths.
+// PATH_ABSOLUTE_FORBIDDEN: Absolute paths in @import forbidden without --allow-absolute-paths.
 // Tests absolute path rejection in @import context.
+// Valid relative-path constructs surround the trigger to verify no false positives.
 
 @project PATH_ABSOLUTE_FORBIDDEN_absolute_import
 
@@ -12,11 +13,26 @@
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [1] data;
     }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
 
     REGISTER {
         r [1] = 1'b0;

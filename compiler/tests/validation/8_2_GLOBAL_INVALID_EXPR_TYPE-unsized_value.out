@@ -1,3 +1,6 @@
 File: 8_2_GLOBAL_INVALID_EXPR_TYPE-unsized_value.jz
       14:5    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>
       19:5    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>
+      24:5    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>
+      29:5    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>
+      34:5    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>

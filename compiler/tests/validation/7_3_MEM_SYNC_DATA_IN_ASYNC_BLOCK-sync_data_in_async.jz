@@ -9,7 +9,7 @@
     }
 @endproj
 
-// Trigger 1: read sync .data in ASYNC block in helper
+// Helper: read sync .data in ASYNC block
 @module HelperMod
     PORT {
         IN  [1] clk;

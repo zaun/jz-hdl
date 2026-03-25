@@ -1,6 +1,9 @@
 // TEMPLATE_SCRATCH_WIDTH_INVALID: @scratch width must be a positive integer constant expression.
 // Tests invalid scratch widths: zero, non-constant (parameter used as width),
 // and expression involving non-constant. Valid scratch widths included for negative testing.
+// NOTE: TEMPLATE_SCRATCH_WIDTH_INVALID is not implemented in the compiler. Zero-width
+// scratches fire the generic WIDTH_NONPOSITIVE_OR_NONINT instead. Parameter-as-width
+// is not caught at all. See issues.md for details.
 
 @project TEMPLATE_SCRATCH_WIDTH_INVALID_scratch_width_not_constant
     CONFIG {

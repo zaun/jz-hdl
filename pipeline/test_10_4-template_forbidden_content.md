@@ -37,9 +37,22 @@ Verify forbidden content inside templates: WIRE, REGISTER, PORT, CONST, MEM, MUX
 ## 4. Existing Validation Tests
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| `10_4_HAPPY_PATH-template_forbidden_content_ok.jz` | — | Happy-path: template with only allowed content (assignments, control flow, @scratch) |
 | `10_4_TEMPLATE_FORBIDDEN_DECL-declaration_blocks_in_template.jz` | TEMPLATE_FORBIDDEN_DECL | WIRE/REGISTER/etc. inside template body |
-| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_async_in_template.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | SYNCHRONOUS/ASYNCHRONOUS headers in template |
-| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-structural_directives_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @new/@module/@feature etc. in template |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-async_file_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | ASYNCHRONOUS header in file-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-async_mod_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | ASYNCHRONOUS header in module-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-cdc_file_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | CDC header in file-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-cdc_mod_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | CDC header in module-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_file_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | SYNCHRONOUS header in file-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_mod_scoped.jz` | TEMPLATE_FORBIDDEN_BLOCK_HEADER | SYNCHRONOUS header in module-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-feature_in_mod_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @feature in module-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-feature_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @feature in file-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-module_in_mod_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @module in module-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-module_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @module in file-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-new_in_mod_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @new in module-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-new_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @new in file-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-project_in_mod_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @project in module-scoped template |
+| `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-project_in_template.jz` | TEMPLATE_FORBIDDEN_DIRECTIVE | @project in file-scoped template |
 | `10_4_TEMPLATE_NESTED_DEF-nested_template_definition.jz` | TEMPLATE_NESTED_DEF | @template defined inside another @template |
 
 ## 5. Rules Matrix
@@ -47,10 +60,10 @@ Verify forbidden content inside templates: WIRE, REGISTER, PORT, CONST, MEM, MUX
 ### 5.1 Rules Tested
 | Rule ID | Description | Test Case(s) |
 |---------|-------------|-------------|
-| TEMPLATE_FORBIDDEN_DECL | Declaration blocks not allowed inside template body | Error 1-3, Edge 1-3 |
-| TEMPLATE_FORBIDDEN_BLOCK_HEADER | SYNC/ASYNC block headers not allowed inside template body | Error 4-5 |
-| TEMPLATE_FORBIDDEN_DIRECTIVE | Structural directives not allowed inside template body | Error 6-8 |
-| TEMPLATE_NESTED_DEF | Nested @template definitions not allowed | Error 9 |
+| TEMPLATE_FORBIDDEN_DECL | Declaration blocks not allowed inside template body | `10_4_TEMPLATE_FORBIDDEN_DECL-declaration_blocks_in_template.jz` |
+| TEMPLATE_FORBIDDEN_BLOCK_HEADER | SYNC/ASYNC block headers not allowed inside template body | `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-async_file_scoped.jz`, `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-async_mod_scoped.jz`, `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-cdc_file_scoped.jz`, `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-cdc_mod_scoped.jz`, `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_file_scoped.jz`, `10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_mod_scoped.jz` |
+| TEMPLATE_FORBIDDEN_DIRECTIVE | Structural directives not allowed inside template body | `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-feature_in_mod_template.jz`, `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-feature_in_template.jz`, `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-module_in_mod_template.jz`, `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-module_in_template.jz`, `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-new_in_mod_template.jz`, `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-new_in_template.jz`, `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-project_in_mod_template.jz`, `10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-project_in_template.jz` |
+| TEMPLATE_NESTED_DEF | Nested @template definitions not allowed | `10_4_TEMPLATE_NESTED_DEF-nested_template_definition.jz` |
 
 ### 5.2 Rules Not Tested
 | Expected Rule | Spec Reference | Gap Description |

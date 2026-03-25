@@ -9,33 +9,33 @@
 
     IN_PINS {
         sys_clk = { standard=LVCMOS33 };
+        // Valid: term=ON on supported standard (no trigger)
+        valid_term = { standard=SSTL18_I, term=ON };
         // Valid: term=OFF (no trigger)
-        valid_in = { standard=SSTL18_I, term=OFF };
-        // Trigger 1: invalid term in IN_PINS
+        valid_off = { standard=LVCMOS33, term=OFF };
+        // Trigger 1: invalid termination in IN_PINS
         bad_term_in = { standard=SSTL18_I, term=HALF };
     }
 
     OUT_PINS {
-        // Valid: term=OFF on output (no trigger — though term on output may also error)
-        valid_out = { standard=LVCMOS33, drive=8 };
-        // Trigger 2: invalid term in OUT_PINS
+        // Trigger 2: invalid termination in OUT_PINS
         bad_term_out = { standard=LVCMOS33, drive=8, term=AUTO };
     }
 
     INOUT_PINS {
-        // Valid: term=ON (no trigger)
-        valid_io = { standard=SSTL18_I, drive=4, term=ON };
-        // Trigger 3: invalid term in INOUT_PINS
+        // Valid: term=ON on INOUT_PINS (no trigger)
+        valid_term_io = { standard=SSTL18_I, drive=4, term=ON };
+        // Trigger 3: invalid termination in INOUT_PINS
         bad_term_io = { standard=SSTL18_I, drive=4, term=MAYBE };
     }
 
     MAP {
         sys_clk = 1;
-        valid_in = 2;
-        bad_term_in = 3;
-        valid_out = 4;
+        valid_term = 2;
+        valid_off = 3;
+        bad_term_in = 4;
         bad_term_out = 5;
-        valid_io = 6;
+        valid_term_io = 6;
         bad_term_io = 7;
     }
 

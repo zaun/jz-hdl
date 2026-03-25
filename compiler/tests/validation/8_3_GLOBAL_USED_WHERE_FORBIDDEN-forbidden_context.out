@@ -1,0 +1,5 @@
+File: 8_3_GLOBAL_USED_WHERE_FORBIDDEN-forbidden_context.jz
+      13:9    error GLOBAL_USED_WHERE_FORBIDDEN S8.4 GLOBAL.<name> used in a context where global constants are forbidden (CONST/OVERRIDE/CONFIG)
+      13:9    error CONFIG_INVALID_EXPR_TYPE S6.3 CONFIG value not a nonnegative integer expression
+      45:9    error GLOBAL_USED_WHERE_FORBIDDEN S8.4 GLOBAL.<name> used in a context where global constants are forbidden (CONST/OVERRIDE/CONFIG)
+      55:13   error GLOBAL_USED_WHERE_FORBIDDEN S8.4 GLOBAL.<name> used in a context where global constants are forbidden (CONST/OVERRIDE/CONFIG)

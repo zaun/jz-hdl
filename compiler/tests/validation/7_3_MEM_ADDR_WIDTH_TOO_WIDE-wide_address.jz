@@ -1,21 +1,24 @@
 // MEM_ADDR_WIDTH_TOO_WIDE: Address signal wider than ceil(log2(depth)).
 // mem [8] [16] needs ceil(log2(16))=4 bit address. Using 8-bit address.
+// Triggers in async read, sync write, and sync .addr contexts.
 // Valid 4-bit address included for no false positives.
 
 @project MEM_ADDR_WIDTH_TOO_WIDE_wide_address
     @top TopMod {
         IN  [1] clk = _;
         IN  [8] wide_addr = _;
+        IN  [4] ok_addr = _;
         IN  [8] wdata = _;
         OUT [8] data = _;
     }
 @endproj
 
-// Trigger 1: wide address in async read in helper
+// Helper: wide address in async read and sync write
 @module HelperMod
     PORT {
         IN  [1] clk;
         IN  [8] wide_addr;
+        IN  [4] ok_addr;
         IN  [8] wdata;
         OUT [8] data;
     }
@@ -27,19 +30,22 @@
     MEM {
         mem_a [8] [16] = 8'h00 {
             OUT rd ASYNC;
-            IN  wr;
+            IN  wr_ok;
+            IN  wr_wide;
         };
     }
 
     ASYNCHRONOUS {
-        // Trigger 1: 8-bit addr for 16-deep mem (needs 4 bits)
+        // Trigger 1: 8-bit addr for 16-deep mem (needs 4 bits) in async read
         data = mem_a.rd[wide_addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
+        // Valid: 4-bit address fits
+        mem_a.wr_ok[ok_addr] <= wdata;
         // Trigger 2: 8-bit addr for sync write
-        mem_a.wr[wide_addr] <= wdata;
+        mem_a.wr_wide[wide_addr] <= wdata;
     }
 @endmod
 
@@ -47,6 +53,7 @@
     PORT {
         IN  [1] clk;
         IN  [8] wide_addr;
+        IN  [4] ok_addr;
         IN  [8] wdata;
         OUT [8] data;
     }
@@ -57,7 +64,8 @@
 
     MEM {
         mem_b [8] [16] = 8'h00 {
-            OUT rd ASYNC;
+            OUT rd_a ASYNC;
+            OUT rd_s SYNC;
             IN  wr;
         };
     }
@@ -65,18 +73,20 @@
     @new inst_h HelperMod {
         IN  [1] clk = clk;
         IN  [8] wide_addr = wide_addr;
+        IN  [4] ok_addr = ok_addr;
         IN  [8] wdata = wdata;
         OUT [8] data = _;
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: 8-bit addr in async read in top module
-        data = mem_b.rd[wide_addr];
+        // Trigger 3: 8-bit addr in async read in top
+        data = mem_b.rd_a[wide_addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        // Trigger 4: 8-bit addr in sync write in top module
-        mem_b.wr[wide_addr] <= wdata;
+        mem_b.wr[ok_addr] <= wdata;
+        // Trigger 4: 8-bit addr in sync .addr on SYNC port
+        mem_b.rd_s.addr <= wide_addr;
     }
 @endmod

@@ -11,6 +11,52 @@ import sys
 PIPELINE_DIR = os.path.join(os.path.dirname(__file__), "..")
 PROMPT_FILE = os.path.join(PIPELINE_DIR, "prompts", "tests", "2.md")
 
+# Sentinels that indicate "Rules Not Tested" has no real entries
+_NO_WORK_PATTERNS = re.compile(
+    r"^\|\s*(?:\(none\)|—|--|)\s*\|"   # table row with placeholder rule ID
+    r"|^No rules to test"               # prose "no rules" line
+    r"|All .* rules (?:covered|have validation)"  # "all rules covered" inside a cell
+    r"|All section .* rules covered"
+    r"|No new rules"
+    r"|All mapped rules have",
+    re.IGNORECASE,
+)
+
+
+def has_untested_rules(test_path: str) -> bool:
+    """Check if a test plan has real entries in its 'Rules Not Tested' section.
+
+    Returns True if there are actual rule IDs that need tests generated.
+    Returns False if the section is empty, contains only placeholders, or is missing.
+    """
+    with open(test_path, "r") as f:
+        content = f.read()
+
+    # Find the "Rules Not Tested" section (typically "### 5.2 Rules Not Tested")
+    match = re.search(r"#+\s*5\.2\s+Rules Not Tested", content)
+    if not match:
+        return False
+
+    # Extract everything after the heading until the next heading or EOF
+    rest = content[match.end():]
+    next_heading = re.search(r"\n#+\s", rest)
+    section = rest[:next_heading.start()] if next_heading else rest
+
+    # Look at each non-empty line in the section
+    for line in section.strip().splitlines():
+        line = line.strip()
+        # Skip blank lines, table headers, and separator rows
+        if not line or line.startswith("|---") or line.startswith("| Rule ID"):
+            continue
+        # Skip lines that match "no work" sentinels
+        if _NO_WORK_PATTERNS.search(line):
+            continue
+        # If we find a table row with a real rule ID, there's work to do
+        if line.startswith("|"):
+            return True
+
+    return False
+
 
 def load_prompt(test_filename: str) -> str:
     """Load prompt 3.md and replace the first-line target with the given test file."""
@@ -108,9 +154,16 @@ def main():
 
     results = {"pass": [], "fail": []}
 
+    skipped = []
+
     for i, test_path in enumerate(test_files, 1):
         test_filename = os.path.basename(test_path)
         print(f"[{i}/{len(test_files)}] {test_filename}")
+
+        if not has_untested_rules(test_path):
+            skipped.append(test_filename)
+            print(f"  -> skipped (no untested rules)\n")
+            continue
 
         prompt = load_prompt(test_filename)
         rc = run_claude(prompt, dry_run=args.dry_run)
@@ -124,7 +177,11 @@ def main():
 
     # Summary
     print("=" * 60)
-    print(f"Done. {len(results['pass'])} passed, {len(results['fail'])} failed.")
+    print(f"Done. {len(results['pass'])} passed, {len(results['fail'])} failed, {len(skipped)} skipped.")
+    if skipped:
+        print(f"\nSkipped ({len(skipped)} — no untested rules):")
+        for f in skipped:
+            print(f"  - {f}")
     if results["fail"]:
         print("\nFailed:")
         for f in results["fail"]:

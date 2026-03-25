@@ -1,0 +1,84 @@
+// HAPPY_PATH: Valid MEM initialization — literal and @file, multi-module.
+// No diagnostics expected.
+
+@project HAPPY_PATH_initialization_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [2] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module with valid literal init
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Valid: literal init matching word width
+    MEM {
+        mem_lit [8] [4] = 8'hAA {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_lit.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_lit.wr[addr] <= 8'h00;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Valid: literal zero init
+    MEM {
+        mem_zero [8] [4] = 8'h00 {
+            OUT rd_z ASYNC;
+            IN  wr_z;
+        };
+    }
+
+    // Valid: @file init with file exactly matching depth
+    MEM {
+        mem_file [8] [4] = @file("mem_exact_4bytes.bin") {
+            OUT rd_f ASYNC;
+            IN  wr_f;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [2] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_zero.rd_z[addr] ^ mem_file.rd_f[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_zero.wr_z[addr] <= 8'h00;
+        mem_file.wr_f[addr] <= 8'h00;
+    }
+@endmod

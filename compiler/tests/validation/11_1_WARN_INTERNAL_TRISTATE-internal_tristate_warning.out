@@ -1,3 +1,4 @@
 File: 11_1_WARN_INTERNAL_TRISTATE-internal_tristate_warning.jz
-      24:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
-      58:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      26:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      62:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      64:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC

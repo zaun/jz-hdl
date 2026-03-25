@@ -1,8 +1,8 @@
 File: 5_0_ASSIGN_TRUNCATES-truncation_with_modifier.jz
-      33:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
-      35:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
-      41:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
-      73:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
-      75:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
-      77:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
-      83:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
+      40:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
+      42:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
+      49:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
+      82:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
+      84:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
+      86:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier
+      93:9    error ASSIGN_TRUNCATES S4.10/S5.0 Assignment truncates RHS into smaller LHS; use a slice or explicit truncation modifier

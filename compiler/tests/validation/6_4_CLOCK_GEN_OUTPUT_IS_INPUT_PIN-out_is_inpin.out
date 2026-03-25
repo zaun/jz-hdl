@@ -1,0 +1,2 @@
+File: 6_4_CLOCK_GEN_OUTPUT_IS_INPUT_PIN-out_is_inpin.jz
+      28:13   error CLOCK_GEN_OUTPUT_IS_INPUT_PIN S6.4.1 CLOCK_GEN output clock must not be declared as IN_PINS

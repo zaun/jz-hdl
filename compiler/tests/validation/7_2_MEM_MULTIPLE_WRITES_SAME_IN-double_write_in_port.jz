@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: double write to same IN port in helper
+// Trigger 1: double write to same IN port in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -36,9 +36,9 @@
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        // Trigger 1: first write
+        // First write to wr (valid)
         mem_a.wr[addr] <= wdata;
-        // Trigger 1: second write to same port
+        // Trigger 1: second write to same port wr
         mem_a.wr[addr] <= 8'hFF;
     }
 @endmod

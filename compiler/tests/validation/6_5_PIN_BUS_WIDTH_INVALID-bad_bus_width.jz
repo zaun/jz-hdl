@@ -9,7 +9,7 @@
 
     IN_PINS {
         sys_clk = { standard=LVCMOS33 };
-        // Valid: width 1 scalar (no trigger)
+        // Valid: scalar pin (no trigger)
         valid_in = { standard=LVCMOS33 };
         // Valid: bus width 4 (no trigger)
         valid_bus[4] = { standard=LVCMOS33 };

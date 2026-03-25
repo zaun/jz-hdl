@@ -1,6 +1,6 @@
-// TRISTATE_TRANSFORM_UNUSED_DEFAULT: --tristate-default=GND with no internal tri-state nets.
-// Verifies warning when the flag is specified but there are no tri-state nets to transform.
-// All nets are single-driver with no z assignments.
+// TRISTATE_TRANSFORM_UNUSED_DEFAULT: --tristate-default=GND with no internal
+// tri-state nets. Verifies warning when the flag is specified but there are no
+// tri-state nets to transform. All nets are single-driver with no z assignments.
 // Contexts: helper module with conditional output, top module with register + wire.
 // Valid: no z values anywhere, so no tristate identification occurs.
 

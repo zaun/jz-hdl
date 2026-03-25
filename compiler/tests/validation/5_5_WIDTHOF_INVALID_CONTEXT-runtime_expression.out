@@ -1,5 +1,5 @@
 File: 5_5_WIDTHOF_INVALID_CONTEXT-runtime_expression.jz
-      32:18   error WIDTHOF_INVALID_CONTEXT S5.5.10 widthof() used outside compile-time constant integer expression context
-      37:14   error WIDTHOF_INVALID_CONTEXT S5.5.10 widthof() used outside compile-time constant integer expression context
-      69:18   error WIDTHOF_INVALID_CONTEXT S5.5.10 widthof() used outside compile-time constant integer expression context
-      74:14   error WIDTHOF_INVALID_CONTEXT S5.5.10 widthof() used outside compile-time constant integer expression context
+      31:19   error WIDTHOF_INVALID_CONTEXT S5.5.10 widthof() used outside compile-time constant integer expression context
+      36:15   error WIDTHOF_INVALID_CONTEXT S5.5.10 widthof() used outside compile-time constant integer expression context
+      68:19   error WIDTHOF_INVALID_CONTEXT S5.5.10 widthof() used outside compile-time constant integer expression context
+      73:15   error WIDTHOF_INVALID_CONTEXT S5.5.10 widthof() used outside compile-time constant integer expression context

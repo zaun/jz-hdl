@@ -1,0 +1,113 @@
+// HAPPY_PATH: Valid BLOCK and DISTRIBUTED MEMs within chip resource limits.
+// Exercises BLOCK MEM fitting in a single BSRAM, DISTRIBUTED MEM within LUT budget,
+// and multi-module instantiation sharing chip resources without exceeding capacity.
+
+@project(CHIP="gw1nr-9-qn88-c6-i5") HAPPY_PATH_synthesis_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] rdata = _;
+    }
+@endproj
+
+// Helper module with a small BLOCK MEM (fits in 1 BSRAM)
+@module HelperBlock
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        blk [8] [16] = 8'h00 {
+            OUT rd SYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        blk.rd.addr <= addr;
+        r <= blk.rd.data;
+        blk.wr[addr] <= wdata;
+    }
+@endmod
+
+// Helper module with a small DISTRIBUTED MEM (fits in LUT budget)
+@module HelperDist
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    MEM(type=DISTRIBUTED) {
+        dist [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = dist.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        dist.wr[addr] <= wdata;
+    }
+@endmod
+
+// Top module: instantiates both helpers, has its own small BLOCK MEM
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        blk_top [8] [16] = 8'h00 {
+            OUT rd_top SYNC;
+            IN  wr_top;
+        };
+    }
+
+    @new inst_blk HelperBlock {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = _;
+    };
+
+    @new inst_dist HelperDist {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = _;
+    };
+
+    ASYNCHRONOUS {
+        rdata = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        blk_top.rd_top.addr <= addr;
+        r <= blk_top.rd_top.data;
+        blk_top.wr_top[addr] <= wdata;
+    }
+@endmod

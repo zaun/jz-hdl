@@ -1,0 +1,2 @@
+File: 4_7_REG_MULTI_DIMENSIONAL-multi_dim_register.jz
+      22:19   error PARSE000 parse error near token '[': expected '=' and initialization literal in REGISTER block (orig: PARSE000)

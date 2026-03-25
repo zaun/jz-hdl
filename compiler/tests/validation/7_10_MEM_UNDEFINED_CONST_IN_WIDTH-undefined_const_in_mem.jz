@@ -1,11 +1,11 @@
 // MEM_UNDEFINED_CONST_IN_WIDTH: CONST used in MEM word_width or depth is not declared.
-// Tests undefined CONST in both width and depth positions across multiple modules.
+// Tests undefined CONST in width (helper), depth (top), and both positions.
 // Valid CONST references included to verify no false positives.
 
 @project MEM_UNDEFINED_CONST_IN_WIDTH_undefined_const_in_mem
     @top TopMod {
         IN  [1] clk = _;
-        IN  [1] addr = _;
+        IN  [4] addr = _;
         IN  [8] wdata = _;
         OUT [8] data = _;
     }
@@ -19,7 +19,6 @@
 
     PORT {
         IN  [1] clk;
-        IN  [1] addr;
         IN  [8] wdata;
         OUT [8] data;
     }
@@ -52,7 +51,7 @@
 
     PORT {
         IN  [1] clk;
-        IN  [1] addr;
+        IN  [4] addr;
         IN  [8] wdata;
         OUT [8] data;
     }
@@ -87,7 +86,6 @@
 
     @new inst_h HelperMod {
         IN  [1] clk = clk;
-        IN  [1] addr = addr;
         IN  [8] wdata = wdata;
         OUT [8] data = _;
     };

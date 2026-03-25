@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: multiple .wdata in helper
+// Helper: multiple .wdata in helper
 @module HelperMod
     PORT {
         IN  [1] clk;

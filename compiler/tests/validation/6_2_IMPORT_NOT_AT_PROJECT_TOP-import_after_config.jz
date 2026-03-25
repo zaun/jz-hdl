@@ -1,6 +1,6 @@
 // IMPORT_NOT_AT_PROJECT_TOP: @import appears after CONFIG/CLOCKS/PIN blocks.
 // Tests @import placed after CONFIG block inside @project.
-// Parser aborts after this error, so only one trigger is possible.
+// Parser aborts after this error, so only one trigger is possible per file.
 
 @project IMPORT_NOT_AT_PROJECT_TOP_import_after_config
 

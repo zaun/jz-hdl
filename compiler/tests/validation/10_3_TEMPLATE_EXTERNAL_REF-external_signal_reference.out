@@ -1,0 +1,5 @@
+File: 10_3_TEMPLATE_EXTERNAL_REF-external_signal_reference.jz
+      21:10   error TEMPLATE_EXTERNAL_REF S10.3 Identifier in template body must be a parameter, @scratch wire, or compile-time constant; pass external signals as arguments
+      26:14   error TEMPLATE_EXTERNAL_REF S10.3 Identifier in template body must be a parameter, @scratch wire, or compile-time constant; pass external signals as arguments
+      55:13   error TEMPLATE_EXTERNAL_REF S10.3 Identifier in template body must be a parameter, @scratch wire, or compile-time constant; pass external signals as arguments
+      82:13   error TEMPLATE_EXTERNAL_REF S10.3 Identifier in template body must be a parameter, @scratch wire, or compile-time constant; pass external signals as arguments

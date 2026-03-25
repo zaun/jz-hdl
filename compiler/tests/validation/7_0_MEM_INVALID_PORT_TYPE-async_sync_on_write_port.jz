@@ -1,6 +1,6 @@
 // MEM_INVALID_PORT_TYPE: ASYNC/SYNC qualifiers used on IN (write) ports.
-// IN ports are write-only and do not support timing qualifiers.
-// Valid OUT ASYNC/SYNC ports included to verify no false positives.
+// IN ports are always synchronous and do not support timing qualifiers.
+// Valid OUT ASYNC/SYNC ports and plain IN ports included to verify no false positives.
 
 @project MEM_INVALID_PORT_TYPE_async_sync_on_write_port
     @top TopMod {

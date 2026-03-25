@@ -1,0 +1,87 @@
+// MEM_INVALID_PORT_TYPE: Invalid port type or qualifier triggers error.
+// Tests ASYNC qualifier on IN (write) port. Valid port types included for no false positives.
+
+@project MEM_INVALID_PORT_TYPE_invalid_port_type
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: ASYNC on IN port in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr ASYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.wr[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: SYNC on IN port in top module
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr SYNC;
+        };
+    }
+
+    // Valid: correct port types (no error expected)
+    MEM {
+        mem_ok [8] [16] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_b.rd[addr] ^ mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.wr[addr] <= wdata;
+        mem_ok.wr_ok[addr] <= wdata;
+    }
+@endmod

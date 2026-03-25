@@ -1,0 +1,5 @@
+File: 4_8_LATCH_WIDTH_INVALID-invalid_latch_width.jz
+      27:9    error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer
+      27:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      53:9    error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer
+      53:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it

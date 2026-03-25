@@ -1,0 +1,3 @@
+File: 8_3_GLOBAL_CONST_USE_UNDECLARED-undeclared_global_ref.jz
+      30:14   error GLOBAL_CONST_USE_UNDECLARED S8.4 Use of GLOBAL.<name> where the namespace or constant is not declared
+      53:14   error GLOBAL_CONST_USE_UNDECLARED S8.4 Use of GLOBAL.<name> where the namespace or constant is not declared

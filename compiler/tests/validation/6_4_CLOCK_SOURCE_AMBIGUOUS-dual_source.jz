@@ -1,5 +1,5 @@
-// CLOCK_SOURCE_AMBIGUOUS: Clock with period in CLOCKS that is also a CLOCK_GEN output.
-// Period implies external source; CLOCK_GEN OUT implies generated source.
+// CLOCK_SOURCE_AMBIGUOUS: Clock declared as both IN_PINS and CLOCK_GEN output.
+// Period in CLOCKS implies external source; CLOCK_GEN OUT implies generated source.
 // Tests clocks with period that are also CLOCK_GEN outputs.
 // Valid clocks (external-only, gen-only) included to verify no false positives.
 

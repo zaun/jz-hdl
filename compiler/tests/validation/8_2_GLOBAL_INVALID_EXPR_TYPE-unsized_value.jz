@@ -1,5 +1,5 @@
 // GLOBAL_INVALID_EXPR_TYPE: Non-sized-literal values in @global blocks.
-// Tests bare integers, missing base, and other invalid value forms.
+// Tests bare integers, CONFIG references, cross-global references, and expressions.
 // Valid sized literals are included to verify no false positives.
 
 // Valid: properly sized literals (should NOT trigger)
@@ -19,18 +19,58 @@
     Y = 0;
 @endglob
 
+// Trigger 3: CONFIG reference as value
+@global BAD_CONFIG
+    W = CONFIG.WIDTH;
+@endglob
+
+// Trigger 4: reference to another @global constant (not a sized literal)
+@global BAD_REF
+    R = VALID.A;
+@endglob
+
+// Trigger 5: expression (addition) as value
+@global BAD_EXPR
+    E = 8'hFF + 1;
+@endglob
+
 @project GLOBAL_INVALID_EXPR_TYPE_unsized_value
+    CONFIG {
+        WIDTH = 8;
+    }
     @top TopMod {
         IN  [1] clk = _;
         OUT [8] data = _;
     }
 @endproj
 
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= VALID.A;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [8] data;
     }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [8] dout = _;
+    };
+
     REGISTER {
         r [8] = 8'h00;
     }

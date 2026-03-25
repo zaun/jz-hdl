@@ -41,19 +41,21 @@ Verify MUX aggregation/slicing, read-only semantics, dynamic indexing. Confirm t
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|-----------------|---------|----------|-------|
-| 1 | `mux[0] = data;` | Error: assigning to MUX is forbidden | MUX_ASSIGN_LHS | error | S4.6 read-only |
-| 2 | Sources with different widths | Error: sources must have identical bit-width | MUX_AGG_SOURCE_WIDTH_MISMATCH | error | S4.6 aggregation |
-| 3 | Invalid source in aggregation | Error: source not a valid readable signal | MUX_AGG_SOURCE_INVALID | error | S4.6 aggregation |
-| 4 | Wide source not evenly divisible | Error: width must be exact multiple of element width | MUX_SLICE_WIDTH_NOT_DIVISOR | error | S4.6 auto-slicing |
-| 5 | Static index outside valid range | Error: selector outside valid index range | MUX_SELECTOR_OUT_OF_RANGE_CONST | error | S4.6 compile-time |
-| 6 | MUX name duplicates another identifier | Error: duplicate identifier | MUX_NAME_DUPLICATE | error | S4.6 |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|-----------------|----------|
+| 1 | Assign to MUX on LHS | `mux[0] = data;` | MUX_ASSIGN_LHS | error |
+| 2 | Sources with different widths | `mux = byte_a, nibble;` | MUX_AGG_SOURCE_WIDTH_MISMATCH | error |
+| 3 | Invalid source in aggregation | Source is not a valid readable signal | MUX_AGG_SOURCE_INVALID | error |
+| 4 | Wide source not evenly divisible | `mux [3] = 8bit_sig;` | MUX_SLICE_WIDTH_NOT_DIVISOR | error |
+| 5 | Static index outside valid range | `mux[4]` on 4-element MUX | MUX_SELECTOR_OUT_OF_RANGE_CONST | error |
+| 6 | MUX name duplicates identifier | MUX name same as wire/port/register | MUX_NAME_DUPLICATE | error |
+| 7 | Valid MUX usage | Aggregation and slicing with valid access | -- | -- (pass) |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 4_6_MUX_HAPPY_PATH-mux_ok.jz | -- | Happy path: valid MUX aggregation and slicing |
 | 4_6_MUX_AGG_SOURCE_INVALID-invalid_source.jz | MUX_AGG_SOURCE_INVALID | Aggregation source not a valid readable signal in module scope |
 | 4_6_MUX_AGG_SOURCE_WIDTH_MISMATCH-source_width_mismatch.jz | MUX_AGG_SOURCE_WIDTH_MISMATCH | Aggregation form sources must all have identical bit-width |
 | 4_6_MUX_ASSIGN_LHS-assign_to_mux.jz | MUX_ASSIGN_LHS | Assigning to MUX id or its indexed form on LHS is forbidden |

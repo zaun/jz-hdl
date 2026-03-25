@@ -40,23 +40,27 @@ Verify CONST declarations, compile-time evaluation, string/numeric types. Confir
 
 ## 3. Input/Output Matrix
 
-| # | Input | Expected Output | Rule ID | Severity | Notes |
-|---|-------|-----------------|---------|----------|-------|
-| 1 | `WIDTH = -1` used as port width | Error: negative or non-integer value | CONST_NEGATIVE_OR_NONINT | error | S4.3/S7.10 |
-| 2 | `PORT { IN [FILE] data; }` (FILE is string) | Error: string in numeric context | CONST_STRING_IN_NUMERIC_CONTEXT | error | S4.3/S6.3 |
-| 3 | `@file(WIDTH)` (WIDTH is numeric) | Error: numeric in string context | CONST_NUMERIC_IN_STRING_CONTEXT | error | S4.3/S6.3 |
-| 4 | CONST used in runtime expression | Error: const in forbidden context | CONST_USED_WHERE_FORBIDDEN | error | S4.3/S6.3 |
-| 5 | `A = B; B = A;` circular | Error: circular dependency | CONST_CIRCULAR_DEP | error | S4.3/S7.10 |
-| 6 | `PORT { IN [UNDEF] data; }` | Error: undefined CONST in width | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | S1.3/S2.1/S7.10 |
+| # | Scenario | Triggering Construct | Expected Rule ID | Severity |
+|---|----------|---------------------|-----------------|----------|
+| 1 | Negative or non-integer CONST | `WIDTH = -1;` used as port width | CONST_NEGATIVE_OR_NONINT | error |
+| 2 | String CONST in numeric context | `PORT { IN [FILE] data; }` (FILE is string) | CONST_STRING_IN_NUMERIC_CONTEXT | error |
+| 3 | Numeric CONST in string context | `@file(WIDTH)` (WIDTH is numeric) | CONST_NUMERIC_IN_STRING_CONTEXT | error |
+| 4 | CONST in runtime expression | CONST used in forbidden runtime context | CONST_USED_WHERE_FORBIDDEN | error |
+| 5 | Circular CONST dependency | `A = B; B = A;` | CONST_CIRCULAR_DEP | error |
+| 6 | Undefined CONST in width/slice | `PORT { IN [UNDEF] data; }` | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error |
+| 7 | Valid CONST usage | `WIDTH = 32; PORT { IN [WIDTH] d; }` | -- | -- (pass) |
 
 ## 4. Existing Validation Tests
 
 | Test File | Rule ID | Description |
 |-----------|---------|-------------|
+| 4_3_CONST_HAPPY_PATH-valid_const_ok.jz | -- | Happy path: valid numeric and string CONST usage |
 | 4_3_CONST_NEGATIVE_OR_NONINT-negative_const_value.jz | CONST_NEGATIVE_OR_NONINT | CONST initialized with negative or non-integer value |
 | 4_3_CONST_NUMERIC_IN_STRING_CONTEXT-numeric_as_file_path.jz | CONST_NUMERIC_IN_STRING_CONTEXT | Numeric CONST used where a string is expected |
 | 4_3_CONST_STRING_IN_NUMERIC_CONTEXT-string_as_width.jz | CONST_STRING_IN_NUMERIC_CONTEXT | String CONST used where a numeric expression is expected |
 | 4_3_CONST_USED_WHERE_FORBIDDEN-const_in_runtime_expr.jz | CONST_USED_WHERE_FORBIDDEN | CONST identifier used outside compile-time constant expression contexts |
+| 4_3_CONST_CIRCULAR_DEP-circular_dependency.jz | CONST_CIRCULAR_DEP | Circular dependency in CONST definitions |
+| 4_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-undefined_const.jz | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | Undefined CONST used in width or slice expression |
 
 ## 5. Rules Matrix
 
@@ -64,14 +68,10 @@ Verify CONST declarations, compile-time evaluation, string/numeric types. Confir
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
+| CONST_CIRCULAR_DEP | error | S4.3/S7.10 Circular dependency in CONST definitions | 4_3_CONST_CIRCULAR_DEP-circular_dependency.jz |
 | CONST_NEGATIVE_OR_NONINT | error | S4.3/S7.10 CONST initialized with negative or non-integer value where nonnegative integer required | 4_3_CONST_NEGATIVE_OR_NONINT-negative_const_value.jz |
-| CONST_STRING_IN_NUMERIC_CONTEXT | error | S4.3/S6.3 String CONST/CONFIG value used where a numeric expression is expected | 4_3_CONST_STRING_IN_NUMERIC_CONTEXT-string_as_width.jz |
-| CONST_NUMERIC_IN_STRING_CONTEXT | error | S4.3/S6.3 Numeric CONST/CONFIG value used where a string is expected (e.g. @file path) | 4_3_CONST_NUMERIC_IN_STRING_CONTEXT-numeric_as_file_path.jz |
-| CONST_USED_WHERE_FORBIDDEN | error | S4.3/S6.3 CONST identifier used outside compile-time constant expression contexts (runtime expression) | 4_3_CONST_USED_WHERE_FORBIDDEN-const_in_runtime_expr.jz |
+| CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly | 4_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-undefined_const.jz |
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| CONST_CIRCULAR_DEP | error | No dedicated 4_3 test file; circular dependency detection not yet covered by validation tests |
-| CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | No dedicated 4_3 test file; undefined CONST in width/slice not yet covered by validation tests |
+All rules for this section are tested.
