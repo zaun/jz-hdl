@@ -1,2 +1,2 @@
 File: 4_4_BUS_PORT_NOT_BUS-member_on_non_bus.jz
-      40:21   error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
+      40:21   error BUS_PORT_NOT_BUS S4.4.1 BUS member access used on non-BUS port

@@ -1,3 +1,5 @@
 File: 4_12_CDC_SOURCE_NOT_PLAIN_REG-sliced_source.jz
       22:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      28:13   error CDC_SOURCE_NOT_PLAIN_REG S4.12 CDC source must be a plain register identifier, not a slice or expression
       57:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      63:13   error CDC_SOURCE_NOT_PLAIN_REG S4.12 CDC source must be a plain register identifier, not a slice or expression

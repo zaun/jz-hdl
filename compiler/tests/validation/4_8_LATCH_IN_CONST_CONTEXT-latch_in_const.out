@@ -1,3 +1,3 @@
 File: 4_8_LATCH_IN_CONST_CONTEXT-latch_in_const.jz
-      39:13   error CHECK_INVALID_EXPR_TYPE S9.1 @check condition must be a nonnegative integer constant expression over literals, module CONST, and project CONFIG.<name> (no runtime signals)
-      72:13   error CHECK_INVALID_EXPR_TYPE S9.1 @check condition must be a nonnegative integer constant expression over literals, module CONST, and project CONFIG.<name> (no runtime signals)
+      39:13   error LATCH_IN_CONST_CONTEXT S4.8 LATCH identifier may not be used in compile-time constant contexts (@check/@feature conditions)
+      72:13   error LATCH_IN_CONST_CONTEXT S4.8 LATCH identifier may not be used in compile-time constant contexts (@check/@feature conditions)

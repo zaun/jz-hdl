@@ -202,6 +202,50 @@ static void sem_sync_check_register_uses_expr(JZASTNode *expr,
     }
 }
 
+/* Walk a subtree looking for an identifier matching |name|.  Returns the
+ * identifier node if found, NULL otherwise. */
+static const JZASTNode *find_ident_in_subtree(const JZASTNode *node,
+                                               const char *name)
+{
+    if (!node || !name) return NULL;
+    if (node->type == JZ_AST_EXPR_IDENTIFIER && node->name &&
+        strcmp(node->name, name) == 0) {
+        return node;
+    }
+    for (size_t i = 0; i < node->child_count; ++i) {
+        const JZASTNode *r = find_ident_in_subtree(node->children[i], name);
+        if (r) return r;
+    }
+    return NULL;
+}
+
+/* Scan a block for assignments whose LHS contains |alias_name| and emit
+ * CDC_DEST_ALIAS_ASSIGNED for each occurrence. */
+static void sem_check_cdc_alias_lhs_in_block(const JZASTNode *node,
+                                               const char *alias_name,
+                                               JZDiagnosticList *diagnostics)
+{
+    if (!node || !alias_name) return;
+    if (node->type == JZ_AST_STMT_ASSIGN && node->child_count >= 1) {
+        const JZASTNode *lhs = node->children[0];
+        const JZASTNode *hit = find_ident_in_subtree(lhs, alias_name);
+        if (hit) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "CDC destination alias '%s' may not be assigned directly;\n"
+                     "it is driven automatically by the CDC synchronizer",
+                     alias_name);
+            sem_report_rule(diagnostics, hit->loc,
+                            "CDC_DEST_ALIAS_ASSIGNED", msg);
+            return;
+        }
+    }
+    for (size_t i = 0; i < node->child_count; ++i) {
+        sem_check_cdc_alias_lhs_in_block(node->children[i], alias_name,
+                                          diagnostics);
+    }
+}
+
 void sem_check_sync_clock_domains(JZBuffer *module_scopes,
                                   JZDiagnosticList *diagnostics)
 {
@@ -458,6 +502,13 @@ void sem_check_sync_clock_domains(JZBuffer *module_scopes,
                                         "CDC source is a concatenation but must be a plain\n"
                                         "register identifier. Use BUS CDC with a single register\n"
                                         "to transfer multi-signal values.");
+                    } else if (src_node && src_node->type == JZ_AST_EXPR_SLICE) {
+                        sem_report_rule(diagnostics,
+                                        src_node->loc,
+                                        "CDC_SOURCE_NOT_PLAIN_REG",
+                                        "CDC source is a slice but must be a plain register\n"
+                                        "identifier. The synchronizer needs the full register,\n"
+                                        "not a bit range.");
                     }
                 }
 
@@ -497,16 +548,8 @@ void sem_check_sync_clock_domains(JZBuffer *module_scopes,
                 if (!blk || blk->type != JZ_AST_BLOCK || !blk->block_kind) continue;
                 if (strcmp(blk->block_kind, "ASYNCHRONOUS") != 0 &&
                     strcmp(blk->block_kind, "SYNCHRONOUS") != 0) continue;
-                if (sem_block_reads_name(blk, alias_name)) {
-                    /* Only report if the alias appears as an LHS target. We
-                     * use a conservative check: look for any assignment whose
-                     * LHS subtree contains an identifier matching the alias.
-                     */
-                    /* The check is conservative: sem_block_reads_name checks
-                     * both read and write sides. For now, emit the diagnostic
-                     * as a best-effort alert.
-                     */
-                }
+                sem_check_cdc_alias_lhs_in_block(blk, alias_name,
+                                                 diagnostics);
             }
         }
 

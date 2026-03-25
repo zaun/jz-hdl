@@ -413,20 +413,31 @@ static int sem_check_check_expr_allowed(JZASTNode *expr,
             return 0;
         }
         if (sym->kind != JZ_SYM_CONST) {
-            const char *kind_str = "identifier";
-            if (sym->kind == JZ_SYM_REGISTER) kind_str = "REGISTER";
-            else if (sym->kind == JZ_SYM_PORT) kind_str = "PORT";
-            else if (sym->kind == JZ_SYM_WIRE) kind_str = "WIRE";
-            else if (sym->kind == JZ_SYM_LATCH) kind_str = "LATCH";
-            char explain[256];
-            snprintf(explain, sizeof(explain),
-                     "'%s' is a %s, not a CONST. @check conditions may only\n"
-                     "reference module CONST, CONFIG.<name>, and literals.",
-                     expr->name, kind_str);
-            sem_report_rule(diagnostics,
-                            expr->loc,
-                            "CHECK_INVALID_EXPR_TYPE",
-                            explain);
+            if (sym->kind == JZ_SYM_LATCH) {
+                char explain[256];
+                snprintf(explain, sizeof(explain),
+                         "'%s' is a LATCH. LATCH identifiers may not be used in\n"
+                         "compile-time constant contexts (@check/@feature conditions).",
+                         expr->name);
+                sem_report_rule(diagnostics,
+                                expr->loc,
+                                "LATCH_IN_CONST_CONTEXT",
+                                explain);
+            } else {
+                const char *kind_str = "identifier";
+                if (sym->kind == JZ_SYM_REGISTER) kind_str = "REGISTER";
+                else if (sym->kind == JZ_SYM_PORT) kind_str = "PORT";
+                else if (sym->kind == JZ_SYM_WIRE) kind_str = "WIRE";
+                char explain[256];
+                snprintf(explain, sizeof(explain),
+                         "'%s' is a %s, not a CONST. @check conditions may only\n"
+                         "reference module CONST, CONFIG.<name>, and literals.",
+                         expr->name, kind_str);
+                sem_report_rule(diagnostics,
+                                expr->loc,
+                                "CHECK_INVALID_EXPR_TYPE",
+                                explain);
+            }
             return -1;
         }
         return 0;

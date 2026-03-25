@@ -1,5 +1,5 @@
 File: 4_10_ASYNC_UNDEFINED_PATH_NO_DRIVER-partial_coverage.jz
       21:17   error ASYNC_UNDEFINED_PATH_NO_DRIVER S1.5/S4.10/S5.1 Signal undriven on some ASYNCHRONOUS paths; add an ELSE branch or DEFAULT case
       37:17   error ASYNC_UNDEFINED_PATH_NO_DRIVER S1.5/S4.10/S5.1 Signal undriven on some ASYNCHRONOUS paths; add an ELSE branch or DEFAULT case
-      42:9    warn  SELECT_DEFAULT_RECOMMENDED_ASYNC S5.4/S8.3 ASYNCHRONOUS SELECT without DEFAULT (may cause floating nets)
+      42:9    warn  WARN_INCOMPLETE_SELECT_ASYNC S5.4/S8.3 Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block
       56:17   error ASYNC_UNDEFINED_PATH_NO_DRIVER S1.5/S4.10/S5.1 Signal undriven on some ASYNCHRONOUS paths; add an ELSE branch or DEFAULT case

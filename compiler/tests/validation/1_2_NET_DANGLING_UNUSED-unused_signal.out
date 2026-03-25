@@ -1,4 +1,4 @@
 File: 1_2_NET_DANGLING_UNUSED-unused_signal.jz
-      23:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
-      51:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
-      53:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      23:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused
+      51:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused
+      53:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused

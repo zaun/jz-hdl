@@ -1,6 +1,6 @@
 File: 4_1_MODULE_PORT_IN_ONLY-only_input_ports.jz
       14:1    warn  MODULE_PORT_IN_ONLY S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)
-      16:16   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      16:16   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused
       21:1    warn  MODULE_PORT_IN_ONLY S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)
-      23:16   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
-      24:16   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      23:16   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused
+      24:16   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused

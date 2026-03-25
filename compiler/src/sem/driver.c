@@ -72,6 +72,13 @@ int sem_expand_widthof_in_width_expr(const char *expr,
                                      const JZBuffer *project_symbols,
                                      char **out_expanded,
                                      int depth);
+int sem_expand_widthof_in_width_expr_diag(const char *expr,
+                                          const JZModuleScope *scope,
+                                          const JZBuffer *project_symbols,
+                                          char **out_expanded,
+                                          int depth,
+                                          JZDiagnosticList *diagnostics,
+                                          JZLocation loc);
 
 /* Return non-zero if the given identifier name is a reserved keyword from
  * the language specification (statement-level, block, or direction/type).
@@ -116,6 +123,7 @@ static int sem_identifier_is_decl_context(const JZASTNode *node)
     case JZ_AST_REGISTER_DECL:
     case JZ_AST_MEM_DECL:
     case JZ_AST_MEM_PORT:
+    case JZ_AST_LATCH_DECL:
     case JZ_AST_MUX_DECL:
     case JZ_AST_BUS_DECL:
     case JZ_AST_MODULE_INSTANCE:
@@ -525,7 +533,8 @@ int sem_resolve_bus_access(const JZASTNode *expr,
         return 0;
     }
     if (!port_sym->node->block_kind || strcmp(port_sym->node->block_kind, "BUS") != 0) {
-        if (diagnostics && expr->type == JZ_AST_EXPR_BUS_ACCESS) {
+        if (diagnostics && (expr->type == JZ_AST_EXPR_BUS_ACCESS ||
+                            expr->type == JZ_AST_EXPR_QUALIFIED_IDENTIFIER)) {
             char msg[512];
             snprintf(msg, sizeof(msg),
                      "'%s' is not a BUS port; dot-access syntax requires BUS PORT declaration",
@@ -788,6 +797,68 @@ int parse_simple_nonnegative_int(const char *s, unsigned *out)
         return 0;
     }
     *out = value;
+    return 1;
+}
+
+/*
+ * Parse an unsigned integer value from either a plain decimal or a sized
+ * literal (e.g. 8'd5, 16'hFF, 4'b0011).  Returns 1 on success with *out
+ * set, 0 on failure or if the value overflows unsigned.
+ */
+int parse_literal_unsigned_value(const char *s, unsigned *out)
+{
+    if (!s || !out) return 0;
+
+    /* Fast path: try plain decimal first. */
+    if (parse_simple_nonnegative_int(s, out)) return 1;
+
+    /* Look for tick indicating sized literal: <width>'<base><digits> */
+    const char *tick = strchr(s, '\'');
+    if (!tick || tick == s) return 0;
+
+    char base_ch = tick[1];
+    const char *digits = tick + 2;
+    if (!digits || !*digits) return 0;
+
+    unsigned long long acc = 0;
+    int saw_digit = 0;
+
+    if (base_ch == 'd' || base_ch == 'D') {
+        for (const char *p = digits; *p; ++p) {
+            if (*p == '_') continue;
+            if (*p < '0' || *p > '9') return 0;
+            saw_digit = 1;
+            if (acc > (UINT_MAX - (unsigned)(*p - '0')) / 10ULL) return 0;
+            acc = acc * 10ULL + (unsigned long long)(*p - '0');
+        }
+    } else if (base_ch == 'h' || base_ch == 'H') {
+        for (const char *p = digits; *p; ++p) {
+            if (*p == '_') continue;
+            saw_digit = 1;
+            unsigned d;
+            if (*p >= '0' && *p <= '9')      d = (unsigned)(*p - '0');
+            else if (*p >= 'a' && *p <= 'f') d = 10u + (unsigned)(*p - 'a');
+            else if (*p >= 'A' && *p <= 'F') d = 10u + (unsigned)(*p - 'A');
+            else return 0; /* x/z digits */
+            if (acc > (UINT_MAX - d) / 16ULL) return 0;
+            acc = acc * 16ULL + d;
+        }
+    } else if (base_ch == 'b' || base_ch == 'B') {
+        for (const char *p = digits; *p; ++p) {
+            if (*p == '_') continue;
+            saw_digit = 1;
+            if (*p != '0' && *p != '1') return 0; /* x/z digits */
+            unsigned d = (unsigned)(*p - '0');
+            if (acc > (UINT_MAX - d) / 2ULL) return 0;
+            acc = acc * 2ULL + d;
+        }
+    } else {
+        return 0;
+    }
+
+    if (!saw_digit) return 0;
+    if (acc > UINT_MAX) return 0;
+    *out = (unsigned)acc;
     return 1;
 }
 
@@ -1347,11 +1418,13 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
              * that widthof() is visible here too.
              */
             char *expanded_expr = NULL;
-            if (sem_expand_widthof_in_width_expr(eval_text,
-                                                 scope,
-                                                 project_symbols,
-                                                 &expanded_expr,
-                                                 0) != 0) {
+            if (sem_expand_widthof_in_width_expr_diag(eval_text,
+                                                      scope,
+                                                      project_symbols,
+                                                      &expanded_expr,
+                                                      0,
+                                                      diagnostics,
+                                                      decl->loc) != 0) {
                 free(rewritten_expr);
                 free(defs);
                 free(env_values);
@@ -2292,7 +2365,7 @@ static void sem_check_mux_selector_expr(JZASTNode *expr,
     if (!idx_node || idx_node->type != JZ_AST_EXPR_LITERAL || !idx_node->text) return;
 
     unsigned idx_val = 0;
-    if (!parse_simple_nonnegative_int(idx_node->text, &idx_val)) return;
+    if (!parse_literal_unsigned_value(idx_node->text, &idx_val)) return;
 
     unsigned elem_count = 0;
     if (!sem_mux_compute_element_count(mod_scope, mux_decl, &elem_count) || elem_count == 0u) {

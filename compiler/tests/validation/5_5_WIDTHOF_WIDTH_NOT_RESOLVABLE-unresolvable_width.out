@@ -1,2 +1,3 @@
 File: 5_5_WIDTHOF_WIDTH_NOT_RESOLVABLE-unresolvable_width.jz
-      28:9    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      18:9    error WIDTHOF_WIDTH_NOT_RESOLVABLE S5.5.10 widthof() target found but its width cannot be resolved
+      28:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused

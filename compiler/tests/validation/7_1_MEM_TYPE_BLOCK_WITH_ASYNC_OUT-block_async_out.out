@@ -1,5 +1,5 @@
 File: 7_1_MEM_TYPE_BLOCK_WITH_ASYNC_OUT-block_async_out.jz
-      17:17   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
+      17:17   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused
       28:17   error MEM_TYPE_BLOCK_WITH_ASYNC_OUT S7.1 Strict mode: MEM(TYPE=BLOCK) has IN port declared ASYNC
       29:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
       57:17   error MEM_TYPE_BLOCK_WITH_ASYNC_OUT S7.1 Strict mode: MEM(TYPE=BLOCK) has IN port declared ASYNC

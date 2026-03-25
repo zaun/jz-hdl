@@ -1,0 +1,5 @@
+File: 5_5_SSLICE_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz
+      27:30   error SSLICE_INDEX_OUT_OF_RANGE S5.5.9 sslice() index is out of range for source width
+      32:26   error SSLICE_INDEX_OUT_OF_RANGE S5.5.9 sslice() index is out of range for source width
+      60:31   error SSLICE_INDEX_OUT_OF_RANGE S5.5.9 sslice() index is out of range for source width
+      65:27   error SSLICE_INDEX_OUT_OF_RANGE S5.5.9 sslice() index is out of range for source width

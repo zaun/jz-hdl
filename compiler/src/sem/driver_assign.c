@@ -556,6 +556,19 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
                             msg);
         }
 
+        /* CONST identifiers are compile-time constants and cannot be assigned. */
+        if (sym->kind == JZ_SYM_CONST) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "'%s' is a CONST and cannot be assigned to\n"
+                     "CONST values are read-only compile-time constants",
+                     node->name);
+            sem_report_rule(diagnostics,
+                            node->loc,
+                            "ASYNC_INVALID_STATEMENT_TARGET",
+                            msg);
+        }
+
         /* Disallow driving IN ports (directional mismatch). Legal tri-state
          * driving is expressed via INOUT ports, not IN ports.
          */
@@ -667,11 +680,12 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
             if (!is_sync) {
                 char msg[512];
                 snprintf(msg, sizeof(msg),
-                         "'%s' is not a valid assignment target in ASYNCHRONOUS blocks",
-                         node->name ? node->name : "(expression)");
+                         "%s.%s.addr may only be assigned in SYNCHRONOUS blocks",
+                         mem_ref.mem_decl && mem_ref.mem_decl->name ? mem_ref.mem_decl->name : "mem",
+                         mem_ref.port->name ? mem_ref.port->name : "port");
                 sem_report_rule(diagnostics,
                                 node->loc,
-                                "ASYNC_INVALID_STATEMENT_TARGET",
+                                "MEM_SYNC_ADDR_IN_ASYNC_BLOCK",
                                 msg);
             }
             break;
@@ -1171,13 +1185,54 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                         }
                     }
 
-                    /* SR latches are allowed syntactically; semantic width
-                     * rules (set/reset width == latch width) are enforced via
-                     * general type/assignment checks.
-                     * Additional SR-specific validation can be added here if
-                     * needed.
+                    /* For SR latches, enforce that both set and reset
+                     * expression widths match the latch width (S4.8).
+                     * Guard form: latch <= set_expr : reset_expr
+                     * children[1] = set_expr, children[2] = reset_expr.
                      */
-                    (void)is_sr_latch;
+                    if (is_latch_guard && is_sr_latch && stmt->child_count >= 3) {
+                        JZBitvecType latch_t;
+                        latch_t.width = 0;
+                        latch_t.is_signed = 0;
+                        infer_expr_type(lhs_base, mod_scope, project_symbols,
+                                        diagnostics, &latch_t);
+
+                        JZASTNode *set_ast = stmt->children[1];
+                        JZASTNode *reset_ast = stmt->children[2];
+
+                        if (set_ast && latch_t.width > 0) {
+                            JZBitvecType set_t;
+                            set_t.width = 0;
+                            set_t.is_signed = 0;
+                            infer_expr_type(set_ast, mod_scope, project_symbols,
+                                            diagnostics, &set_t);
+                            if (set_t.width > 0 && set_t.width != latch_t.width) {
+                                char msg[512];
+                                snprintf(msg, sizeof(msg),
+                                         "SR-latch '%s' set expression has width %u, "
+                                         "but latch width is %u",
+                                         lhs_base->name, set_t.width, latch_t.width);
+                                sem_report_rule(diagnostics, set_ast->loc,
+                                                "LATCH_SR_WIDTH_MISMATCH", msg);
+                            }
+                        }
+                        if (reset_ast && latch_t.width > 0) {
+                            JZBitvecType reset_t;
+                            reset_t.width = 0;
+                            reset_t.is_signed = 0;
+                            infer_expr_type(reset_ast, mod_scope, project_symbols,
+                                            diagnostics, &reset_t);
+                            if (reset_t.width > 0 && reset_t.width != latch_t.width) {
+                                char msg[512];
+                                snprintf(msg, sizeof(msg),
+                                         "SR-latch '%s' reset expression has width %u, "
+                                         "but latch width is %u",
+                                         lhs_base->name, reset_t.width, latch_t.width);
+                                sem_report_rule(diagnostics, reset_ast->loc,
+                                                "LATCH_SR_WIDTH_MISMATCH", msg);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1348,14 +1403,26 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
      * forbidden. Registers and other nets must be driven via directional
      * operators (<=, => and their z/s variants) so that next-state semantics
      * remain well-defined.
+     *
+     * Skip this generic rule when the LHS or RHS is a MEM port qualified
+     * identifier, so that MEM-specific rules (MEM_SYNC_ADDR_WITHOUT_RECEIVE,
+     * MEM_READ_SYNC_WITH_EQUALS, MEM_INOUT_WDATA_WRONG_OP) can fire instead.
      */
-    if (is_sync && is_alias) {
-        sem_report_rule(diagnostics,
-                        stmt->loc,
-                        "SYNC_NO_ALIAS",
-                        "SYNCHRONOUS blocks do not allow '=' (alias); did you mean '<='?\n"
-                        "use '<=' (receive) or '=>' (drive) for register assignments");
-        return;
+    {
+        JZMemPortRef pre_lhs_ref;
+        memset(&pre_lhs_ref, 0, sizeof(pre_lhs_ref));
+        int lhs_is_mem = sem_match_mem_port_qualified_ident(lhs, mod_scope, NULL, &pre_lhs_ref);
+        JZMemPortRef pre_rhs_ref;
+        memset(&pre_rhs_ref, 0, sizeof(pre_rhs_ref));
+        int rhs_is_mem = sem_match_mem_port_qualified_ident(rhs, mod_scope, NULL, &pre_rhs_ref);
+        if (is_sync && is_alias && !lhs_is_mem && !rhs_is_mem) {
+            sem_report_rule(diagnostics,
+                            stmt->loc,
+                            "SYNC_NO_ALIAS",
+                            "SYNCHRONOUS blocks do not allow '=' (alias); did you mean '<='?\n"
+                            "use '<=' (receive) or '=>' (drive) for register assignments");
+            return;
+        }
     }
 
     if (!skip_width_checks && lhs_w > 0 && rhs_w > 0) {

@@ -1672,7 +1672,7 @@ void sem_check_project_top_new(JZASTNode *project,
     if (!top_sym || !top_sym->node || top_sym->kind != JZ_SYM_MODULE) {
         sem_report_rule(diagnostics,
                         top_new->loc,
-                        "TOP_MODULE_NOT_FOUND",
+                        "INSTANCE_UNDEFINED_MODULE",
                         "top-level @top module not defined in project");
         return;
     }

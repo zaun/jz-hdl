@@ -186,12 +186,37 @@ void sem_check_module_instantiations(const JZModuleScope *scope,
         if (inst->width && *inst->width) {
             unsigned c = 0;
             int rc = eval_simple_positive_decl_int(inst->width, &c);
-            if (rc != 1 || c == 0) {
+            if (rc == -1) {
+                /* Digits-only but invalid (zero or overflow). */
                 sem_report_rule(diagnostics,
                                 inst->loc,
                                 "INSTANCE_ARRAY_COUNT_INVALID",
                                 "instance array count must be a positive integer expression");
                 /* Fall back to treating this as a scalar instance to keep analysis going. */
+            } else if (rc == 0) {
+                /* Non-simple expression; try resolving as a CONST identifier. */
+                int resolved = 0;
+                const JZSymbol *csym = module_scope_lookup(scope, inst->width);
+                if (csym && csym->kind == JZ_SYM_CONST && csym->node &&
+                    csym->node->text) {
+                    unsigned cv = 0;
+                    int crc = eval_simple_positive_decl_int(csym->node->text, &cv);
+                    if (crc == 1 && cv > 0) {
+                        array_count = cv;
+                        is_array = 1;
+                        resolved = 1;
+                    } else if (crc == -1 || (crc == 1 && cv == 0)) {
+                        sem_report_rule(diagnostics,
+                                        inst->loc,
+                                        "INSTANCE_ARRAY_COUNT_INVALID",
+                                        "instance array count must be a positive integer expression");
+                        resolved = 1;
+                    }
+                }
+                if (!resolved) {
+                    /* Unresolvable expression; treat as unknown-count array. */
+                    is_array = 1;
+                }
             } else {
                 array_count = c;
                 is_array = 1;

@@ -502,6 +502,9 @@ int sem_expand_widthof_in_width_expr(const char *expr,
                 if (!sym) {
                     sym = module_scope_lookup_kind(scope, ident, JZ_SYM_REGISTER);
                 }
+                if (!sym) {
+                    sym = module_scope_lookup_kind(scope, ident, JZ_SYM_PORT);
+                }
 
                 unsigned target_width = 0u;
                 if (sym && sym->node && sym->node->width) {
@@ -586,6 +589,233 @@ int sem_expand_widthof_in_width_expr(const char *expr,
         }
 
         /* Default: copy one character. */
+        if (out_len + 2 >= cap) {
+            size_t new_cap = cap * 2u + 32u;
+            char *new_buf = (char *)realloc(buf, new_cap);
+            if (!new_buf) {
+                free(buf);
+                return -1;
+            }
+            buf = new_buf;
+            cap = new_cap;
+        }
+        buf[out_len++] = *p++;
+    }
+
+    buf[out_len] = '\0';
+    *out_expanded = buf;
+    return 0;
+}
+
+int sem_expand_widthof_in_width_expr_diag(const char *expr,
+                                          const JZModuleScope *scope,
+                                          const JZBuffer *project_symbols,
+                                          char **out_expanded,
+                                          int depth,
+                                          JZDiagnosticList *diagnostics,
+                                          JZLocation loc)
+{
+    if (!expr || !scope || !out_expanded) {
+        return -1;
+    }
+
+    *out_expanded = NULL;
+
+    const char *p = expr;
+    int saw_widthof = 0;
+
+    while (*p) {
+        if (*p == 'w' && strncmp(p, "widthof", 7) == 0) {
+            saw_widthof = 1;
+            break;
+        }
+        ++p;
+    }
+
+    if (!saw_widthof) {
+        return 0; /* no expansion needed */
+    }
+
+    size_t expr_len = strlen(expr);
+    size_t cap = expr_len * 4u + 64u;
+    char *buf = (char *)malloc(cap);
+    if (!buf) {
+        return -1;
+    }
+    size_t out_len = 0;
+
+    p = expr;
+    while (*p) {
+        if (*p == 'w' && strncmp(p, "widthof", 7) == 0) {
+            const char *start = p;
+            p += 7;
+
+            while (*p && isspace((unsigned char)*p)) {
+                ++p;
+            }
+            if (*p != '(') {
+                p = start;
+            } else {
+                ++p; /* consume '(' */
+                while (*p && isspace((unsigned char)*p)) {
+                    ++p;
+                }
+                const char *id_start = p;
+                if (!((*p >= 'A' && *p <= 'Z') ||
+                      (*p >= 'a' && *p <= 'z') ||
+                      *p == '_')) {
+                    if (diagnostics) {
+                        sem_report_rule(diagnostics, loc,
+                                        "WIDTHOF_INVALID_SYNTAX",
+                                        "widthof() argument must be a plain identifier, not a slice/concat/qualified expression");
+                    }
+                    free(buf);
+                    return -1;
+                }
+                ++p;
+                while ((*p >= 'A' && *p <= 'Z') ||
+                       (*p >= 'a' && *p <= 'z') ||
+                       (*p >= '0' && *p <= '9') ||
+                       *p == '_') {
+                    ++p;
+                }
+                const char *id_end = p;
+                while (*p && isspace((unsigned char)*p)) {
+                    ++p;
+                }
+                if (*p != ')') {
+                    if (diagnostics) {
+                        sem_report_rule(diagnostics, loc,
+                                        "WIDTHOF_INVALID_SYNTAX",
+                                        "widthof() argument must be a plain identifier, not a slice/concat/qualified expression");
+                    }
+                    free(buf);
+                    return -1;
+                }
+                ++p; /* consume ')' */
+
+                size_t id_len = (size_t)(id_end - id_start);
+                char ident[256];
+                if (id_len >= sizeof(ident)) {
+                    id_len = sizeof(ident) - 1u;
+                }
+                memcpy(ident, id_start, id_len);
+                ident[id_len] = '\0';
+
+                const JZSymbol *sym = module_scope_lookup_kind(scope, ident, JZ_SYM_WIRE);
+                if (!sym) {
+                    sym = module_scope_lookup_kind(scope, ident, JZ_SYM_REGISTER);
+                }
+                if (!sym) {
+                    sym = module_scope_lookup_kind(scope, ident, JZ_SYM_PORT);
+                }
+
+                unsigned target_width = 0u;
+                if (sym && sym->node && sym->node->width) {
+                    if (sem_eval_width_expr_internal(sym->node->width,
+                                                     scope,
+                                                     project_symbols,
+                                                     &target_width,
+                                                     depth + 1) != 0) {
+                        if (diagnostics) {
+                            char msg[384];
+                            snprintf(msg, sizeof(msg),
+                                     "widthof(%s): target found but its width cannot be resolved",
+                                     ident);
+                            sem_report_rule(diagnostics, loc,
+                                            "WIDTHOF_WIDTH_NOT_RESOLVABLE", msg);
+                        }
+                        free(buf);
+                        return -1;
+                    }
+                } else {
+                    if (!project_symbols || !project_symbols->data) {
+                        if (diagnostics) {
+                            char msg[384];
+                            snprintf(msg, sizeof(msg),
+                                     "widthof(%s) does not resolve to a WIRE, REGISTER, PORT, or BUS",
+                                     ident);
+                            sem_report_rule(diagnostics, loc,
+                                            "WIDTHOF_INVALID_TARGET", msg);
+                        }
+                        free(buf);
+                        return -1;
+                    }
+
+                    const JZSymbol *syms = (const JZSymbol *)project_symbols->data;
+                    size_t sym_count = project_symbols->len / sizeof(JZSymbol);
+                    const JZSymbol *bus_sym = NULL;
+                    for (size_t i = 0; i < sym_count; ++i) {
+                        if (syms[i].kind == JZ_SYM_BUS && syms[i].name &&
+                            strcmp(syms[i].name, ident) == 0) {
+                            bus_sym = &syms[i];
+                            break;
+                        }
+                    }
+                    if (!bus_sym || !bus_sym->node || bus_sym->node->type != JZ_AST_BUS_BLOCK) {
+                        if (diagnostics) {
+                            char msg[384];
+                            snprintf(msg, sizeof(msg),
+                                     "widthof(%s) does not resolve to a WIRE, REGISTER, PORT, or BUS",
+                                     ident);
+                            sem_report_rule(diagnostics, loc,
+                                            "WIDTHOF_INVALID_TARGET", msg);
+                        }
+                        free(buf);
+                        return -1;
+                    }
+
+                    JZASTNode *bus = bus_sym->node;
+                    for (size_t bi = 0; bi < bus->child_count; ++bi) {
+                        JZASTNode *decl = bus->children[bi];
+                        if (!decl || decl->type != JZ_AST_BUS_DECL || !decl->width) {
+                            continue;
+                        }
+                        unsigned w = 0u;
+                        int rc = eval_simple_positive_decl_int(decl->width, &w);
+                        if (rc != 1 || w == 0u) {
+                            long long cval = 0;
+                            if (sem_eval_const_expr_in_project(decl->width,
+                                                               project_symbols,
+                                                               &cval) == 0 &&
+                                cval > 0) {
+                                w = (unsigned)cval;
+                            } else {
+                                if (diagnostics) {
+                                    char msg[384];
+                                    snprintf(msg, sizeof(msg),
+                                             "widthof(%s): target found but its width cannot be resolved",
+                                             ident);
+                                    sem_report_rule(diagnostics, loc,
+                                                    "WIDTHOF_WIDTH_NOT_RESOLVABLE", msg);
+                                }
+                                free(buf);
+                                return -1;
+                            }
+                        }
+                        target_width += w;
+                    }
+                }
+
+                char num[32];
+                snprintf(num, sizeof(num), "%u", target_width);
+                size_t num_len = strlen(num);
+                if (out_len + num_len + 1 >= cap) {
+                    size_t new_cap = cap * 2u + num_len + 32u;
+                    char *new_buf = (char *)realloc(buf, new_cap);
+                    if (!new_buf) {
+                        free(buf);
+                        return -1;
+                    }
+                    buf = new_buf;
+                    cap = new_cap;
+                }
+                memcpy(buf + out_len, num, num_len);
+                out_len += num_len;
+                continue;
+            }
+        }
+
         if (out_len + 2 >= cap) {
             size_t new_cap = cap * 2u + 32u;
             char *new_buf = (char *)realloc(buf, new_cap);

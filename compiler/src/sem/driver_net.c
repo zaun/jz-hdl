@@ -1682,10 +1682,34 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                 continue;
             }
 
-            sem_report_rule(diagnostics,
-                            atoms[0]->loc,
-                            "NET_DANGLING_UNUSED",
-                            "net has no drivers and no sinks");
+            /* Emit a more specific rule when the net is purely a PORT or
+             * purely a WIRE so that summary filtering can distinguish them.
+             */
+            {
+                int is_port = 0;
+                int is_wire = 0;
+                for (size_t ai = 0; ai < atom_count; ++ai) {
+                    if (!atoms[ai]) continue;
+                    if (atoms[ai]->type == JZ_AST_PORT_DECL) is_port = 1;
+                    if (atoms[ai]->type == JZ_AST_WIRE_DECL) is_wire = 1;
+                }
+                if (is_port && !is_wire) {
+                    sem_report_rule(diagnostics,
+                                    atoms[0]->loc,
+                                    "WARN_UNUSED_PORT",
+                                    "port has no drivers and no sinks");
+                } else if (is_wire && !is_port) {
+                    sem_report_rule(diagnostics,
+                                    atoms[0]->loc,
+                                    "WARN_UNUSED_WIRE",
+                                    "wire has no drivers and no sinks");
+                } else {
+                    sem_report_rule(diagnostics,
+                                    atoms[0]->loc,
+                                    "NET_DANGLING_UNUSED",
+                                    "net has no drivers and no sinks");
+                }
+            }
             continue;
         }
 

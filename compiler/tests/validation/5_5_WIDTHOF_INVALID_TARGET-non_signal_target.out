@@ -1,0 +1,3 @@
+File: 5_5_WIDTHOF_INVALID_TARGET-non_signal_target.jz
+      19:9    error WIDTHOF_INVALID_TARGET S5.5.10 widthof() argument does not resolve to a WIRE, REGISTER, PORT, or BUS
+      43:9    error WIDTHOF_INVALID_TARGET S5.5.10 widthof() argument does not resolve to a WIRE, REGISTER, PORT, or BUS
