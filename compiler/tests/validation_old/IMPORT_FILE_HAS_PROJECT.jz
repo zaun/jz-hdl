@@ -1,7 +1,0 @@
-// IMPORT_FILE_HAS_PROJECT: imported file contains its own @project.
-// Verified
-
-@project IMPORT_FILE_HAS_PROJECT_MAIN
-  @import "IMPORT_FILE_HAS_PROJECT_imported.jz";
-  CONFIG { X = 1; }
-@endproj

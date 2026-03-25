@@ -1,0 +1,86 @@
+@project(CHIP="ICE40UP-5K-SG48") COUNTER_TEST
+    @import "lcd.jz"
+
+    CONFIG {
+        CLK_MHZ = 12;
+    }
+
+    CLOCKS {
+        SCLK = { period=83.33 }; // 12MHz clock
+        PCLK;
+    }
+
+    IN_PINS {
+        SCLK         = { standard=LVCMOS33 };
+        TP_SPI_MISO  = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[3]       = { standard=LVCMOS33, drive=8 };
+        TFT_SPI_CS   = { standard=LVCMOS33, drive=8 };
+        TFT_SPI_CLK  = { standard=LVCMOS33, drive=8 };
+        TFT_SPI_MOSI = { standard=LVCMOS33, drive=8 };
+        TFT_RS       = { standard=LVCMOS33, drive=8 };
+        TP_SPI_CS    = { standard=LVCMOS33, drive=8 };
+        TP_SPI_MOSI  = { standard=LVCMOS33, drive=8 };
+        TP_SPI_CLK   = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock 12MHz
+        SCLK = 35;
+
+        // LEDs (active low)
+        LED[0] = 40;
+        LED[1] = 41;
+        LED[2] = 39;
+
+        // PMOD2 (ILI9341 TFTLCD 2.8inch SPI)
+        TFT_SPI_CS    = 46; // PMOD2_PIN1
+        TFT_SPI_MOSI  = 44; // PMOD2_PIN2
+        // PMOD2_PIN3  = 42; // PMOD2_PIN3
+        TFT_SPI_CLK   = 37; // PMOD2_PIN4
+        // PMOD2_PIN9  = 36; // PMOD2_PIN9
+        TFT_RS        = 38; // PMOD2_PIN10
+        // PMOD2_PIN11 = 43; // PMOD2_PIN11
+        // PMOD2_PIN12 = 45; // PMOD2_PIN12
+
+        // PMOD3 (XPT2046)
+        TP_SPI_CS    = 34; // PMOD3_PIN1
+        TP_SPI_MOSI  = 31; // PMOD3_PIN2
+        TP_SPI_MISO  = 27; // PMOD3_PIN3
+        TP_SPI_CLK   = 25; // PMOD3_PIN4
+        // PMOD3_PIN9  = 23; // PMOD3_PIN9
+        // PMOD3_PIN10 = 26; // PMOD3_PIN10
+        // PMOD3_PIN11 = 28; // PMOD3_PIN11
+        // PMOD3_PIN12 = 32; // PMOD3_PIN12
+    }
+
+    CLOCK_GEN {
+        PLL2 {
+            IN  REF_CLK SCLK;   // 12 MHz input
+            OUT BASE    PCLK;   // ~18.375 MHz
+
+            CONFIG {
+                DIVR = 0;
+                DIVF = 48;
+                DIVQ = 5;
+                FILTER_RANGE = 3;
+            };
+        };
+    }
+
+    @top lcd {
+        IN  [1] PCLK     = PCLK;
+        IN  [1] RST      = 1'b1;
+
+        OUT [1] SPI_CS   = TFT_SPI_CS;
+        OUT [1] SPI_CLK  = TFT_SPI_CLK;
+        OUT [1] SPI_MOSI = TFT_SPI_MOSI;
+        OUT [1] LCD_DC   = TFT_RS;
+        OUT [1] LCD_RST  = _;
+        OUT [1] HB       = ~LED[0];
+        OUT [1] PCLK_OUT = ~LED[1];
+        OUT [1] DBG      = ~LED[2];
+    }
+@endproj

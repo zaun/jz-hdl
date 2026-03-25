@@ -24,13 +24,17 @@
         valid_out[2] = { standard=LVCMOS33, drive=8 };
         // Trigger 3: zero width in OUT_PINS
         bad_out[0] = { standard=LVCMOS33, drive=8 };
+        // Trigger 4: negative width in OUT_PINS
+        neg_out[-2] = { standard=LVCMOS33, drive=8 };
     }
 
     INOUT_PINS {
         // Valid: bus width 8 (no trigger)
         valid_io[8] = { standard=LVCMOS33, drive=4 };
-        // Trigger 4: zero width in INOUT_PINS
+        // Trigger 5: zero width in INOUT_PINS
         bad_io[0] = { standard=LVCMOS33, drive=4 };
+        // Trigger 6: negative width in INOUT_PINS
+        neg_io[-3] = { standard=LVCMOS33, drive=4 };
     }
 
     MAP {
@@ -45,15 +49,17 @@
         valid_out[0] = 9;
         valid_out[1] = 10;
         bad_out = 11;
-        valid_io[0] = 12;
-        valid_io[1] = 13;
-        valid_io[2] = 14;
-        valid_io[3] = 15;
-        valid_io[4] = 16;
-        valid_io[5] = 17;
-        valid_io[6] = 18;
-        valid_io[7] = 19;
-        bad_io = 20;
+        neg_out = 12;
+        valid_io[0] = 13;
+        valid_io[1] = 14;
+        valid_io[2] = 15;
+        valid_io[3] = 16;
+        valid_io[4] = 17;
+        valid_io[5] = 18;
+        valid_io[6] = 19;
+        valid_io[7] = 20;
+        bad_io = 21;
+        neg_io = 22;
     }
 
     @top TopMod {

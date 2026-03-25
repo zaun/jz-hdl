@@ -1,2 +1,0 @@
-File: PIN_PULL_ON_OUTPUT.jz
-       6:5    error PIN_PULL_ON_OUTPUT S6.5/S6.9 Pull resistor specified on output-only pin (OUT_PINS)

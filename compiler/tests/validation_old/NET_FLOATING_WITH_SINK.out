@@ -1,2 +1,0 @@
-File: NET_FLOATING_WITH_SINK.jz
-      12:13   error NET_FLOATING_WITH_SINK S1.2/S4.10 Signal is read but never driven (floating net); add a driver or remove the read

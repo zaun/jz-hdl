@@ -1,2 +1,0 @@
-File: FEATURE_NESTED.jz
-      24:7    error FEATURE_NESTED S4.14 @feature guards may not be nested inside other @feature guards

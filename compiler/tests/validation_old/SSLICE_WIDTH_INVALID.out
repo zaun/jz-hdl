@@ -1,2 +1,0 @@
-File: SSLICE_WIDTH_INVALID.jz
-      20:25   error SSLICE_WIDTH_INVALID S5.5.9 sslice() width parameter must be a positive integer

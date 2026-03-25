@@ -1,2 +1,0 @@
-File: SYNC_SLICE_WIDTH_MISMATCH.jz
-      28:5    error ASSIGN_SLICE_WIDTH_MISMATCH S4.10/S5.1/S5.2 Slice assignment where source and destination slice widths differ

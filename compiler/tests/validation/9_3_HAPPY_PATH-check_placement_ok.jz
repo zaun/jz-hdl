@@ -1,18 +1,21 @@
 // HAPPY_PATH: Valid @check placement at project scope and module scope.
-// S9.3 permits @check at project and module scope.
-// Includes @check between blocks and immediately before blocks to test edge cases.
+// S9.3 permits @check at project and module scope, not inside blocks.
+// Includes @check in various valid positions: after CONFIG, between blocks,
+// inside @feature at module scope, and immediately before blocks.
 
 @project HAPPY_PATH_check_placement_ok
     CONFIG {
         WIDTH = 8;
         DEPTH = 256;
+        ENABLE = 1;
     }
 
-    // Valid: @check at project scope
+    // Valid: @check at project scope after CONFIG
     @check (CONFIG.WIDTH == 8, "width is 8");
 
-    // Valid: multiple @check at project scope
+    // Valid: multiple @check at project scope in sequence
     @check (CONFIG.DEPTH > 0, "depth positive");
+    @check (CONFIG.WIDTH > 0, "width positive");
 
     @top TopMod {
         IN  [1] clk = _;
@@ -28,8 +31,13 @@
 
     CONST { LOCAL_W = 4; }
 
-    // Valid: @check in helper module at module scope
+    // Valid: @check at module scope in helper module after CONST
     @check (LOCAL_W > 0, "local width ok");
+
+    // Valid: @check inside @feature at module scope (@feature is transparent)
+    @feature CONFIG.ENABLE == 1
+        @check (LOCAL_W == 4, "feature guard check ok");
+    @endfeat
 
     ASYNCHRONOUS {
         data = din;
@@ -48,7 +56,7 @@
     // Valid: @check at module scope after CONST
     @check (SIZE > 0, "size ok");
 
-    // Valid: @check with clog2
+    // Valid: @check with clog2 expression
     @check (ADDR_W == clog2(SIZE), "addr width matches");
 
     @new inst_a HelperMod {

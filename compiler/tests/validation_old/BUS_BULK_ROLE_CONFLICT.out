@@ -1,9 +1,0 @@
-File: BUS_BULK_ROLE_CONFLICT.jz
-      14:1    warn  MODULE_PORT_IN_ONLY S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)
-      16:27   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
-      24:1    warn  MODULE_PORT_IN_ONLY S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)
-      26:27   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
-      34:1    warn  MODULE_PORT_IN_ONLY S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)
-      41:5    error BUS_BULK_ROLE_CONFLICT S6.8 Bulk BUS assignment between instances with the same BUS role (SOURCE/SOURCE or TARGET/TARGET) is not allowed
-      44:3    error INSTANCE_MISSING_PORT S4.13/S6.9 Not all child module ports listed in @new block
-      48:3    error INSTANCE_MISSING_PORT S4.13/S6.9 Not all child module ports listed in @new block

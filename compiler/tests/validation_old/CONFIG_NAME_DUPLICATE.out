@@ -1,2 +1,0 @@
-File: CONFIG_NAME_DUPLICATE.jz
-       7:5    error CONFIG_NAME_DUPLICATE S6.3 Duplicate config_id within CONFIG block

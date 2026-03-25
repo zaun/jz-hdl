@@ -1,2 +1,0 @@
-File: MEM_INIT_LITERAL_OVERFLOW.jz
-      17:26   error MEM_INIT_LITERAL_OVERFLOW S7.5.1/S7.7.1 Literal init value exceeds word width

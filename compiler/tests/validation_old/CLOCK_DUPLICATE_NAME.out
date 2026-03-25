@@ -1,2 +1,0 @@
-File: CLOCK_DUPLICATE_NAME.jz
-       7:5    error CLOCK_DUPLICATE_NAME S6.4/S6.10/S6.9 Duplicate clock names in CLOCKS block

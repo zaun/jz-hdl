@@ -1,2 +1,0 @@
-File: ASYNC_FLOATING_Z_READ.jz
-      22:5    error ASYNC_FLOATING_Z_READ S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)

@@ -18,6 +18,8 @@
         valid_none = { standard=LVCMOS33, pull=NONE };
         // Trigger 1: invalid pull value in IN_PINS
         bad_pull_in = { standard=LVCMOS33, pull=HIGH };
+        // Trigger 2: another invalid pull value in IN_PINS
+        bad_pull_in2 = { standard=LVCMOS33, pull=KEEPER };
     }
 
     OUT_PINS {
@@ -28,7 +30,7 @@
     INOUT_PINS {
         // Valid: pull=UP on INOUT_PINS (no trigger)
         valid_io_pull = { standard=LVCMOS33, drive=4, pull=UP };
-        // Trigger 2: invalid pull value in INOUT_PINS
+        // Trigger 3: invalid pull value in INOUT_PINS
         bad_pull_io = { standard=LVCMOS33, drive=4, pull=WEAK };
     }
 
@@ -38,9 +40,10 @@
         valid_down = 3;
         valid_none = 4;
         bad_pull_in = 5;
-        valid_out = 6;
-        valid_io_pull = 7;
-        bad_pull_io = 8;
+        bad_pull_in2 = 6;
+        valid_out = 7;
+        valid_io_pull = 8;
+        bad_pull_io = 9;
     }
 
     @top TopMod {

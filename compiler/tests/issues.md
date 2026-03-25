@@ -1424,7 +1424,13 @@ No issues found. All 7 rules from the test plan have corresponding validation te
 
 ## test_6_5-pin_blocks.md
 
-No issues found for the 15 PIN_* lint rules. All 16 tests (1 happy path + 15 error rules) pass cleanly. No parser recovery bugs, no cascading errors, no missing rule implementations. All 15 PIN_* rules from `rules.c` are correctly detected by the compiler in all applicable contexts (IN_PINS, OUT_PINS, INOUT_PINS).
+All 16 tests (1 happy path + 15 error rules) pass cleanly. No parser recovery bugs, no cascading errors, no missing rule implementations. All 15 PIN_* rules from `rules.c` are correctly detected by the compiler in all applicable contexts (IN_PINS, OUT_PINS, INOUT_PINS).
+
+### Note: PIN_PULL_ON_OUTPUT does not fire for pull=NONE on OUT_PINS
+
+**Severity:** Possible test gap / design decision
+
+**Description:** The spec states "The pull setting is not valid on OUT pins", which could imply any `pull=` attribute on OUT_PINS should be flagged. However, the compiler does not fire `PIN_PULL_ON_OUTPUT` when `pull=NONE` is specified on an OUT_PIN. This is arguably correct since `pull=NONE` is semantically equivalent to no pull attribute. The test includes `pull=NONE` on OUT_PINS as a negative test (no diagnostic expected).
 
 ### Note: SERIALIZER rules not testable via lint
 
@@ -1921,3 +1927,46 @@ Actual: `UNDECLARED_IDENTIFIER`
 ## test_5_1-asynchronous_assignments.md
 
 No issues found. All 5 tests pass cleanly. No parser recovery bugs, no cascading errors, no missing rule implementations. The ASYNC_FLOATING_Z_READ test co-fires WARN_INTERNAL_TRISTATE for z-literal usage on internal (non-INOUT) nets — this is expected behavior, not a bug.
+
+## test_9_7-check_error_conditions.md
+
+No new issues. This test plan is a consolidation/cross-reference of @check error conditions from sections 9.1–9.5. All 3 testable rules (CHECK_FAILED, CHECK_INVALID_EXPR_TYPE, DIRECTIVE_INVALID_CONTEXT) are fully covered by existing tests from those sections. All 11 section 9 tests pass. The only untested rule, CHECK_INVALID_PLACEMENT, is already documented in `not_tested.md` and in the test_9_3 section of this file — the compiler never emits it (DIRECTIVE_INVALID_CONTEXT fires instead for @check inside blocks, and @check inside @feature is accepted as valid).
+
+## test_misc-repeat_serializer_io.md
+
+### Bug: repeat_expand.c uses raw codes instead of rules.c rule IDs
+
+**Severity:** Minor bug (diagnostic formatting)
+
+**Description:** `repeat_expand.c` emits diagnostics with raw codes `RPT-001` and `RPT-002` via `jz_diagnostic_report()`, rather than using the rule IDs `RPT_COUNT_INVALID` and `RPT_NO_MATCHING_END` defined in `rules.c`. Because `jz_rule_lookup()` searches by rule ID, the lookup fails and the diagnostic output includes a redundant `(orig: RPT-001)` suffix. The diagnostic messages also differ from the `rules.c` definitions:
+
+- `rules.c` defines `RPT_COUNT_INVALID` with message: `"RPT-001 @repeat requires a positive integer count"`
+- `repeat_expand.c` emits code `RPT-001` with two distinct messages:
+  - `"@repeat requires a positive integer count"` (for non-digit arguments)
+  - `"@repeat count must be a positive integer"` (for parsed zero count)
+
+**Impact:** The output format includes `(orig: RPT-001)` which is cosmetically undesirable. The rule description from `rules.c` is not shown; instead the raw message is displayed. Tests capture the actual compiler behavior including the `(orig: ...)` suffix.
+
+**Minimal reproduction:**
+```
+@repeat 0
+@end
+```
+Output: `error RPT-001 @repeat count must be a positive integer (orig: RPT-001)`
+Expected: `error RPT_COUNT_INVALID RPT-001 @repeat requires a positive integer count`
+
+### Note: @repeat errors are fatal — only one trigger per file
+
+**Severity:** Test gap (inherent to design)
+
+**Description:** The `@repeat` expansion runs before lexing on the raw source text. When an error is encountered, `expand_region()` returns 1 immediately, causing `jz_repeat_expand()` to return NULL. This means only ONE repeat error can be detected per compilation. Multiple triggers in the same file are not possible — the first error stops all processing. Tests are split into separate files accordingly.
+
+### Note: SERIALIZER and IO rules not testable via --lint
+
+**Severity:** Test gap (by design)
+
+**Description:** `INFO_SERIALIZER_CASCADE` and `SERIALIZER_WIDTH_EXCEEDS_RATIO` are emitted from `compiler/src/backend/verilog-2005/emit_wrapper.c` during Verilog backend emission, not during lint/semantic analysis. They require chip-specific differential serializer configuration and are not reachable via `--info --lint`. `IO_BACKEND` and `IO_IR` are runtime I/O errors that cannot be triggered via `--info --lint`.
+
+## test_sim-simulation_rules.md
+
+No issues found. Both lint-detectable simulation rules (`SIM_WRONG_TOOL`, `SIM_PROJECT_MIXED`) fire correctly with expected messages and locations. `SIM_RUN_COND_TIMEOUT` is a runtime-only rule that cannot be tested via `--lint` — documented in `not_tested.md`.

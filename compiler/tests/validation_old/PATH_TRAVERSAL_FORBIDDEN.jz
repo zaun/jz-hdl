@@ -1,6 +1,0 @@
-// PATH_TRAVERSAL_FORBIDDEN: '..' traversal in @import is forbidden by default.
-// Verified
-
-@project PATH_TRAVERSAL_FORBIDDEN_PROJ
-  @import "../../escape.jz";
-@endproj

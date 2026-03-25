@@ -1,3 +1,0 @@
-File: DIV_CONST_ZERO.jz
-      20:16   error DIV_CONST_ZERO S3.2 Division/modulus by compile-time constant zero divisor
-      21:16   error DIV_CONST_ZERO S3.2 Division/modulus by compile-time constant zero divisor

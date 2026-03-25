@@ -1,2 +1,0 @@
-File: MEM_EMPTY_PORT_LIST.jz
-      16:5    error MEM_EMPTY_PORT_LIST S7.1/S7.7.1 MEM declared with no IN, OUT, or INOUT ports

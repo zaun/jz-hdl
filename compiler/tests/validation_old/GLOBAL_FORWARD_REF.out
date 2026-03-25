@@ -1,2 +1,0 @@
-File: GLOBAL_FORWARD_REF.jz
-       5:3    error GLOBAL_FORWARD_REF S8.4 Global constant expression references a later constant in the same @global block

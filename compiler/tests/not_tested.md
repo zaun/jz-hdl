@@ -714,23 +714,23 @@ All 15 rule IDs from the test plan have corresponding validation tests:
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
-| PIN_BUS_WIDTH_INVALID | error | Tested — 4 triggers: zero/negative width in IN_PINS, zero in OUT_PINS, zero in INOUT_PINS |
+| PIN_BUS_WIDTH_INVALID | error | Tested — 6 triggers: zero/negative width in IN_PINS, zero/negative in OUT_PINS, zero/negative in INOUT_PINS |
 | PIN_DECLARED_MULTIPLE_BLOCKS | error | Tested — 3 triggers: IN+OUT, IN+INOUT, OUT+INOUT cross-block duplicates |
 | PIN_DIFF_OUT_MISSING_FCLK | error | Tested — 1 trigger: differential OUT_PIN without fclk; INOUT differential as negative test |
 | PIN_DIFF_OUT_MISSING_PCLK | error | Tested — 1 trigger: differential OUT_PIN without pclk; INOUT differential as negative test |
 | PIN_DIFF_OUT_MISSING_RESET | error | Tested — 1 trigger: differential OUT_PIN without reset; INOUT differential as negative test |
-| PIN_DRIVE_MISSING_OR_INVALID | error | Tested — 5 triggers: missing/zero/negative drive in OUT_PINS, missing/zero drive in INOUT_PINS |
+| PIN_DRIVE_MISSING_OR_INVALID | error | Tested — 6 triggers: missing/zero/negative drive in OUT_PINS, missing/zero/negative drive in INOUT_PINS |
 | PIN_DUP_NAME_WITHIN_BLOCK | error | Tested — 3 triggers: duplicate names within IN_PINS, OUT_PINS, INOUT_PINS |
 | PIN_INVALID_STANDARD | error | Tested — 3 triggers: invalid standard in IN_PINS, OUT_PINS, INOUT_PINS |
 | PIN_MODE_INVALID | error | Tested — 3 triggers: invalid mode in IN_PINS, OUT_PINS, INOUT_PINS |
 | PIN_MODE_STANDARD_MISMATCH | error | Tested — 3 triggers: DIFFERENTIAL with single-ended standard in IN_PINS, OUT_PINS, INOUT_PINS |
-| PIN_PULL_INVALID | error | Tested — 2 triggers: invalid pull in IN_PINS, INOUT_PINS |
-| PIN_PULL_ON_OUTPUT | error | Tested — 2 triggers: pull=UP, pull=DOWN on OUT_PINS |
+| PIN_PULL_INVALID | error | Tested — 3 triggers: two invalid pull values in IN_PINS, one invalid in INOUT_PINS |
+| PIN_PULL_ON_OUTPUT | error | Tested — 2 triggers: pull=UP, pull=DOWN on OUT_PINS; pull=NONE as negative test (compiler allows NONE) |
 | PIN_TERM_INVALID | error | Tested — 3 triggers: invalid term in IN_PINS, OUT_PINS, INOUT_PINS |
-| PIN_TERM_INVALID_FOR_STANDARD | error | Tested — 2 triggers: term=ON on LVCMOS33 in IN_PINS, LVCMOS18 in INOUT_PINS |
+| PIN_TERM_INVALID_FOR_STANDARD | error | Tested — 3 triggers: term=ON on LVCMOS33/LVCMOS25 in IN_PINS, LVCMOS18 in INOUT_PINS |
 | PIN_TERM_ON_OUTPUT | error | Tested — 1 trigger: term=ON on OUT_PINS; term=OFF as negative test |
 
-Happy-path coverage of all PIN block features (scalar/bus pins, drive strengths, differential mode with all attributes, pull resistors, termination on supported standards, mode=SINGLE/DIFFERENTIAL) is provided by `6_5_HAPPY_PATH-pin_blocks_ok.jz`.
+Happy-path coverage of all PIN block features (scalar/bus pins, explicit [1] width, wide [32] bus, drive strengths, differential mode with all attributes, pull resistors UP/DOWN/NONE, termination on supported standards, mode=SINGLE/DIFFERENTIAL, INOUT with pull-down) is provided by `6_5_HAPPY_PATH-pin_blocks_ok.jz`.
 
 Rules not testable via `--lint` validation framework:
 
@@ -897,17 +897,18 @@ All implemented rules from the test plan have corresponding validation tests:
 | Rule ID | Severity | Status |
 |---------|----------|--------|
 | MEM_INIT_LITERAL_OVERFLOW | error | Tested — 2 triggers: 16-bit literal for 8-bit word (helper), 32-bit literal for 8-bit word (top); valid 8-bit literal as negative test |
-| MEM_INIT_CONTAINS_X | error | Tested — 2 triggers: x in binary literal (helper), all-x binary literal (top); valid hex literal as negative test |
+| MEM_INIT_CONTAINS_X | error | Tested — 2 triggers: partial x in binary literal (helper), all-x binary literal (top); valid hex literal as negative test |
 | MEM_INIT_FILE_NOT_FOUND | error | Tested — 2 triggers: nonexistent file in helper module, nonexistent file in top module; valid literal init as negative test |
 | MEM_INIT_FILE_TOO_LARGE | error | Tested — 2 triggers: 8-byte file for 4-deep memory in helper and top modules; valid literal init as negative test |
 | MEM_WARN_PARTIAL_INIT | warning | Tested — 2 triggers: 2-byte file for 4-deep memory in helper and top modules; valid literal init as negative test |
-| MEM_MISSING_INIT | error | Covered by 7_1 tests (declaration-level rule) |
+| MEM_MISSING_INIT | error | Covered by `7_1_MEM_MISSING_INIT-missing_init.jz` (declaration-level rule) |
+| CONST_NUMERIC_IN_STRING_CONTEXT | error | Covered by `4_3_CONST_NUMERIC_IN_STRING_CONTEXT-numeric_as_file_path.jz` (S4.3/S6.3 cross-referenced rule) |
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
 | MEM_INIT_FILE_CONTAINS_X | error | Not implemented — rule defined in `rules.c` but no semantic pass emits it; cannot be tested (see `issues.md`) |
 
-Happy-path coverage of literal initialization (hex values), @file initialization with exact depth match, and multi-module structure is provided by `7_5_HAPPY_PATH-initialization_ok.jz`.
+Happy-path coverage of literal init (exact width, zero init, narrower-than-word-width zero-extended), @file init (exact-match file), and multi-module structure is provided by `7_5_HAPPY_PATH-initialization_ok.jz`.
 
 ## Section 7.6 — Complete Examples
 
@@ -1032,13 +1033,13 @@ All 1 rule from the test plan has a corresponding validation test:
 
 | Rule ID | Reason |
 |---------|--------|
-| `CHECK_INVALID_PLACEMENT` | This rule fires for @check inside conditional/@feature bodies (per rules.c: "S9.3 @check may not appear inside conditional or @feature bodies"). @feature is not yet fully supported, so the primary context for this rule cannot be exercised. @check inside ASYNC/SYNC blocks fires `DIRECTIVE_INVALID_CONTEXT` instead. See `issues.md` for details. |
+| `CHECK_INVALID_PLACEMENT` | This rule fires for @check inside conditional/@feature bodies (per rules.c: "S9.3 @check may not appear inside conditional or @feature bodies"). Testing shows @check inside @feature at module scope is accepted without error (valid per spec — @feature is transparent). @check inside blocks (ASYNC/SYNC) fires `DIRECTIVE_INVALID_CONTEXT` instead. No scenario tested produces CHECK_INVALID_PLACEMENT. See `issues.md` for details. |
 
 ### Happy Path
 
 | Test File | Coverage |
 |-----------|----------|
-| `9_3_HAPPY_PATH-check_placement_ok.jz` | @check at project scope (single and multiple), @check at module scope after CONST, @check with clog2, @check between blocks, @check immediately before ASYNCHRONOUS block, @check in helper module, multi-module with @new |
+| `9_3_HAPPY_PATH-check_placement_ok.jz` | @check at project scope (single and multiple), @check at module scope after CONST, @check with clog2, @check between blocks, @check immediately before ASYNCHRONOUS block, @check in helper module, @check inside @feature at module scope, multi-module with @new |
 
 ## Section 9.4 — @check Expression Rules
 
@@ -1147,7 +1148,7 @@ Happy-path coverage of alias (=), drive (=>), receive (<=), sliced assignment, c
 | Rule ID | Severity | Status |
 |---------|----------|--------|
 | MEM_INIT_LITERAL_OVERFLOW | error | Tested — 2 triggers across helper and top modules |
-| MEM_INIT_CONTAINS_X | error | Tested — 2 triggers: binary x in helper, all-x in top module |
+| MEM_INIT_CONTAINS_X | error | Tested — 2 triggers: partial binary x in helper, all-x binary in top module |
 | MEM_INIT_FILE_NOT_FOUND | error | Tested — 2 triggers across helper and top modules |
 | MEM_INIT_FILE_TOO_LARGE | error | Tested — 2 triggers across helper and top modules |
 | MEM_WARN_PARTIAL_INIT | warning | Tested — 2 triggers across helper and top modules |
@@ -1156,5 +1157,35 @@ Happy-path coverage of alias (=), drive (=>), receive (<=), sliced assignment, c
 |---------|----------|--------|
 | MEM_INIT_FILE_CONTAINS_X | error | Not implemented — rule defined in `rules.c` but no semantic pass emits it; cannot be tested (see `issues.md`) |
 | MEM_MISSING_INIT | error | Covered by `7_1_MEM_MISSING_INIT-missing_init.jz` (declaration-level check in section 7.1) |
+| CONST_NUMERIC_IN_STRING_CONTEXT | error | Covered by `4_3_CONST_NUMERIC_IN_STRING_CONTEXT-numeric_as_file_path.jz` (S4.3/S6.3 cross-referenced rule) |
 
-Happy-path coverage of literal init (matching width, zero init) and @file init (exact-match file) across multi-module structure is provided by `7_5_HAPPY_PATH-initialization_ok.jz`.
+Happy-path coverage of literal init (exact width, zero init, narrower literal zero-extended), @file init (exact-match file), and multi-module structure is provided by `7_5_HAPPY_PATH-initialization_ok.jz`.
+
+## Misc — Repeat, Serializer, and IO Rules
+
+| Rule ID | Severity | Status |
+|---------|----------|--------|
+| RPT_COUNT_INVALID | error | Tested — 2 files: `misc_RPT_COUNT_INVALID-zero_count.jz` (zero count) and `misc_RPT_COUNT_INVALID-non_numeric_count.jz` (non-numeric count) |
+| RPT_NO_MATCHING_END | error | Tested — 1 file: `misc_RPT_NO_MATCHING_END-missing_end.jz` |
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| INFO_SERIALIZER_CASCADE | info | Not testable via `--lint` — emitted only during backend Verilog emission (`emit_wrapper.c`), requires chip-specific differential serializer configuration |
+| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Not testable via `--lint` — emitted only during backend Verilog emission (`emit_wrapper.c`), requires chip-specific differential serializer configuration |
+| IO_BACKEND | error | Not testable — runtime I/O error, not reachable via `--info --lint` |
+| IO_IR | error | Not testable — runtime I/O error, not reachable via `--info --lint` |
+
+Happy-path coverage of valid `@repeat` with count=1 and IDX substitution is provided by `misc_HAPPY_PATH-repeat_ok.jz`.
+
+## Simulation Rules (SIMULATION group)
+
+All implemented lint-detectable rules from the test plan have corresponding validation tests:
+
+| Rule ID | Severity | Status |
+|---------|----------|--------|
+| SIM_WRONG_TOOL | error | Tested — 1 trigger for @simulation block detected when run via --lint |
+| SIM_PROJECT_MIXED | error | Tested — 1 trigger for @simulation block coexisting with @project in same file |
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| SIM_RUN_COND_TIMEOUT | error | Not testable via `--lint` — fires at simulation runtime only when `@run_until`/`@run_while` condition is not met within timeout; requires `--simulate` execution |

@@ -1,3 +1,0 @@
-File: CLOCK_GEN_WIRE_IS_CLOCK.jz
-      21:7    error CLOCK_GEN_WIRE_IS_CLOCK S6.4.1 CLOCK_GEN WIRE used for clock output; use OUT instead
-      21:7    error CLOCK_GEN_WIRE_IN_CLOCKS S6.4.1 CLOCK_GEN WIRE output must not be declared in CLOCKS block

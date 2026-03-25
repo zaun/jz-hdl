@@ -1,2 +1,0 @@
-File: IMPORT_DUP_MODULE_OR_BLACKBOX_libB.jz
-       3:1    error IMPORT_DUP_MODULE_OR_BLACKBOX S6.2.1/S6.10 Imported module/blackbox name duplicates existing project name

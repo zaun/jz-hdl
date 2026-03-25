@@ -1,3 +1,0 @@
-File: REG_INIT_WIDTH_MISMATCH.jz
-      20:13   error REG_INIT_WIDTH_MISMATCH S4.7 Register initialization literal width does not match declared register width
-      21:14   error REG_INIT_WIDTH_MISMATCH S4.7 Register initialization literal width does not match declared register width

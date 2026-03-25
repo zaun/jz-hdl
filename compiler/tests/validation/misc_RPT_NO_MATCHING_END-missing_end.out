@@ -1,0 +1,2 @@
+File: misc_RPT_NO_MATCHING_END-missing_end.jz
+      25:1    error RPT-002 @repeat without matching @end (orig: RPT-002)

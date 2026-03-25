@@ -1,3 +1,4 @@
 File: 6_5_PIN_TERM_INVALID_FOR_STANDARD-term_unsupported.jz
       15:9    error PIN_TERM_INVALID_FOR_STANDARD S6.5/S6.9 Termination not supported for this I/O standard
-      27:9    error PIN_TERM_INVALID_FOR_STANDARD S6.5/S6.9 Termination not supported for this I/O standard
+      17:9    error PIN_TERM_INVALID_FOR_STANDARD S6.5/S6.9 Termination not supported for this I/O standard
+      29:9    error PIN_TERM_INVALID_FOR_STANDARD S6.5/S6.9 Termination not supported for this I/O standard

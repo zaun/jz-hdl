@@ -1,3 +1,0 @@
-File: BUS_PORT_UNKNOWN_BUS.jz
-      16:23   error BUS_PORT_UNKNOWN_BUS S4.4.1/S6.8 BUS port references BUS name not declared in project
-      21:5    error ASYNC_INVALID_STATEMENT_TARGET S4.10/S5.1/S8.1 LHS in ASYNCHRONOUS assignment is not assignable (e.g. CONST, function call)

@@ -1,3 +1,0 @@
-File: MEM_READ_SYNC_WITH_EQUALS.jz
-      27:5    error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
-      28:5    error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?

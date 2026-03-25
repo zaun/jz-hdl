@@ -1,7 +1,7 @@
 // PIN_DIFF_OUT_MISSING_PCLK: Differential output pin missing required pclk attribute.
 // Tests OUT_PINS with mode=DIFFERENTIAL but no pclk.
-// INOUT_PINS differential pins do not trigger this rule (compiler only checks OUT_PINS).
-// Valid differential output with all attributes verifies no false positives.
+// Differential input pins do not require pclk. Valid differential output with
+// all attributes verifies no false positives.
 
 @project PIN_DIFF_OUT_MISSING_PCLK_no_pclk
     CLOCKS {

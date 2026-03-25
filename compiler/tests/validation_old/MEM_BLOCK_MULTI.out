@@ -1,3 +1,0 @@
-File: MEM_BLOCK_MULTI.jz
-       7:5    info  MEM_BLOCK_MULTI S7.1 BLOCK memory requires multiple BSRAM blocks
-       8:10   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used

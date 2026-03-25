@@ -1,2 +1,0 @@
-File: MEM_PORT_UNDEFINED.jz
-      26:11   error MEM_PORT_UNDEFINED S7.2/S7.3/S7.7.2 Access to MEM port name not declared in MEM block

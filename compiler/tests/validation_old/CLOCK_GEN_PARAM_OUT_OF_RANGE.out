@@ -1,3 +1,0 @@
-File: CLOCK_GEN_PARAM_OUT_OF_RANGE.jz
-      24:9    error CLOCK_GEN_DERIVED_OUT_OF_RANGE S6.4.1 CLOCK_GEN derived value (frequency/VCO) outside valid chip-defined range
-      29:17   error CLOCK_GEN_PARAM_OUT_OF_RANGE S6.4.1 CLOCK_GEN CONFIG parameter value outside valid chip-defined range

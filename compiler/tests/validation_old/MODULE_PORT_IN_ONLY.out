@@ -1,2 +1,0 @@
-File: MODULE_PORT_IN_ONLY.jz
-      10:1    warn  MODULE_PORT_IN_ONLY S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)

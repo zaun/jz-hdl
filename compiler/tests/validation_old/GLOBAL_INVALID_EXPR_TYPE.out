@@ -1,3 +1,0 @@
-File: GLOBAL_INVALID_EXPR_TYPE.jz
-       5:3    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>
-       6:3    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>

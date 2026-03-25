@@ -31,6 +31,8 @@
         no_drive_io = { standard=LVCMOS33 };
         // Trigger 5: zero drive in INOUT_PINS
         zero_drive_io = { standard=LVCMOS33, drive=0 };
+        // Trigger 6: negative drive in INOUT_PINS
+        neg_drive_io = { standard=LVCMOS33, drive=-2 };
     }
 
     MAP {
@@ -43,6 +45,7 @@
         valid_io = 7;
         no_drive_io = 8;
         zero_drive_io = 9;
+        neg_drive_io = 10;
     }
 
     @top TopMod {

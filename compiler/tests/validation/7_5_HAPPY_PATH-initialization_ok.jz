@@ -1,4 +1,6 @@
 // HAPPY_PATH: Valid MEM initialization — literal and @file, multi-module.
+// Covers: sized literal, zero init, narrower literal (zero-extended),
+// @file with string path, @file with exact depth match.
 // No diagnostics expected.
 
 @project HAPPY_PATH_initialization_ok
@@ -9,7 +11,7 @@
     }
 @endproj
 
-// Helper module with valid literal init
+// Helper module with valid literal init (exact width match)
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -58,6 +60,14 @@
         };
     }
 
+    // Valid: narrower literal (4-bit for 8-bit word, zero-extended)
+    MEM {
+        mem_narrow [8] [4] = 4'hF {
+            OUT rd_n ASYNC;
+            IN  wr_n;
+        };
+    }
+
     // Valid: @file init with file exactly matching depth
     MEM {
         mem_file [8] [4] = @file("mem_exact_4bytes.bin") {
@@ -73,12 +83,13 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_zero.rd_z[addr] ^ mem_file.rd_f[addr];
+        data = mem_zero.rd_z[addr] ^ mem_file.rd_f[addr] ^ mem_narrow.rd_n[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
         mem_zero.wr_z[addr] <= 8'h00;
+        mem_narrow.wr_n[addr] <= 8'h00;
         mem_file.wr_f[addr] <= 8'h00;
     }
 @endmod

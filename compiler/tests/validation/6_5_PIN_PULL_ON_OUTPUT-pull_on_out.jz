@@ -20,6 +20,8 @@
         pull_up_out = { standard=LVCMOS33, drive=8, pull=UP };
         // Trigger 2: pull=DOWN on OUT_PINS
         pull_down_out = { standard=LVCMOS33, drive=8, pull=DOWN };
+        // No trigger: pull=NONE on OUT_PINS is a no-op (compiler allows it)
+        pull_none_out = { standard=LVCMOS33, drive=8, pull=NONE };
     }
 
     INOUT_PINS {
@@ -33,7 +35,8 @@
         valid_out = 3;
         pull_up_out = 4;
         pull_down_out = 5;
-        valid_pull_io = 6;
+        pull_none_out = 6;
+        valid_pull_io = 7;
     }
 
     @top TopMod {

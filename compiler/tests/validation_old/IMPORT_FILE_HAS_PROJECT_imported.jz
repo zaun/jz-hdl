@@ -1,5 +1,0 @@
-// Imported file that incorrectly declares its own project.
-
-@project IMPORT_FILE_HAS_PROJECT_IMPORTED
-  CONFIG { Y = 2; }
-@endproj

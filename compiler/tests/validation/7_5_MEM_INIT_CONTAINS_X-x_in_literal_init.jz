@@ -1,5 +1,6 @@
 // MEM_INIT_CONTAINS_X: Memory init literals containing x bits trigger error.
-// Valid inits (no x) included for no false positives.
+// Triggers: partial x in binary (helper), all-x binary (top).
+// Valid init (no x) included for no false positives.
 
 @project MEM_INIT_CONTAINS_X_x_in_literal_init
     @top TopMod {

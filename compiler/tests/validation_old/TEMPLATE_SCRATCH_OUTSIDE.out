@@ -1,2 +1,0 @@
-File: TEMPLATE_SCRATCH_OUTSIDE.jz
-      18:5    error TEMPLATE_SCRATCH_OUTSIDE S10.3 @scratch may only appear inside a @template body

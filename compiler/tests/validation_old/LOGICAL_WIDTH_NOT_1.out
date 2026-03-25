@@ -1,3 +1,0 @@
-File: LOGICAL_WIDTH_NOT_1.jz
-      22:11   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
-      23:11   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?

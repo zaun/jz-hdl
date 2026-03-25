@@ -3,14 +3,24 @@
 
 @module mix_mod
     PORT {
-        IN [1] clk;
+        IN  [1] clk;
         OUT [1] out;
     }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
     ASYNCHRONOUS {
-        out = 1'b0;
+        out = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
     }
 @endmod
 
+// Valid @project block
 @project MixedProject
     @top mix_mod {
         IN  [1] clk = _;
@@ -18,6 +28,7 @@
     }
 @endproj
 
+// Trigger 1: @simulation in same file as @project
 @simulation mix_mod
     CLOCK {
         clk = { period=10.0 };

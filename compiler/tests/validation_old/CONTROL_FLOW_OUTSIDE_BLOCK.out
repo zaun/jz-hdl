@@ -1,4 +1,0 @@
-File: CONTROL_FLOW_OUTSIDE_BLOCK.jz
-      13:13   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
-      14:13   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect
-      18:3    error CONTROL_FLOW_OUTSIDE_BLOCK S5.3/S5.4/S8.1 Control-flow statements (IF/SELECT) used outside ASYNCHRONOUS or SYNCHRONOUS block

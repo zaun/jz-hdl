@@ -1,5 +1,6 @@
 // MEM_INIT_LITERAL_OVERFLOW: Init literal value exceeds word width triggers error.
-// Valid-width inits included for no false positives.
+// Triggers in helper module (16-bit for 8-bit) and top module (32-bit for 8-bit).
+// Valid-width init included for no false positives.
 
 @project MEM_INIT_LITERAL_OVERFLOW_value_exceeds_width
     @top TopMod {

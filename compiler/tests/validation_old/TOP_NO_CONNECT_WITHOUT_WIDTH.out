@@ -1,2 +1,0 @@
-File: TOP_NO_CONNECT_WITHOUT_WIDTH.jz
-       6:11   error TOP_NO_CONNECT_WITHOUT_WIDTH S6.9 Port bound to `_` but missing explicit width in top-level @top list

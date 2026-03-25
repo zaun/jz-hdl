@@ -1,4 +1,5 @@
 // MEM_WARN_PARTIAL_INIT: @file smaller than depth triggers warning (zero-padded).
+// Triggers in helper module and top module with undersized file.
 // Full-size literal init included for no false positives.
 
 @project MEM_WARN_PARTIAL_INIT_file_smaller_than_depth

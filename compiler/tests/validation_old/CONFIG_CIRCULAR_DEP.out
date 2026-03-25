@@ -1,3 +1,0 @@
-File: CONFIG_CIRCULAR_DEP.jz
-       6:5    error CONFIG_FORWARD_REF S6.3 CONFIG entry references later CONFIG.<name> (forward reference)
-       7:5    error CONFIG_CIRCULAR_DEP S6.3 Circular dependency between CONFIG entries

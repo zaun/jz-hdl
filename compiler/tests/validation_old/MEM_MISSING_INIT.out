@@ -1,2 +1,0 @@
-File: MEM_MISSING_INIT.jz
-      19:5    error MEM_MISSING_INIT S7.5.1/S7.7.1/S7.7.3 MEM declared without required `= <init>` or `= @file(...)` initialization

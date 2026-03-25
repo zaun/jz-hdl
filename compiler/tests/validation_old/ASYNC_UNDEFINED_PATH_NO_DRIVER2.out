@@ -1,2 +1,0 @@
-File: ASYNC_UNDEFINED_PATH_NO_DRIVER2.jz
-      16:13   error ASYNC_UNDEFINED_PATH_NO_DRIVER S1.5/S4.10/S5.1 Signal undriven on some ASYNCHRONOUS paths; add an ELSE branch or DEFAULT case

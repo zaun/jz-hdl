@@ -13,6 +13,8 @@
         valid_sstl = { standard=SSTL18_I, term=ON };
         // Trigger 1: term=ON on LVCMOS33 (unsupported) in IN_PINS
         bad_term_in = { standard=LVCMOS33, term=ON };
+        // Trigger 2: term=ON on LVCMOS25 (unsupported) in IN_PINS
+        bad_term_in2 = { standard=LVCMOS25, term=ON };
     }
 
     OUT_PINS {
@@ -23,7 +25,7 @@
     INOUT_PINS {
         // Valid: term=ON on SSTL18_I (supported, no trigger)
         valid_sstl_io = { standard=SSTL18_I, drive=4, term=ON };
-        // Trigger 2: term=ON on LVCMOS18 (unsupported) in INOUT_PINS
+        // Trigger 3: term=ON on LVCMOS18 (unsupported) in INOUT_PINS
         bad_term_io = { standard=LVCMOS18, drive=4, term=ON };
     }
 
@@ -31,9 +33,10 @@
         sys_clk = 1;
         valid_sstl = 2;
         bad_term_in = 3;
-        valid_out = 4;
-        valid_sstl_io = 5;
-        bad_term_io = 6;
+        bad_term_in2 = 4;
+        valid_out = 5;
+        valid_sstl_io = 6;
+        bad_term_io = 7;
     }
 
     @top TopMod {

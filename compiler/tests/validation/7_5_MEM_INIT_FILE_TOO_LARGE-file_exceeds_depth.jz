@@ -1,4 +1,5 @@
 // MEM_INIT_FILE_TOO_LARGE: @file larger than depth*word_width triggers error.
+// Triggers in helper module and top module with oversized file.
 // Valid literal init included for no false positives.
 
 @project MEM_INIT_FILE_TOO_LARGE_file_exceeds_depth
