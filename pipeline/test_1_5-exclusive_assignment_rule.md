@@ -78,6 +78,5 @@ Verify that the compiler enforces the Exclusive Assignment Rule: for any assigna
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (none) | -- | All exclusive assignment rules have validation tests |
+
+All rules for this section are tested.

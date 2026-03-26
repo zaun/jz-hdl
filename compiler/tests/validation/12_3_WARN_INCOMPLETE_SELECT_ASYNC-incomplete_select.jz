@@ -1,6 +1,6 @@
 // WARN_INCOMPLETE_SELECT_ASYNC: SELECT without DEFAULT in ASYNCHRONOUS block.
-// Note: compiler emits SELECT_DEFAULT_RECOMMENDED_ASYNC (not WARN_INCOMPLETE_SELECT_ASYNC).
-// Tests incomplete SELECT detection across multiple modules.
+// Note: compiler also emits ASYNC_UNDEFINED_PATH_NO_DRIVER for the same condition.
+// Tests incomplete SELECT in helper and top modules.
 // Valid: SELECT with DEFAULT included for no false positives.
 
 @project WARN_INCOMPLETE_SELECT_ASYNC_incomplete_select

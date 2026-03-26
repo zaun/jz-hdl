@@ -1,7 +1,7 @@
 // HAPPY_PATH: Valid @apply usage — verifies no false positives.
 // Tests: basic apply with matching args, count=0 no-op, count=1 single expansion,
 // count>1 with IDX, apply in ASYNC and SYNC blocks, file-scoped and module-scoped
-// templates, multi-module interaction via @new.
+// templates, multi-module interaction via @new, @scratch wire.
 
 @project HAPPY_PATH_template_application_ok
     CONFIG {

@@ -87,8 +87,8 @@ Verify all 9 assignment operator variants: base operators (`=`, `=>`, `<=`), zer
 
 All rules for this section are tested.
 
-### 5.3 Additional Rules Tested (not in primary assignment)
+### 5.3 Additional Rules (not in primary assignment)
 
-| Rule ID | Severity | Description | Test Case(s) |
-|---------|----------|-------------|--------------|
-| WIDTH_ASSIGN_MISMATCH_NO_EXT | error | S5.0/S5.1 Alias width mismatch; add =z/=s or slice | 5_0_WIDTH_ASSIGN_MISMATCH_NO_EXT-alias_width_mismatch.jz |
+| Rule ID | Severity | Description | Status |
+|---------|----------|-------------|--------|
+| WIDTH_ASSIGN_MISMATCH_NO_EXT | error | S5.0/S5.1 Alias width mismatch; add =z/=s or slice | Suppressed by ASSIGN_WIDTH_NO_MODIFIER: test exists (`5_0_WIDTH_ASSIGN_MISMATCH_NO_EXT-alias_width_mismatch.jz`) but rule is suppressed |

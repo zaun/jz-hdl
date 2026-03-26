@@ -34,7 +34,7 @@
     }
 @endmod
 
-// Second helper: alias in SELECT/CASE and ELSE
+// Second helper: alias in ELSE body
 @module HelperMod2
     PORT {
         IN  [1] sel;

@@ -1,114 +1,59 @@
 // ASYNC_INVALID_STATEMENT_TARGET: LHS in ASYNCHRONOUS assignment is not assignable.
-// Triggers via MEM SYNC OUT .addr assigned in ASYNC blocks across multiple
-// modules, and CONST assignment attempt. Valid assignments (WIRE, PORT OUT,
-// register read, MEM .addr in SYNC) verify no false positives.
+// Tests CONST assignment in ASYNC blocks across multiple modules.
+// Valid assignments (WIRE, PORT OUT) verify no false positives.
 
 @project ASYNC_INVALID_STATEMENT_TARGET_invalid_lhs_in_async
     @top TopMod {
-        IN  [1] clk = _;
-        IN  [4] addr = _;
+        IN  [8] din = _;
         OUT [8] dout_a = _;
         OUT [8] dout_b = _;
     }
 @endproj
 
-// Helper module: triggers rule via MEM SYNC OUT .addr in ASYNC
+// Helper module: CONST assigned in ASYNC
 @module HelperMod
     PORT {
-        IN  [1] clk;
-        IN  [4] addr;
-        OUT [8] data;
+        IN  [8] din;
+        OUT [8] dout;
     }
 
-    REGISTER {
-        r [8] = 8'h00;
+    CONST {
+        MY_CONST = 8;
     }
 
-    MEM {
-        mem_a [8] [16] = 8'h00 {
-            OUT rd SYNC;
-        };
+    WIRE {
+        w [8];
     }
 
     ASYNCHRONOUS {
-        // Trigger 1: MEM SYNC OUT .addr assigned in ASYNC (helper module)
-        mem_a.rd.addr = addr;
-        data = r;
-    }
-
-    SYNCHRONOUS(CLK=clk) {
-        r <= mem_a.rd.data;
-    }
-@endmod
-
-// Second helper: same pattern, different MEM name
-@module HelperMod2
-    PORT {
-        IN  [1] clk;
-        IN  [4] addr;
-        OUT [8] data;
-    }
-
-    REGISTER {
-        r [8] = 8'h00;
-    }
-
-    MEM {
-        mem_c [8] [16] = 8'h00 {
-            OUT rd SYNC;
-        };
-    }
-
-    ASYNCHRONOUS {
-        // Trigger 2: MEM SYNC OUT .addr assigned in ASYNC (second helper)
-        mem_c.rd.addr = addr;
-        data = r;
-    }
-
-    SYNCHRONOUS(CLK=clk) {
-        r <= mem_c.rd.data;
+        // Trigger 1: assign to CONST in ASYNC (helper module)
+        MY_CONST <= din;
+        // Valid: wire assignment (no error)
+        w <= din;
+        dout = w;
     }
 @endmod
 
 @module TopMod
     PORT {
-        IN  [1] clk;
-        IN  [4] addr;
+        IN  [8] din;
         OUT [8] dout_a;
         OUT [8] dout_b;
     }
 
-    REGISTER {
-        r [8] = 8'h00;
-    }
-
-    MEM {
-        mem_b [8] [16] = 8'h00 {
-            OUT rd SYNC;
-        };
+    CONST {
+        TOP_CONST = 42;
     }
 
     @new inst_h HelperMod {
-        IN  [1] clk = clk;
-        IN  [4] addr = addr;
-        OUT [8] data = dout_a;
-    };
-
-    @new inst_h2 HelperMod2 {
-        IN  [1] clk = clk;
-        IN  [4] addr = addr;
-        OUT [8] data = _;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: MEM SYNC OUT .addr assigned in ASYNC (top module)
-        mem_b.rd.addr = addr;
-        // Valid: PORT OUT assignment in ASYNC (no error)
-        dout_b = r;
-    }
-
-    SYNCHRONOUS(CLK=clk) {
-        // Valid: MEM .addr read in SYNC block (no error)
-        r <= mem_b.rd.data;
+        // Trigger 2: assign to CONST in ASYNC (top module)
+        TOP_CONST <= din;
+        // Valid: PORT OUT assignment (no error)
+        dout_b <= din;
     }
 @endmod

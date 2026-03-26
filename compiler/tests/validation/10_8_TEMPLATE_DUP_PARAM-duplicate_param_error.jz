@@ -1,0 +1,69 @@
+// TEMPLATE_DUP_PARAM: Cross-reference test for S10.2 duplicate parameter name error.
+// Tests duplicate params in file-scoped and module-scoped templates.
+// Valid templates with unique params included for negative testing.
+
+@project TEMPLATE_DUP_PARAM_duplicate_param_error
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: unique params (no error)
+@template valid_tmpl(a, b, c)
+    a <= b;
+@endtemplate
+
+// Trigger 1: Duplicate param in file-scoped template
+@template dup_file(x, y, x)
+    x <= y;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 2: Duplicate param in module-scoped template (HelperMod)
+    @template dup_mod(m, n, m)
+        m <= n;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 3: Duplicate param in module-scoped template (TopMod)
+    @template dup_top(q, r, q)
+        q <= r;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = reg_r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        reg_r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = reg_r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        reg_r <= ~reg_r;
+    }
+@endmod

@@ -68,10 +68,11 @@ Verify CONST declarations, compile-time evaluation, string/numeric types. Confir
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| CONST_CIRCULAR_DEP | error | S4.3/S7.10 Circular dependency in CONST definitions | 4_3_CONST_CIRCULAR_DEP-circular_dependency.jz |
 | CONST_NEGATIVE_OR_NONINT | error | S4.3/S7.10 CONST initialized with negative or non-integer value where nonnegative integer required | 4_3_CONST_NEGATIVE_OR_NONINT-negative_const_value.jz |
 | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly | 4_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-undefined_const.jz |
 
 ### 5.2 Rules Not Tested
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| CONST_CIRCULAR_DEP | error | Bug: test exists (`4_3_CONST_CIRCULAR_DEP-circular_dependency.jz`) but rule has a known compiler bug |

@@ -62,10 +62,8 @@ Verify @blackbox declaration within @project, PORT-only interface (no internal l
 | BLACKBOX_BODY_DISALLOWED | error | S6.7 Blackbox contains forbidden blocks (ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM/CONST) | 6_7_BLACKBOX_BODY_DISALLOWED-const_in_blackbox.jz |
 | BLACKBOX_NAME_DUP_IN_PROJECT | error | S6.7/S6.10 @blackbox name conflicts with @module or another @blackbox | 6_7_BLACKBOX_NAME_DUP_IN_PROJECT-blackbox_name_conflicts.jz |
 | BLACKBOX_OVERRIDE_UNCHECKED | info | S6.7/S4.13 OVERRIDE in blackbox instantiation is not validated and is passed through to vendor IP | 6_7_BLACKBOX_OVERRIDE_UNCHECKED-override_passthrough.jz |
-| BLACKBOX_UNDEFINED_IN_NEW | error | S6.7/S6.9 @new instantiation targets a blackbox name that does not exist | 6_7_BLACKBOX_UNDEFINED_IN_NEW-undefined_blackbox.jz |
-
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All rules for this section are covered by existing tests |
+| BLACKBOX_UNDEFINED_IN_NEW | error | Suppressed by INSTANCE_UNDEFINED_MODULE: test exists (`6_7_BLACKBOX_UNDEFINED_IN_NEW-undefined_blackbox.jz`) but rule is suppressed |

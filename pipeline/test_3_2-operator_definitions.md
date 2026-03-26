@@ -122,9 +122,10 @@ Verify detailed semantics of each operator: unary arithmetic parenthesization re
 | SPECIAL_DRIVER_IN_EXPRESSION | error | S2.3 GND/VCC may not appear in arithmetic/logical expressions | 2_4_SPECIAL_DRIVER_IN_EXPRESSION-gnd_vcc_in_expr.jz |
 | SPECIAL_DRIVER_IN_CONCAT | error | S2.3 GND/VCC may not appear in concatenations | 2_4_SPECIAL_DRIVER_IN_CONCAT-gnd_vcc_in_concat.jz |
 | SPECIAL_DRIVER_SLICED | error | S2.3 GND/VCC may not be sliced or indexed | 1_3_SPECIAL_DRIVER_SLICED-vcc_gnd_sliced.jz, 2_4_SPECIAL_DRIVER_SLICED-gnd_vcc_sliced.jz |
-| SPECIAL_DRIVER_IN_INDEX | error | S2.3 GND/VCC may not appear in slice/index expressions | 2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz |
 | TYPE_BINOP_WIDTH_MISMATCH | error | S2.2/3.2/8.1 Binary operator requires equal operand widths but receives mismatched widths | 2_2_TYPE_BINOP_WIDTH_MISMATCH-width_mismatch.jz, 2_3_TYPE_BINOP_WIDTH_MISMATCH-mismatched_operand_widths.jz, 3_1_TYPE_BINOP_WIDTH_MISMATCH-width_mismatch.jz |
 
 ### 5.2 Rules Not Tested Here (covered by Section 2.4 tests)
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| SPECIAL_DRIVER_IN_INDEX | error | Dead code: test exists (`2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz`) but rule is dead code |

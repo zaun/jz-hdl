@@ -69,6 +69,5 @@ Verify WRITE_FIRST, READ_FIRST, and NO_CHANGE write modes for both IN and INOUT 
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (none) | -- | Write mode validation covered by 7_0 test |
+
+All rules for this section are tested.

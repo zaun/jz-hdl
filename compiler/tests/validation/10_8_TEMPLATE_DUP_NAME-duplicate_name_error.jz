@@ -1,0 +1,84 @@
+// TEMPLATE_DUP_NAME: Cross-reference test for S10.2 duplicate template name error.
+// Tests duplicate template names at file scope and module scope.
+// Valid uses: same name in different scopes (no error).
+
+@project TEMPLATE_DUP_NAME_duplicate_name_error
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid file-scoped template (first definition)
+@template ftmpl(a, b)
+    a <= b;
+@endtemplate
+
+// Trigger 1: Duplicate file-scoped template name
+@template ftmpl(x, y)
+    x <= y;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Valid: first module-scoped definition
+    @template mtmpl(a, b)
+        a <= b;
+    @endtemplate
+
+    // Trigger 2: Duplicate module-scoped template name in HelperMod
+    @template mtmpl(x, y)
+        x <= y;
+    @endtemplate
+
+    // Valid: same name as file-scoped template (different scope)
+    @template ftmpl(a, b)
+        a <= b;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Valid: first definition in TopMod scope
+    @template inner(a, b)
+        a <= b;
+    @endtemplate
+
+    // Trigger 3: Duplicate module-scoped template name in TopMod
+    @template inner(c, d)
+        c <= d;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

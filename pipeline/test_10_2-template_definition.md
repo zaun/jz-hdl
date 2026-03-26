@@ -42,6 +42,5 @@ Verify @template syntax, parameter list, module-scoped and file-scoped placement
 | TEMPLATE_DUP_PARAM | Duplicate parameter name in template definition | `10_2_TEMPLATE_DUP_PARAM-duplicate_param_names.jz` |
 
 ### 5.2 Rules Not Tested
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | — | All S10.2 rules covered |
+
+All rules for this section are tested.

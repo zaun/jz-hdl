@@ -37,6 +37,5 @@ Verify templates provide compile-time reusable logic blocks that expand inline w
 No rules are defined specifically for section 10.1. This section provides conceptual overview only. The happy-path test `10_1_HAPPY_PATH-template_purpose_ok.jz` validates the basic template expansion mechanism.
 
 ### 5.2 Rules Not Tested
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | — | All template rules are defined in sections 10.2-10.8 |
+
+All rules for this section are tested.

@@ -57,9 +57,14 @@ def has_untested_rules(test_path: str) -> bool:
             continue
         # For table rows, extract the first cell and check if it's a real rule ID
         if line.startswith("|"):
-            first_cell = line.split("|")[1].strip() if "|" in line[1:] else ""
+            cells = [c.strip() for c in line.split("|")]
+            first_cell = cells[1] if len(cells) > 1 else ""
             if not re.match(r"^[A-Z][A-Z_0-9]{3,}$", first_cell):
                 continue  # Not a real rule ID (placeholder, prose, etc.)
+            # Check if the reason column indicates the rule can't be tested
+            reason = cells[2].lower() if len(cells) > 2 else ""
+            if re.search(r"\b(bug|unimplemented|dead|suppressed|not testable|parser|infrastructure)\b", reason):
+                continue  # Known untestable rule — skip
             return True
 
     return False

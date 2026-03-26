@@ -25,6 +25,7 @@
         w [8];
     }
 
+    // Trigger 1: single-driver tri-state wire in helper module
     ASYNCHRONOUS {
         IF (en) {
             w <= din;
@@ -52,6 +53,7 @@
         OUT [8] data = _;
     };
 
+    // Trigger 2: single-driver tri-state wire in top module
     ASYNCHRONOUS {
         IF (en) {
             w_top <= 8'hCC;

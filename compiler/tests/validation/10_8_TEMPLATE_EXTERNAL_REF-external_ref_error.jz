@@ -1,0 +1,102 @@
+// TEMPLATE_EXTERNAL_REF: Cross-reference test for S10.3 external signal reference error.
+// Tests external signal on RHS of <=, in expression, and in IF condition.
+// Templates must be @applied for the check to fire.
+// Valid uses of params, @scratch, and CONST included for negative testing.
+
+@project TEMPLATE_EXTERNAL_REF_external_ref_error
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+        OUT [8] dout2 = _;
+    }
+@endproj
+
+// Trigger 1: external wire on RHS of <=
+@template ext_rhs(a)
+    a <= ext_w;
+@endtemplate
+
+// Trigger 2: external wire in expression on RHS
+@template ext_expr(a, b)
+    a <= b + ext_w;
+@endtemplate
+
+// Valid: only params and @scratch (no error)
+@template valid_tmpl(a, b)
+    @scratch tmp [8];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        ext_w [8];
+        w1 [8];
+        w2 [8];
+    }
+
+    // Trigger 3: external wire in module-scoped template
+    @template ext_mod(a)
+        a <= ext_w;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        ext_w = din;
+        @apply ext_rhs(w1);
+        @apply ext_expr(w2, din);
+        @apply ext_mod(data);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] data;
+        OUT [8] dout2;
+    }
+
+    WIRE {
+        ext_w [8];
+        w1 [8];
+    }
+
+    // Trigger 4: external register in IF condition in module-scoped template
+    @template ext_if(a, b)
+        IF (ext_r) {
+            a <= b;
+        } ELSE {
+            a <= 8'h00;
+        }
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        ext_r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        ext_w = din;
+        @apply valid_tmpl(din, w1);
+        @apply ext_if(data, din);
+        dout2 = w1;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        ext_r <= ~ext_r;
+    }
+@endmod

@@ -72,6 +72,5 @@ Verify that the lexer correctly handles line comments (`//`), block comments (`/
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (none) | -- | All comment-related rules have validation tests; unterminated block comments are handled by the lexer as a generic error |
+
+All rules for this section are tested.

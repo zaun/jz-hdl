@@ -83,8 +83,8 @@ Verify ASYNCHRONOUS block semantics: assignment forms (alias `=`, drive `=>`, re
 | ASYNC_FLOATING_Z_READ | error | S4.10 Reading a net whose only driver is z (floating) | 4_10_ASYNC_FLOATING_Z_READ-floating_z_read.jz |
 | ASYNC_INVALID_STATEMENT_TARGET | error | S4.10 Invalid assignment target in ASYNCHRONOUS block | 4_10_ASYNC_INVALID_STATEMENT_TARGET-invalid_lhs_in_async.jz |
 | ASYNC_UNDEFINED_PATH_NO_DRIVER | error | S4.10 Execution path leaves wire or port undriven | 4_10_ASYNC_UNDEFINED_PATH_NO_DRIVER-partial_coverage.jz |
-| WIDTH_ASSIGN_MISMATCH_NO_EXT | error | S4.10/S5.0/S5.1 Width mismatch in assignment; add `=z` (zero-extend), `=s` (sign-extend), or use a slice | 5_0_WIDTH_ASSIGN_MISMATCH_NO_EXT-alias_width_mismatch.jz |
-
 ### 5.2 Rules Not Tested
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| WIDTH_ASSIGN_MISMATCH_NO_EXT | error | Suppressed by ASSIGN_WIDTH_NO_MODIFIER: test exists (`5_0_WIDTH_ASSIGN_MISMATCH_NO_EXT-alias_width_mismatch.jz`) but rule is suppressed |

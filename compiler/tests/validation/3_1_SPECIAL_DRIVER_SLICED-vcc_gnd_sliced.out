@@ -1,0 +1,5 @@
+File: 3_1_SPECIAL_DRIVER_SLICED-vcc_gnd_sliced.jz
+      31:17   error SPECIAL_DRIVER_SLICED S2.3 GND/VCC may not be sliced or indexed
+      33:17   error SPECIAL_DRIVER_SLICED S2.3 GND/VCC may not be sliced or indexed
+      39:14   error SPECIAL_DRIVER_SLICED S2.3 GND/VCC may not be sliced or indexed
+      75:14   error SPECIAL_DRIVER_SLICED S2.3 GND/VCC may not be sliced or indexed

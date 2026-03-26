@@ -1,6 +1,6 @@
 // WARN_DEAD_CODE_UNREACHABLE: Statically unreachable code detected by constant analysis.
 // Tests dead code detection for always-false IF, unreachable ELSE after always-true IF,
-// and unreachable ELIF after always-true IF.
+// and unreachable ELIF after always-true IF across ASYNC and SYNC blocks.
 // Valid branches with non-constant conditions included for no false positives.
 
 @project WARN_DEAD_CODE_UNREACHABLE_unreachable_branches

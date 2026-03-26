@@ -45,9 +45,8 @@ Verify allowed content inside templates: directional/alias assignments, IF/ELIF/
 |---------|-------------|-------------|
 | TEMPLATE_EXTERNAL_REF | Identifier in template body must be a parameter, @scratch wire, or compile-time constant | `10_3_TEMPLATE_EXTERNAL_REF-external_signal_reference.jz` |
 | TEMPLATE_SCRATCH_OUTSIDE | @scratch may only appear inside a @template body | `10_3_TEMPLATE_SCRATCH_OUTSIDE-scratch_outside_template.jz` |
-| TEMPLATE_SCRATCH_WIDTH_INVALID | @scratch width must be a positive integer constant expression | `10_3_TEMPLATE_SCRATCH_WIDTH_INVALID-scratch_width_not_constant.jz` |
 
 ### 5.2 Rules Not Tested
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | — | All S10.3 rules covered |
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| TEMPLATE_SCRATCH_WIDTH_INVALID | error | Bug: test exists (`10_3_TEMPLATE_SCRATCH_WIDTH_INVALID-scratch_width_not_constant.jz`) but rule has a known compiler bug |

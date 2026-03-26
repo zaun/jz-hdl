@@ -77,9 +77,8 @@ Verify MAP block: pin-to-board-pin mapping, per-bit mapping for buses, different
 | MAP_SINGLE_UNEXPECTED_PAIR | error | S6.6/S6.9 Single-ended pin must not use { P, N } MAP syntax | 6_6_MAP_SINGLE_UNEXPECTED_PAIR-single_pair_map.jz |
 | MAP_DIFF_MISSING_PN | error | S6.6/S6.9 Differential MAP entry missing P or N identifier | 6_6_MAP_DIFF_MISSING_PN-missing_pn.jz |
 | MAP_DIFF_SAME_PIN | error | S6.6/S6.9 Differential MAP entry has same physical pin for P and N | 6_6_MAP_DIFF_SAME_PIN-same_pn.jz |
-| MAP_INVALID_BOARD_PIN_ID | error | S6.6/S6.9 Board pin ID format invalid for target device | 6_6_MAP_INVALID_BOARD_PIN_ID-bad_board_pin.jz |
-
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
+| MAP_INVALID_BOARD_PIN_ID | error | Unimplemented: no validation test exists; rule is not yet implemented in the compiler |

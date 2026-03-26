@@ -155,9 +155,6 @@ Verify all 28 intrinsic operators: their result widths, operand constraints, com
 | BSWAP_WIDTH_NOT_BYTE_ALIGNED | error | S5.5.26 bswap() width not multiple of 8 | 5_5_BSWAP_WIDTH_NOT_BYTE_ALIGNED-non_byte_width.jz |
 | CLOG2_INVALID_CONTEXT | error | S5.5.5 clog2() in runtime context | 5_5_CLOG2_INVALID_CONTEXT-runtime_expression.jz |
 | CLOG2_NONPOSITIVE_ARG | error | S5.5.5 clog2() argument <= 0 | 5_5_CLOG2_NONPOSITIVE_ARG-zero_argument.jz |
-| FUNC_RESULT_TRUNCATED_SILENTLY | error | S5.5/S5.2 Intrinsic result truncated by assignment | 5_5_FUNC_RESULT_TRUNCATED_SILENTLY-intrinsic_truncation.jz |
-| GBIT_INDEX_OUT_OF_RANGE | error | S5.5.6 gbit() static index >= source width | 5_5_GBIT_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz |
-| GSLICE_INDEX_OUT_OF_RANGE | error | S5.5.8 gslice() static index >= source width | 5_5_GSLICE_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz |
 | GSLICE_WIDTH_INVALID | error | S5.5.8 gslice() width parameter is zero | 5_5_GSLICE_WIDTH_INVALID-zero_width_param.jz |
 | LIT_INVALID_CONTEXT | error | S5.5.11 lit() in compile-time-only context | 5_5_LIT_INVALID_CONTEXT-non_constant_context.jz |
 | LIT_VALUE_INVALID | error | S5.5.11 lit() value is negative | 5_5_LIT_VALUE_INVALID-negative_value.jz |
@@ -165,18 +162,20 @@ Verify all 28 intrinsic operators: their result widths, operand constraints, com
 | LIT_WIDTH_INVALID | error | S5.5.11 lit() width <= 0 | 5_5_LIT_WIDTH_INVALID-non_positive_width.jz |
 | OH2B_INPUT_TOO_NARROW | error | S5.5.12 oh2b() source < 2 bits | 5_5_OH2B_INPUT_TOO_NARROW-single_bit_source.jz |
 | PRIENC_INPUT_TOO_NARROW | error | S5.5.14 prienc() source < 2 bits | 5_5_PRIENC_INPUT_TOO_NARROW-single_bit_source.jz |
-| SBIT_INDEX_OUT_OF_RANGE | error | S5.5.7 sbit() static index >= source width | 5_5_SBIT_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz |
 | SBIT_SET_WIDTH_NOT_1 | error | S5.5.7 sbit() set value not 1-bit | 5_5_SBIT_SET_WIDTH_NOT_1-non_unit_set_value.jz |
-| SSLICE_INDEX_OUT_OF_RANGE | error | S5.5.9 sslice() static index >= source width | 5_5_SSLICE_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz |
 | SSLICE_VALUE_WIDTH_MISMATCH | error | S5.5.9 sslice() value width != width param | 5_5_SSLICE_VALUE_WIDTH_MISMATCH-value_width_mismatch.jz |
 | SSLICE_WIDTH_INVALID | error | S5.5.9 sslice() width parameter is zero | 5_5_SSLICE_WIDTH_INVALID-zero_width_param.jz |
 | WIDTHOF_INVALID_CONTEXT | error | S5.5.10 widthof() in runtime context | 5_5_WIDTHOF_INVALID_CONTEXT-runtime_expression.jz |
-| WIDTHOF_INVALID_SYNTAX | error | S5.5.10 widthof() with slice/concat arg | 5_5_WIDTHOF_INVALID_SYNTAX-slice_argument.jz |
-| WIDTHOF_INVALID_TARGET | error | S5.5.10 widthof() on non-signal target | 5_5_WIDTHOF_INVALID_TARGET-non_signal_target.jz |
-| WIDTHOF_WIDTH_NOT_RESOLVABLE | error | S5.5.10 widthof() target width unresolvable | 5_5_WIDTHOF_WIDTH_NOT_RESOLVABLE-unresolvable_width.jz |
 
 ### 5.2 Rules Not Tested (in this section)
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| (all assigned S5.5 rules have test files) | -- | -- |
+| WIDTHOF_INVALID_TARGET | error | Bug: test exists (`5_5_WIDTHOF_INVALID_TARGET-non_signal_target.jz`) but rule has a known compiler bug |
+| WIDTHOF_INVALID_SYNTAX | error | Bug: test exists (`5_5_WIDTHOF_INVALID_SYNTAX-slice_argument.jz`) but rule has a known compiler bug |
+| WIDTHOF_WIDTH_NOT_RESOLVABLE | error | Bug: test exists (`5_5_WIDTHOF_WIDTH_NOT_RESOLVABLE-unresolvable_width.jz`) but rule has a known compiler bug |
+| FUNC_RESULT_TRUNCATED_SILENTLY | error | Bug: test exists (`5_5_FUNC_RESULT_TRUNCATED_SILENTLY-intrinsic_truncation.jz`) but rule has a known compiler bug |
+| GBIT_INDEX_OUT_OF_RANGE | error | Bug: test exists (`5_5_GBIT_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz`) but rule has a known compiler bug |
+| SBIT_INDEX_OUT_OF_RANGE | error | Bug: test exists (`5_5_SBIT_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz`) but rule has a known compiler bug |
+| GSLICE_INDEX_OUT_OF_RANGE | error | Bug: test exists (`5_5_GSLICE_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz`) but rule has a known compiler bug |
+| SSLICE_INDEX_OUT_OF_RANGE | error | Bug: test exists (`5_5_SSLICE_INDEX_OUT_OF_RANGE-const_index_exceeds_width.jz`) but rule has a known compiler bug |

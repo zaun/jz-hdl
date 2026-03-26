@@ -1,7 +1,6 @@
 // WARN_UNUSED_WIRE: WIRE declared but never driven or read.
-// Note: compiler emits NET_DANGLING_UNUSED (not WARN_UNUSED_WIRE).
 // Tests unused wire detection across multiple modules.
-// Valid: used wires included for no false positives.
+// Valid: used wires (driven and read) included for no false positives.
 
 @project WARN_UNUSED_WIRE_unused_wire
     @top TopMod {

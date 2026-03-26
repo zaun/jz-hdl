@@ -54,10 +54,10 @@ Verify the priority-chain conversion algorithm: z assignments are replaced with 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
 | INFO_TRISTATE_TRANSFORM | info | Net transformed by --tristate-default | `11_GND_4_INFO_TRISTATE_TRANSFORM-gnd_transform.jz`, `11_GND_4_INFO_TRISTATE_TRANSFORM-single_bit_fullwidth_z.jz`, `11_VCC_4_INFO_TRISTATE_TRANSFORM-vcc_transform.jz` |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed | 11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz |
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | S11.7 Tri-state drivers for same signal have non-mutually-exclusive enable conditions; cannot build safe priority chain | 11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz |
-| TRISTATE_TRANSFORM_SINGLE_DRIVER | warning | S11.7 Single-driver tri-state net transformed to default value; original z replaced with GND/VCC | 11_GND_7_TRISTATE_TRANSFORM_SINGLE_DRIVER-single_driver.jz |
-
 ### 5.2 Rules Not Tested
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| TRISTATE_TRANSFORM_SINGLE_DRIVER | warning | Bug: test exists (`11_GND_7_TRISTATE_TRANSFORM_SINGLE_DRIVER-single_driver.jz`) but rule has a known compiler bug |
+| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Bug: test exists (`11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz`) but rule has a known compiler bug |
+| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Dead code: test exists (`11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz`) but rule is dead code |

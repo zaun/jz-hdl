@@ -1,5 +1,5 @@
 File: 1_3_SLICE_INDEX_OUT_OF_RANGE-index_exceeds_width.jz
-      27:17   error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width
-      33:14   error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width
-      63:21   error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width
-      70:9    error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width
+      32:17   error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width
+      38:14   error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width
+      68:21   error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width
+      75:9    error SLICE_INDEX_OUT_OF_RANGE S1.3/S8.1 Slice indices are < 0 or >= signal width

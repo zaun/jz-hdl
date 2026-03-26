@@ -62,9 +62,10 @@ Verify CONST and CONFIG usage in MEM dimensions (width, depth), including addres
 |---------|----------|-------------|--------------|
 | CONST_NEGATIVE_OR_NONINT | error | S4.3/S7.10 Negative or non-integer CONST used in MEM dimension | 7_10_CONST_NEGATIVE_OR_NONINT-negative_const_mem_depth.jz |
 | MEM_UNDEFINED_CONST_IN_WIDTH | error | S7.1/S7.7.1 Undefined CONST referenced in MEM width/depth | 7_10_MEM_UNDEFINED_CONST_IN_WIDTH-undefined_const_in_mem.jz |
-| CONST_CIRCULAR_DEP | error | S4.3/S7.10 Circular dependency in CONST/CONFIG definitions | 4_3_CONST_CIRCULAR_DEP-circular_dependency.jz |
 | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly | 1_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-non_const_in_slice.jz, 4_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-undefined_const.jz |
 
 ### 5.2 Rules Not Tested
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| CONST_CIRCULAR_DEP | error | Bug: test exists (`4_3_CONST_CIRCULAR_DEP-circular_dependency.jz`) but rule has a known compiler bug |

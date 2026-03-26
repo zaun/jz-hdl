@@ -48,8 +48,8 @@ Verify that INOUT ports are not transformed by `--tristate-default` (preserving 
 
 The happy-path test `11_GND_6_HAPPY_PATH-tristate_inout_ok.jz` validates correct INOUT handling. No new diagnostic rules are introduced by this subsection directly; error rules are defined in Section 11.7.
 | TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | error | S11.7 Could not extract output-enable condition from tri-state port; _oe driven high as fallback | 11_GND_7_TRISTATE_TRANSFORM_OE_EXTRACT_FAIL-ambiguous_oe.jz |
-| TRISTATE_TRANSFORM_BLACKBOX_PORT | error | S11.7 Tri-state signal driven by blackbox port cannot be transformed; use external pull resistor | 11_GND_7_TRISTATE_TRANSFORM_BLACKBOX_PORT-blackbox_tristate.jz |
-
 ### 5.2 Rules Not Tested
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| TRISTATE_TRANSFORM_BLACKBOX_PORT | error | Bug: test exists (`11_GND_7_TRISTATE_TRANSFORM_BLACKBOX_PORT-blackbox_tristate.jz`) but rule has a known compiler bug |

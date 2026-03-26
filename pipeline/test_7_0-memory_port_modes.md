@@ -72,6 +72,5 @@ Verify MEM port mode declarations: OUT (read) ports support ASYNC/SYNC modes, IN
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (none) | -- | All port mode rules have validation tests |
+
+All rules for this section are tested.

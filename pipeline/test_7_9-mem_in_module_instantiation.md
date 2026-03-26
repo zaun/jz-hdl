@@ -52,6 +52,5 @@ Verify MEM access scoping across module hierarchy: MEM declared in a child modul
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| — | — | All expected rules covered |
+
+All rules for this section are tested.

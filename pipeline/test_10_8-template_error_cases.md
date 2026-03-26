@@ -95,7 +95,6 @@ Cross-references to all template validation tests:
 | TEMPLATE_DUP_PARAM | Duplicate parameter name in definition | S10.2 |
 | TEMPLATE_EXTERNAL_REF | External signal must be passed as argument | S10.3 |
 | TEMPLATE_SCRATCH_OUTSIDE | @scratch only inside @template body | S10.3 |
-| TEMPLATE_SCRATCH_WIDTH_INVALID | @scratch width must be positive constant | S10.3 |
 | TEMPLATE_FORBIDDEN_DECL | No declaration blocks inside template | S10.4 |
 | TEMPLATE_FORBIDDEN_BLOCK_HEADER | No SYNC/ASYNC headers inside template | S10.4 |
 | TEMPLATE_FORBIDDEN_DIRECTIVE | No structural directives inside template | S10.4 |
@@ -103,11 +102,12 @@ Cross-references to all template validation tests:
 | TEMPLATE_UNDEFINED | @apply references undefined template | S10.5 |
 | TEMPLATE_ARG_COUNT_MISMATCH | @apply arg count mismatch | S10.5 |
 | TEMPLATE_COUNT_NOT_NONNEG_INT | @apply count not non-negative integer | S10.5 |
-| TEMPLATE_APPLY_OUTSIDE_BLOCK | @apply outside ASYNC/SYNC block | S10.5 |
 | ASSIGN_MULTIPLE_SAME_BITS | Exclusive assignment violation via expansion | S10.6 |
 | SYNC_MULTI_ASSIGN_SAME_REG_BITS | Sync exclusive assignment violation via expansion | S10.6 |
 
 ### 5.2 Rules Not Tested
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | — | All template-related rules covered across S10.2-S10.6 |
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| TEMPLATE_SCRATCH_WIDTH_INVALID | error | Bug: test exists but rule has a known compiler bug |
+| TEMPLATE_APPLY_OUTSIDE_BLOCK | error | Bug: test exists but rule has a known compiler bug |

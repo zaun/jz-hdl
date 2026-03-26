@@ -41,6 +41,5 @@ Verify template expansion does not bypass the exclusive assignment rule. Multipl
 | SYNC_MULTI_ASSIGN_SAME_REG_BITS | Same register bits assigned more than once along any execution path in SYNCHRONOUS block (via template expansion) | `10_6_SYNC_MULTI_ASSIGN_SAME_REG_BITS-template_double_apply_sync.jz` | test_5_2-synchronous_assignments.md |
 
 ### 5.2 Rules Not Tested
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | — | All S10.6 rules covered |
+
+All rules for this section are tested.

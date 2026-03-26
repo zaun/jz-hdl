@@ -66,5 +66,4 @@ Verify path security enforcement: absolute paths are rejected without `--allow-a
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
+All rules for this section are tested.

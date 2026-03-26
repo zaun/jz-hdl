@@ -49,9 +49,9 @@ The TRISTATE_TRANSFORM_* rules cross-referenced here are tested in test_11_7-tri
 ### 5.1 Rules Tested
 
 This subsection introduces no new rules. It cross-references TRISTATE_TRANSFORM_* rules defined in Section 11.7. This is a happy-path-only plan; error cases are covered in test_11_7-tristate_error_conditions.md.
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | S11.7 Tri-state drivers for same signal have non-mutually-exclusive enable conditions; cannot build safe priority chain | 11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed | 11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz |
-
 ### 5.2 Rules Not Tested
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Bug: test exists (`11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz`) but rule has a known compiler bug |
+| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Dead code: test exists (`11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz`) but rule is dead code |

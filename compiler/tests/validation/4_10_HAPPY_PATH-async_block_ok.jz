@@ -17,6 +17,8 @@
         OUT [8] dout_g = _;
         OUT [8] dout_h = _;
         OUT [8] dout_i = _;
+        OUT [4] dout_j = _;
+        OUT [8] dout_k = _;
     }
 @endproj
 
@@ -62,6 +64,19 @@
     }
 @endmod
 
+// Empty ASYNC block module
+@module EmptyMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: empty block with only a passthrough
+        dout = din;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
@@ -76,6 +91,8 @@
         OUT [8] dout_g;
         OUT [8] dout_h;
         OUT [8] dout_i;
+        OUT [4] dout_j;
+        OUT [8] dout_k;
     }
 
     @new inst_h HelperMod {
@@ -94,13 +111,17 @@
         OUT [8] recv_sext_out = _;
     };
 
+    @new inst_em EmptyMod {
+        IN  [8] din = din;
+        OUT [8] dout = dout_k;
+    };
+
     WIRE {
         w_alias_a [8];
         w_alias_b [8];
         w_alias_c [8];
         w_recv [8];
         w_drive [8];
-        w_slice [4];
     }
 
     REGISTER {
@@ -120,21 +141,23 @@
         din => w_drive;
 
         // Valid: sliced assignment
-        w_slice = din[3:0];
+        dout_j = din[3:0];
+
+        // Valid: concatenation LHS
+        {dout_d, dout_e[7:1]} = din;
 
         // Valid: ternary in receive
-        dout_e <= sel ? din : 8'h00;
+        dout_f <= sel ? din : 8'h00;
 
         // Valid: register read in ASYNC
-        dout_f <= r;
+        dout_g <= r;
 
         // Valid: receive with literal (not alias)
-        dout_g <= 8'hBB;
+        dout_h <= 8'hBB;
 
         // Connect remaining outputs
-        dout_d = sel;
-        dout_h = w_recv;
-        dout_i = w_drive;
+        dout_e[0:0] <= sel;
+        dout_i = w_recv;
     }
 
     SYNCHRONOUS(CLK=clk) {

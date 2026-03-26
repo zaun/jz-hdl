@@ -1,0 +1,75 @@
+// CONCAT_EMPTY: Empty concatenation {} is not allowed.
+// Tests empty concatenation in async and sync blocks across modules.
+// Valid non-empty concatenation included to verify no false positives.
+
+@project CONCAT_EMPTY_empty_concatenation
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] nibble = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper module with empty concatenation
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] nibble;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: empty concatenation in async
+        out_a = {};
+        // Valid: non-empty concatenation (no false positive)
+        out_b = {nibble, nibble};
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: empty concatenation in sync
+        r <= {};
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] nibble;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+        ha_c [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] nibble = nibble;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+        OUT [8] out_c = ha_c;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: empty concatenation in top async
+        out_a = {};
+        out_b = ha_b;
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: empty concatenation in top sync
+        r <= {};
+    }
+@endmod

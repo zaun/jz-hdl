@@ -59,12 +59,14 @@
     }
 
     ASYNCHRONOUS {
+        // Trigger: tri-state wire in top module, should be transformed
         IF (en) {
             w_top <= r;
         } ELSE {
             w_top <= 8'bzzzz_zzzz;
         }
 
+        // Valid: INOUT port z is preserved, not transformed
         IF (en) {
             bidir <= r;
         } ELSE {

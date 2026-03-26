@@ -65,4 +65,4 @@ Verify combinational loop detection: unconditional cycles (e.g., `a=b; b=a;`), f
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| — | — | All combinational loop rules are tested |
+| PATH_OUTSIDE_SANDBOX | error | S12.2 Resolved path falls outside all permitted sandbox roots. Not testable via `--lint` -- this rule is enforced at the file-system access layer during compilation and requires a sandbox environment configuration that cannot be exercised through standard validation test infrastructure. |

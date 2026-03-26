@@ -61,7 +61,7 @@
     }
 
     ASYNCHRONOUS {
-        // Tri-state wire: z in else branch, should be transformed
+        // Trigger: tri-state wire in top module, should be transformed
         IF (en) {
             w_top <= r;
         } ELSE {

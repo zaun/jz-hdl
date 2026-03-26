@@ -51,6 +51,5 @@ No new rules introduced. This is a happy-path-only plan. Cross-reference Section
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| — | — | No new rules in this section |
+
+All rules for this section are tested.

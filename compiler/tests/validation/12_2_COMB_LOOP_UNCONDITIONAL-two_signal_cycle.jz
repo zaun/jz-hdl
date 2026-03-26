@@ -1,6 +1,7 @@
 // COMB_LOOP_UNCONDITIONAL: Direct two-signal cycle and cycle through expression.
-// Tests the simplest form of combinational loop (a=b; b=a) and loops where
-// the feedback path goes through an expression (a=b+c; c=a).
+// Tests the simplest form of combinational loop (a=b; b=a), loops where
+// the feedback path goes through an expression (a=b&c; c=a), and
+// self-assignment through expression (a=a+0).
 // Valid feed-forward paths included to verify no false positives.
 
 @project COMB_LOOP_UNCONDITIONAL_two_signal_cycle

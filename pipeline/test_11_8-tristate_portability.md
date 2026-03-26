@@ -46,6 +46,5 @@ No specific rules defined for this subsection. Section 11.8 is a best practices 
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| — | — | No new rules defined for this subsection |
+
+All rules for this section are tested.

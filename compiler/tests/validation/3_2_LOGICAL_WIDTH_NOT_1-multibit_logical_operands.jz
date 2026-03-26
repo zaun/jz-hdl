@@ -1,5 +1,5 @@
 // LOGICAL_WIDTH_NOT_1: Logical &&, ||, ! require 1-bit operands.
-// Tests multi-bit operands with all three logical operators in async/sync.
+// Tests multi-bit operands with all three logical operators in async/sync across modules.
 // Valid 1-bit operands included to verify no false positives.
 
 @project LOGICAL_WIDTH_NOT_1_multibit_logical_operands

@@ -1,8 +1,12 @@
 // CONST_UNDEFINED_IN_WIDTH_OR_SLICE: Non-CONST identifier used in slice index.
-// Tests wire, register, and port names used as slice indices across modules.
-// Valid CONST-based slices included to verify no false positives.
+// Tests wire, register, port names, and truly undefined identifiers as slice indices
+// across modules. Valid CONST-based slices included to verify no false positives.
 
 @project CONST_UNDEFINED_IN_WIDTH_OR_SLICE_non_const_in_slice
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] clk = _;
         OUT [1] out_a = _;
@@ -11,7 +15,7 @@
     }
 @endproj
 
-// Helper: wire name used as slice index
+// Helper: wire name and undefined identifier used as slice index
 @module HelperA
     PORT {
         IN  [1] clk;

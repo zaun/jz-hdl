@@ -1,388 +1,383 @@
 # Rule Coverage Map
 
-**Total rules in `rules.c`: 378**
+**Total rules in `rules.c`: 375**
 
-- **Tested:** 375
-- **Not Testable:** 3
-- **Not Tested:** 0
+**Summary:** 310 Tested, 3 Not Tested, 14 Not Tested: Bug, 6 Not Tested: Unimplemented, 9 Not Tested: Dead code, 13 Not Tested: Suppressed, 20 Not Testable — **375 total**
 
-| Rule ID | Category | Test Plan File | Status |
-|---------|----------|---------------|--------|
-| AMBIGUOUS_REFERENCE | IDENTIFIERS_AND_SCOPE | test_4_2-scope_and_uniqueness.md | Tested |
-| ASSIGN_CONCAT_WIDTH_MISMATCH | ASSIGNMENTS_AND_EXCLUSIVE | test_2_3-bit_width_constraints.md | Tested |
-| ASSIGN_INDEPENDENT_IF_SELECT | ASSIGNMENTS_AND_EXCLUSIVE | test_1_5-exclusive_assignment_rule.md | Tested |
-| ASSIGN_MULTIPLE_SAME_BITS | ASSIGNMENTS_AND_EXCLUSIVE | test_1_5-exclusive_assignment_rule.md | Tested |
-| ASSIGN_SHADOWING | ASSIGNMENTS_AND_EXCLUSIVE | test_1_5-exclusive_assignment_rule.md | Tested |
-| ASSIGN_SLICE_OVERLAP | ASSIGNMENTS_AND_EXCLUSIVE | test_1_5-exclusive_assignment_rule.md | Tested |
-| ASSIGN_SLICE_WIDTH_MISMATCH | ASSIGNMENTS_AND_EXCLUSIVE | test_5_0-assignment_operators_summary.md | Tested |
-| ASSIGN_TO_NON_REGISTER_IN_SYNC | PORT_WIRE_REGISTER_DECLS | test_4_11-synchronous_block.md | Tested |
-| ASSIGN_TRUNCATES | ASSIGNMENTS_AND_EXCLUSIVE | test_5_0-assignment_operators_summary.md | Tested |
-| ASSIGN_WIDTH_NO_MODIFIER | ASSIGNMENTS_AND_EXCLUSIVE | test_2_3-bit_width_constraints.md | Tested |
-| ASYNC_ALIAS_IN_CONDITIONAL | CONTROL_FLOW_IF_SELECT | test_4_10-asynchronous_block.md | Tested |
-| ASYNC_ALIAS_LITERAL_RHS | ASYNC_BLOCK_RULES | test_4_10-asynchronous_block.md | Tested |
-| ASYNC_ASSIGN_REGISTER | ASYNC_BLOCK_RULES | test_4_10-asynchronous_block.md | Tested |
-| ASYNC_FLOATING_Z_READ | ASYNC_BLOCK_RULES | test_4_10-asynchronous_block.md | Tested |
-| ASYNC_INVALID_STATEMENT_TARGET | ASYNC_BLOCK_RULES | test_4_10-asynchronous_block.md | Tested |
-| ASYNC_UNDEFINED_PATH_NO_DRIVER | ASSIGNMENTS_AND_EXCLUSIVE | test_1_5-exclusive_assignment_rule.md | Tested |
-| B2OH_WIDTH_INVALID | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| BLACKBOX_BODY_DISALLOWED | BLACKBOX_RULES | test_6_7-blackbox_modules.md | Tested |
-| BLACKBOX_NAME_DUP_IN_PROJECT | IDENTIFIERS_AND_SCOPE | test_4_2-scope_and_uniqueness.md | Tested |
-| BLACKBOX_OVERRIDE_UNCHECKED | BLACKBOX_RULES | test_6_7-blackbox_modules.md | Tested |
-| BLACKBOX_UNDEFINED_IN_NEW | BLACKBOX_RULES | test_6_7-blackbox_modules.md | Tested |
-| BSWAP_WIDTH_NOT_BYTE_ALIGNED | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| BUS_BULK_BUS_MISMATCH | BUS_RULES | test_6_8-bus_aggregation.md | Tested |
-| BUS_BULK_ROLE_CONFLICT | BUS_RULES | test_6_8-bus_aggregation.md | Tested |
-| BUS_DEF_DUP_NAME | BUS_RULES | test_6_8-bus_aggregation.md | Tested |
-| BUS_DEF_INVALID_DIR | BUS_RULES | test_6_8-bus_aggregation.md | Tested |
-| BUS_DEF_SIGNAL_DUP_NAME | BUS_RULES | test_6_8-bus_aggregation.md | Tested |
-| BUS_PORT_ARRAY_COUNT_INVALID | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_PORT_INDEX_NOT_ARRAY | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_PORT_INDEX_OUT_OF_RANGE | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_PORT_INDEX_REQUIRED | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_PORT_INVALID_ROLE | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_PORT_NOT_BUS | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_PORT_UNKNOWN_BUS | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_SIGNAL_READ_FROM_WRITABLE | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_SIGNAL_UNDEFINED | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_SIGNAL_WRITE_TO_READABLE | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_TRISTATE_MISMATCH | BUS_RULES | test_4_4-port.md | Tested |
-| BUS_WILDCARD_WIDTH_MISMATCH | BUS_RULES | test_4_4-port.md | Tested |
-| CDC_BIT_WIDTH_NOT_1 | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CDC_DEST_ALIAS_ASSIGNED | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CDC_DEST_ALIAS_DUP | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CDC_PULSE_WIDTH_NOT_1 | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CDC_RAW_STAGES_FORBIDDEN | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CDC_SOURCE_NOT_PLAIN_REG | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CDC_SOURCE_NOT_REGISTER | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CDC_STAGES_INVALID | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CDC_TYPE_INVALID | SYNC_BLOCK_RULES | test_4_12-cdc_block.md | Tested |
-| CHECK_FAILED | CHECK_RULES | test_9_2-check_semantics.md | Tested |
-| CHECK_INVALID_EXPR_TYPE | CHECK_RULES | test_9_1-check_syntax.md | Tested |
-| CHECK_INVALID_PLACEMENT | CHECK_RULES | test_9_3-check_placement_rules.md | Tested |
-| CLOCK_DUPLICATE_NAME | CLOCKS_PINS_MAP | test_6_4-clocks_block.md | Tested |
-| CLOCK_EDGE_INVALID | CLOCKS_PINS_MAP | test_6_4-clocks_block.md | Tested |
-| CLOCK_EXTERNAL_NO_PERIOD | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_DERIVED_OUT_OF_RANGE | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_INPUT_FREQ_OUT_OF_RANGE | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_INPUT_IS_SELF_OUTPUT | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_INPUT_NOT_DECLARED | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_INPUT_NO_PERIOD | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_INVALID_TYPE | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_MISSING_INPUT | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_MISSING_OUTPUT | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_MULTIPLE_DRIVERS | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_NO_CHIP_DATA | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_OUTPUT_HAS_PERIOD | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_OUTPUT_INVALID_SELECTOR | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_OUTPUT_IS_INPUT_PIN | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_OUTPUT_NOT_DECLARED | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_OUT_NOT_CLOCK | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_PARAM_OUT_OF_RANGE | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_PARAM_TYPE_MISMATCH | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_REQUIRED_INPUT_MISSING | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_WIRE_IN_CLOCKS | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_GEN_WIRE_IS_CLOCK | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOCK_NAME_NOT_IN_PINS | CLOCKS_PINS_MAP | test_6_4-clocks_block.md | Tested |
-| CLOCK_PERIOD_NONPOSITIVE | CLOCKS_PINS_MAP | test_6_4-clocks_block.md | Tested |
-| CLOCK_PORT_WIDTH_NOT_1 | CLOCKS_PINS_MAP | test_6_4-clocks_block.md | Tested |
-| CLOCK_SOURCE_AMBIGUOUS | CLOCK_GEN_RULES | test_6_4-clocks_block.md | Tested |
-| CLOG2_INVALID_CONTEXT | FUNCTIONS_AND_CLOG2 | test_5_5-intrinsic_operators.md | Tested |
-| CLOG2_NONPOSITIVE_ARG | FUNCTIONS_AND_CLOG2 | test_5_5-intrinsic_operators.md | Tested |
-| COMB_LOOP_CONDITIONAL_SAFE | COMBINATIONAL_LOOPS | test_1_2-fundamental_terms.md | Tested |
-| COMB_LOOP_UNCONDITIONAL | COMBINATIONAL_LOOPS | test_1_2-fundamental_terms.md | Tested |
-| COMMENT_IN_TOKEN | PARSE | test_1_4-comments.md | Tested |
-| COMMENT_NESTED_BLOCK | PARSE | test_1_4-comments.md | Tested |
-| CONCAT_EMPTY | OPERATORS_AND_EXPRESSIONS | test_3_2-operator_definitions.md | Tested |
-| CONFIG_CIRCULAR_DEP | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONFIG_FORWARD_REF | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONFIG_INVALID_EXPR_TYPE | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONFIG_MULTIPLE_BLOCKS | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONFIG_NAME_DUPLICATE | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONFIG_USED_WHERE_FORBIDDEN | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONFIG_USE_UNDECLARED | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONST_CIRCULAR_DEP | CONST_RULES | test_4_3-const.md | Tested |
-| CONST_NEGATIVE_OR_NONINT | CONST_RULES | test_4_3-const.md | Tested |
-| CONST_NUMERIC_IN_STRING_CONTEXT | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONST_STRING_IN_NUMERIC_CONTEXT | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONST_UNDEFINED_IN_WIDTH_OR_SLICE | CONST_RULES | test_1_3-bit_slicing_and_indexing.md | Tested |
-| CONST_USED_WHERE_FORBIDDEN | CONFIG_BLOCK | test_6_3-config_block.md | Tested |
-| CONTROL_FLOW_OUTSIDE_BLOCK | CONTROL_FLOW_IF_SELECT | test_5_3-conditional_statements.md | Tested |
-| DIRECTIVE_INVALID_CONTEXT | PARSE | test_4_1-module_canonical_form.md | Tested |
-| DIV_CONST_ZERO | OPERATORS_AND_EXPRESSIONS | test_3_2-operator_definitions.md | Tested |
-| DIV_UNGUARDED_RUNTIME_ZERO | OPERATORS_AND_EXPRESSIONS | test_3_2-operator_definitions.md | Tested |
-| DOMAIN_CONFLICT | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| DUPLICATE_BLOCK | SYNC_BLOCK_RULES | test_4_1-module_canonical_form.md | Tested |
-| FEATURE_COND_WIDTH_NOT_1 | FEATURE_GUARDS | test_4_14-feature_guards.md | Tested |
-| FEATURE_EXPR_INVALID_CONTEXT | FEATURE_GUARDS | test_4_14-feature_guards.md | Tested |
-| FEATURE_NESTED | FEATURE_GUARDS | test_4_14-feature_guards.md | Tested |
-| FEATURE_VALIDATION_BOTH_PATHS | FEATURE_GUARDS | test_4_14-feature_guards.md | Tested |
-| FUNC_RESULT_TRUNCATED_SILENTLY | FUNCTIONS_AND_CLOG2 | test_5_5-intrinsic_operators.md | Tested |
-| GBIT_INDEX_OUT_OF_RANGE | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| GLOBAL_ASSIGN_FORBIDDEN | GLOBAL_BLOCK | test_8_1-global_purpose.md | Tested |
-| GLOBAL_CIRCULAR_DEP | GLOBAL_BLOCK | test_8_5-global_errors.md | Tested |
-| GLOBAL_CONST_NAME_DUPLICATE | GLOBAL_BLOCK | test_8_3-global_semantics.md | Tested |
-| GLOBAL_CONST_USE_UNDECLARED | GLOBAL_BLOCK | test_8_3-global_semantics.md | Tested |
-| GLOBAL_FORWARD_REF | GLOBAL_BLOCK | test_8_5-global_errors.md | Tested |
-| GLOBAL_INVALID_EXPR_TYPE | GLOBAL_BLOCK | test_8_2-global_syntax.md | Tested |
-| GLOBAL_NAMESPACE_DUPLICATE | GLOBAL_BLOCK | test_8_1-global_purpose.md | Tested |
-| GLOBAL_USED_WHERE_FORBIDDEN | GLOBAL_BLOCK | test_8_3-global_semantics.md | Tested |
-| GSLICE_INDEX_OUT_OF_RANGE | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| GSLICE_WIDTH_INVALID | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| ID_DUP_IN_MODULE | IDENTIFIERS_AND_SCOPE | test_4_2-scope_and_uniqueness.md | Tested |
-| ID_SINGLE_UNDERSCORE | LEXICAL | test_1_1-identifiers.md | Tested |
-| ID_SYNTAX_INVALID | LEXICAL | test_1_1-identifiers.md | Tested |
-| IF_COND_MISSING_PARENS | PARSE | test_5_3-conditional_statements.md | Tested |
-| IF_COND_WIDTH_NOT_1 | CONTROL_FLOW_IF_SELECT | test_5_3-conditional_statements.md | Tested |
-| IMPORT_DUP_MODULE_OR_BLACKBOX | PROJECT_AND_IMPORTS | test_6_2-project_canonical_form.md | Tested |
-| IMPORT_FILE_HAS_PROJECT | PROJECT_AND_IMPORTS | test_6_2-project_canonical_form.md | Tested |
-| IMPORT_FILE_MULTIPLE_TIMES | PROJECT_AND_IMPORTS | test_6_2-project_canonical_form.md | Tested |
-| IMPORT_NOT_AT_PROJECT_TOP | PROJECT_AND_IMPORTS | test_6_2-project_canonical_form.md | Tested |
-| IMPORT_OUTSIDE_PROJECT | PROJECT_AND_IMPORTS | test_6_2-project_canonical_form.md | Tested |
-| INFO_SERIALIZER_CASCADE | SERIALIZER | test_misc-repeat_serializer_io.md | Tested |
-| INFO_TRISTATE_TRANSFORM | TRISTATE_TRANSFORM | test_11_4-tristate_transformation_algorithm.md | Tested |
-| INSTANCE_ARRAY_COUNT_INVALID | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_ARRAY_IDX_INVALID_CONTEXT | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_ARRAY_MULTI_DIMENSIONAL | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_ARRAY_PARENT_BIT_OVERLAP | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_BUS_MISMATCH | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_MISSING_PORT | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_NAME_CONFLICT | IDENTIFIERS_AND_SCOPE | test_4_2-scope_and_uniqueness.md | Tested |
-| INSTANCE_NAME_DUP_IN_MODULE | IDENTIFIERS_AND_SCOPE | test_4_2-scope_and_uniqueness.md | Tested |
-| INSTANCE_OUT_PORT_LITERAL | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_OVERRIDE_CONST_UNDEFINED | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_PORT_DIRECTION_MISMATCH | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_PORT_WIDTH_EXPR_INVALID | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_PORT_WIDTH_MISMATCH | MODULE_AND_INSTANTIATION | test_4_13-module_instantiation.md | Tested |
-| INSTANCE_UNDEFINED_MODULE | PARSE | test_4_13-module_instantiation.md | Tested |
-| IO_BACKEND | IO | — | Not Testable: backend-only, fires during file I/O write, not reachable via --lint |
-| IO_IR | IO | — | Not Testable: backend-only, fires during IR output write, not reachable via --lint |
-| KEYWORD_AS_IDENTIFIER | PARSE | test_1_1-identifiers.md | Tested |
-| LATCH_ALIAS_FORBIDDEN | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_ASSIGN_IN_SYNC | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_ASSIGN_NON_GUARDED | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_AS_CLOCK_OR_CDC | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_CHIP_UNSUPPORTED | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_ENABLE_WIDTH_NOT_1 | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_INVALID_TYPE | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_IN_CONST_CONTEXT | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_SR_WIDTH_MISMATCH | LATCH_RULES | test_4_8-latches.md | Tested |
-| LATCH_WIDTH_INVALID | LATCH_RULES | test_4_8-latches.md | Tested |
-| LIT_BARE_INTEGER | LITERALS_AND_TYPES | test_2_1-literals.md | Tested |
-| LIT_DECIMAL_HAS_XZ | PARSE | test_2_1-literals.md | Tested |
-| LIT_INVALID_DIGIT_FOR_BASE | PARSE | test_2_1-literals.md | Tested |
-| LIT_OVERFLOW | LITERALS_AND_TYPES | test_2_1-literals.md | Tested |
-| LIT_UNDEFINED_CONST_WIDTH | LITERALS_AND_TYPES | test_2_1-literals.md | Tested |
-| LIT_UNDERSCORE_AT_EDGES | LITERALS_AND_TYPES | test_2_1-literals.md | Tested |
-| LIT_UNSIZED | LITERALS_AND_TYPES | test_2_1-literals.md | Tested |
-| LIT_WIDTH_NOT_POSITIVE | LITERALS_AND_TYPES | test_2_1-literals.md | Tested |
-| LOGICAL_WIDTH_NOT_1 | OPERATORS_AND_EXPRESSIONS | test_3_1-operator_categories.md | Tested |
-| MAP_DIFF_EXPECTED_PAIR | CLOCKS_PINS_MAP | test_6_6-map_block.md | Tested |
-| MAP_DIFF_MISSING_PN | CLOCKS_PINS_MAP | test_6_6-map_block.md | Tested |
-| MAP_DIFF_SAME_PIN | CLOCKS_PINS_MAP | test_6_6-map_block.md | Tested |
-| MAP_DUP_PHYSICAL_LOCATION | CLOCKS_PINS_MAP | test_6_6-map_block.md | Tested |
-| MAP_INVALID_BOARD_PIN_ID | CLOCKS_PINS_MAP | test_6_6-map_block.md | Tested |
-| MAP_PIN_DECLARED_NOT_MAPPED | CLOCKS_PINS_MAP | test_6_6-map_block.md | Tested |
-| MAP_PIN_MAPPED_NOT_DECLARED | CLOCKS_PINS_MAP | test_6_6-map_block.md | Tested |
-| MAP_SINGLE_UNEXPECTED_PAIR | CLOCKS_PINS_MAP | test_6_6-map_block.md | Tested |
-| MEM_ADDR_WIDTH_TOO_WIDE | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_ASYNC_PORT_FIELD_DATA | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_BLOCK_MULTI | MEM_DECLARATION | test_7_11-synthesis_implications.md | Tested |
-| MEM_BLOCK_RESOURCE_EXCEEDED | MEM_DECLARATION | test_7_11-synthesis_implications.md | Tested |
-| MEM_CHIP_CONFIG_UNSUPPORTED | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_CONST_ADDR_OUT_OF_RANGE | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_DISTRIBUTED_RESOURCE_EXCEEDED | MEM_DECLARATION | test_7_11-synthesis_implications.md | Tested |
-| MEM_DUP_NAME | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_DUP_PORT_NAME | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_EMPTY_PORT_LIST | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_INIT_CONTAINS_X | MEM_DECLARATION | test_7_5-initialization.md | Tested |
-| MEM_INIT_FILE_CONTAINS_X | MEM_DECLARATION | test_7_5-initialization.md | Tested |
-| MEM_INIT_FILE_NOT_FOUND | MEM_DECLARATION | test_7_5-initialization.md | Tested |
-| MEM_INIT_FILE_TOO_LARGE | MEM_DECLARATION | test_7_5-initialization.md | Tested |
-| MEM_INIT_LITERAL_OVERFLOW | MEM_DECLARATION | test_7_5-initialization.md | Tested |
-| MEM_INOUT_ADDR_IN_ASYNC | MEM_ACCESS | test_7_2-port_types_and_semantics.md | Tested |
-| MEM_INOUT_ASYNC | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_INOUT_INDEXED | MEM_ACCESS | test_7_2-port_types_and_semantics.md | Tested |
-| MEM_INOUT_MIXED_WITH_IN_OUT | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_INOUT_WDATA_IN_ASYNC | MEM_ACCESS | test_7_2-port_types_and_semantics.md | Tested |
-| MEM_INOUT_WDATA_WRONG_OP | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_INVALID_DEPTH | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_INVALID_PORT_TYPE | MEM_DECLARATION | test_7_0-memory_port_modes.md | Tested |
-| MEM_INVALID_WORD_WIDTH | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_INVALID_WRITE_MODE | MEM_ACCESS | test_7_0-memory_port_modes.md | Tested |
-| MEM_IN_PORT_FIELD_ACCESS | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_MISSING_INIT | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_MULTIPLE_ADDR_ASSIGNS | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_MULTIPLE_ASSIGN_SYNC_READ_OUT | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_MULTIPLE_WDATA_ASSIGNS | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_MULTIPLE_WRITES_SAME_IN | MEM_ACCESS | test_7_2-port_types_and_semantics.md | Tested |
-| MEM_PORT_ADDR_READ | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_PORT_FIELD_UNDEFINED | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_PORT_NAME_CONFLICT_MODULE_ID | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_PORT_UNDEFINED | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_PORT_USED_AS_SIGNAL | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_READ_FROM_WRITE_PORT | MEM_ACCESS | test_7_2-port_types_and_semantics.md | Tested |
-| MEM_READ_SYNC_WITH_EQUALS | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_SYNC_ADDR_INVALID_PORT | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_SYNC_ADDR_IN_ASYNC_BLOCK | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_SYNC_ADDR_WITHOUT_RECEIVE | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_SYNC_DATA_IN_ASYNC_BLOCK | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_SYNC_PORT_INDEXED | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_TYPE_BLOCK_WITH_ASYNC_OUT | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_TYPE_INVALID | MEM_DECLARATION | test_4_9-mem_block.md | Tested |
-| MEM_UNDEFINED_CONST_IN_WIDTH | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_UNDEFINED_NAME | MEM_DECLARATION | test_7_1-mem_declaration.md | Tested |
-| MEM_WARN_DEAD_CODE_ACCESS | MEM_WARNINGS | test_7_7-error_checking_and_validation.md | Tested |
-| MEM_WARN_PARTIAL_INIT | MEM_WARNINGS | test_7_5-initialization.md | Tested |
-| MEM_WARN_PORT_NEVER_ACCESSED | MEM_WARNINGS | test_7_7-error_checking_and_validation.md | Tested |
-| MEM_WRITE_IN_ASYNC_BLOCK | MEM_ACCESS | test_7_3-memory_access_syntax.md | Tested |
-| MEM_WRITE_TO_READ_PORT | MEM_ACCESS | test_7_2-port_types_and_semantics.md | Tested |
-| MODULE_MISSING_PORT | PORT_WIRE_REGISTER_DECLS | test_4_1-module_canonical_form.md | Tested |
-| MODULE_NAME_DUP_IN_PROJECT | IDENTIFIERS_AND_SCOPE | test_4_2-scope_and_uniqueness.md | Tested |
-| MODULE_PORT_IN_ONLY | PORT_WIRE_REGISTER_DECLS | test_4_1-module_canonical_form.md | Tested |
-| MULTI_CLK_ASSIGN | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| MUX_AGG_SOURCE_INVALID | MUX_RULES | test_4_6-mux.md | Tested |
-| MUX_AGG_SOURCE_WIDTH_MISMATCH | MUX_RULES | test_4_6-mux.md | Tested |
-| MUX_ASSIGN_LHS | MUX_RULES | test_4_6-mux.md | Tested |
-| MUX_NAME_DUPLICATE | MUX_RULES | test_4_6-mux.md | Tested |
-| MUX_SELECTOR_OUT_OF_RANGE_CONST | MUX_RULES | test_4_6-mux.md | Tested |
-| MUX_SLICE_WIDTH_NOT_DIVISOR | MUX_RULES | test_4_6-mux.md | Tested |
-| NET_DANGLING_UNUSED | NET_DRIVERS_AND_TRI_STATE | test_1_2-fundamental_terms.md | Tested |
-| NET_FLOATING_WITH_SINK | NET_DRIVERS_AND_TRI_STATE | test_1_2-fundamental_terms.md | Tested |
-| NET_MULTIPLE_ACTIVE_DRIVERS | NET_DRIVERS_AND_TRI_STATE | test_1_2-fundamental_terms.md | Tested |
-| NET_TRI_STATE_ALL_Z_READ | NET_DRIVERS_AND_TRI_STATE | test_1_2-fundamental_terms.md | Tested |
-| OBS_X_TO_OBSERVABLE_SINK | OBSERVABILITY_X | test_1_2-fundamental_terms.md | Tested |
-| OH2B_INPUT_TOO_NARROW | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| PATH_ABSOLUTE_FORBIDDEN | PATH_SECURITY | test_12_4-path_security.md | Tested |
-| PATH_OUTSIDE_SANDBOX | PATH_SECURITY | test_12_4-path_security.md | Tested |
-| PATH_SYMLINK_ESCAPE | PATH_SECURITY | test_12_4-path_security.md | Tested |
-| PATH_TRAVERSAL_FORBIDDEN | PATH_SECURITY | test_12_4-path_security.md | Tested |
-| PIN_BUS_WIDTH_INVALID | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_DECLARED_MULTIPLE_BLOCKS | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_DIFF_OUT_MISSING_FCLK | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_DIFF_OUT_MISSING_PCLK | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_DIFF_OUT_MISSING_RESET | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_DRIVE_MISSING_OR_INVALID | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_DUP_NAME_WITHIN_BLOCK | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_INVALID_STANDARD | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_MODE_INVALID | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_MODE_STANDARD_MISMATCH | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_PULL_INVALID | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_PULL_ON_OUTPUT | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_TERM_INVALID | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_TERM_INVALID_FOR_STANDARD | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PIN_TERM_ON_OUTPUT | CLOCKS_PINS_MAP | test_6_5-pin_blocks.md | Tested |
-| PORT_DIRECTION_MISMATCH_IN | PORT_WIRE_REGISTER_DECLS | test_4_4-port.md | Tested |
-| PORT_DIRECTION_MISMATCH_OUT | PORT_WIRE_REGISTER_DECLS | test_4_4-port.md | Tested |
-| PORT_MISSING_WIDTH | PORT_WIRE_REGISTER_DECLS | test_4_4-port.md | Tested |
-| PORT_TRISTATE_MISMATCH | PORT_WIRE_REGISTER_DECLS | test_4_4-port.md | Tested |
-| PRIENC_INPUT_TOO_NARROW | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| PROJECT_CHIP_DATA_INVALID | PROJECT_AND_IMPORTS | test_6_1-project_purpose.md | Tested |
-| PROJECT_CHIP_DATA_NOT_FOUND | PROJECT_AND_IMPORTS | test_6_1-project_purpose.md | Tested |
-| PROJECT_MISSING_ENDPROJ | PROJECT_AND_IMPORTS | test_6_2-project_canonical_form.md | Tested |
-| PROJECT_MISSING_TOP_MODULE | PROJECT_AND_IMPORTS | test_6_9-top_level_module.md | Tested |
-| PROJECT_MULTIPLE_PER_FILE | PROJECT_AND_IMPORTS | test_6_10-project_scope_and_uniqueness.md | Tested |
-| PROJECT_NAME_NOT_UNIQUE | PROJECT_AND_IMPORTS | test_6_10-project_scope_and_uniqueness.md | Tested |
-| REG_INIT_CONTAINS_X | PORT_WIRE_REGISTER_DECLS | test_4_7-register.md | Tested |
-| REG_INIT_CONTAINS_Z | PORT_WIRE_REGISTER_DECLS | test_4_7-register.md | Tested |
-| REG_INIT_WIDTH_MISMATCH | PORT_WIRE_REGISTER_DECLS | test_4_7-register.md | Tested |
-| REG_MISSING_INIT_LITERAL | PORT_WIRE_REGISTER_DECLS | test_4_7-register.md | Tested |
-| REG_MULTI_DIMENSIONAL | PORT_WIRE_REGISTER_DECLS | test_4_7-register.md | Tested |
-| RPT_COUNT_INVALID | REPEAT | test_misc-repeat_serializer_io.md | Tested |
-| RPT_NO_MATCHING_END | REPEAT | test_misc-repeat_serializer_io.md | Tested |
-| SBIT_INDEX_OUT_OF_RANGE | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| SBIT_SET_WIDTH_NOT_1 | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| SELECT_CASE_WIDTH_MISMATCH | CONTROL_FLOW_IF_SELECT | test_5_4-select_case_statements.md | Tested |
-| SELECT_DEFAULT_RECOMMENDED_ASYNC | CONTROL_FLOW_IF_SELECT | test_5_4-select_case_statements.md | Tested |
-| SELECT_DUP_CASE_VALUE | CONTROL_FLOW_IF_SELECT | test_5_4-select_case_statements.md | Tested |
-| SELECT_NO_MATCH_SYNC_OK | CONTROL_FLOW_IF_SELECT | test_5_4-select_case_statements.md | Tested |
-| SERIALIZER_WIDTH_EXCEEDS_RATIO | SERIALIZER | test_misc-repeat_serializer_io.md | Tested |
-| SIM_PROJECT_MIXED | SIMULATION | test_sim-simulation_rules.md | Tested |
-| SIM_RUN_COND_TIMEOUT | SIMULATION | — | Not Testable: fires at simulation runtime, not reachable via --lint or --test |
-| SIM_WRONG_TOOL | SIMULATION | test_sim-simulation_rules.md | Tested |
-| SLICE_INDEX_INVALID | WIDTHS_AND_SLICING | test_1_3-bit_slicing_and_indexing.md | Tested |
-| SLICE_INDEX_OUT_OF_RANGE | WIDTHS_AND_SLICING | test_1_3-bit_slicing_and_indexing.md | Tested |
-| SLICE_MSB_LESS_THAN_LSB | WIDTHS_AND_SLICING | test_1_3-bit_slicing_and_indexing.md | Tested |
-| SPECIAL_DRIVER_IN_CONCAT | OPERATORS_AND_EXPRESSIONS | test_2_4-special_semantic_drivers.md | Tested |
-| SPECIAL_DRIVER_IN_EXPRESSION | OPERATORS_AND_EXPRESSIONS | test_2_4-special_semantic_drivers.md | Tested |
-| SPECIAL_DRIVER_IN_INDEX | OPERATORS_AND_EXPRESSIONS | test_2_4-special_semantic_drivers.md | Tested |
-| SPECIAL_DRIVER_SLICED | OPERATORS_AND_EXPRESSIONS | test_1_3-bit_slicing_and_indexing.md | Tested |
-| SSLICE_INDEX_OUT_OF_RANGE | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| SSLICE_VALUE_WIDTH_MISMATCH | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| SSLICE_WIDTH_INVALID | OPERATORS_AND_EXPRESSIONS | test_5_5-intrinsic_operators.md | Tested |
-| SYNC_CLK_WIDTH_NOT_1 | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| SYNC_CONCAT_DUP_REG | SYNC_BLOCK_RULES | test_5_2-synchronous_assignments.md | Tested |
-| SYNC_EDGE_BOTH_WARNING | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| SYNC_EDGE_INVALID | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| SYNC_MISSING_CLK | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| SYNC_MULTI_ASSIGN_SAME_REG_BITS | SYNC_BLOCK_RULES | test_10_6-template_exclusive_assignment.md | Tested |
-| SYNC_NO_ALIAS | SYNC_BLOCK_RULES | test_5_2-synchronous_assignments.md | Tested |
-| SYNC_RESET_ACTIVE_INVALID | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| SYNC_RESET_TYPE_INVALID | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| SYNC_RESET_WIDTH_NOT_1 | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| SYNC_ROOT_AND_CONDITIONAL_ASSIGN | SYNC_BLOCK_RULES | test_5_2-synchronous_assignments.md | Tested |
-| SYNC_SLICE_WIDTH_MISMATCH | SYNC_BLOCK_RULES | test_5_2-synchronous_assignments.md | Tested |
-| SYNC_UNKNOWN_PARAM | SYNC_BLOCK_RULES | test_4_11-synchronous_block.md | Tested |
-| TB_CLOCK_CYCLE_NOT_POSITIVE | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_CLOCK_NOT_DECLARED | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_EXPECT_WIDTH_MISMATCH | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_MODULE_NOT_FOUND | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_MULTIPLE_NEW | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_NEW_RHS_INVALID | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_NO_TEST_BLOCKS | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_PORT_NOT_CONNECTED | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_PORT_WIDTH_MISMATCH | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_PROJECT_MIXED | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_SETUP_POSITION | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_UPDATE_CLOCK_ASSIGN | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_UPDATE_NOT_WIRE | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TB_WRONG_TOOL | TESTBENCH | test_tb-testbench_rules.md | Tested |
-| TEMPLATE_APPLY_OUTSIDE_BLOCK | TEMPLATE | test_10_5-template_application.md | Tested |
-| TEMPLATE_ARG_COUNT_MISMATCH | TEMPLATE | test_10_5-template_application.md | Tested |
-| TEMPLATE_COUNT_NOT_NONNEG_INT | TEMPLATE | test_10_5-template_application.md | Tested |
-| TEMPLATE_DUP_NAME | TEMPLATE | test_10_2-template_definition.md | Tested |
-| TEMPLATE_DUP_PARAM | TEMPLATE | test_10_2-template_definition.md | Tested |
-| TEMPLATE_EXTERNAL_REF | TEMPLATE | test_10_3-template_allowed_content.md | Tested |
-| TEMPLATE_FORBIDDEN_BLOCK_HEADER | TEMPLATE | test_10_4-template_forbidden_content.md | Tested |
-| TEMPLATE_FORBIDDEN_DECL | TEMPLATE | test_10_4-template_forbidden_content.md | Tested |
-| TEMPLATE_FORBIDDEN_DIRECTIVE | TEMPLATE | test_10_4-template_forbidden_content.md | Tested |
-| TEMPLATE_NESTED_DEF | TEMPLATE | test_10_4-template_forbidden_content.md | Tested |
-| TEMPLATE_SCRATCH_OUTSIDE | TEMPLATE | test_10_3-template_allowed_content.md | Tested |
-| TEMPLATE_SCRATCH_WIDTH_INVALID | TEMPLATE | test_10_3-template_allowed_content.md | Tested |
-| TEMPLATE_UNDEFINED | TEMPLATE | test_10_5-template_application.md | Tested |
-| TERNARY_BRANCH_WIDTH_MISMATCH | OPERATORS_AND_EXPRESSIONS | test_2_3-bit_width_constraints.md | Tested |
-| TERNARY_COND_WIDTH_NOT_1 | OPERATORS_AND_EXPRESSIONS | test_3_2-operator_definitions.md | Tested |
-| TOP_NO_CONNECT_WITHOUT_WIDTH | TOP_LEVEL_INSTANTIATION | test_6_9-top_level_module.md | Tested |
-| TOP_OUT_LITERAL_BINDING | TOP_LEVEL_INSTANTIATION | test_6_9-top_level_module.md | Tested |
-| TOP_PORT_NOT_LISTED | TOP_LEVEL_INSTANTIATION | test_6_9-top_level_module.md | Tested |
-| TOP_PORT_PIN_DECL_MISSING | TOP_LEVEL_INSTANTIATION | test_6_9-top_level_module.md | Tested |
-| TOP_PORT_PIN_DIRECTION_MISMATCH | TOP_LEVEL_INSTANTIATION | test_6_9-top_level_module.md | Tested |
-| TOP_PORT_WIDTH_MISMATCH | TOP_LEVEL_INSTANTIATION | test_6_9-top_level_module.md | Tested |
-| TRISTATE_TRANSFORM_BLACKBOX_PORT | TRISTATE_TRANSFORM | test_11_7-tristate_error_conditions.md | Tested |
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | TRISTATE_TRANSFORM | test_11_7-tristate_error_conditions.md | Tested |
-| TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | TRISTATE_TRANSFORM | test_11_7-tristate_error_conditions.md | Tested |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | TRISTATE_TRANSFORM | test_11_7-tristate_error_conditions.md | Tested |
-| TRISTATE_TRANSFORM_SINGLE_DRIVER | TRISTATE_TRANSFORM | test_11_7-tristate_error_conditions.md | Tested |
-| TRISTATE_TRANSFORM_UNUSED_DEFAULT | TRISTATE_TRANSFORM | test_11_7-tristate_error_conditions.md | Tested |
-| TYPE_BINOP_WIDTH_MISMATCH | LITERALS_AND_TYPES | test_2_2-signedness_model.md | Tested |
-| UNARY_ARITH_MISSING_PARENS | OPERATORS_AND_EXPRESSIONS | test_3_2-operator_definitions.md | Tested |
-| UNDECLARED_IDENTIFIER | IDENTIFIERS_AND_SCOPE | test_4_2-scope_and_uniqueness.md | Tested |
-| WARN_DEAD_CODE_UNREACHABLE | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WARN_INCOMPLETE_SELECT_ASYNC | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WARN_INTERNAL_TRISTATE | GENERAL_WARNINGS | test_11_1-tristate_default_purpose.md | Tested |
-| WARN_UNCONNECTED_OUTPUT | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WARN_UNDRIVEN_REGISTER | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WARN_UNSINKED_REGISTER | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WARN_UNUSED_MODULE | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WARN_UNUSED_PORT | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WARN_UNUSED_REGISTER | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WARN_UNUSED_WIRE | GENERAL_WARNINGS | test_12_3-recommended_warnings.md | Tested |
-| WIDTHOF_INVALID_CONTEXT | FUNCTIONS_AND_CLOG2 | test_5_5-intrinsic_operators.md | Tested |
-| WIDTHOF_INVALID_SYNTAX | FUNCTIONS_AND_CLOG2 | test_5_5-intrinsic_operators.md | Tested |
-| WIDTHOF_INVALID_TARGET | FUNCTIONS_AND_CLOG2 | test_5_5-intrinsic_operators.md | Tested |
-| WIDTHOF_WIDTH_NOT_RESOLVABLE | FUNCTIONS_AND_CLOG2 | test_5_5-intrinsic_operators.md | Tested |
-| WIDTH_ASSIGN_MISMATCH_NO_EXT | WIDTHS_AND_SLICING | test_2_3-bit_width_constraints.md | Tested |
-| WIDTH_NONPOSITIVE_OR_NONINT | WIDTHS_AND_SLICING | test_2_2-signedness_model.md | Tested |
-| WIRE_MULTI_DIMENSIONAL | PORT_WIRE_REGISTER_DECLS | test_4_5-wire.md | Tested |
-| WRITE_WIRE_IN_SYNC | PORT_WIRE_REGISTER_DECLS | test_4_11-synchronous_block.md | Tested |
+| Rule ID | Test Plan File | Status |
+|---------|---------------|--------|
+| COMMENT_IN_TOKEN | test_1_4-comments.md | Tested |
+| COMMENT_NESTED_BLOCK | test_1_4-comments.md | Tested |
+| DIRECTIVE_INVALID_CONTEXT | test_4_1-module_canonical_form.md | Tested |
+| KEYWORD_AS_IDENTIFIER | test_1_1-identifiers.md | Tested |
+| IF_COND_MISSING_PARENS | test_5_3-conditional_statements.md | Tested |
+| INSTANCE_UNDEFINED_MODULE | test_4_13-module_instantiation.md | Tested |
+| LIT_DECIMAL_HAS_XZ | test_2_1-literals.md | Tested |
+| LIT_INVALID_DIGIT_FOR_BASE | test_2_1-literals.md | Tested |
+| ID_SYNTAX_INVALID | test_1_1-identifiers.md | Tested |
+| ID_SINGLE_UNDERSCORE | test_1_1-identifiers.md | Tested |
+| LIT_UNSIZED | test_2_1-literals.md | Tested |
+| LIT_BARE_INTEGER | test_2_1-literals.md | Tested |
+| LIT_UNDERSCORE_AT_EDGES | test_2_1-literals.md | Tested |
+| LIT_UNDEFINED_CONST_WIDTH | test_2_1-literals.md | Tested |
+| LIT_WIDTH_NOT_POSITIVE | test_2_1-literals.md | Tested |
+| LIT_OVERFLOW | test_2_1-literals.md | Tested |
+| TYPE_BINOP_WIDTH_MISMATCH | test_2_2-signedness_model.md | Tested |
+| WIDTH_NONPOSITIVE_OR_NONINT | test_2_3-bit_width_constraints.md | Tested |
+| WIDTH_ASSIGN_MISMATCH_NO_EXT | test_5_0-assignment_operators_summary.md | Not Tested: Suppressed — ASSIGN_WIDTH_NO_MODIFIER always fires with higher priority |
+| SLICE_MSB_LESS_THAN_LSB | test_1_3-bit_slicing_and_indexing.md | Tested |
+| SLICE_INDEX_OUT_OF_RANGE | test_1_3-bit_slicing_and_indexing.md | Tested |
+| SLICE_INDEX_INVALID | test_1_3-bit_slicing_and_indexing.md | Not Tested |
+| UNARY_ARITH_MISSING_PARENS | test_3_2-operator_definitions.md | Tested |
+| LOGICAL_WIDTH_NOT_1 | test_3_2-operator_definitions.md | Tested |
+| TERNARY_COND_WIDTH_NOT_1 | test_3_2-operator_definitions.md | Tested |
+| TERNARY_BRANCH_WIDTH_MISMATCH | test_3_2-operator_definitions.md | Tested |
+| CONCAT_EMPTY | test_3_2-operator_definitions.md | Tested |
+| DIV_CONST_ZERO | test_3_2-operator_definitions.md | Tested |
+| DIV_UNGUARDED_RUNTIME_ZERO | test_3_2-operator_definitions.md | Tested |
+| SPECIAL_DRIVER_IN_EXPRESSION | test_2_4-special_semantic_drivers.md | Tested |
+| SPECIAL_DRIVER_IN_CONCAT | test_2_4-special_semantic_drivers.md | Tested |
+| SPECIAL_DRIVER_SLICED | test_2_4-special_semantic_drivers.md | Tested |
+| SPECIAL_DRIVER_IN_INDEX | test_2_4-special_semantic_drivers.md | Not Tested: Dead code — parser emits PARSE000 before semantic rule fires |
+| SBIT_SET_WIDTH_NOT_1 | test_5_5-intrinsic_operators.md | Tested |
+| GBIT_INDEX_OUT_OF_RANGE | test_5_5-intrinsic_operators.md | Not Tested: Bug — constant evaluation cannot parse sized literals for range check |
+| SBIT_INDEX_OUT_OF_RANGE | test_5_5-intrinsic_operators.md | Not Tested: Bug — constant evaluation cannot parse sized literals for range check |
+| GSLICE_INDEX_OUT_OF_RANGE | test_5_5-intrinsic_operators.md | Not Tested: Bug — constant evaluation cannot parse sized literals for range check |
+| GSLICE_WIDTH_INVALID | test_5_5-intrinsic_operators.md | Tested |
+| SSLICE_INDEX_OUT_OF_RANGE | test_5_5-intrinsic_operators.md | Not Tested: Bug — constant evaluation cannot parse sized literals for range check |
+| SSLICE_WIDTH_INVALID | test_5_5-intrinsic_operators.md | Tested |
+| SSLICE_VALUE_WIDTH_MISMATCH | test_5_5-intrinsic_operators.md | Tested |
+| OH2B_INPUT_TOO_NARROW | test_5_5-intrinsic_operators.md | Tested |
+| B2OH_WIDTH_INVALID | test_5_5-intrinsic_operators.md | Tested |
+| PRIENC_INPUT_TOO_NARROW | test_5_5-intrinsic_operators.md | Tested |
+| BSWAP_WIDTH_NOT_BYTE_ALIGNED | test_5_5-intrinsic_operators.md | Tested |
+| ID_DUP_IN_MODULE | test_4_2-scope_and_uniqueness.md | Tested |
+| MODULE_NAME_DUP_IN_PROJECT | test_4_2-scope_and_uniqueness.md | Tested |
+| BLACKBOX_NAME_DUP_IN_PROJECT | test_4_2-scope_and_uniqueness.md | Tested |
+| INSTANCE_NAME_DUP_IN_MODULE | test_4_2-scope_and_uniqueness.md | Tested |
+| INSTANCE_NAME_CONFLICT | test_4_2-scope_and_uniqueness.md | Tested |
+| UNDECLARED_IDENTIFIER | test_4_2-scope_and_uniqueness.md | Tested |
+| AMBIGUOUS_REFERENCE | test_4_2-scope_and_uniqueness.md | Not Tested: Unimplemented — rule defined but no semantic pass emits it |
+| CONST_NEGATIVE_OR_NONINT | test_4_3-const.md | Tested |
+| CONST_UNDEFINED_IN_WIDTH_OR_SLICE | test_4_3-const.md | Tested |
+| CONST_CIRCULAR_DEP | test_4_3-const.md | Not Tested: Bug — module CONST circular deps fire CONST_NEGATIVE_OR_NONINT instead |
+| PORT_MISSING_WIDTH | test_4_4-port.md | Tested |
+| PORT_DIRECTION_MISMATCH_IN | test_4_4-port.md | Tested |
+| PORT_DIRECTION_MISMATCH_OUT | test_4_4-port.md | Tested |
+| PORT_TRISTATE_MISMATCH | test_4_4-port.md | Tested |
+| WIRE_MULTI_DIMENSIONAL | test_4_5-wire.md | Not Tested: Dead code — parser emits PARSE000 before semantic rule fires |
+| REG_MULTI_DIMENSIONAL | test_4_7-register.md | Not Tested: Dead code — parser emits PARSE000 before semantic rule fires |
+| REG_MISSING_INIT_LITERAL | test_4_7-register.md | Not Tested: Dead code — parser emits PARSE000 before semantic rule fires |
+| REG_INIT_CONTAINS_X | test_4_7-register.md | Tested |
+| REG_INIT_CONTAINS_Z | test_4_7-register.md | Tested |
+| REG_INIT_WIDTH_MISMATCH | test_4_7-register.md | Tested |
+| WRITE_WIRE_IN_SYNC | test_4_5-wire.md | Tested |
+| ASSIGN_TO_NON_REGISTER_IN_SYNC | test_5_2-synchronous_assignments.md | Tested |
+| MODULE_MISSING_PORT | test_4_1-module_canonical_form.md | Tested |
+| MODULE_PORT_IN_ONLY | test_4_1-module_canonical_form.md | Tested |
+| LATCH_ASSIGN_NON_GUARDED | test_4_8-latches.md | Tested |
+| LATCH_ASSIGN_IN_SYNC | test_4_8-latches.md | Tested |
+| LATCH_ENABLE_WIDTH_NOT_1 | test_4_8-latches.md | Tested |
+| LATCH_ALIAS_FORBIDDEN | test_4_8-latches.md | Tested |
+| LATCH_INVALID_TYPE | test_4_8-latches.md | Tested |
+| LATCH_WIDTH_INVALID | test_4_8-latches.md | Not Tested: Suppressed — WIDTH_NONPOSITIVE_OR_NONINT fires instead |
+| LATCH_SR_WIDTH_MISMATCH | test_4_8-latches.md | Not Tested: Bug — ASSIGN_WIDTH_NO_MODIFIER fires instead of latch-specific rule |
+| LATCH_AS_CLOCK_OR_CDC | test_4_8-latches.md | Tested |
+| LATCH_IN_CONST_CONTEXT | test_4_8-latches.md | Not Tested: Bug — CHECK_INVALID_EXPR_TYPE fires instead of latch-specific rule |
+| LATCH_CHIP_UNSUPPORTED | test_4_8-latches.md | Tested |
+| INSTANCE_MISSING_PORT | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_PORT_WIDTH_MISMATCH | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_PORT_DIRECTION_MISMATCH | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_BUS_MISMATCH | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_OVERRIDE_CONST_UNDEFINED | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_PORT_WIDTH_EXPR_INVALID | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_ARRAY_COUNT_INVALID | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_ARRAY_IDX_INVALID_CONTEXT | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_ARRAY_PARENT_BIT_OVERLAP | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_OUT_PORT_LITERAL | test_4_13-module_instantiation.md | Tested |
+| INSTANCE_ARRAY_MULTI_DIMENSIONAL | test_4_13-module_instantiation.md | Not Tested: Dead code — parser emits PARSE000 before semantic rule fires |
+| MUX_ASSIGN_LHS | test_4_6-mux.md | Tested |
+| MUX_AGG_SOURCE_WIDTH_MISMATCH | test_4_6-mux.md | Tested |
+| MUX_AGG_SOURCE_INVALID | test_4_6-mux.md | Tested |
+| MUX_SLICE_WIDTH_NOT_DIVISOR | test_4_6-mux.md | Tested |
+| MUX_SELECTOR_OUT_OF_RANGE_CONST | test_4_6-mux.md | Tested |
+| MUX_NAME_DUPLICATE | test_4_6-mux.md | Tested |
+| ASSIGN_WIDTH_NO_MODIFIER | test_5_0-assignment_operators_summary.md | Tested |
+| ASSIGN_TRUNCATES | test_5_0-assignment_operators_summary.md | Tested |
+| ASSIGN_SLICE_WIDTH_MISMATCH | test_5_0-assignment_operators_summary.md | Tested |
+| ASSIGN_CONCAT_WIDTH_MISMATCH | test_5_0-assignment_operators_summary.md | Tested |
+| ASSIGN_MULTIPLE_SAME_BITS | test_1_5-exclusive_assignment_rule.md | Tested |
+| ASSIGN_INDEPENDENT_IF_SELECT | test_1_5-exclusive_assignment_rule.md | Tested |
+| ASSIGN_SHADOWING | test_1_5-exclusive_assignment_rule.md | Tested |
+| ASSIGN_SLICE_OVERLAP | test_1_5-exclusive_assignment_rule.md | Tested |
+| ASYNC_UNDEFINED_PATH_NO_DRIVER | test_1_5-exclusive_assignment_rule.md | Tested |
+| ASYNC_INVALID_STATEMENT_TARGET | test_4_10-asynchronous_block.md | Tested |
+| ASYNC_ASSIGN_REGISTER | test_4_10-asynchronous_block.md | Tested |
+| ASYNC_ALIAS_LITERAL_RHS | test_4_10-asynchronous_block.md | Tested |
+| ASYNC_FLOATING_Z_READ | test_4_10-asynchronous_block.md | Tested |
+| SYNC_MULTI_ASSIGN_SAME_REG_BITS | test_5_2-synchronous_assignments.md | Tested |
+| SYNC_ROOT_AND_CONDITIONAL_ASSIGN | test_5_2-synchronous_assignments.md | Tested |
+| SYNC_SLICE_WIDTH_MISMATCH | test_5_2-synchronous_assignments.md | Not Tested: Suppressed — ASSIGN_SLICE_WIDTH_MISMATCH fires with higher priority |
+| SYNC_CONCAT_DUP_REG | test_5_2-synchronous_assignments.md | Tested |
+| SYNC_NO_ALIAS | test_5_2-synchronous_assignments.md | Tested |
+| DOMAIN_CONFLICT | test_4_11-synchronous_block.md | Tested |
+| DUPLICATE_BLOCK | test_4_11-synchronous_block.md | Tested |
+| MULTI_CLK_ASSIGN | test_4_11-synchronous_block.md | Tested |
+| CDC_SOURCE_NOT_REGISTER | test_4_12-cdc_block.md | Tested |
+| CDC_BIT_WIDTH_NOT_1 | test_4_12-cdc_block.md | Tested |
+| SYNC_CLK_WIDTH_NOT_1 | test_4_11-synchronous_block.md | Tested |
+| SYNC_RESET_WIDTH_NOT_1 | test_4_11-synchronous_block.md | Tested |
+| SYNC_EDGE_INVALID | test_4_11-synchronous_block.md | Tested |
+| SYNC_RESET_ACTIVE_INVALID | test_4_11-synchronous_block.md | Tested |
+| SYNC_RESET_TYPE_INVALID | test_4_11-synchronous_block.md | Tested |
+| SYNC_UNKNOWN_PARAM | test_4_11-synchronous_block.md | Tested |
+| SYNC_MISSING_CLK | test_4_11-synchronous_block.md | Tested |
+| CDC_SOURCE_NOT_PLAIN_REG | test_4_12-cdc_block.md | Not Tested: Bug — compiler silently drops sliced CDC source instead of emitting diagnostic |
+| CDC_DEST_ALIAS_ASSIGNED | test_4_12-cdc_block.md | Not Tested: Bug — ASYNC context: no error; SYNC context: WRITE_WIRE_IN_SYNC fires instead |
+| CDC_STAGES_INVALID | test_4_12-cdc_block.md | Tested |
+| CDC_TYPE_INVALID | test_4_12-cdc_block.md | Tested |
+| CDC_RAW_STAGES_FORBIDDEN | test_4_12-cdc_block.md | Tested |
+| CDC_PULSE_WIDTH_NOT_1 | test_4_12-cdc_block.md | Tested |
+| CDC_DEST_ALIAS_DUP | test_4_12-cdc_block.md | Tested |
+| SYNC_EDGE_BOTH_WARNING | test_4_11-synchronous_block.md | Tested |
+| IF_COND_WIDTH_NOT_1 | test_5_3-conditional_statements.md | Tested |
+| CONTROL_FLOW_OUTSIDE_BLOCK | test_5_3-conditional_statements.md | Tested |
+| SELECT_DUP_CASE_VALUE | test_5_4-select_case_statements.md | Tested |
+| ASYNC_ALIAS_IN_CONDITIONAL | test_5_3-conditional_statements.md | Tested |
+| SELECT_DEFAULT_RECOMMENDED_ASYNC | test_5_4-select_case_statements.md | Tested |
+| SELECT_NO_MATCH_SYNC_OK | test_5_4-select_case_statements.md | Tested |
+| SELECT_CASE_WIDTH_MISMATCH | test_5_4-select_case_statements.md | Tested |
+| FEATURE_COND_WIDTH_NOT_1 | test_4_14-feature_guards.md | Tested |
+| FEATURE_EXPR_INVALID_CONTEXT | test_4_14-feature_guards.md | Tested |
+| FEATURE_NESTED | test_4_14-feature_guards.md | Tested |
+| FEATURE_VALIDATION_BOTH_PATHS | test_4_14-feature_guards.md | Not Tested: Unimplemented — rule defined but no semantic pass emits it |
+| LIT_WIDTH_INVALID | test_5_5-intrinsic_operators.md | Tested |
+| LIT_VALUE_INVALID | test_5_5-intrinsic_operators.md | Tested |
+| LIT_VALUE_OVERFLOW | test_5_5-intrinsic_operators.md | Tested |
+| LIT_INVALID_CONTEXT | test_5_5-intrinsic_operators.md | Tested |
+| NET_FLOATING_WITH_SINK | test_1_2-fundamental_terms.md | Tested |
+| NET_TRI_STATE_ALL_Z_READ | test_11_3-tristate_net_identification.md | Not Tested: Suppressed — ASYNC_FLOATING_Z_READ fires first with the same coverage |
+| NET_MULTIPLE_ACTIVE_DRIVERS | test_11_3-tristate_net_identification.md | Tested |
+| NET_DANGLING_UNUSED | test_1_2-fundamental_terms.md | Tested |
+| OBS_X_TO_OBSERVABLE_SINK | test_1_2-fundamental_terms.md | Tested |
+| COMB_LOOP_UNCONDITIONAL | test_12_2-combinational_loop_errors.md | Tested |
+| COMB_LOOP_CONDITIONAL_SAFE | test_12_2-combinational_loop_errors.md | Tested |
+| BUS_DEF_DUP_NAME | test_6_8-bus_aggregation.md | Tested |
+| BUS_DEF_SIGNAL_DUP_NAME | test_6_8-bus_aggregation.md | Tested |
+| BUS_DEF_INVALID_DIR | test_6_8-bus_aggregation.md | Not Tested: Dead code — parser rejects invalid direction with PARSE000 before semantic check |
+| BUS_PORT_UNKNOWN_BUS | test_4_4-port.md | Tested |
+| BUS_PORT_INVALID_ROLE | test_4_4-port.md | Tested |
+| BUS_PORT_ARRAY_COUNT_INVALID | test_4_4-port.md | Tested |
+| BUS_PORT_INDEX_REQUIRED | test_4_4-port.md | Tested |
+| BUS_PORT_INDEX_NOT_ARRAY | test_4_4-port.md | Tested |
+| BUS_PORT_INDEX_OUT_OF_RANGE | test_4_4-port.md | Tested |
+| BUS_PORT_NOT_BUS | test_4_4-port.md | Tested |
+| BUS_SIGNAL_UNDEFINED | test_4_4-port.md | Tested |
+| BUS_SIGNAL_READ_FROM_WRITABLE | test_4_4-port.md | Tested |
+| BUS_SIGNAL_WRITE_TO_READABLE | test_4_4-port.md | Tested |
+| BUS_WILDCARD_WIDTH_MISMATCH | test_4_4-port.md | Tested |
+| BUS_TRISTATE_MISMATCH | test_4_4-port.md | Tested |
+| BUS_BULK_BUS_MISMATCH | test_6_8-bus_aggregation.md | Tested |
+| BUS_BULK_ROLE_CONFLICT | test_6_8-bus_aggregation.md | Tested |
+| PROJECT_MULTIPLE_PER_FILE | test_6_10-project_scope_and_uniqueness.md | Tested |
+| PROJECT_NAME_NOT_UNIQUE | test_6_10-project_scope_and_uniqueness.md | Tested |
+| PROJECT_MISSING_TOP_MODULE | test_6_9-top_level_module.md | Tested |
+| PROJECT_CHIP_DATA_NOT_FOUND | test_6_1-project_purpose.md | Tested |
+| PROJECT_CHIP_DATA_INVALID | test_6_1-project_purpose.md | Tested |
+| IMPORT_OUTSIDE_PROJECT | test_6_2-project_canonical_form.md | Tested |
+| IMPORT_NOT_AT_PROJECT_TOP | test_6_2-project_canonical_form.md | Tested |
+| IMPORT_FILE_HAS_PROJECT | test_6_2-project_canonical_form.md | Tested |
+| IMPORT_DUP_MODULE_OR_BLACKBOX | test_6_2-project_canonical_form.md | Tested |
+| IMPORT_FILE_MULTIPLE_TIMES | test_6_2-project_canonical_form.md | Tested |
+| PROJECT_MISSING_ENDPROJ | test_6_2-project_canonical_form.md | Tested |
+| CONFIG_MULTIPLE_BLOCKS | test_6_3-config_block.md | Not Tested: Dead code — parser emits PARSE000 before semantic rule fires |
+| CONFIG_NAME_DUPLICATE | test_6_3-config_block.md | Tested |
+| CONFIG_INVALID_EXPR_TYPE | test_6_3-config_block.md | Tested |
+| CONFIG_FORWARD_REF | test_6_3-config_block.md | Tested |
+| CONFIG_USE_UNDECLARED | test_6_3-config_block.md | Tested |
+| CONFIG_CIRCULAR_DEP | test_6_3-config_block.md | Tested |
+| CONFIG_USED_WHERE_FORBIDDEN | test_6_3-config_block.md | Tested |
+| CONST_USED_WHERE_FORBIDDEN | test_4_3-const.md | Tested |
+| CONST_STRING_IN_NUMERIC_CONTEXT | test_4_3-const.md | Tested |
+| CONST_NUMERIC_IN_STRING_CONTEXT | test_4_3-const.md | Tested |
+| CHECK_FAILED | test_9_2-check_semantics.md | Tested |
+| CHECK_INVALID_EXPR_TYPE | test_9_1-check_syntax.md | Tested |
+| CHECK_INVALID_PLACEMENT | test_9_3-check_placement_rules.md | Not Tested |
+| GLOBAL_NAMESPACE_DUPLICATE | test_8_1-global_purpose.md | Tested |
+| GLOBAL_CONST_NAME_DUPLICATE | test_8_3-global_semantics.md | Tested |
+| GLOBAL_FORWARD_REF | test_8_5-global_errors.md | Tested |
+| GLOBAL_CIRCULAR_DEP | test_8_5-global_errors.md | Tested |
+| GLOBAL_INVALID_EXPR_TYPE | test_8_2-global_syntax.md | Tested |
+| GLOBAL_CONST_USE_UNDECLARED | test_8_3-global_semantics.md | Tested |
+| GLOBAL_USED_WHERE_FORBIDDEN | test_8_3-global_semantics.md | Tested |
+| GLOBAL_ASSIGN_FORBIDDEN | test_8_1-global_purpose.md | Tested |
+| CLOCK_PORT_WIDTH_NOT_1 | test_6_4-clocks_block.md | Tested |
+| CLOCK_NAME_NOT_IN_PINS | test_6_4-clocks_block.md | Tested |
+| CLOCK_DUPLICATE_NAME | test_6_4-clocks_block.md | Tested |
+| CLOCK_PERIOD_NONPOSITIVE | test_6_4-clocks_block.md | Tested |
+| CLOCK_EDGE_INVALID | test_6_4-clocks_block.md | Tested |
+| PIN_DECLARED_MULTIPLE_BLOCKS | test_6_5-pin_blocks.md | Tested |
+| PIN_INVALID_STANDARD | test_6_5-pin_blocks.md | Tested |
+| PIN_DRIVE_MISSING_OR_INVALID | test_6_5-pin_blocks.md | Tested |
+| PIN_BUS_WIDTH_INVALID | test_6_5-pin_blocks.md | Tested |
+| PIN_DUP_NAME_WITHIN_BLOCK | test_6_5-pin_blocks.md | Tested |
+| MAP_PIN_DECLARED_NOT_MAPPED | test_6_6-map_block.md | Tested |
+| MAP_PIN_MAPPED_NOT_DECLARED | test_6_6-map_block.md | Tested |
+| MAP_DUP_PHYSICAL_LOCATION | test_6_6-map_block.md | Tested |
+| MAP_INVALID_BOARD_PIN_ID | test_6_6-map_block.md | Not Tested: Unimplemented — rule defined but no semantic pass references it |
+| PIN_MODE_INVALID | test_6_5-pin_blocks.md | Tested |
+| PIN_MODE_STANDARD_MISMATCH | test_6_5-pin_blocks.md | Tested |
+| PIN_PULL_INVALID | test_6_5-pin_blocks.md | Tested |
+| PIN_PULL_ON_OUTPUT | test_6_5-pin_blocks.md | Tested |
+| PIN_TERM_INVALID | test_6_5-pin_blocks.md | Tested |
+| PIN_TERM_ON_OUTPUT | test_6_5-pin_blocks.md | Tested |
+| PIN_TERM_INVALID_FOR_STANDARD | test_6_5-pin_blocks.md | Tested |
+| PIN_DIFF_OUT_MISSING_FCLK | test_6_5-pin_blocks.md | Tested |
+| PIN_DIFF_OUT_MISSING_PCLK | test_6_5-pin_blocks.md | Tested |
+| PIN_DIFF_OUT_MISSING_RESET | test_6_5-pin_blocks.md | Tested |
+| MAP_DIFF_EXPECTED_PAIR | test_6_6-map_block.md | Tested |
+| MAP_SINGLE_UNEXPECTED_PAIR | test_6_6-map_block.md | Tested |
+| MAP_DIFF_MISSING_PN | test_6_6-map_block.md | Tested |
+| MAP_DIFF_SAME_PIN | test_6_6-map_block.md | Tested |
+| CLOCK_GEN_INPUT_NOT_DECLARED | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_INPUT_NO_PERIOD | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_INPUT_FREQ_OUT_OF_RANGE | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_OUTPUT_INVALID_SELECTOR | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_OUT_NOT_CLOCK | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_WIRE_IS_CLOCK | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_WIRE_IN_CLOCKS | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_OUTPUT_NOT_DECLARED | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_OUTPUT_HAS_PERIOD | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_OUTPUT_IS_INPUT_PIN | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_MULTIPLE_DRIVERS | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_INPUT_IS_SELF_OUTPUT | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_INVALID_TYPE | test_6_4-clocks_block.md | Not Tested: Dead code — parser emits PARSE000 before semantic rule fires |
+| CLOCK_GEN_MISSING_INPUT | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_REQUIRED_INPUT_MISSING | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_MISSING_OUTPUT | test_6_4-clocks_block.md | Tested |
+| CLOCK_EXTERNAL_NO_PERIOD | test_6_4-clocks_block.md | Tested |
+| CLOCK_SOURCE_AMBIGUOUS | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_PARAM_OUT_OF_RANGE | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_PARAM_TYPE_MISMATCH | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_DERIVED_OUT_OF_RANGE | test_6_4-clocks_block.md | Tested |
+| CLOCK_GEN_NO_CHIP_DATA | test_6_4-clocks_block.md | Tested |
+| BLACKBOX_BODY_DISALLOWED | test_6_7-blackbox_modules.md | Tested |
+| BLACKBOX_UNDEFINED_IN_NEW | test_6_7-blackbox_modules.md | Not Tested: Suppressed — INSTANCE_UNDEFINED_MODULE fires instead |
+| BLACKBOX_OVERRIDE_UNCHECKED | test_6_7-blackbox_modules.md | Tested |
+| TOP_PORT_NOT_LISTED | test_6_9-top_level_module.md | Tested |
+| TOP_PORT_WIDTH_MISMATCH | test_6_9-top_level_module.md | Tested |
+| TOP_PORT_PIN_DECL_MISSING | test_6_9-top_level_module.md | Tested |
+| TOP_PORT_PIN_DIRECTION_MISMATCH | test_6_9-top_level_module.md | Tested |
+| TOP_OUT_LITERAL_BINDING | test_6_9-top_level_module.md | Tested |
+| TOP_NO_CONNECT_WITHOUT_WIDTH | test_6_9-top_level_module.md | Tested |
+| MEM_UNDEFINED_NAME | test_7_1-mem_declaration.md | Not Tested: Suppressed — UNDECLARED_IDENTIFIER fires first during identifier resolution |
+| MEM_DUP_NAME | test_7_1-mem_declaration.md | Tested |
+| MEM_INVALID_WORD_WIDTH | test_7_1-mem_declaration.md | Tested |
+| MEM_INVALID_DEPTH | test_7_1-mem_declaration.md | Tested |
+| MEM_UNDEFINED_CONST_IN_WIDTH | test_7_1-mem_declaration.md | Tested |
+| MEM_INIT_LITERAL_OVERFLOW | test_7_5-initialization.md | Tested |
+| MEM_DUP_PORT_NAME | test_7_1-mem_declaration.md | Tested |
+| MEM_PORT_NAME_CONFLICT_MODULE_ID | test_7_1-mem_declaration.md | Tested |
+| MEM_EMPTY_PORT_LIST | test_7_1-mem_declaration.md | Tested |
+| MEM_INVALID_PORT_TYPE | test_7_0-memory_port_modes.md | Tested |
+| MEM_MISSING_INIT | test_7_1-mem_declaration.md | Tested |
+| MEM_INIT_FILE_NOT_FOUND | test_7_5-initialization.md | Tested |
+| MEM_INIT_CONTAINS_X | test_7_5-initialization.md | Tested |
+| MEM_INIT_FILE_CONTAINS_X | test_7_5-initialization.md | Not Tested: Unimplemented — rule defined but no semantic pass references it |
+| MEM_INIT_FILE_TOO_LARGE | test_7_5-initialization.md | Tested |
+| MEM_TYPE_INVALID | test_4_9-mem_block.md | Tested |
+| MEM_TYPE_BLOCK_WITH_ASYNC_OUT | test_7_1-mem_declaration.md | Tested |
+| MEM_CHIP_CONFIG_UNSUPPORTED | test_7_1-mem_declaration.md | Tested |
+| MEM_INOUT_MIXED_WITH_IN_OUT | test_7_1-mem_declaration.md | Tested |
+| MEM_INOUT_ASYNC | test_7_1-mem_declaration.md | Tested |
+| MEM_BLOCK_MULTI | test_7_11-synthesis_implications.md | Tested |
+| MEM_BLOCK_RESOURCE_EXCEEDED | test_7_11-synthesis_implications.md | Tested |
+| MEM_DISTRIBUTED_RESOURCE_EXCEEDED | test_7_11-synthesis_implications.md | Tested |
+| MEM_PORT_UNDEFINED | test_7_3-memory_access_syntax.md | Tested |
+| MEM_PORT_FIELD_UNDEFINED | test_7_3-memory_access_syntax.md | Tested |
+| MEM_SYNC_PORT_INDEXED | test_7_3-memory_access_syntax.md | Tested |
+| MEM_PORT_USED_AS_SIGNAL | test_7_3-memory_access_syntax.md | Tested |
+| MEM_PORT_ADDR_READ | test_7_3-memory_access_syntax.md | Tested |
+| MEM_ASYNC_PORT_FIELD_DATA | test_7_3-memory_access_syntax.md | Tested |
+| MEM_SYNC_ADDR_INVALID_PORT | test_7_3-memory_access_syntax.md | Tested |
+| MEM_SYNC_ADDR_IN_ASYNC_BLOCK | test_7_3-memory_access_syntax.md | Not Tested: Suppressed — ASYNC_INVALID_STATEMENT_TARGET fires first |
+| MEM_SYNC_DATA_IN_ASYNC_BLOCK | test_7_3-memory_access_syntax.md | Tested |
+| MEM_SYNC_ADDR_WITHOUT_RECEIVE | test_7_3-memory_access_syntax.md | Not Tested: Suppressed — SYNC_NO_ALIAS fires first |
+| MEM_READ_SYNC_WITH_EQUALS | test_7_3-memory_access_syntax.md | Not Tested: Suppressed — SYNC_NO_ALIAS fires first |
+| MEM_IN_PORT_FIELD_ACCESS | test_7_3-memory_access_syntax.md | Tested |
+| MEM_WRITE_IN_ASYNC_BLOCK | test_7_3-memory_access_syntax.md | Tested |
+| MEM_WRITE_TO_READ_PORT | test_7_2-port_types_and_semantics.md | Tested |
+| MEM_READ_FROM_WRITE_PORT | test_7_2-port_types_and_semantics.md | Tested |
+| MEM_ADDR_WIDTH_TOO_WIDE | test_7_3-memory_access_syntax.md | Tested |
+| MEM_MULTIPLE_WRITES_SAME_IN | test_7_2-port_types_and_semantics.md | Tested |
+| MEM_MULTIPLE_ASSIGN_SYNC_READ_OUT | test_7_3-memory_access_syntax.md | Tested |
+| MEM_CONST_ADDR_OUT_OF_RANGE | test_7_3-memory_access_syntax.md | Tested |
+| MEM_INVALID_WRITE_MODE | test_7_0-memory_port_modes.md | Tested |
+| MEM_INOUT_INDEXED | test_7_2-port_types_and_semantics.md | Tested |
+| MEM_INOUT_WDATA_IN_ASYNC | test_7_2-port_types_and_semantics.md | Tested |
+| MEM_INOUT_ADDR_IN_ASYNC | test_7_2-port_types_and_semantics.md | Tested |
+| MEM_INOUT_WDATA_WRONG_OP | test_7_3-memory_access_syntax.md | Not Tested: Suppressed — SYNC_NO_ALIAS fires first |
+| MEM_MULTIPLE_ADDR_ASSIGNS | test_7_3-memory_access_syntax.md | Not Tested: Unimplemented — rule defined but semantic check not implemented |
+| MEM_MULTIPLE_WDATA_ASSIGNS | test_7_3-memory_access_syntax.md | Not Tested: Unimplemented — rule defined but semantic check not implemented |
+| MEM_WARN_PORT_NEVER_ACCESSED | test_7_7-error_checking_and_validation.md | Tested |
+| MEM_WARN_PARTIAL_INIT | test_7_5-initialization.md | Tested |
+| MEM_WARN_DEAD_CODE_ACCESS | test_7_7-error_checking_and_validation.md | Tested |
+| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | test_11_7-tristate_error_conditions.md | Not Tested: Dead code — NET_MULTIPLE_ACTIVE_DRIVERS fires first during semantic analysis |
+| TRISTATE_TRANSFORM_PER_BIT_FAIL | test_11_7-tristate_error_conditions.md | Not Tested: Bug — compiler does not emit this diagnostic; transformation succeeds without error |
+| TRISTATE_TRANSFORM_BLACKBOX_PORT | test_11_7-tristate_error_conditions.md | Not Tested: Bug — no code in ir_tristate_transform.c emits this diagnostic |
+| TRISTATE_TRANSFORM_SINGLE_DRIVER | test_11_7-tristate_error_conditions.md | Not Tested: Bug — compiler does not emit this diagnostic; only INFO_TRISTATE_TRANSFORM fires |
+| TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | test_11_7-tristate_error_conditions.md | Tested |
+| TRISTATE_TRANSFORM_UNUSED_DEFAULT | test_11_1-tristate_default_purpose.md | Tested |
+| INFO_TRISTATE_TRANSFORM | test_11_4-tristate_transformation_algorithm.md | Tested |
+| INFO_SERIALIZER_CASCADE | test_misc-repeat_serializer_io.md | Not Testable: backend-only, emitted from emit_wrapper.c during --verilog |
+| SERIALIZER_WIDTH_EXCEEDS_RATIO | test_misc-repeat_serializer_io.md | Not Testable: backend-only, emitted from emit_wrapper.c during --verilog |
+| TEMPLATE_UNDEFINED | test_10_5-template_application.md | Tested |
+| TEMPLATE_ARG_COUNT_MISMATCH | test_10_5-template_application.md | Tested |
+| TEMPLATE_COUNT_NOT_NONNEG_INT | test_10_5-template_application.md | Tested |
+| TEMPLATE_NESTED_DEF | test_10_4-template_forbidden_content.md | Tested |
+| TEMPLATE_FORBIDDEN_DECL | test_10_4-template_forbidden_content.md | Tested |
+| TEMPLATE_FORBIDDEN_BLOCK_HEADER | test_10_4-template_forbidden_content.md | Tested |
+| TEMPLATE_FORBIDDEN_DIRECTIVE | test_10_4-template_forbidden_content.md | Tested |
+| TEMPLATE_SCRATCH_OUTSIDE | test_10_3-template_allowed_content.md | Tested |
+| TEMPLATE_APPLY_OUTSIDE_BLOCK | test_10_5-template_application.md | Not Tested: Bug — compiler does not emit this diagnostic; @apply at module/file scope is silently ignored |
+| TEMPLATE_DUP_NAME | test_10_2-template_definition.md | Tested |
+| TEMPLATE_DUP_PARAM | test_10_2-template_definition.md | Tested |
+| TEMPLATE_SCRATCH_WIDTH_INVALID | test_10_3-template_allowed_content.md | Not Tested: Bug — compiler does not emit this diagnostic; WIDTH_NONPOSITIVE_OR_NONINT fires instead when applied |
+| TEMPLATE_EXTERNAL_REF | test_10_3-template_allowed_content.md | Tested |
+| TB_WRONG_TOOL | test_tb-testbench_rules.md | Not Tested |
+| TB_PROJECT_MIXED | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_MODULE_NOT_FOUND | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_PORT_NOT_CONNECTED | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_PORT_WIDTH_MISMATCH | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_NEW_RHS_INVALID | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_SETUP_POSITION | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_CLOCK_NOT_DECLARED | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_CLOCK_CYCLE_NOT_POSITIVE | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_UPDATE_NOT_WIRE | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_UPDATE_CLOCK_ASSIGN | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_EXPECT_WIDTH_MISMATCH | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_NO_TEST_BLOCKS | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| TB_MULTIPLE_NEW | test_tb-testbench_rules.md | Not Testable: requires --test mode, not reachable via --info --lint |
+| SIM_WRONG_TOOL | test_sim-simulation_rules.md | Tested |
+| SIM_PROJECT_MIXED | test_sim-simulation_rules.md | Tested |
+| SIM_RUN_COND_TIMEOUT | test_sim-simulation_rules.md | Not Testable: fires at simulation runtime, not reachable via --info --lint |
+| RPT_COUNT_INVALID | test_misc-repeat_serializer_io.md | Tested |
+| RPT_NO_MATCHING_END | test_misc-repeat_serializer_io.md | Tested |
+| WARN_UNUSED_REGISTER | test_12_3-recommended_warnings.md | Tested |
+| WARN_UNSINKED_REGISTER | test_12_3-recommended_warnings.md | Tested |
+| WARN_UNDRIVEN_REGISTER | test_12_3-recommended_warnings.md | Tested |
+| WARN_UNCONNECTED_OUTPUT | test_12_3-recommended_warnings.md | Tested |
+| WARN_INCOMPLETE_SELECT_ASYNC | test_12_3-recommended_warnings.md | Not Tested: Suppressed — SELECT_DEFAULT_RECOMMENDED_ASYNC fires instead |
+| WARN_DEAD_CODE_UNREACHABLE | test_12_3-recommended_warnings.md | Tested |
+| WARN_UNUSED_MODULE | test_12_3-recommended_warnings.md | Tested |
+| WARN_UNUSED_WIRE | test_12_3-recommended_warnings.md | Not Tested: Suppressed — NET_DANGLING_UNUSED fires instead |
+| WARN_UNUSED_PORT | test_12_3-recommended_warnings.md | Not Tested: Suppressed — NET_DANGLING_UNUSED fires instead |
+| WARN_INTERNAL_TRISTATE | test_11_1-tristate_default_purpose.md | Tested |
+| IO_BACKEND | — | Not Testable: backend-only, not reachable via --info --lint |
+| IO_IR | — | Not Testable: backend-only, not reachable via --info --lint |
+| PATH_ABSOLUTE_FORBIDDEN | test_12_4-path_security.md | Tested |
+| PATH_TRAVERSAL_FORBIDDEN | test_12_4-path_security.md | Tested |
+| PATH_OUTSIDE_SANDBOX | test_12_4-path_security.md | Not Testable: requires filesystem sandbox configuration at runtime |
+| PATH_SYMLINK_ESCAPE | test_12_4-path_security.md | Not Testable: requires actual symlinks on filesystem |

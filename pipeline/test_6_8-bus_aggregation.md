@@ -68,13 +68,11 @@ Note: BUS port-level rules (BUS_PORT_UNKNOWN_BUS, BUS_PORT_NOT_BUS, BUS_PORT_ARR
 | BUS_DEF_SIGNAL_DUP_NAME | error | S6.8 Duplicate signal name inside BUS definition | 6_8_BUS_DEF_SIGNAL_DUP_NAME-duplicate_signal_in_bus.jz |
 | BUS_BULK_BUS_MISMATCH | error | S6.8 Bulk BUS assignment requires both sides to reference the same BUS id | 6_8_BUS_BULK_BUS_MISMATCH-bus_mismatch.jz |
 | BUS_BULK_ROLE_CONFLICT | error | S6.8 Bulk BUS assignment between instances with the same BUS role is not allowed | 6_8_BUS_BULK_ROLE_CONFLICT-role_conflict.jz |
-| BUS_DEF_INVALID_DIR | error | S6.8 BUS signal direction must be IN, OUT, or INOUT | 6_8_BUS_DEF_INVALID_DIR-invalid_direction.jz |
-
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | -- |
+| BUS_DEF_INVALID_DIR | error | Dead code: test exists (`6_8_BUS_DEF_INVALID_DIR-invalid_direction.jz`) but rule is dead code |
 
 ### 5.3 Rules in BUS_RULES Group Tested Elsewhere (S4.4.1)
 

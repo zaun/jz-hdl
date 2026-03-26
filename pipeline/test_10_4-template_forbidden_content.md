@@ -66,6 +66,5 @@ Verify forbidden content inside templates: WIRE, REGISTER, PORT, CONST, MEM, MUX
 | TEMPLATE_NESTED_DEF | Nested @template definitions not allowed | `10_4_TEMPLATE_NESTED_DEF-nested_template_definition.jz` |
 
 ### 5.2 Rules Not Tested
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | — | All S10.4 rules covered |
+
+All rules for this section are tested.

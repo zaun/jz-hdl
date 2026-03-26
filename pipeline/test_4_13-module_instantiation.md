@@ -101,7 +101,6 @@ Verify @new syntax, port binding (IN/OUT/INOUT/BUS), OVERRIDE block, width rules
 | INSTANCE_ARRAY_COUNT_INVALID | error | S4.13.1 Instance array count must be a positive integer | 4_13_INSTANCE_ARRAY_COUNT_INVALID-bad_array_count.jz |
 | INSTANCE_ARRAY_IDX_INVALID_CONTEXT | error | S4.13.1 IDX keyword used outside instance array port mapping | 4_13_INSTANCE_ARRAY_IDX_INVALID_CONTEXT-idx_misuse.jz |
 | INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE | error | S4.13.1 IDX expression produces an out-of-range slice in parent signal | 4_13_INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE-idx_slice_oob.jz |
-| INSTANCE_ARRAY_MULTI_DIMENSIONAL | error | S4.13.1 Multi-dimensional instance arrays are not supported | 4_13_INSTANCE_ARRAY_MULTI_DIMENSIONAL-multi_dim_array.jz |
 | INSTANCE_ARRAY_PARENT_BIT_OVERLAP | error | S4.13.1 Two array instances drive overlapping bits in the same parent signal | 4_13_INSTANCE_ARRAY_PARENT_BIT_OVERLAP-overlapping_out_bits.jz |
 | INSTANCE_BUS_MISMATCH | error | S4.13/S6.9 BUS type or role mismatch in instance port binding | 4_13_INSTANCE_BUS_MISMATCH-bus_mismatch.jz |
 | INSTANCE_MISSING_PORT | error | S4.13/S6.9 Not all module ports listed in @new binding | 4_13_INSTANCE_MISSING_PORT-incomplete_port_list.jz |
@@ -117,4 +116,4 @@ Verify @new syntax, port binding (IN/OUT/INOUT/BUS), OVERRIDE block, width rules
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All assigned rules for this section are covered by existing tests |
+| INSTANCE_ARRAY_MULTI_DIMENSIONAL | error | Dead code: test exists (`4_13_INSTANCE_ARRAY_MULTI_DIMENSIONAL-multi_dim_array.jz`) but rule is dead code |

@@ -32,14 +32,58 @@ Verify all REPEAT, SERIALIZER, and IO diagnostic rules are correctly defined and
 | 2 | Nested @repeat | @repeat inside another @repeat | Depends on compiler support |
 | 3 | Serializer cascade | Differential output using cascaded serializers | Info: INFO_SERIALIZER_CASCADE |
 
+### 2.4 INFO_SERIALIZER_CASCADE
+
+**Description:** Verify that the compiler emits an informational diagnostic when a differential output pin is configured with a serialization ratio that requires cascaded serializers (master+slave pair). This occurs during project-level analysis when the requested serialization ratio exceeds what a single serializer can provide, so the toolchain automatically pairs a master and slave serializer to achieve the extended ratio.
+
+**Triggering Construct:** A differential output port declared with a serialization ratio (e.g., 10:1) that exceeds the single-serializer capability of the target chip. The compiler detects that cascaded (master+slave) serializers are needed and emits the info diagnostic.
+
+```
+chip "pa35t" {
+    module top(
+        output diff tx_pair : 1 @serialize(10)
+    ) {
+        // Serialization ratio 10:1 exceeds single serializer limit,
+        // triggering cascaded master+slave configuration
+    }
+}
+```
+
+**Expected Rule ID:** INFO_SERIALIZER_CASCADE
+**Expected Severity:** info
+**Expected Message:** Differential output uses cascaded serializers (master+slave) for extended serialization ratio
+**Test File:** `misc_INFO_SERIALIZER_CASCADE-cascaded_serializers.jz`
+
+### 2.5 SERIALIZER_WIDTH_EXCEEDS_RATIO
+
+**Description:** Verify that the compiler emits an error when a differential output port width exceeds the chip's maximum serializer ratio and the chip does not support cascading serializers to extend the ratio. This fires during project-level analysis when the declared port width combined with serialization parameters would require more serializer stages than the hardware can provide.
+
+**Triggering Construct:** A differential output port whose width exceeds the chip's maximum serializer ratio on a chip that does not support serializer cascade. The compiler cannot map the output to available serializer resources and must reject the configuration.
+
+```
+chip "pa35t" {
+    module top(
+        output diff tx_wide : 16 @serialize(4)
+        // Port width 16 with ratio 4 exceeds chip serializer
+        // capability, and cascade is not supported for this config
+    ) {
+    }
+}
+```
+
+**Expected Rule ID:** SERIALIZER_WIDTH_EXCEEDS_RATIO
+**Expected Severity:** error
+**Expected Message:** Differential output port width exceeds chip serializer ratio and cascade is not supported
+**Test File:** `misc_SERIALIZER_WIDTH_EXCEEDS_RATIO-width_exceeds_ratio.jz`
+
 ## 3. Input/Output Matrix
 
 | # | Scenario | Triggering Construct | Expected Rule ID | Severity |
 |---|----------|---------------------|-----------------|----------|
 | 1 | Non-positive repeat count | `@repeat 0` | RPT_COUNT_INVALID | error |
 | 2 | Missing @end for @repeat | `@repeat N` without `@end` | RPT_NO_MATCHING_END | error |
-| 3 | Cascaded serializers | Differential output using master+slave serializers | INFO_SERIALIZER_CASCADE | info |
-| 4 | Width exceeds serializer ratio | Differential port width too wide for chip | SERIALIZER_WIDTH_EXCEEDS_RATIO | error |
+| 3 | Cascaded serializers | Differential output using master+slave serializers for extended serialization ratio | INFO_SERIALIZER_CASCADE | info |
+| 4 | Width exceeds serializer ratio | Differential output port width exceeds chip serializer ratio and cascade is not supported | SERIALIZER_WIDTH_EXCEEDS_RATIO | error |
 | 5 | Backend output write failure | I/O error writing backend file | IO_BACKEND | error |
 | 6 | IR output write failure | I/O error writing IR file | IO_IR | error |
 
@@ -55,14 +99,12 @@ No validation tests exist for REPEAT, SERIALIZER, or IO rules.
 |---------|----------|-------------|--------------|
 | RPT_COUNT_INVALID | error | RPT-001 @repeat requires a positive integer count | misc_RPT_COUNT_INVALID-bad_repeat_count.jz |
 | RPT_NO_MATCHING_END | error | RPT-002 @repeat without matching @end | misc_RPT_NO_MATCHING_END-missing_end.jz |
-| INFO_SERIALIZER_CASCADE | info | Differential output uses cascaded serializers (master+slave) for extended serialization ratio | misc_INFO_SERIALIZER_CASCADE-cascaded_serializers.jz |
-| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Differential output port width exceeds chip serializer ratio and cascade is not supported | misc_SERIALIZER_WIDTH_EXCEEDS_RATIO-width_exceeds_ratio.jz |
+| INFO_SERIALIZER_CASCADE | info | Differential output uses cascaded serializers (master+slave) for extended serialization ratio | misc_INFO_SERIALIZER_CASCADE-cascaded_serializers.jz (Scenario 2.4) |
+| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Differential output port width exceeds chip serializer ratio and cascade is not supported | misc_SERIALIZER_WIDTH_EXCEEDS_RATIO-width_exceeds_ratio.jz (Scenario 2.5) |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| INFO_SERIALIZER_CASCADE | info | Requires chip-specific differential serializer configuration, may not be reachable via --lint alone |
-| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Requires chip-specific differential serializer configuration, may not be reachable via --lint alone |
 | IO_BACKEND | error | Not Testable: runtime I/O error, not reachable via --info --lint |
 | IO_IR | error | Not Testable: runtime I/O error, not reachable via --info --lint |

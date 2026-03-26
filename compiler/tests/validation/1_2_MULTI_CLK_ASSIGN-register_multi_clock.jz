@@ -32,7 +32,7 @@
         r_ok <= ~r_ok;
     }
 
-    // Trigger 1 (cont): r also assigned in clk_b domain → MULTI_CLK_ASSIGN
+    // Trigger 1 (cont): r also assigned in clk_b domain -> MULTI_CLK_ASSIGN
     SYNCHRONOUS(CLK=clk_b) {
         r <= 1'b1;
     }
@@ -67,7 +67,7 @@
         r_single <= ~r_single;
     }
 
-    // Trigger 2 (cont): r_multi also assigned in clk_b → MULTI_CLK_ASSIGN
+    // Trigger 2 (cont): r_multi also assigned in clk_b -> MULTI_CLK_ASSIGN
     SYNCHRONOUS(CLK=clk_b) {
         r_multi <= 1'b0;
     }

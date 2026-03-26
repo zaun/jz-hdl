@@ -145,7 +145,6 @@ Verify CLOCKS block (period, edge properties), clock source validation (must be 
 | CLOCK_GEN_INPUT_IS_SELF_OUTPUT | error | S6.4.1 CLOCK_GEN input clock is an output of the same CLOCK_GEN block | 6_4_CLOCK_GEN_INPUT_IS_SELF_OUTPUT-self_reference.jz |
 | CLOCK_GEN_INPUT_NOT_DECLARED | error | S6.4.1 CLOCK_GEN input clock not declared in CLOCKS block | 6_4_CLOCK_GEN_INPUT_NOT_DECLARED-undeclared_input.jz |
 | CLOCK_GEN_INPUT_NO_PERIOD | error | S6.4.1 CLOCK_GEN input clock has no period declared | 6_4_CLOCK_GEN_INPUT_NO_PERIOD-no_input_period.jz |
-| CLOCK_GEN_INVALID_TYPE | error | S6.4.1 Generator type not PLL/DLL/CLKDIV/OSC/BUF | 6_4_CLOCK_GEN_INVALID_TYPE-bad_type.jz |
 | CLOCK_GEN_MISSING_INPUT | error | S6.4.1 No IN clock declaration in CLOCK_GEN block | 6_4_CLOCK_GEN_MISSING_INPUT-no_input.jz |
 | CLOCK_GEN_MISSING_OUTPUT | error | S6.4.1 No OUT clock declaration in CLOCK_GEN block | 6_4_CLOCK_GEN_MISSING_OUTPUT-no_output.jz |
 | CLOCK_GEN_MULTIPLE_DRIVERS | error | S6.4.1 Clock driven by multiple CLOCK_GEN outputs | 6_4_CLOCK_GEN_MULTIPLE_DRIVERS-multi_driver.jz |
@@ -165,4 +164,4 @@ Verify CLOCKS block (period, edge properties), clock source validation (must be 
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All rules for this section are covered by existing tests |
+| CLOCK_GEN_INVALID_TYPE | error | Dead code: test exists (`6_4_CLOCK_GEN_INVALID_TYPE-bad_type.jz`) but rule is dead code |

@@ -46,6 +46,7 @@
         bus [8];
     }
 
+    // Trigger: blackbox INOUT + normal driver share same wire
     @new inst_drv DriverMod {
         IN    [1] en = en;
         IN    [8] din = din;

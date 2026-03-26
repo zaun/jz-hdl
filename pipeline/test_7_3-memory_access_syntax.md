@@ -132,10 +132,7 @@ Verify MEM access syntax for async reads (S7.3.1), sync reads (S7.3.2), sync wri
 | MEM_PORT_ADDR_READ | error | S7.2.1/S7.3.2/S7.7.2 Reading the addr input field | 7_3_MEM_PORT_ADDR_READ-read_addr_input.jz |
 | MEM_ASYNC_PORT_FIELD_DATA | error | S7.2.1/S7.3.1/S7.7.2 .data field on ASYNC port | 7_3_MEM_ASYNC_PORT_FIELD_DATA-async_port_dot_data.jz |
 | MEM_SYNC_ADDR_INVALID_PORT | error | S7.2.1/S7.3.2/S7.7.2 .addr field on ASYNC port | 7_3_MEM_SYNC_ADDR_INVALID_PORT-addr_on_async_port.jz |
-| MEM_SYNC_ADDR_IN_ASYNC_BLOCK | error | S7.2.1/S7.3.2/S7.7.2 SYNC addr in ASYNC block | 7_3_MEM_SYNC_ADDR_IN_ASYNC_BLOCK-sync_addr_in_async.jz |
 | MEM_SYNC_DATA_IN_ASYNC_BLOCK | error | S7.2.1/S7.3.2/S7.7.2 SYNC data in ASYNC block | 7_3_MEM_SYNC_DATA_IN_ASYNC_BLOCK-sync_data_in_async.jz |
-| MEM_SYNC_ADDR_WITHOUT_RECEIVE | error | S7.2.1/S7.3.2 SYNC addr with `=` instead of `<=` | 7_3_MEM_SYNC_ADDR_WITHOUT_RECEIVE-sync_addr_equals.jz |
-| MEM_READ_SYNC_WITH_EQUALS | error | S7.2.1/S7.3.2 SYNC read with `=` instead of `<=` | 7_3_MEM_READ_SYNC_WITH_EQUALS-sync_read_equals.jz |
 | MEM_IN_PORT_FIELD_ACCESS | error | S7.2.2/S7.3.3 Field access on IN (write) port | 7_3_MEM_IN_PORT_FIELD_ACCESS-write_port_dot_field.jz |
 | MEM_WRITE_IN_ASYNC_BLOCK | error | S7.2.2/S7.3.3 MEM write in ASYNC block | 7_3_MEM_WRITE_IN_ASYNC_BLOCK-mem_write_in_async.jz |
 | MEM_WRITE_TO_READ_PORT | error | S7.2.1/S7.3.2 Write to read-only OUT port | 7_2_MEM_WRITE_TO_READ_PORT-write_to_out_port.jz |
@@ -148,12 +145,14 @@ Verify MEM access syntax for async reads (S7.3.1), sync reads (S7.3.2), sync wri
 | MEM_INOUT_INDEXED | error | S7.2.3 Bracket indexing on INOUT port | 7_2_MEM_INOUT_INDEXED-inout_bracket_access.jz |
 | MEM_INOUT_WDATA_IN_ASYNC | error | S7.2.3 INOUT wdata in ASYNC block | 7_2_MEM_INOUT_WDATA_IN_ASYNC-wdata_in_async.jz |
 | MEM_INOUT_ADDR_IN_ASYNC | error | S7.2.3 INOUT addr in ASYNC block | 7_2_MEM_INOUT_ADDR_IN_ASYNC-addr_in_async.jz |
-| MEM_INOUT_WDATA_WRONG_OP | error | S7.2.3 INOUT wdata with `=` operator | 7_3_MEM_INOUT_WDATA_WRONG_OP-inout_wdata_equals.jz |
-| MEM_MULTIPLE_ADDR_ASSIGNS | error | S7.2.3 Multiple addr assigns on INOUT | 7_3_MEM_MULTIPLE_ADDR_ASSIGNS-inout_multi_addr.jz |
-| MEM_MULTIPLE_WDATA_ASSIGNS | error | S7.2.3 Multiple wdata assigns on INOUT | 7_3_MEM_MULTIPLE_WDATA_ASSIGNS-inout_multi_wdata.jz |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| (none) | -- | All memory access syntax rules have validation tests |
+| MEM_SYNC_ADDR_IN_ASYNC_BLOCK | error | Suppressed: test exists (`7_3_MEM_SYNC_ADDR_IN_ASYNC_BLOCK-sync_addr_in_async.jz`) but rule is suppressed |
+| MEM_SYNC_ADDR_WITHOUT_RECEIVE | error | Suppressed: test exists (`7_3_MEM_SYNC_ADDR_WITHOUT_RECEIVE-sync_addr_equals.jz`) but rule is suppressed |
+| MEM_READ_SYNC_WITH_EQUALS | error | Suppressed: test exists (`7_3_MEM_READ_SYNC_WITH_EQUALS-sync_read_equals.jz`) but rule is suppressed |
+| MEM_INOUT_WDATA_WRONG_OP | error | Suppressed: test exists (`7_3_MEM_INOUT_WDATA_WRONG_OP-inout_wdata_equals.jz`) but rule is suppressed |
+| MEM_MULTIPLE_ADDR_ASSIGNS | error | Unimplemented: test exists (`7_3_MEM_MULTIPLE_ADDR_ASSIGNS-inout_multi_addr.jz`) but rule is not yet implemented |
+| MEM_MULTIPLE_WDATA_ASSIGNS | error | Unimplemented: test exists (`7_3_MEM_MULTIPLE_WDATA_ASSIGNS-inout_multi_wdata.jz`) but rule is not yet implemented |

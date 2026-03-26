@@ -84,11 +84,9 @@ Verify CDC block syntax and semantics for all 7 types (BIT, BUS, FIFO, HANDSHAKE
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
 | CDC_BIT_WIDTH_NOT_1 | error | S4.12 BIT CDC source register must be width 1 | 4_12_CDC_BIT_WIDTH_NOT_1-bit_multibit_source.jz |
-| CDC_DEST_ALIAS_ASSIGNED | error | S4.12 CDC destination alias is read-only and may not be assigned | 4_12_CDC_DEST_ALIAS_ASSIGNED-dest_alias_written.jz |
 | CDC_DEST_ALIAS_DUP | error | S4.12 Duplicate CDC destination alias name | 4_12_CDC_DEST_ALIAS_DUP-alias_name_conflict.jz |
 | CDC_PULSE_WIDTH_NOT_1 | error | S4.12 PULSE CDC source register must be width 1 | 4_12_CDC_PULSE_WIDTH_NOT_1-pulse_multibit_source.jz |
 | CDC_RAW_STAGES_FORBIDDEN | error | S4.12 RAW CDC type may not specify n_stages | 4_12_CDC_RAW_STAGES_FORBIDDEN-raw_with_stages.jz |
-| CDC_SOURCE_NOT_PLAIN_REG | error | S4.12 CDC source must be a plain register identifier, not an expression | 4_12_CDC_SOURCE_NOT_PLAIN_REG-sliced_source.jz |
 | CDC_SOURCE_NOT_REGISTER | error | S4.12 CDC source must be a REGISTER, not a wire or other signal type | 4_12_CDC_SOURCE_NOT_REGISTER-wire_as_source.jz |
 | CDC_STAGES_INVALID | error | S4.12 CDC n_stages value must be a positive integer | 4_12_CDC_STAGES_INVALID-non_positive_stages.jz |
 | CDC_TYPE_INVALID | error | S4.12 Unknown or invalid CDC type keyword | 4_12_CDC_TYPE_INVALID-unknown_cdc_type.jz |
@@ -97,4 +95,5 @@ Verify CDC block syntax and semantics for all 7 types (BIT, BUS, FIFO, HANDSHAKE
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All assigned rules for this section are covered by existing tests |
+| CDC_SOURCE_NOT_PLAIN_REG | error | Bug: test exists (`4_12_CDC_SOURCE_NOT_PLAIN_REG-sliced_source.jz`) but rule has a known compiler bug |
+| CDC_DEST_ALIAS_ASSIGNED | error | Bug: test exists (`4_12_CDC_DEST_ALIAS_ASSIGNED-dest_alias_written.jz`) but rule has a known compiler bug |

@@ -33,8 +33,8 @@
         out_c = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: unparenthesized unary minus in sync
-        r <= -val;
+        // Trigger 2: unparenthesized unary plus in sync
+        r <= +val;
     }
 @endmod
 
@@ -76,7 +76,7 @@
     SYNCHRONOUS(CLK=clk) {
         // Trigger 5: unparenthesized unary minus in sync
         r <= -data_in;
-        // Valid: parenthesized (no false positive)
-        s <= (-data_in);
+        // Valid: parenthesized unary plus (no false positive)
+        s <= (+data_in);
     }
 @endmod

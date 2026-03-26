@@ -1,5 +1,7 @@
-// ASSIGN_CONCAT_WIDTH_MISMATCH: Concatenation width sum does not match paired expression width.
-// Tests concat width mismatch in ASYNCHRONOUS and SYNCHRONOUS blocks across modules.
+// ASSIGN_CONCAT_WIDTH_MISMATCH: Concatenation width sum does not match paired expression.
+// Tests RHS concat too narrow, RHS concat too wide, and LHS concat mismatch
+// in ASYNCHRONOUS and SYNCHRONOUS blocks across two modules using alias (=),
+// receive (<=), and drive (=>) operators.
 // Valid matching-width concatenations included to verify no false positives.
 
 @project ASSIGN_CONCAT_WIDTH_MISMATCH_concat_width_mismatch
@@ -13,8 +15,8 @@
     }
 @endproj
 
-// Helper module: concat width mismatches in async block
-@module HelperA
+// Helper module: RHS concat mismatches in ASYNC and SYNC
+@module HelperMod
     PORT {
         IN  [1] clk;
         IN  [4] a;
@@ -27,9 +29,9 @@
         r [8] = 8'h00;
     }
     ASYNCHRONOUS {
-        // Trigger 1: RHS concat too narrow (4+2=6 assigned to 8-bit port)
+        // Trigger 1: RHS concat too narrow (4+2=6 to 8-bit port)
         out_a <= {a, c};
-        // Valid: matching concat width (4+4=8 to 8-bit port, no false positive)
+        // Valid: matching concat width (4+4=8, no false positive)
         out_b <= {a, b};
     }
     SYNCHRONOUS(CLK=clk) {
@@ -49,32 +51,32 @@
     }
     WIRE {
         w [8];
-        ha_a [8];
-        ha_b [8];
+        h_a [8];
+        h_b [8];
     }
     REGISTER {
         r [8] = 8'h00;
     }
 
-    @new inst_a HelperA {
+    @new inst_h HelperMod {
         IN  [1] clk = clk;
         IN  [4] a = a;
         IN  [4] b = b;
         IN  [2] c = c;
-        OUT [8] out_a = ha_a;
-        OUT [8] out_b = ha_b;
+        OUT [8] out_a = h_a;
+        OUT [8] out_b = h_b;
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: RHS concat too wide in top module async (4+4+2=10 to 8-bit wire)
+        // Trigger 3: RHS concat too wide (4+4+2=10 to 8-bit wire)
         w <= {a, b, c};
-        // Trigger 4: LHS concat width mismatch (4+2=6 from 8-bit source via drive)
-        {a, c} => ha_a;
-        out_a = ha_b;
+        // Trigger 4: LHS concat width mismatch (4+2=6 from 8-bit via drive)
+        {a, c} => h_a;
+        out_a = h_b;
         out_b = w;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 5: RHS concat width mismatch in top module sync (4+2=6 to 8-bit reg)
+        // Trigger 5: RHS concat mismatch in top SYNC (4+2=6 to 8-bit reg)
         r <= {r[3:0], c};
     }
 @endmod

@@ -47,6 +47,5 @@ No specific rules defined for this subsection. Section 11.2 defines the scope of
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| — | — | No rules defined for this subsection |
+
+All rules for this section are tested.

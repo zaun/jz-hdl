@@ -60,6 +60,7 @@ Cross-reference and consolidate all `@check` error conditions from sections 9.1-
 | DIRECTIVE_INVALID_CONTEXT | error | `9_3_DIRECTIVE_INVALID_CONTEXT-check_in_async.jz`, `9_3_DIRECTIVE_INVALID_CONTEXT-check_in_sync.jz` |
 
 ### 5.2 Rules Not Tested
+
 | Rule ID | Severity | Gap Description |
 |---------|----------|-----------------|
-| CHECK_INVALID_PLACEMENT | error | Rule ID exists in rules.c for "@check may not appear inside conditional or @feature bodies" but is not directly emitted by current tests. The compiler emits DIRECTIVE_INVALID_CONTEXT for @check inside ASYNC/SYNC blocks. CHECK_INVALID_PLACEMENT may trigger for @check inside @feature guards or other conditional directive bodies -- no dedicated test exists for that scenario yet. |
+| CHECK_INVALID_PLACEMENT | error | Covered in test_9_3-check_placement_rules.md (cross-reference: @check inside conditional or @feature bodies). Test scenario added there. |

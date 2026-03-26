@@ -109,8 +109,8 @@ Verify that all operator categories are correctly recognized, parsed, and produc
 | SPECIAL_DRIVER_IN_EXPRESSION | error | S2.3 GND/VCC may not appear in arithmetic/logical expressions | 2_4_SPECIAL_DRIVER_IN_EXPRESSION-gnd_vcc_in_expr.jz |
 | SPECIAL_DRIVER_IN_CONCAT | error | S2.3 GND/VCC may not appear in concatenations | 2_4_SPECIAL_DRIVER_IN_CONCAT-gnd_vcc_in_concat.jz |
 | SPECIAL_DRIVER_SLICED | error | S2.3 GND/VCC may not be sliced or indexed | 1_3_SPECIAL_DRIVER_SLICED-vcc_gnd_sliced.jz, 2_4_SPECIAL_DRIVER_SLICED-gnd_vcc_sliced.jz |
-| SPECIAL_DRIVER_IN_INDEX | error | S2.3 GND/VCC may not appear in slice/index expressions | 2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz |
-
 ### 5.2 Rules Not Tested Here (covered by other Section 3 or Section 2 tests)
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| SPECIAL_DRIVER_IN_INDEX | error | Dead code: test exists (`2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz`) but rule is dead code |

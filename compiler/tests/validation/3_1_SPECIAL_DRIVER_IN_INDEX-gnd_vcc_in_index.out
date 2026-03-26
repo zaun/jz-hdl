@@ -1,0 +1,2 @@
+File: 3_1_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz
+      23:19   error PARSE000 parse error near token 'GND': expected expression in index (orig: PARSE000)

@@ -74,10 +74,8 @@ Verify @feature/@else/@endfeat conditional compilation: expression evaluation (C
 | FEATURE_COND_WIDTH_NOT_1 | error | S4.14 Feature guard condition must evaluate to a width-1 boolean | 4_14_FEATURE_COND_WIDTH_NOT_1-wide_condition.jz |
 | FEATURE_EXPR_INVALID_CONTEXT | error | S4.14 Feature guard expression must use only CONFIG or CONST values, not runtime signals | 4_14_FEATURE_EXPR_INVALID_CONTEXT-runtime_signal_in_condition.jz |
 | FEATURE_NESTED | error | S4.14 @feature blocks may not be nested | 4_14_FEATURE_NESTED-nested_feature_in_async.jz, 4_14_FEATURE_NESTED-nested_feature_in_else.jz, 4_14_FEATURE_NESTED-nested_feature_in_sync.jz |
-| FEATURE_VALIDATION_BOTH_PATHS | error | S4.14 Both branches of @feature guard must pass full semantic validation | 4_14_FEATURE_VALIDATION_BOTH_PATHS-semantic_error_in_branch.jz |
-
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All rules tested |
+| FEATURE_VALIDATION_BOTH_PATHS | error | Unimplemented: no validation test exists; rule is not yet implemented in the compiler |

@@ -1,0 +1,2 @@
+File: 10_8_ASSIGN_MULTIPLE_SAME_BITS-template_async_error.jz
+      19:5    error ASSIGN_MULTIPLE_SAME_BITS S1.5/S5.2 Same bits assigned more than once on a single execution path (exclusive assignment violation)

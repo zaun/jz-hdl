@@ -77,15 +77,14 @@ Verify all recommended warnings are correctly detected and reported: unused regi
 | WARN_UNSINKED_REGISTER | warning | Register written but value never read | `12_3_WARN_UNSINKED_REGISTER-written_never_read.jz` |
 | WARN_UNDRIVEN_REGISTER | warning | Register read but never written | `12_3_WARN_UNDRIVEN_REGISTER-read_never_written.jz` |
 | WARN_UNCONNECTED_OUTPUT | warning | Output port unconnected | `12_3_WARN_UNCONNECTED_OUTPUT-unconnected_output_port.jz` |
-| WARN_INCOMPLETE_SELECT_ASYNC | warning | Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block | `12_3_WARN_INCOMPLETE_SELECT_ASYNC-incomplete_select.jz` |
 | WARN_DEAD_CODE_UNREACHABLE | warning | Dead code (unreachable statements) | `12_3_WARN_DEAD_CODE_UNREACHABLE-unreachable_branches.jz` |
 | WARN_UNUSED_MODULE | warning | Module declared but never instantiated | `12_3_WARN_UNUSED_MODULE-unused_module.jz` |
-| WARN_UNUSED_WIRE | warning | WIRE declared but never driven or read | `12_3_WARN_UNUSED_WIRE-unused_wire.jz` |
-| WARN_UNUSED_PORT | warning | PORT declared but never used | `12_3_WARN_UNUSED_PORT-unused_port.jz` |
 | WARN_INTERNAL_TRISTATE | warning | Internal tri-state without --tristate-default flag | `12_3_WARN_INTERNAL_TRISTATE-internal_tristate.jz` |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| — | — | All recommended warning rules are tested |
+| WARN_INCOMPLETE_SELECT_ASYNC | warning | Suppressed by SELECT_DEFAULT_RECOMMENDED_ASYNC: test exists (`12_3_WARN_INCOMPLETE_SELECT_ASYNC-incomplete_select.jz`) but rule is suppressed |
+| WARN_UNUSED_WIRE | warning | Suppressed by NET_DANGLING_UNUSED: test exists (`12_3_WARN_UNUSED_WIRE-unused_wire.jz`) but rule is suppressed |
+| WARN_UNUSED_PORT | warning | Suppressed by NET_DANGLING_UNUSED: test exists (`12_3_WARN_UNUSED_PORT-unused_port.jz`) but rule is suppressed |

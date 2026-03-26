@@ -66,6 +66,5 @@ Verify FPGA resource mapping rules: BLOCK MEM maps to BSRAM primitives, DISTRIBU
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| — | — | All synthesis-related rules have validation tests |
+
+All rules for this section are tested.

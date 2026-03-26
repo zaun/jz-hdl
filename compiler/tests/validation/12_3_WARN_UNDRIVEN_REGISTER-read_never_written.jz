@@ -1,5 +1,6 @@
 // WARN_UNDRIVEN_REGISTER: Register read but never written.
 // Tests undriven register detection across multiple modules.
+// Register is read in SYNCHRONOUS and ASYNCHRONOUS but never assigned.
 // Valid registers (both read and written) included for no false positives.
 
 @project WARN_UNDRIVEN_REGISTER_read_never_written
@@ -19,7 +20,7 @@
     REGISTER {
         // Trigger 1: register read in SYNC but never written
         frozen [1] = 1'b0;
-        // Valid: register that is both read and written
+        // Valid: register both read and written
         r [1] = 1'b0;
     }
 
@@ -46,9 +47,9 @@
     };
 
     REGISTER {
-        // Trigger 2: register read in SYNC but never written in top module
+        // Trigger 2: register read but never written in top module
         static_val [1] = 1'b1;
-        // Valid: register that is both read and written
+        // Valid: register both read and written
         r [1] = 1'b0;
     }
 

@@ -1,8 +1,9 @@
 // HAPPY_PATH: INOUT ports are preserved (not transformed) under --tristate-default=GND.
-// Covers: (1) top-level INOUT port preserved, (2) OE extraction success through shared
-// INOUT bus, (3) bidirectional bus usage, (4) nested INOUT through module hierarchy.
-// Two child modules share INOUT bus with mutually exclusive enables; OE extracted cleanly.
-// Top-level INOUT port uses IF/ELSE z pattern — preserved as I/O pad tri-state.
+// Covers: (1) top-level INOUT port preserved with IF/ELSE z pattern,
+// (2) OE extraction success through shared INOUT bus with mutually exclusive enables,
+// (3) bidirectional bus usage (read from INOUT-connected wire),
+// (4) nested INOUT through module hierarchy via @new instantiation,
+// (5) internal tri-state wire transformed while INOUT preserved.
 
 @project HAPPY_PATH_tristate_inout_ok
     @top TopMod {
@@ -27,7 +28,7 @@
     }
 @endmod
 
-// DriverB: drives shared INOUT bus when en == 1'b0
+// DriverB: drives shared INOUT bus when en == 1'b0 (mutually exclusive with DriverA)
 @module DriverB
     PORT {
         IN    [1] en;

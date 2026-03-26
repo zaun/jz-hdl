@@ -1,6 +1,6 @@
 // WIDTH_NONPOSITIVE_OR_NONINT: Declared width <= 0 or not an integer.
 // Tests zero-width declarations in PORT, WIRE, and REGISTER blocks
-// across multiple modules connected via @new.
+// across two modules connected via @new.
 // Valid positive-width declarations included to verify no false positives.
 
 @project WIDTH_NONPOSITIVE_OR_NONINT_zero_width
@@ -11,20 +11,20 @@
     }
 @endproj
 
-// Helper module: zero-width in WIRE and REGISTER declarations
-@module HelperA
+// Helper module: zero-width in WIRE and REGISTER
+@module HelperMod
     PORT {
         IN  [1] clk;
         IN  [8] a;
         OUT [8] data;
     }
     WIRE {
-        // Trigger 1: zero-width wire in helper module
+        // Trigger 1: zero-width wire in helper
         bad_w [0];
     }
     REGISTER {
         r [8] = 8'h00;
-        // Trigger 2: zero-width register in helper module
+        // Trigger 2: zero-width register in helper
         bad_r [0] = 1'b0;
     }
     ASYNCHRONOUS {
@@ -42,7 +42,7 @@
         OUT [8] data_out;
     }
     WIRE {
-        ha_data [8];
+        h_data [8];
         // Trigger 3: zero-width wire in top module
         bad_w2 [0];
     }
@@ -52,14 +52,14 @@
         bad_r2 [0] = 1'b0;
     }
 
-    @new inst_a HelperA {
+    @new inst_h HelperMod {
         IN  [1] clk = clk;
         IN  [8] a = data_in;
-        OUT [8] data = ha_data;
+        OUT [8] data = h_data;
     };
 
     ASYNCHRONOUS {
-        data_out = ha_data;
+        data_out = h_data;
     }
     SYNCHRONOUS(CLK=clk) {
         r <= r;

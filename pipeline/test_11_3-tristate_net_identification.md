@@ -52,10 +52,8 @@ Verify the compiler correctly identifies internal tri-state nets (nets with z as
 | Rule ID | Severity | Description | Test Case(s) | Also Tested In |
 |---------|----------|-------------|--------------|----------------|
 | NET_MULTIPLE_ACTIVE_DRIVERS | error | Multiple active drivers on same signal; for tri-state, all but one must assign z | `11_3_NET_MULTIPLE_ACTIVE_DRIVERS-multi_driver_non_tristate.jz` | test_1_6-high_impedance_and_tristate.md |
-| NET_TRI_STATE_ALL_Z_READ | error | All drivers assign z but signal is read; at least one driver must provide a value | `11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz` | test_1_6-high_impedance_and_tristate.md |
-
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| — | — | All rules for this subsection are tested |
+| NET_TRI_STATE_ALL_Z_READ | error | Suppressed by ASYNC_FLOATING_Z_READ: test exists (`11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz`) but rule is suppressed |

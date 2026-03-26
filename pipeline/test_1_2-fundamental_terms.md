@@ -82,7 +82,6 @@ Verify that the compiler correctly implements the semantic concepts defined in S
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
 | NET_FLOATING_WITH_SINK | error | S1.2/S4.10 Signal is read but never driven (floating net) | 1_2_NET_FLOATING_WITH_SINK-floating_net_read.jz |
-| NET_TRI_STATE_ALL_Z_READ | error | S4.10 All drivers assign z but signal is read | 1_2_ASYNC_FLOATING_Z_READ-all_z_drivers_read.jz |
 | NET_MULTIPLE_ACTIVE_DRIVERS | error | S1.2/S1.5/S4.10 Multiple active drivers on same signal | 11_3_NET_MULTIPLE_ACTIVE_DRIVERS-multi_driver_non_tristate.jz (cross-ref S11) |
 | NET_DANGLING_UNUSED | warning | S5.1/S8.3 Signal declared but never used (neither driven nor read) | 1_2_NET_DANGLING_UNUSED-unused_signal.jz |
 | OBS_X_TO_OBSERVABLE_SINK | error | S1.2/S2.1/S3.2 Expression containing x bits drives observable sink | 1_2_OBS_X_TO_OBSERVABLE_SINK-x_bits_to_observable.jz |
@@ -93,4 +92,4 @@ Verify that the compiler correctly implements the semantic concepts defined in S
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| (none) | -- | All rules assigned to this section have validation tests; combinational loop and multi-driver rules are cross-referenced from sections 11.3 and 12.2 |
+| NET_TRI_STATE_ALL_Z_READ | error | Suppressed by ASYNC_FLOATING_Z_READ: test exists (`1_2_ASYNC_FLOATING_Z_READ-all_z_drivers_read.jz`) but rule is suppressed |

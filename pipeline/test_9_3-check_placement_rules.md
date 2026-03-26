@@ -18,6 +18,7 @@ Verify that `@check` is accepted at project scope and module scope (between decl
 ### 2.2 Error Cases
 1. `@check` inside ASYNCHRONOUS block produces DIRECTIVE_INVALID_CONTEXT (+ PARSE000 follow-on)
 2. `@check` inside SYNCHRONOUS block produces DIRECTIVE_INVALID_CONTEXT (+ PARSE000 follow-on)
+3. `@check` inside @feature guard body produces CHECK_INVALID_PLACEMENT -- @check may not appear inside conditional or @feature bodies
 
 ### 2.3 Edge Cases
 1. `@check` immediately before a block definition (valid -- at module scope, not inside block)
@@ -30,6 +31,7 @@ Verify that `@check` is accepted at project scope and module scope (between decl
 | 2 | @check inside ASYNCHRONOUS block (follow-on) | Parse error after invalid directive | PARSE000 | error |
 | 3 | @check inside SYNCHRONOUS block | `@check (1, "sync check");` inside SYNC | DIRECTIVE_INVALID_CONTEXT | error |
 | 4 | @check inside SYNCHRONOUS block (follow-on) | Parse error after invalid directive | PARSE000 | error |
+| 5 | @check inside @feature guard | `@check (1, "feat check");` inside @feature body | CHECK_INVALID_PLACEMENT | error |
 
 ## 4. Existing Validation Tests
 | Test File | Rule Tested | Triggers |
@@ -37,6 +39,7 @@ Verify that `@check` is accepted at project scope and module scope (between decl
 | `9_3_HAPPY_PATH-check_placement_ok.jz` | (none -- clean) | 0 diagnostics |
 | `9_3_DIRECTIVE_INVALID_CONTEXT-check_in_async.jz` | DIRECTIVE_INVALID_CONTEXT, PARSE000 | 2 diagnostics |
 | `9_3_DIRECTIVE_INVALID_CONTEXT-check_in_sync.jz` | DIRECTIVE_INVALID_CONTEXT, PARSE000 | 2 diagnostics |
+| *(planned)* `9_3_CHECK_INVALID_PLACEMENT-check_in_feature.jz` | CHECK_INVALID_PLACEMENT | @check inside @feature guard body |
 
 ## 5. Rules Matrix
 
@@ -44,9 +47,8 @@ Verify that `@check` is accepted at project scope and module scope (between decl
 | Rule ID | Severity | Test Case(s) |
 |---------|----------|-------------|
 | DIRECTIVE_INVALID_CONTEXT | error | `9_3_DIRECTIVE_INVALID_CONTEXT-check_in_async.jz`, `9_3_DIRECTIVE_INVALID_CONTEXT-check_in_sync.jz` |
-| CHECK_INVALID_PLACEMENT | error | Semantically covered via DIRECTIVE_INVALID_CONTEXT tests; the compiler emits DIRECTIVE_INVALID_CONTEXT for @check inside blocks rather than the dedicated CHECK_INVALID_PLACEMENT rule ID |
 
 ### 5.2 Rules Not Tested
 | Rule ID | Severity | Gap Description |
 |---------|----------|-----------------|
-| CHECK_INVALID_PLACEMENT | error | The rule ID exists in rules.c ("@check may not appear inside conditional or @feature bodies") but the compiler currently emits DIRECTIVE_INVALID_CONTEXT for @check-in-block scenarios. The CHECK_INVALID_PLACEMENT rule may be intended for @check inside `@feature` guards or conditional bodies -- no dedicated test yet targets that specific rule ID. Consider adding a test with @check inside a @feature block if the compiler supports it. |
+| CHECK_INVALID_PLACEMENT | error | Validation test file 9_3_CHECK_INVALID_PLACEMENT-check_in_feature.jz does not yet exist |

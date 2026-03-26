@@ -66,6 +66,7 @@ Verify that the compiler correctly parses and validates bit-slice syntax `signal
 | 1_3_SLICE_MSB_LESS_THAN_LSB-reversed_indices.jz | SLICE_MSB_LESS_THAN_LSB | Slice uses MSB < LSB |
 | 1_3_SPECIAL_DRIVER_SLICED-vcc_gnd_sliced.jz | SPECIAL_DRIVER_SLICED | GND/VCC may not be sliced or indexed |
 | 1_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-non_const_in_slice.jz | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | CONST used in width/slice not declared or evaluates invalidly |
+| *(planned)* 1_3_SLICE_INDEX_INVALID-non_integer_index.jz | SLICE_INDEX_INVALID | Slice index is not an integer/CONST or CONST is undefined/negative |
 
 ## 5. Rules Matrix
 
@@ -77,9 +78,9 @@ Verify that the compiler correctly parses and validates bit-slice syntax `signal
 | SLICE_INDEX_OUT_OF_RANGE | error | S1.3/S8.1 Slice indices are < 0 or >= signal width | 1_3_SLICE_INDEX_OUT_OF_RANGE-index_exceeds_width.jz |
 | CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly | 1_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-non_const_in_slice.jz |
 | SPECIAL_DRIVER_SLICED | error | S2.3 GND/VCC may not be sliced or indexed | 1_3_SPECIAL_DRIVER_SLICED-vcc_gnd_sliced.jz |
-| SLICE_INDEX_INVALID | error | S1.3/S8.1 Slice index is not an integer/CONST or CONST is undefined/negative | 1_3_SLICE_INDEX_INVALID-non_integer_index.jz |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
+| SLICE_INDEX_INVALID | error | Validation test file 1_3_SLICE_INDEX_INVALID-non_integer_index.jz does not yet exist |

@@ -1,2 +1,2 @@
 File: 11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz
-      40:9    error NET_MULTIPLE_ACTIVE_DRIVERS S1.2/S1.5/S4.10 Multiple active drivers on same signal; for tri-state, all but one must assign `z`
+      41:9    error NET_MULTIPLE_ACTIVE_DRIVERS S1.2/S1.5/S4.10 Multiple active drivers on same signal; for tri-state, all but one must assign `z`

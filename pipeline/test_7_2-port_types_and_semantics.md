@@ -89,6 +89,5 @@ Verify MEM port types (OUT/IN/INOUT) and their read/write semantics, including d
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (none) | -- | All port type and semantics rules have validation tests |
+
+All rules for this section are tested.

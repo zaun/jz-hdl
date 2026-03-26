@@ -34,7 +34,7 @@ Happy-path coverage of same signal names in different modules, module-local CONS
 
 No untested rules for section 10.1. This section defines no rule IDs; it is a conceptual overview. Happy-path coverage is provided by the validation test.
 
-No untested rules for section 10.3. All rules have corresponding validation test files. `TEMPLATE_EXTERNAL_REF` is now correctly tested (fires during `@apply` expansion — 4 triggers detected). `TEMPLATE_SCRATCH_WIDTH_INVALID` is not yet enforced by the compiler — its test `.out` file is empty (see `issues.md` for details).
+No untested rules for section 10.3. All rules have corresponding validation test files. `TEMPLATE_EXTERNAL_REF` is now correctly tested (fires during `@apply` expansion — 5 triggers detected). `TEMPLATE_SCRATCH_WIDTH_INVALID` is not yet enforced by the compiler — its test `.out` file is empty (see `issues.md` for details).
 
 No untested rules for section 10.4. All rules from the test plan have corresponding validation tests.
 
@@ -79,8 +79,8 @@ No new error rules. Section 11.5 cross-references the same two rules already tes
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Tested under 11.7 (`11_GND_7_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz`); unreachable — `NET_MULTIPLE_ACTIVE_DRIVERS` fires first (see `issues.md`) |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Tested under 11.7 (`11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz`); not emitted — compiler transforms per-bit patterns without error (see `issues.md`) |
+| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL | error | Tested under 11.5 and 11.7 (`11_GND_5_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz`, `11_GND_7_...`); unreachable — `NET_MULTIPLE_ACTIVE_DRIVERS` fires first (see `issues.md`) |
+| TRISTATE_TRANSFORM_PER_BIT_FAIL | error | Tested under 11.5 and 11.7 (`11_GND_5_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit.jz`, `11_GND_7_...`); not emitted — compiler transforms per-bit patterns without error (see `issues.md`) |
 
 Happy-path coverage of mutually exclusive enables (IF/ELSE structure) and full-width z assignments across multiple modules is provided by `11_GND_5_HAPPY_PATH-tristate_validation_ok.jz`.
 
@@ -88,8 +88,10 @@ Happy-path coverage of mutually exclusive enables (IF/ELSE structure) and full-w
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
-| TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | error | Tested — fires when OE extractor cannot parse z pattern (e.g., concatenated z literals); test `11_GND_7_TRISTATE_TRANSFORM_OE_EXTRACT_FAIL-ambiguous_oe.jz` |
-| TRISTATE_TRANSFORM_BLACKBOX_PORT | error | Not implemented — rule defined in `rules.c` but no code in `ir_tristate_transform.c` emits it; blackbox modules are not yet handled by the tri-state transform (see `issues.md`) |
+| TRISTATE_TRANSFORM_OE_EXTRACT_FAIL | error | Tested — 1 trigger (concatenated z literal in INOUT multi-driver); `11_GND_6_TRISTATE_TRANSFORM_OE_EXTRACT_FAIL-inout_oe_fail.jz` |
+| TRISTATE_TRANSFORM_BLACKBOX_PORT | error | Not implemented — rule defined in `rules.c` but never emitted; test captures `TRISTATE_TRANSFORM_OE_EXTRACT_FAIL` instead; `11_GND_6_TRISTATE_TRANSFORM_BLACKBOX_PORT-blackbox_inout.jz` (see `issues.md`) |
+
+Happy-path coverage (top-level INOUT preserved, OE extraction success, bidirectional bus, nested INOUT through hierarchy, internal tri-state transformed) is provided by `11_GND_6_HAPPY_PATH-tristate_inout_ok.jz`.
 
 ## Section 11.7 — Error Conditions and Warnings
 
@@ -142,7 +144,7 @@ No untested rules for section 12.2. Both rules from the test plan (`COMB_LOOP_UN
 
 ## Section 12.3 — Recommended Warnings
 
-No untested rules for section 12.3. All 10 warning rules from the test plan have corresponding validation test files. However, three rules are not emitted by the compiler under their planned rule IDs:
+No untested rules for section 12.3. All 10 warning rules from the test plan have corresponding validation test files and all are correctly emitted by the compiler:
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
@@ -153,9 +155,9 @@ No untested rules for section 12.3. All 10 warning rules from the test plan have
 | WARN_DEAD_CODE_UNREACHABLE | warning | Tested — works correctly |
 | WARN_UNUSED_MODULE | warning | Tested — works correctly |
 | WARN_INTERNAL_TRISTATE | warning | Tested — works correctly |
-| WARN_INCOMPLETE_SELECT_ASYNC | warning | Not emitted — `SELECT_DEFAULT_RECOMMENDED_ASYNC` fires instead (see `issues.md`) |
-| WARN_UNUSED_WIRE | warning | Not emitted — `NET_DANGLING_UNUSED` fires instead (see `issues.md`) |
-| WARN_UNUSED_PORT | warning | Not emitted — `NET_DANGLING_UNUSED` fires instead (see `issues.md`) |
+| WARN_INCOMPLETE_SELECT_ASYNC | warning | Tested — works correctly (co-fires ASYNC_UNDEFINED_PATH_NO_DRIVER) |
+| WARN_UNUSED_WIRE | warning | Tested — works correctly |
+| WARN_UNUSED_PORT | warning | Tested — works correctly |
 
 ## Section 12.4 — Path Security
 
@@ -206,23 +208,24 @@ Unterminated block comments (`/* no end`) are handled by the lexer as a generic 
 
 ## Section 1.2 — Fundamental Terms
 
-No untested rules for section 1.2. All 7 error/warning rules from the test plan have corresponding validation tests:
+All 8 testable rules from the test plan have corresponding validation tests:
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
 | NET_FLOATING_WITH_SINK | error | Tested — works correctly |
-| ASYNC_FLOATING_Z_READ | error | Tested — works correctly |
+| ASYNC_FLOATING_Z_READ | error | Tested — works correctly (fires instead of NET_TRI_STATE_ALL_Z_READ) |
 | OBS_X_TO_OBSERVABLE_SINK | error | Tested — works correctly |
 | REG_INIT_CONTAINS_X | error | Tested — works correctly |
-| DOMAIN_CONFLICT | error | Tested — works correctly |
-| MULTI_CLK_ASSIGN | error | Tested — works correctly |
+| DOMAIN_CONFLICT | error | Tested — works correctly (co-fires with MULTI_CLK_ASSIGN) |
+| MULTI_CLK_ASSIGN | error | Tested — works correctly (co-fires with DOMAIN_CONFLICT) |
 | LATCH_ASSIGN_IN_SYNC | error | Tested — works correctly |
-| NET_DANGLING_UNUSED | warning | Tested — works correctly |
+| NET_DANGLING_UNUSED / WARN_UNUSED_WIRE | warning | Tested — WARN_UNUSED_WIRE fires for unused wires |
 
-Rules from the "Not Tested" section of the test plan:
-- `NET_TRI_STATE_ALL_Z_READ` — overlaps with `ASYNC_FLOATING_Z_READ` (tested under section 11.3)
-- `NET_MULTIPLE_ACTIVE_DRIVERS` — tested under section 1.5 exclusive assignment tests
-- `NET_DANGLING_UNUSED` — now has a dedicated test (`1_2_NET_DANGLING_UNUSED-unused_signal.jz`)
+Untested rules:
+- `NET_TRI_STATE_ALL_Z_READ` — dead rule: defined in `rules.c` but no semantic code emits it; `ASYNC_FLOATING_Z_READ` covers the same condition (see issues.md)
+- `NET_MULTIPLE_ACTIVE_DRIVERS` — cross-referenced to section 11.3 tests
+- `COMB_LOOP_UNCONDITIONAL` — cross-referenced to section 12.2 tests
+- `COMB_LOOP_CONDITIONAL_SAFE` — cross-referenced to section 12.2 tests
 
 ## Section 1.5 — Exclusive Assignment Rule
 
@@ -238,18 +241,15 @@ No untested rules for section 1.5. All 5 exclusive assignment rules from the tes
 
 ## Section 1.3 — Bit Slicing and Indexing
 
-No untested rules for section 1.3. All four testable rules from the test plan have corresponding validation tests:
+No untested rules for section 1.3. All five rules from the test plan have corresponding validation tests:
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
-| SLICE_MSB_LESS_THAN_LSB | error | Tested — works correctly |
-| SLICE_INDEX_OUT_OF_RANGE | error | Tested — works correctly |
-| CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | Tested — works correctly |
-| SPECIAL_DRIVER_SLICED | error | Tested — works correctly |
-
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| SLICE_INDEX_INVALID | error | No dedicated test; fires when a literal in a slice position fails to parse as a non-negative integer. Normal JZ-HDL syntax restricts slice indices to bare decimal integers or identifiers, making this rule difficult to trigger through valid parser input. The parser rejects most non-integer slice constructs before semantic analysis. |
+| SLICE_MSB_LESS_THAN_LSB | error | Tested — 3 triggers across async RHS, sync RHS, sync LHS in 2 modules |
+| SLICE_INDEX_OUT_OF_RANGE | error | Tested — 4 triggers: boundary, far out-of-range, both indices OOR, LHS OOR in 2 modules |
+| CONST_UNDEFINED_IN_WIDTH_OR_SLICE | error | Tested — 3 triggers: wire name, register name, port name as slice index across 2 modules |
+| SPECIAL_DRIVER_SLICED | error | Tested — 4 triggers: VCC async, GND async, VCC sync, GND sync across 2 modules |
+| SLICE_INDEX_INVALID | error | Tested — 3 triggers: sized literal in MSB (async RHS), sized literal in LSB (sync RHS), sized literal in LHS MSB (sync LHS) across 2 modules |
 
 ## Section 1.6 — High-Impedance and Tri-State Logic
 
@@ -283,8 +283,8 @@ No untested rules for section 2.3. All 6 rules from the test plan have correspon
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
-| TYPE_BINOP_WIDTH_MISMATCH | error | Tested — 6 triggers across ADD, EQ, SUB, OR, XOR, MUL operators in ASYNC and SYNC blocks across 2 modules |
-| ASSIGN_WIDTH_NO_MODIFIER | error | Tested — 6 triggers across alias (=) and receive (<=) assignments with narrower-to-wider and wider-to-narrower mismatches in ASYNC and SYNC blocks across 2 modules |
+| TYPE_BINOP_WIDTH_MISMATCH | error | Tested — 14 triggers covering all 14 binary operators (+, -, *, /, %, &, \|, ^, ==, !=, <, >, <=, >=) with mismatched widths in ASYNC and SYNC blocks across 2 modules |
+| ASSIGN_WIDTH_NO_MODIFIER | error | Tested — 8 triggers across alias (=), receive (<=), and drive (=>) assignments with narrower-to-wider and wider-to-narrower mismatches in ASYNC and SYNC blocks across 2 modules |
 | ASSIGN_CONCAT_WIDTH_MISMATCH | error | Tested — 5 triggers across RHS concat too narrow, RHS concat too wide, LHS concat mismatch, in ASYNC and SYNC blocks across 2 modules |
 | TERNARY_BRANCH_WIDTH_MISMATCH | error | Tested — 5 triggers across direct assignment, literal arm, SYNC block contexts in ASYNC and SYNC blocks across 2 modules |
 | WIDTH_NONPOSITIVE_OR_NONINT | error | Tested — 4 triggers across zero-width WIRE and REGISTER declarations in 2 modules |
@@ -296,20 +296,43 @@ No untested rules for section 3.4. This section provides illustrative operator e
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
-| UNARY_ARITH_MISSING_PARENS | error | Tested — 5 triggers across unary minus/plus in ASYNC and SYNC blocks across 2 modules |
+| UNARY_ARITH_MISSING_PARENS | error | Tested — 6 triggers across unary minus/plus in ASYNC and SYNC blocks across 2 modules |
 | TERNARY_BRANCH_WIDTH_MISMATCH | error | Tested — 5 triggers across concat-vs-scalar mismatches in ASYNC and SYNC blocks across 2 modules |
 
-Happy-path coverage of all S3.4 canonical examples (unary negation, subtraction negation, logical/arithmetic shift, carry capture, ternary+concat, tri-state driver) is provided by `3_4_OPERATOR_EXAMPLES-spec_examples_ok.jz`.
+Happy-path coverage of all S3.4 canonical examples (unary negation, subtraction negation, logical/arithmetic shift, carry capture, ternary+concat, tri-state driver, edge cases) is provided by `3_4_HAPPY_PATH-operator_examples_ok.jz`.
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| SPECIAL_DRIVER_IN_INDEX | error | Dead code in compiler — rule exists in `rules.c` but is never triggered; test exists under `2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz` |
 
 ## Section 3.3 — Operator Precedence
 
 No tests generated for section 3.3. This section defines the 15-level operator precedence hierarchy as parser behavior, not diagnostic rules. Correctness is verified by AST structure comparison, not by compiler diagnostics. The `--info --lint` validation framework cannot test precedence because it only captures diagnostic output. No rule IDs exist in `rules.c` for operator precedence.
 
-No untested rules for section 3.1. Both rules from the test plan (`LOGICAL_WIDTH_NOT_1`, `TYPE_BINOP_WIDTH_MISMATCH`) have corresponding validation tests. Six rules are deferred to section 3.2 tests (`UNARY_ARITH_MISSING_PARENS`, `TERNARY_COND_WIDTH_NOT_1`, `TERNARY_BRANCH_WIDTH_MISMATCH`, `CONCAT_EMPTY`, `DIV_CONST_ZERO`, `DIV_UNGUARDED_RUNTIME_ZERO`). The happy-path test (`3_1_HAPPY_PATH-operator_categories_ok.jz`) covers all operator categories (unary arithmetic, binary arithmetic, multiply, divide, modulus, bitwise, logical, comparison, shift, ternary, concatenation).
+## Section 3.1 — Operator Categories
+
+All 12 rule IDs from the test plan now have corresponding validation tests under the `3_1_` prefix:
+
+| Rule ID | Severity | Status |
+|---------|----------|--------|
+| LOGICAL_WIDTH_NOT_1 | error | Tested — 8 triggers across &&, \|\|, ! with multi-bit operands in ASYNC and SYNC blocks across 2 modules |
+| TYPE_BINOP_WIDTH_MISMATCH | error | Tested — 8 triggers across +, -, ==, !=, <, &, ^, * with mismatched widths in ASYNC and SYNC blocks across 2 modules |
+| UNARY_ARITH_MISSING_PARENS | error | Tested — 5 triggers across unary minus/plus in ASYNC and SYNC blocks across 2 modules |
+| TERNARY_COND_WIDTH_NOT_1 | error | Tested — 4 triggers with 8-bit condition in ASYNC and SYNC blocks across 2 modules |
+| TERNARY_BRANCH_WIDTH_MISMATCH | error | Tested — 4 triggers with mismatched 8-bit/4-bit branches in ASYNC and SYNC blocks across 2 modules |
+| CONCAT_EMPTY | error | Tested — 4 triggers with empty `{}` in ASYNC and SYNC blocks across 2 modules |
+| DIV_CONST_ZERO | error | Tested — 4 triggers with `/` and `%` by literal zero in SYNC blocks across 2 modules |
+| DIV_UNGUARDED_RUNTIME_ZERO | warning | Tested — 4 triggers with unguarded `/` and `%` in SYNC blocks across 2 modules; guarded patterns (!=, >, ==nonzero) verify no false positives |
+| SPECIAL_DRIVER_IN_EXPRESSION | error | Tested — 6 triggers across GND/VCC in binary add, OR, unary NOT, ternary condition in ASYNC and SYNC blocks across 2 modules |
+| SPECIAL_DRIVER_IN_CONCAT | error | Tested — 4 triggers across GND/VCC in concatenation in ASYNC and SYNC blocks across 2 modules |
+| SPECIAL_DRIVER_SLICED | error | Tested — 4 triggers across VCC/GND sliced with range in ASYNC and SYNC blocks across 2 modules |
+| SPECIAL_DRIVER_IN_INDEX | error | Parser emits PARSE000 instead — test captures parser behavior; rule is unreachable dead code (see `issues.md`) |
+
+Happy-path coverage of all operator categories (unary arithmetic, binary arithmetic, multiply, divide, modulus, bitwise, logical, comparison including <=/>= , shift, ternary, concatenation) is provided by `3_1_HAPPY_PATH-operator_categories_ok.jz`.
 
 ## Section 3.2 — Operator Definitions
 
-No untested rules for section 3.2. All 8 rules from the test plan have corresponding validation tests:
+No untested rules for section 3.2. All 8 S3.2-primary rules from the test plan have corresponding validation tests:
 
 | Rule ID | Severity | Status |
 |---------|----------|--------|
@@ -319,8 +342,20 @@ No untested rules for section 3.2. All 8 rules from the test plan have correspon
 | TERNARY_BRANCH_WIDTH_MISMATCH | error | Tested — 4 triggers with mismatched 8-bit/4-bit branches in ASYNC and SYNC blocks across 2 modules |
 | CONCAT_EMPTY | error | Tested — 4 triggers with empty `{}` in ASYNC and SYNC blocks across 2 modules |
 | DIV_CONST_ZERO | error | Tested — 4 triggers with `/` and `%` by literal zero in SYNC blocks across 2 modules |
-| DIV_UNGUARDED_RUNTIME_ZERO | warning | Tested — 4 triggers with unguarded `/` and `%` in SYNC blocks across 2 modules; guarded patterns (!=, >, ==nonzero, nested) verify no false positives |
+| DIV_UNGUARDED_RUNTIME_ZERO | warning | Tested — 4 triggers with unguarded `/` and `%` in SYNC blocks across 2 modules; guarded patterns (!=, >, >=, ==nonzero, ==0 ELSE, nested) verify no false positives |
 | OBS_X_TO_OBSERVABLE_SINK | error | Tested — 5 triggers with x-bit literals in addition, OR, ternary, concatenation, subtraction driving registers across 2 modules |
+
+Cross-section rules covered by other test files (not duplicated here):
+
+| Rule ID | Severity | Tested In |
+|---------|----------|-----------|
+| SPECIAL_DRIVER_IN_EXPRESSION | error | 3_1_SPECIAL_DRIVER_IN_EXPRESSION, 2_4_SPECIAL_DRIVER_IN_EXPRESSION |
+| SPECIAL_DRIVER_IN_CONCAT | error | 3_1_SPECIAL_DRIVER_IN_CONCAT |
+| SPECIAL_DRIVER_SLICED | error | 1_3_SPECIAL_DRIVER_SLICED, 3_1_SPECIAL_DRIVER_SLICED |
+| SPECIAL_DRIVER_IN_INDEX | error | 3_1_SPECIAL_DRIVER_IN_INDEX |
+| TYPE_BINOP_WIDTH_MISMATCH | error | 2_2_TYPE_BINOP_WIDTH_MISMATCH, 2_3_TYPE_BINOP_WIDTH_MISMATCH, 3_1_TYPE_BINOP_WIDTH_MISMATCH |
+
+Happy-path coverage of all operator definition semantics (parenthesized unary, multiply 2N, guarded division with !=/>/>=/==/==0-ELSE/nested patterns, bitwise, logical 1-bit, comparison, shift, ternary, concatenation) is provided by `3_2_HAPPY_PATH-operator_semantics_ok.jz`.
 
 ## Section 4.10 — ASYNCHRONOUS Block
 
@@ -329,7 +364,7 @@ No untested rules for section 4.10. All 6 testable rules from the test plan have
 | Rule ID | Severity | Status |
 |---------|----------|--------|
 | ASYNC_ALIAS_LITERAL_RHS | error | Tested — 5 triggers across =, =z, =s with literal RHS in ASYNC blocks across 3 modules |
-| ASYNC_INVALID_STATEMENT_TARGET | error | Tested — 3 triggers via MEM SYNC OUT .addr assigned in ASYNC blocks across 3 modules |
+| ASYNC_INVALID_STATEMENT_TARGET | error | Tested — 2 triggers via CONST assignment in ASYNC blocks across 2 modules |
 | ASYNC_ASSIGN_REGISTER | error | Tested — 3 triggers across receive (<=), alias (=), and drive (=>) to registers in ASYNC blocks across 3 modules |
 | ASYNC_ALIAS_IN_CONDITIONAL | error | Tested — 3 triggers across alias = in IF body, ELSE body, and SELECT/CASE body in ASYNC blocks across 3 modules |
 | ASYNC_FLOATING_Z_READ | error | Tested — 2 triggers for wire driven only by z but read, across 2 modules; WARN_INTERNAL_TRISTATE co-fires as expected |
@@ -440,7 +475,7 @@ All 3 rule IDs from the test plan have corresponding validation tests:
 |---------|----------|--------|
 | WRITE_WIRE_IN_SYNC | error | Tested — 5 triggers across SYNC root (helper), SYNC root (top), IF body, ELSE body, SELECT/CASE body across 2 modules; WIRE in ASYNC as negative test; SELECT_NO_MATCH_SYNC_OK co-fires |
 | WIRE_MULTI_DIMENSIONAL | error | Not emitted — parser rejects multi-dimensional syntax with PARSE000 before semantic check runs; tests split into 2 files capturing actual PARSE000 behavior (see `issues.md`) |
-| WARN_UNUSED_WIRE | warning | Not emitted — `NET_DANGLING_UNUSED` fires instead (see `issues.md`); tested under section 12.3 (`12_3_WARN_UNUSED_WIRE-unused_wire.jz`) |
+| WARN_UNUSED_WIRE | warning | Tested — works correctly; tested under section 12.3 (`12_3_WARN_UNUSED_WIRE-unused_wire.jz`) |
 
 Happy-path coverage of standard wire, wire as intermediate, multiple wires, wire driving OUT port, 1-bit wire, wide wire, wire read in SYNC, and cross-module wire usage is provided by `4_5_WIRE_HAPPY_PATH-valid_wire_ok.jz`.
 
@@ -1091,6 +1126,33 @@ No untested rules for section 10.1. This section is a conceptual overview — al
 | Test File | Coverage |
 |-----------|----------|
 | `10_1_HAPPY_PATH-template_purpose_ok.jz` | Simple define+apply, file-scoped template, module-scoped template, @scratch wire, parameter substitution, zero-count apply, comments-only template, apply in ASYNCHRONOUS and SYNCHRONOUS contexts, duplication reduction across modules via @new |
+
+## Section 10.8 — Template Error Cases
+
+All 15 rule IDs from the test plan have corresponding 10_8-prefixed cross-reference validation tests (17 files total due to splitting for cascading PARSE000 errors):
+
+| Rule ID | Severity | Status |
+|---------|----------|--------|
+| TEMPLATE_DUP_NAME | error | Tested — 3 triggers: file scope dup, module scope dup (helper), module scope dup (top) |
+| TEMPLATE_DUP_PARAM | error | Tested — 3 triggers: file scope, module scope (helper), module scope (top) |
+| TEMPLATE_EXTERNAL_REF | error | Tested — 4 triggers: RHS of <=, expression RHS, module-scoped ext_w, IF condition ext_r |
+| TEMPLATE_SCRATCH_OUTSIDE | error | Tested — 5 triggers: file scope, module top (helper), ASYNC block, module top (top), SYNC block |
+| TEMPLATE_FORBIDDEN_DECL | error | Tested — 5 triggers: WIRE/REGISTER/PORT in file scope, WIRE in helper, REGISTER in top |
+| TEMPLATE_FORBIDDEN_BLOCK_HEADER | error | Tested — 2 files: SYNCHRONOUS header, ASYNCHRONOUS header (split due to cascading PARSE000) |
+| TEMPLATE_FORBIDDEN_DIRECTIVE | error | Tested — 2 files: @new directive, @module directive (split due to cascading PARSE000) |
+| TEMPLATE_NESTED_DEF | error | Tested — 3 triggers: file scope nested, module scope nested (helper), module scope nested (top) |
+| TEMPLATE_UNDEFINED | error | Tested — 3 triggers: ASYNC (helper), ASYNC (top), SYNC (top) |
+| TEMPLATE_ARG_COUNT_MISMATCH | error | Tested — 4 triggers: too few (helper ASYNC), too many (helper ASYNC), zero args (top ASYNC), too many (top SYNC) |
+| TEMPLATE_COUNT_NOT_NONNEG_INT | error | Tested — 3 triggers: negative count in ASYNC (helper), ASYNC (top), SYNC (top) |
+| ASSIGN_MULTIPLE_SAME_BITS | error | Tested — 1 error reported (deduplication at template body); triggers in helper and top both fire |
+| SYNC_MULTI_ASSIGN_SAME_REG_BITS | error | Tested — 1 error reported (deduplication at template body); triggers in helper and top both fire |
+
+Rules not effectively tested:
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| TEMPLATE_SCRATCH_WIDTH_INVALID | error | Not enforced — compiler silently accepts zero-width and non-constant-width @scratch (see `issues.md`) |
+| TEMPLATE_APPLY_OUTSIDE_BLOCK | error | Not enforced — compiler silently accepts @apply at file scope and module scope (see `issues.md`) |
 
 ## Section 4.4 — PORT (Module Interface)
 

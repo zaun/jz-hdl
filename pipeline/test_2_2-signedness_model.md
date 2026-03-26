@@ -64,6 +64,5 @@ Verify that all signals, literals, and operators are treated as unsigned by defa
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (none) | -- | All rules assigned to this section have validation tests |
+
+All rules for this section are tested.

@@ -1,5 +1,6 @@
 File: 10_5_TEMPLATE_UNDEFINED-undefined_template_ref.jz
-      44:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template
-      78:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template
-      86:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template
-      88:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template
+      45:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template
+      79:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template
+      87:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template
+      89:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template
+      91:9    error TEMPLATE_UNDEFINED S10.5 @apply references undefined template

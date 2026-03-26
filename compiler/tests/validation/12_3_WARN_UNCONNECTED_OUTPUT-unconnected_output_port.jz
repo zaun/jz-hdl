@@ -1,5 +1,5 @@
 // WARN_UNCONNECTED_OUTPUT: Output port declared but never driven inside the module.
-// Tests unconnected output detection in multiple modules.
+// Tests unconnected output detection in helper and top modules.
 // Valid outputs (driven in ASYNC) included for no false positives.
 
 @project WARN_UNCONNECTED_OUTPUT_unconnected_output_port

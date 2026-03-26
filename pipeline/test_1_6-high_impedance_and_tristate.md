@@ -78,7 +78,6 @@ Verify the compiler correctly handles high-impedance (`z`) semantics: z literal 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
 | NET_FLOATING_WITH_SINK | error | S1.2/S1.6/S4.10 Signal is read but never driven (floating net) | 1_2_NET_FLOATING_WITH_SINK-floating_net_read.jz (tested in S1.2) |
-| NET_TRI_STATE_ALL_Z_READ | error | S1.6/S4.10 Net has sinks but all active drivers assign z (fully released tri-state bus) | 11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz |
 | NET_MULTIPLE_ACTIVE_DRIVERS | error | S1.2/S1.5/S1.6/S4.10 Multiple non-z drivers active on the same net at the same time | 11_3_NET_MULTIPLE_ACTIVE_DRIVERS-multi_driver_non_tristate.jz |
 | NET_DANGLING_UNUSED | warning | S1.2/S1.6 Signal declared but never used (neither driven nor read) | 1_2_NET_DANGLING_UNUSED-unused_signal.jz (tested in S1.2) |
 | OBS_X_TO_OBSERVABLE_SINK | error | S1.2/S1.6/S2.1 Expression containing x bits drives observable sink | 1_2_OBS_X_TO_OBSERVABLE_SINK-x_bits_to_observable.jz (tested in S1.2) |
@@ -87,4 +86,6 @@ Verify the compiler correctly handles high-impedance (`z`) semantics: z literal 
 
 ### 5.2 Rules Not Tested
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| NET_TRI_STATE_ALL_Z_READ | error | Suppressed by ASYNC_FLOATING_Z_READ: test exists (`11_3_NET_TRI_STATE_ALL_Z_READ-all_drivers_z_but_read.jz`) but rule is suppressed |

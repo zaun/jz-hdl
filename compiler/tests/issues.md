@@ -34,9 +34,9 @@ No issues found. Happy-path test `10_1_HAPPY_PATH-template_purpose_ok.jz` passes
 
 **Status:** Resolved (previous test was incorrect)
 
-**Description:** The rule `TEMPLATE_EXTERNAL_REF` IS implemented in `template_expand.c` and fires correctly during `@apply` expansion. The previous test was incorrect — it defined templates with external references but never applied them with `@apply`, so the check never ran. The regenerated test uses `@apply` to trigger the templates and correctly produces 4 `TEMPLATE_EXTERNAL_REF` errors across file-scoped and module-scoped templates in multiple contexts (RHS of <=, expression, alias RHS, IF condition).
+**Description:** The rule `TEMPLATE_EXTERNAL_REF` IS implemented in `template_expand.c` and fires correctly during `@apply` expansion. The previous test was incorrect — it defined templates with external references but never applied them with `@apply`, so the check never ran. The regenerated test uses `@apply` to trigger the templates and correctly produces 5 `TEMPLATE_EXTERNAL_REF` errors across file-scoped and module-scoped templates in multiple contexts (RHS of <=, expression, SELECT condition, alias RHS, IF condition).
 
-**Test file:** `10_3_TEMPLATE_EXTERNAL_REF-external_signal_reference.jz` — 4 triggers, all detected.
+**Test file:** `10_3_TEMPLATE_EXTERNAL_REF-external_signal_reference.jz` — 5 triggers, all detected.
 
 ### Bug: TEMPLATE_SCRATCH_WIDTH_INVALID rule not implemented
 
@@ -176,7 +176,20 @@ No issues found. All tests pass and match expected output.
 
 ## test_10_8-template_error_cases.md
 
-No new issues. Section 10.8 is a cross-reference summary of all TEMPLATE_* error cases from S10.2-S10.6. All 15 rule IDs have existing tests that pass. Known compiler bugs (TEMPLATE_EXTERNAL_REF, TEMPLATE_SCRATCH_WIDTH_INVALID, and TEMPLATE_APPLY_OUTSIDE_BLOCK not enforced) are documented above in their respective subsection entries.
+Section 10.8 cross-reference tests created (17 files, all pass). Findings:
+
+### Known compiler bugs confirmed (documented in respective subsection entries)
+
+1. **TEMPLATE_SCRATCH_WIDTH_INVALID** — Rule not enforced. Compiler silently accepts `@scratch bad [0];` and `@scratch bad [w];` (parameter as width). Test `10_8_TEMPLATE_SCRATCH_WIDTH_INVALID-invalid_width_error.jz` has empty `.out`.
+2. **TEMPLATE_APPLY_OUTSIDE_BLOCK** — Rule not enforced. Compiler silently accepts `@apply` at file scope and module scope. Test `10_8_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_outside_error.jz` has empty `.out`.
+
+### Observation: ASSIGN_MULTIPLE_SAME_BITS / SYNC_MULTI_ASSIGN_SAME_REG_BITS deduplication
+
+When two separate modules each contain two `@apply` calls triggering the same template conflict, the compiler reports the error at the template body source line. Since both modules' violations map to the same line, only one error appears in output. This is already documented in the test_10_6 section above. Tests `10_8_ASSIGN_MULTIPLE_SAME_BITS-template_async_error.jz` and `10_8_SYNC_MULTI_ASSIGN_SAME_REG_BITS-template_sync_error.jz` each show 1 error instead of 2 for this reason.
+
+### Parser recovery bugs (cascading PARSE000)
+
+TEMPLATE_FORBIDDEN_BLOCK_HEADER and TEMPLATE_FORBIDDEN_DIRECTIVE produce cascading `PARSE000` errors after the correct diagnostic. Tests split into individual files (sync/async, new/module) to isolate triggers. Already documented in test_10_4 section above.
 
 ## test_12_4-path_security.md
 
@@ -321,7 +334,12 @@ Actual: `NET_MULTIPLE_ACTIVE_DRIVERS` error (semantic analysis blocks transform)
 
 ## test_11_5-tristate_validation_rules.md
 
-No new issues. Section 11.5 is a cross-reference to `TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL` and `TRISTATE_TRANSFORM_PER_BIT_FAIL`, both already documented under section 11.7 above. Happy-path test `11_GND_5_HAPPY_PATH-tristate_validation_ok.jz` verifies valid tristate transformation with mutually exclusive enables and full-width z assignments.
+No new issues. Section 11.5 is a cross-reference to `TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL` and `TRISTATE_TRANSFORM_PER_BIT_FAIL`, both already documented under section 11.4 above.
+
+**Tests created:**
+- `11_GND_5_HAPPY_PATH-tristate_validation_ok.jz` — valid tristate transformation with mutually exclusive enables and full-width z assignments (regenerated).
+- `11_GND_5_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz` — exercises non-exclusive multi-driver pattern; `.out` captures `NET_MULTIPLE_ACTIVE_DRIVERS` because the earlier semantic rule fires first (same bug as 11.4).
+- `11_GND_5_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit.jz` — exercises per-bit tri-state pattern; `.out` captures `INFO_TRISTATE_TRANSFORM` because the error is not emitted (same bug as 11.4).
 
 ### Observation: Multi-driver priority chain (S11.4.1) not achievable in current compiler
 
@@ -419,71 +437,15 @@ No issues found. Section 12.1 is a cross-reference aggregation section. Both the
 
 ## test_12_2-combinational_loop_errors.md
 
-No issues found. Both `COMB_LOOP_UNCONDITIONAL` and `COMB_LOOP_CONDITIONAL_SAFE` are correctly detected by the compiler. All tests pass with expected diagnostics. Note: wire assignments in ASYNCHRONOUS blocks must use `<=` (not `=` alias) to properly model combinational dependencies for loop detection; `=` alias inside IF/SELECT triggers `ASYNC_ALIAS_IN_CONDITIONAL`.
+No issues found. Both `COMB_LOOP_UNCONDITIONAL` and `COMB_LOOP_CONDITIONAL_SAFE` are correctly detected by the compiler. All tests pass with expected diagnostics including the new self-assignment edge case test. Note: wire assignments in ASYNCHRONOUS blocks must use `<=` (not `=` alias) to properly model combinational dependencies for loop detection; `=` alias inside IF/SELECT triggers `ASYNC_ALIAS_IN_CONDITIONAL`.
 
 ## test_12_3-recommended_warnings.md
 
-### Bug: WARN_INCOMPLETE_SELECT_ASYNC rule not implemented
+No issues found. All 10 warning rules from the test plan are correctly detected by the compiler. All tests pass cleanly.
 
-**Severity:** Bug (missing rule implementation)
+Note: `WARN_INCOMPLETE_SELECT_ASYNC` co-fires with `ASYNC_UNDEFINED_PATH_NO_DRIVER` — this is expected behavior since an incomplete SELECT without DEFAULT leaves signals undriven on some paths. The test `.out` file includes both diagnostics.
 
-**Description:** The rule `WARN_INCOMPLETE_SELECT_ASYNC` is defined in `rules.c` with message "S5.4/S8.3 Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block", but the compiler never emits this diagnostic. Instead, the existing `SELECT_DEFAULT_RECOMMENDED_ASYNC` rule (category `CONTROL_FLOW_IF_SELECT`) fires with message "S5.4/S8.3 ASYNCHRONOUS SELECT without DEFAULT (may cause floating nets)". Both rules cover the same scenario — the `GENERAL_WARNINGS` variant is never used.
-
-**Minimal reproduction:**
-```jz
-@module Mod
-    PORT { IN [4] sel; OUT [1] data; }
-    ASYNCHRONOUS {
-        SELECT (sel) {
-            CASE 0 { data <= VCC; }
-            CASE 1 { data <= GND; }
-        }
-    }
-@endmod
-```
-Expected: `WARN_INCOMPLETE_SELECT_ASYNC` warning.
-Actual: `SELECT_DEFAULT_RECOMMENDED_ASYNC` warning + `ASYNC_UNDEFINED_PATH_NO_DRIVER` error.
-
-**Test file:** `12_3_WARN_INCOMPLETE_SELECT_ASYNC-incomplete_select.jz` — test captures `SELECT_DEFAULT_RECOMMENDED_ASYNC` and `ASYNC_UNDEFINED_PATH_NO_DRIVER` in `.out` since `WARN_INCOMPLETE_SELECT_ASYNC` is never emitted.
-
-### Bug: WARN_UNUSED_WIRE rule not implemented
-
-**Severity:** Bug (missing rule implementation)
-
-**Description:** The rule `WARN_UNUSED_WIRE` is defined in `rules.c` with message "S12.3 WIRE declared but never driven or read; remove it if unused", but the compiler never emits this diagnostic. Instead, the existing `NET_DANGLING_UNUSED` rule fires with message "S5.1/S8.3 Signal is neither driven nor read; remove it or connect it". Both rules cover the same scenario.
-
-**Minimal reproduction:**
-```jz
-@module Mod
-    PORT { IN [1] din; OUT [1] data; }
-    WIRE { unused_w [8]; }
-    ASYNCHRONOUS { data <= din; }
-@endmod
-```
-Expected: `WARN_UNUSED_WIRE` warning.
-Actual: `NET_DANGLING_UNUSED` warning.
-
-**Test file:** `12_3_WARN_UNUSED_WIRE-unused_wire.jz` — test captures `NET_DANGLING_UNUSED` in `.out` since `WARN_UNUSED_WIRE` is never emitted.
-
-### Bug: WARN_UNUSED_PORT rule not implemented
-
-**Severity:** Bug (missing rule implementation)
-
-**Description:** The rule `WARN_UNUSED_PORT` is defined in `rules.c` with message "S12.3 PORT declared but never used; remove it if unused", but the compiler never emits this diagnostic. Instead, the existing `NET_DANGLING_UNUSED` rule fires with message "S5.1/S8.3 Signal is neither driven nor read; remove it or connect it". Both rules cover the same scenario for ports that are neither driven nor read within the module.
-
-**Minimal reproduction:**
-```jz
-@module Mod
-    PORT { IN [1] clk; IN [1] unused_in; OUT [1] data; }
-    REGISTER { r [1] = 1'b0; }
-    ASYNCHRONOUS { data = r; }
-    SYNCHRONOUS(CLK=clk) { r <= ~r; }
-@endmod
-```
-Expected: `WARN_UNUSED_PORT` warning on `unused_in`.
-Actual: `NET_DANGLING_UNUSED` warning on `unused_in`.
-
-**Test file:** `12_3_WARN_UNUSED_PORT-unused_port.jz` — test captures `NET_DANGLING_UNUSED` in `.out` since `WARN_UNUSED_PORT` is never emitted.
+Previously documented bugs for `WARN_INCOMPLETE_SELECT_ASYNC`, `WARN_UNUSED_WIRE`, and `WARN_UNUSED_PORT` (rules not being emitted) have been resolved — all three rules now fire correctly under their own rule IDs.
 
 ## test_1_1-identifiers.md
 
@@ -546,7 +508,19 @@ Actual: `PARSE000 parse error near token 'VCC': expected port name after width i
 
 ## test_2_3-bit_width_constraints.md
 
-No issues found. All 6 rules from the test plan are correctly detected by the compiler. `WIDTH_ASSIGN_MISMATCH_NO_EXT` co-fires with `ASSIGN_WIDTH_NO_MODIFIER` in `driver_assign.c` but only `ASSIGN_WIDTH_NO_MODIFIER` appears in `--info --lint` output (higher priority). The `WIDTH_NONPOSITIVE_OR_NONINT` test produces expected `NET_DANGLING_UNUSED` warnings for zero-width signals — these are a direct consequence of the construct under test (a zero-width signal cannot be meaningfully connected).
+No blocking issues found. All 6 rules from the test plan are correctly detected by the compiler.
+
+### Observation: `*` (multiply) produces double-width result
+
+**Severity:** Observation (correct behavior per type system)
+
+**Description:** The `*` (MUL) operator produces a result of width `lhs_width + rhs_width` (e.g., 8×8 → 16-bit). This matches hardware reality (full multiply). The happy-path test excludes `*` because `w [8] = a * b;` (with 8-bit operands) fires `ASSIGN_WIDTH_NO_MODIFIER` due to the 16-bit result. The TYPE_BINOP_WIDTH_MISMATCH test covers `*` with mismatched operand widths (8 vs 4).
+
+### Observation: `WIDTH_ASSIGN_MISMATCH_NO_EXT` suppressed by `ASSIGN_WIDTH_NO_MODIFIER`
+
+**Severity:** Observation (rule priority suppression)
+
+**Description:** `WIDTH_ASSIGN_MISMATCH_NO_EXT` co-fires with `ASSIGN_WIDTH_NO_MODIFIER` in `driver_assign.c` but only `ASSIGN_WIDTH_NO_MODIFIER` appears in `--info --lint` output (higher priority). The `WIDTH_NONPOSITIVE_OR_NONINT` test produces expected `WARN_UNUSED_WIRE` warnings for zero-width signals — these are a direct consequence of the construct under test (a zero-width signal cannot be meaningfully connected).
 
 ## test_1_4-comments.md
 
@@ -556,7 +530,25 @@ Note: Unterminated block comments (`/* no end`) produce a lexer error with no ru
 
 ## test_1_2-fundamental_terms.md
 
-No issues found. All 7 error/warning rules and the happy-path test pass with correct diagnostics. DOMAIN_CONFLICT and MULTI_CLK_ASSIGN both fire together when a register is assigned in two different clock domains (expected — the compiler reports both the multi-clock and domain-conflict aspects).
+### Dead rule: NET_TRI_STATE_ALL_Z_READ never emitted
+
+**Severity:** Bug (dead code in rules.c)
+
+**Description:** The rule `NET_TRI_STATE_ALL_Z_READ` is defined in `rules.c` (line 212, category `NET_DRIVERS_AND_TRI_STATE`) with message "S4.10 All drivers assign `z` (tri-state) but signal is read; at least one driver must provide a value", but no semantic analysis code references or emits this rule ID. The functionally equivalent condition is caught by `ASYNC_FLOATING_Z_READ` (category `ASYNC_BLOCK_RULES`, line 153), which fires when all drivers assign `z` and the net has sinks.
+
+**Impact:** `NET_TRI_STATE_ALL_Z_READ` cannot be tested because no code path emits it. `ASYNC_FLOATING_Z_READ` covers the same condition and is tested in `1_2_ASYNC_FLOATING_Z_READ-all_z_drivers_read.jz`.
+
+### Observation: NET_DANGLING_UNUSED superseded by WARN_UNUSED_WIRE for WIRE declarations
+
+**Severity:** Test gap (minor)
+
+**Description:** The rule `NET_DANGLING_UNUSED` (category `NET_DRIVERS_AND_TRI_STATE`) exists in `rules.c` but for unused WIRE declarations, the compiler emits `WARN_UNUSED_WIRE` (category `GENERAL_WARNINGS`) instead. The test `1_2_NET_DANGLING_UNUSED-unused_signal.jz` captures `WARN_UNUSED_WIRE` diagnostics, which is the actual compiler behavior.
+
+**Impact:** `NET_DANGLING_UNUSED` may fire for non-WIRE signal types (e.g., registers, ports) under different conditions, but for the "dangling unused signal" scenario described in the test plan, `WARN_UNUSED_WIRE` is what fires.
+
+### Note: DOMAIN_CONFLICT and MULTI_CLK_ASSIGN co-fire
+
+DOMAIN_CONFLICT and MULTI_CLK_ASSIGN both fire together when a register is assigned in two different clock domains (expected — the compiler reports both the multi-clock and domain-conflict aspects).
 
 ## test_1_5-exclusive_assignment_rule.md
 
@@ -604,17 +596,52 @@ Actual: `PARSE000 parse error near token 'GND': expected expression in index`.
 
 **Impact:** The test file `2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz` captures `PARSE000` in its `.out` file since `SPECIAL_DRIVER_IN_INDEX` is never emitted. VCC in index would produce the same result, so only one trigger is included.
 
+## test_1_3-bit_slicing_and_indexing.md
+
+### Note: Undefined identifier in slice fires UNDECLARED_IDENTIFIER, not CONST_UNDEFINED_IN_WIDTH_OR_SLICE
+
+**Severity:** Expected behavior (not a bug)
+
+**Description:** When a truly undefined identifier (not declared anywhere in the module) is used as a slice index (e.g., `r[UNDEF:0]`), the compiler emits `UNDECLARED_IDENTIFIER` rather than `CONST_UNDEFINED_IN_WIDTH_OR_SLICE`. This is because the identifier is caught as undeclared before the CONST-specific check runs. `CONST_UNDEFINED_IN_WIDTH_OR_SLICE` fires when the identifier IS declared but as a non-CONST type (wire, register, port).
+
+**Impact:** The test plan scenario "bus[UNDEF:0] → CONST_UNDEFINED_IN_WIDTH_OR_SLICE" produces `UNDECLARED_IDENTIFIER` instead. This is correct compiler behavior — undeclared identifiers are caught by the general scoping rules first.
+
+### Note: CONST-based reversed slice indices and cascading SYNC_MULTI_ASSIGN_SAME_REG_BITS
+
+**Severity:** Test gap (minor)
+
+**Description:** When CONST values produce reversed slice indices (e.g., `CONST LOW=2; HIGH=8; r[LOW:HIGH]`), the compiler correctly resolves the CONST values and emits `SLICE_MSB_LESS_THAN_LSB`. However, combining this trigger with other register assignments in the same SYNCHRONOUS block can cause spurious `SYNC_MULTI_ASSIGN_SAME_REG_BITS` diagnostics because the compiler's slice range tracking doesn't account for invalid slices. The CONST-based trigger was omitted from the test to avoid this unrelated diagnostic.
+
+**Impact:** CONST-based reversed slices ARE detected by the compiler (verified manually), but they cannot be easily tested in multi-trigger files without cascading diagnostics.
+
 ## test_1_6-high_impedance_and_tristate.md
 
 No new issues found. All 4 tested rules (`LIT_DECIMAL_HAS_XZ`, `LIT_INVALID_DIGIT_FOR_BASE`, `PORT_TRISTATE_MISMATCH`, `REG_INIT_CONTAINS_Z`) are correctly detected by the compiler in all tested contexts. Two rules from the test plan (`NET_MULTIPLE_ACTIVE_DRIVERS`, `NET_TRI_STATE_ALL_Z_READ`) are not tested under section 1.6 — they have dedicated tests under section 11.3. The `NET_TRI_STATE_ALL_Z_READ` observation (ASYNC_FLOATING_Z_READ fires instead) is already documented under section 11.3 above.
 
 ## test_3_1-operator_categories.md
 
-No issues found. Both error rules (`LOGICAL_WIDTH_NOT_1`, `TYPE_BINOP_WIDTH_MISMATCH`) are correctly detected by the compiler in all tested contexts (ASYNC/SYNC blocks across helper and top modules). The happy-path test (`3_1_HAPPY_PATH-operator_categories_ok.jz`) compiles cleanly with all operator categories. No parser recovery issues or cascading errors encountered.
+### Issue 1: SPECIAL_DRIVER_IN_INDEX — Parser rejects before semantic rule fires
+
+**Severity:** Bug (dead semantic rule)
+
+**Description:** The rule `SPECIAL_DRIVER_IN_INDEX` is defined in `rules.c` with message "S2.3 GND/VCC may not appear in slice/index expressions", but the parser rejects `GND`/`VCC` in index position with `PARSE000` ("parse error near token 'GND': expected expression in index") before the semantic rule can fire. The semantic rule is unreachable dead code. The test (`3_1_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz`) captures the actual parser behavior.
+
+**Minimal reproduction:**
+```jz
+@module TopMod
+    PORT { IN [1] clk; OUT [1] out_a; }
+    REGISTER { r [8] = 8'h00; }
+    ASYNCHRONOUS { out_a = r[GND]; }
+    SYNCHRONOUS(CLK=clk) { r <= r; }
+@endmod
+```
+Produces: `error PARSE000 parse error near token 'GND': expected expression in index`
+
+No other issues found. All 11 remaining rules are correctly detected by the compiler in all tested contexts. The happy-path test compiles cleanly with all operator categories (unary arithmetic, binary arithmetic, multiply, divide, modulus, bitwise, logical, comparison, shift, ternary, concatenation). No parser recovery issues or cascading errors encountered.
 
 ## test_3_2-operator_definitions.md
 
-No issues found. All 8 rules (`UNARY_ARITH_MISSING_PARENS`, `LOGICAL_WIDTH_NOT_1`, `TERNARY_COND_WIDTH_NOT_1`, `TERNARY_BRANCH_WIDTH_MISMATCH`, `CONCAT_EMPTY`, `DIV_CONST_ZERO`, `DIV_UNGUARDED_RUNTIME_ZERO`, `OBS_X_TO_OBSERVABLE_SINK`) are correctly detected by the compiler in all tested contexts. The happy-path test compiles cleanly with parenthesized unary ops, guarded division patterns (!=, >, ==nonzero, nested), shift operations, ternary, and concatenation. No parser recovery issues or cascading errors encountered.
+No issues found. All 8 rules (`UNARY_ARITH_MISSING_PARENS`, `LOGICAL_WIDTH_NOT_1`, `TERNARY_COND_WIDTH_NOT_1`, `TERNARY_BRANCH_WIDTH_MISMATCH`, `CONCAT_EMPTY`, `DIV_CONST_ZERO`, `DIV_UNGUARDED_RUNTIME_ZERO`, `OBS_X_TO_OBSERVABLE_SINK`) are correctly detected by the compiler in all tested contexts (async/sync blocks across helper and top modules). The happy-path test compiles cleanly with parenthesized unary ops, guarded division patterns (!=, >, >=, ==nonzero, ==0 ELSE, nested), shift operations (logical left/right, arithmetic right, shift-by-zero), ternary, concatenation, logical ops on 1-bit, comparison operators, and bitwise ops. No parser recovery issues or cascading errors encountered. Cross-section rules (SPECIAL_DRIVER_IN_EXPRESSION, SPECIAL_DRIVER_IN_CONCAT, SPECIAL_DRIVER_SLICED, SPECIAL_DRIVER_IN_INDEX, TYPE_BINOP_WIDTH_MISMATCH) are covered by tests in sections 1.3, 2.4, and 3.1.
 
 ## test_4_10-asynchronous_block.md
 
@@ -632,11 +659,11 @@ No issues found. All 8 rules (`UNARY_ARITH_MISSING_PARENS`, `LOGICAL_WIDTH_NOT_1
 
 **Description:** When testing `ASYNC_FLOATING_Z_READ` (net driven only by z but read), the compiler also emits `WARN_INTERNAL_TRISTATE` ("Internal tri-state logic is not FPGA-compatible"). This is expected behavior — a wire driven by z is tri-state logic, and the internal tristate warning fires for any tri-state wire not on an INOUT port. The test `.out` file includes both diagnostics.
 
-### Observation: ASYNC_UNDEFINED_PATH_NO_DRIVER co-fires SELECT_DEFAULT_RECOMMENDED_ASYNC for SELECT triggers
+### Observation: ASYNC_UNDEFINED_PATH_NO_DRIVER co-fires WARN_INCOMPLETE_SELECT_ASYNC for SELECT triggers
 
 **Severity:** Observation (expected co-fire)
 
-**Description:** When testing `ASYNC_UNDEFINED_PATH_NO_DRIVER` with a SELECT-without-DEFAULT trigger, the compiler also emits `SELECT_DEFAULT_RECOMMENDED_ASYNC` ("ASYNCHRONOUS SELECT without DEFAULT"). This is expected — missing DEFAULT both leaves signals undriven (error) and is a style warning. The test `.out` file includes both diagnostics.
+**Description:** When testing `ASYNC_UNDEFINED_PATH_NO_DRIVER` with a SELECT-without-DEFAULT trigger, the compiler also emits `WARN_INCOMPLETE_SELECT_ASYNC` ("Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block"). This is expected — missing DEFAULT both leaves signals undriven (error) and is a style warning. The test `.out` file includes both diagnostics.
 
 ## test_4_11-synchronous_block.md
 

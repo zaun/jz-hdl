@@ -1,5 +1,5 @@
 // WARN_UNUSED_REGISTER: Register declared but never read or written.
-// Tests unused register detection across multiple modules.
+// Tests unused register detection across multiple modules and widths.
 // Valid registers (read and/or written) included for no false positives.
 
 @project WARN_UNUSED_REGISTER_unused_register
@@ -45,9 +45,9 @@
     };
 
     REGISTER {
-        // Trigger 2: register never read or written in top module
+        // Trigger 2: unused register (wider width) in top module
         dead_reg [8] = 8'b0000_0000;
-        // Trigger 3: another unused register (different width)
+        // Trigger 3: another unused register (1-bit)
         dead_flag [1] = 1'b1;
         // Valid: register that is read and written
         r [1] = 1'b0;

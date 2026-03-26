@@ -51,9 +51,8 @@ Verify @apply syntax, argument count matching, count parameter (0/1/N), IDX subs
 | TEMPLATE_UNDEFINED | @apply references undefined template | `10_5_TEMPLATE_UNDEFINED-undefined_template_ref.jz` |
 | TEMPLATE_ARG_COUNT_MISMATCH | @apply argument count does not match template parameter count | `10_5_TEMPLATE_ARG_COUNT_MISMATCH-wrong_arg_count.jz` |
 | TEMPLATE_COUNT_NOT_NONNEG_INT | @apply count expression does not resolve to a non-negative integer | `10_5_TEMPLATE_COUNT_NOT_NONNEG_INT-bad_count_expr.jz` |
-| TEMPLATE_APPLY_OUTSIDE_BLOCK | @apply may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks | `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_file_scope.jz`, `10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_module_scope.jz` |
-
 ### 5.2 Rules Not Tested
-| Expected Rule | Spec Reference | Gap Description |
-|--------------|---------------|-----------------|
-| — | — | All S10.5 rules covered |
+
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| TEMPLATE_APPLY_OUTSIDE_BLOCK | error | Bug: test exists (`10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_file_scope.jz`) but rule has a known compiler bug |

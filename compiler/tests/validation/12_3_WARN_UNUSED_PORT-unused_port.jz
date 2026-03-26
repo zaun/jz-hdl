@@ -1,5 +1,4 @@
 // WARN_UNUSED_PORT: PORT declared but never used inside the module.
-// Note: compiler emits NET_DANGLING_UNUSED (not WARN_UNUSED_PORT).
 // Tests unused port detection across multiple modules.
 // Valid: used ports included for no false positives.
 

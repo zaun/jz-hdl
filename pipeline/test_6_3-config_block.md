@@ -80,7 +80,6 @@ Verify CONFIG block: numeric and string entries, project-wide visibility via `CO
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| CONFIG_MULTIPLE_BLOCKS | error | S6.3 More than one CONFIG block defined in project | 6_3_CONFIG_MULTIPLE_BLOCKS-multiple_config.jz |
 | CONFIG_NAME_DUPLICATE | error | S6.3 Duplicate config_id within CONFIG block | 6_3_CONFIG_NAME_DUPLICATE-duplicate_name.jz |
 | CONFIG_INVALID_EXPR_TYPE | error | S6.3 CONFIG value not a nonnegative integer expression | 6_3_CONFIG_INVALID_EXPR_TYPE-invalid_value.jz |
 | CONFIG_FORWARD_REF | error | S6.3 CONFIG entry references later CONFIG.<name> (forward reference) | 6_3_CONFIG_FORWARD_REF-forward_reference.jz |
@@ -95,4 +94,4 @@ Verify CONFIG block: numeric and string entries, project-wide visibility via `CO
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All rules for this section are covered by existing tests |
+| CONFIG_MULTIPLE_BLOCKS | error | Dead code: test exists (`6_3_CONFIG_MULTIPLE_BLOCKS-multiple_config.jz`) but rule is dead code |

@@ -81,8 +81,6 @@ Verify REGISTER declarations, mandatory reset, x/z prohibition, SYNC-only writes
 | REG_INIT_CONTAINS_X | error | S2.1/S4.7 Register init must not contain x bits | 4_7_REG_INIT_CONTAINS_X-x_in_init.jz |
 | REG_INIT_CONTAINS_Z | error | S2.1/S4.7 Register init must not contain z bits | 4_7_REG_INIT_CONTAINS_Z-z_in_init.jz |
 | REG_INIT_WIDTH_MISMATCH | error | S4.7 Register initialization literal width does not match declared register width | 4_7_REG_INIT_WIDTH_MISMATCH-init_width_mismatch.jz |
-| REG_MISSING_INIT_LITERAL | error | S4.7 Register declared without mandatory reset literal | 4_7_REG_MISSING_INIT_LITERAL-missing_init.jz |
-| REG_MULTI_DIMENSIONAL | error | S4.7 REGISTER declared with multi-dimensional syntax | 4_7_REG_MULTI_DIMENSIONAL-multi_dim_register.jz |
 | WARN_UNDRIVEN_REGISTER | warning | S8.3 Register is read but never written in any SYNCHRONOUS block | 4_7_WARN_UNDRIVEN_REGISTER-read_never_written.jz |
 | WARN_UNSINKED_REGISTER | warning | S8.3 Register is written but its value is never read | 4_7_WARN_UNSINKED_REGISTER-written_never_read.jz |
 | WARN_UNUSED_REGISTER | warning | S8.3 Register is never read or written | 4_7_WARN_UNUSED_REGISTER-unused_register.jz |
@@ -91,4 +89,5 @@ Verify REGISTER declarations, mandatory reset, x/z prohibition, SYNC-only writes
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All assigned rules for this section are covered by existing tests |
+| REG_MULTI_DIMENSIONAL | error | Dead code: test exists (`4_7_REG_MULTI_DIMENSIONAL-multi_dim_register.jz`) but rule is dead code |
+| REG_MISSING_INIT_LITERAL | error | Dead code: test exists (`4_7_REG_MISSING_INIT_LITERAL-missing_init.jz`) but rule is dead code |

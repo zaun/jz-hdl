@@ -76,10 +76,8 @@ Verify identifier/module/blackbox/instance uniqueness. Confirm that duplicate id
 | INSTANCE_NAME_DUP_IN_MODULE | error | S4.2/S8.1 Multiple instances with same name in parent module | 4_2_INSTANCE_NAME_DUP_IN_MODULE-duplicate_instance_names.jz |
 | MODULE_NAME_DUP_IN_PROJECT | error | S4.2/S6.10/S8.1 Module name not unique across project | 4_2_MODULE_NAME_DUP_IN_PROJECT-duplicate_module_names.jz |
 | UNDECLARED_IDENTIFIER | error | S4.2/S8.1 Use of undeclared identifier | 4_2_UNDECLARED_IDENTIFIER-undeclared_use.jz |
-| AMBIGUOUS_REFERENCE | error | S4.2/S8.1 Identifier reference ambiguous without instance prefix | 4_2_AMBIGUOUS_REFERENCE-ambiguous_without_prefix.jz |
-
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| -- | -- | All rules covered |
+| AMBIGUOUS_REFERENCE | error | Unimplemented: no validation test exists; rule is not yet implemented in the compiler |

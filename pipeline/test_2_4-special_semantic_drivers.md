@@ -71,11 +71,10 @@ Verify that `GND` (Logic 0) and `VCC` (Logic 1) semantic drivers correctly expan
 |---------|----------|-------------|--------------|
 | SPECIAL_DRIVER_IN_EXPRESSION | error | S2.3 GND/VCC may not appear in arithmetic/logical expressions | 2_4_SPECIAL_DRIVER_IN_EXPRESSION-gnd_vcc_in_expr.jz |
 | SPECIAL_DRIVER_IN_CONCAT | error | S2.3 GND/VCC may not appear in concatenations | 2_4_SPECIAL_DRIVER_IN_CONCAT-gnd_vcc_in_concat.jz |
-| SPECIAL_DRIVER_IN_INDEX | error | S2.3 GND/VCC may not be used as an index expression | 2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz |
 | SPECIAL_DRIVER_SLICED | error | S2.3 GND/VCC may not be sliced or indexed | 2_4_SPECIAL_DRIVER_SLICED-gnd_vcc_sliced.jz |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| (none) | -- | All rules assigned to this section have validation tests |
+| SPECIAL_DRIVER_IN_INDEX | error | Dead code: test exists (`2_4_SPECIAL_DRIVER_IN_INDEX-gnd_vcc_in_index.jz`) but rule is dead code |

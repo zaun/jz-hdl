@@ -1,7 +1,7 @@
 // HAPPY_PATH: All operator categories compile without errors.
 // Exercises unary arithmetic (+/-), binary arithmetic (add/sub),
 // multiply, divide, modulus, bitwise (&, |, ^, ~), logical (&&, ||, !),
-// comparison (==, !=, <, >), shift (<<, >>, >>>), ternary (?:),
+// comparison (==, !=, <, >, <=, >=), shift (<<, >>, >>>), ternary (?:),
 // and concatenation ({,}) with correct widths across multiple modules.
 
 @project HAPPY_PATH_operator_categories_ok
@@ -96,7 +96,7 @@
         // Concatenation -- 8 + 4 = 12
         out_cat = {a, narrow};
         // Logical AND, OR, NOT + comparisons -- all 1-bit
-        out_logic = (flag_a && flag_b) || (!flag_a) || (a == b) || (a != b) || (a < b) || (a > b) || h_cmp;
+        out_logic = (flag_a && flag_b) || (!flag_a) || (a == b) || (a != b) || (a < b) || (a > b) || (a <= b) || (a >= b) || h_cmp;
     }
     SYNCHRONOUS(CLK=clk) {
         // Divide and modulus with runtime zero guard
