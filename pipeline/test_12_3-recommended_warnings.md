@@ -80,11 +80,11 @@ Verify all recommended warnings are correctly detected and reported: unused regi
 | WARN_DEAD_CODE_UNREACHABLE | warning | Dead code (unreachable statements) | `12_3_WARN_DEAD_CODE_UNREACHABLE-unreachable_branches.jz` |
 | WARN_UNUSED_MODULE | warning | Module declared but never instantiated | `12_3_WARN_UNUSED_MODULE-unused_module.jz` |
 | WARN_INTERNAL_TRISTATE | warning | Internal tri-state without --tristate-default flag | `12_3_WARN_INTERNAL_TRISTATE-internal_tristate.jz` |
+| WARN_UNUSED_WIRE | warning | WIRE declared but never driven or read | `12_3_WARN_UNUSED_WIRE-unused_wire.jz` |
+| WARN_UNUSED_PORT | warning | PORT declared but never used | `12_3_WARN_UNUSED_PORT-unused_port.jz` |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| WARN_INCOMPLETE_SELECT_ASYNC | warning | Suppressed by SELECT_DEFAULT_RECOMMENDED_ASYNC: test exists (`12_3_WARN_INCOMPLETE_SELECT_ASYNC-incomplete_select.jz`) but rule is suppressed |
-| WARN_UNUSED_WIRE | warning | Suppressed by NET_DANGLING_UNUSED: test exists (`12_3_WARN_UNUSED_WIRE-unused_wire.jz`) but rule is suppressed |
-| WARN_UNUSED_PORT | warning | Suppressed by NET_DANGLING_UNUSED: test exists (`12_3_WARN_UNUSED_PORT-unused_port.jz`) but rule is suppressed |
+| WARN_INCOMPLETE_SELECT_ASYNC | warning | Dead code: SELECT_DEFAULT_RECOMMENDED_ASYNC + ASYNC_UNDEFINED_PATH_NO_DRIVER fire instead |

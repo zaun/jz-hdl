@@ -81,9 +81,7 @@ Verify IF/ELIF/ELSE syntax (parenthesized conditions, width-1 condition requirem
 
 ### 5.2 Rules Not Tested (in this section)
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (all S5.3 rules have test files) | -- | -- |
+All rules for this section are tested.
 
 ### 5.3 Additional Rules Tested (not in primary S5.3 assignment)
 

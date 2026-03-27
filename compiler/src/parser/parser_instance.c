@@ -664,7 +664,19 @@ JZASTNode *parse_module_instantiation(Parser *p) {
         }
     }
 
+    /* INSTANCE_ARRAY_MULTI_DIMENSIONAL: if another '[' follows the first
+     * array dimension, report the semantic rule instead of generic PARSE000.
+     */
     const JZToken *mod_name = peek(p);
+    if (count_text && mod_name->type == JZ_TOK_LBRACKET) {
+        if (p->diagnostics) {
+            jz_diagnostic_report(p->diagnostics, mod_name->loc, JZ_SEVERITY_ERROR,
+                                 "INSTANCE_ARRAY_MULTI_DIMENSIONAL",
+                                 "multi-dimensional instance arrays are not supported");
+        }
+        free(count_text);
+        return NULL;
+    }
     if (!is_decl_identifier_token(mod_name)) {
         if (count_text) free(count_text);
         parser_error(p, "expected module or blackbox name after instance name");

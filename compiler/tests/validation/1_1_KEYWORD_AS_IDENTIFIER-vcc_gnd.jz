@@ -1,0 +1,38 @@
+// KEYWORD_AS_IDENTIFIER: VCC and GND are reserved keywords.
+// Tests that VCC/GND produce KEYWORD_AS_IDENTIFIER when used as declaration names.
+
+@project KEYWORD_AS_IDENTIFIER_vcc_gnd
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 1: VCC used as wire name
+    WIRE {
+        VCC [1];
+    }
+
+    // Trigger 2: GND used as const name
+    CONST {
+        GND = 1;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

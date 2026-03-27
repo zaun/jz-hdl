@@ -61,9 +61,10 @@ Verify path security enforcement: absolute paths are rejected without `--allow-a
 |---------|----------|-------------|--------------|
 | PATH_ABSOLUTE_FORBIDDEN | error | Absolute path used without --allow-absolute-paths | `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_file_init.jz`, `12_4_PATH_ABSOLUTE_FORBIDDEN-absolute_import.jz` |
 | PATH_TRAVERSAL_FORBIDDEN | error | Path contains `..` traversal without --allow-traversal | `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_file_init.jz`, `12_4_PATH_TRAVERSAL_FORBIDDEN-traversal_import.jz` |
-| PATH_OUTSIDE_SANDBOX | error | S12.2 Resolved path falls outside all permitted sandbox roots | `12_4_PATH_OUTSIDE_SANDBOX-outside_sandbox.jz` |
-| PATH_SYMLINK_ESCAPE | error | S12.2 Symbolic link resolves to target outside sandbox root | `12_4_PATH_SYMLINK_ESCAPE-symlink_escape.jz` |
 
 ### 5.2 Rules Not Tested
 
-All rules for this section are tested.
+| Rule ID | Severity | Reason |
+|---------|----------|--------|
+| PATH_OUTSIDE_SANDBOX | error | Not testable: requires runtime sandbox configuration, not reachable via `--lint` |
+| PATH_SYMLINK_ESCAPE | error | Not testable: requires symlink filesystem setup, not reachable via `--lint` |

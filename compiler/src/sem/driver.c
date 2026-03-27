@@ -104,7 +104,8 @@ static int sem_is_reserved_keyword(const char *name)
         !strcmp(name, "CLOCKS") || !strcmp(name, "IN_PINS") ||
         !strcmp(name, "OUT_PINS") || !strcmp(name, "INOUT_PINS") ||
         !strcmp(name, "MAP") ||
-        !strcmp(name, "IDX")) {
+        !strcmp(name, "IDX") ||
+        !strcmp(name, "VCC") || !strcmp(name, "GND")) {
         return 1;
     }
 
@@ -1083,12 +1084,113 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
             continue;
         }
 
+        /* --- Pre-pass: batch-evaluate all CONSTs to detect circular deps ---
+         * The incremental per-CONST evaluation below can't detect cycles for
+         * the first CONST in a chain (its dependency hasn't been added yet).
+         * This batch pass puts ALL CONSTs into one environment so that
+         * jz_const_eval_all can detect EVAL_VISITING cycles.
+         */
+        {
+            size_t config_count_batch = 0;
+            if (project_symbols && project_symbols->data) {
+                const JZSymbol *psyms = (const JZSymbol *)project_symbols->data;
+                size_t pcount = project_symbols->len / sizeof(JZSymbol);
+                for (size_t ci = 0; ci < pcount; ++ci) {
+                    if (psyms[ci].kind == JZ_SYM_CONFIG && psyms[ci].node &&
+                        psyms[ci].node->name && psyms[ci].node->width) {
+                        ++config_count_batch;
+                    }
+                }
+            }
+            size_t batch_cap = decl_count + config_count_batch;
+            JZConstDef *batch_defs = (JZConstDef *)calloc(batch_cap, sizeof(JZConstDef));
+            long long  *batch_vals = (long long *)calloc(batch_cap, sizeof(long long));
+            if (batch_defs && batch_vals) {
+                size_t bc = 0;
+                /* Add all non-string CONSTs with their raw expressions. */
+                for (size_t di2 = 0; di2 < decl_count; ++di2) {
+                    if (!decls[di2]) continue;
+                    if (decls[di2]->block_kind && strcmp(decls[di2]->block_kind, "STRING") == 0) continue;
+                    batch_defs[bc].name = decls[di2]->name;
+                    batch_defs[bc].expr = decls[di2]->text ? decls[di2]->text : "0";
+                    ++bc;
+                }
+                /* Add CONFIG entries. */
+                if (project_symbols && project_symbols->data) {
+                    const JZSymbol *psyms = (const JZSymbol *)project_symbols->data;
+                    size_t pcount = project_symbols->len / sizeof(JZSymbol);
+                    for (size_t ci = 0; ci < pcount; ++ci) {
+                        if (psyms[ci].kind != JZ_SYM_CONFIG || !psyms[ci].node ||
+                            !psyms[ci].node->name || !psyms[ci].node->width) continue;
+                        batch_defs[bc].name = psyms[ci].node->name;
+                        batch_defs[bc].expr = psyms[ci].node->width;
+                        ++bc;
+                    }
+                }
+                JZConstEvalOptions batch_opts;
+                memset(&batch_opts, 0, sizeof(batch_opts));
+                int batch_rc = jz_const_eval_all(batch_defs, bc, &batch_opts, batch_vals);
+                if (batch_rc == -2) {
+                    /* Circular dependency detected.  Mark all CONSTs involved
+                     * (those whose batch eval did NOT complete) and report
+                     * CONST_CIRCULAR_DEP with the correct source location.
+                     * We rely on the fact that jz_const_eval_all stops at the
+                     * first cycle, so we check which CONSTs didn't get a value.
+                     * Re-run to identify each one individually.
+                     */
+                    /* Identify which CONSTs are part of cycles by checking
+                     * if they can be evaluated without the others. Simple
+                     * approach: any CONST whose expression references another
+                     * CONST in the same block that also failed is circular.
+                     * For simplicity, mark any CONST that failed batch eval
+                     * and whose name appears in another failed CONST's expr.
+                     */
+                    for (size_t di2 = 0; di2 < decl_count; ++di2) {
+                        if (!decls[di2]) continue;
+                        if (decls[di2]->block_kind && strcmp(decls[di2]->block_kind, "STRING") == 0) continue;
+                        const char *dname = decls[di2]->name;
+                        const char *dexpr = decls[di2]->text ? decls[di2]->text : "0";
+                        /* Check if this CONST's expression references any other
+                         * CONST that also references it back (simple cycle check). */
+                        for (size_t di3 = 0; di3 < decl_count; ++di3) {
+                            if (di3 == di2 || !decls[di3]) continue;
+                            if (decls[di3]->block_kind && strcmp(decls[di3]->block_kind, "STRING") == 0) continue;
+                            const char *oname = decls[di3]->name;
+                            const char *oexpr = decls[di3]->text ? decls[di3]->text : "0";
+                            if (strstr(dexpr, oname) && strstr(oexpr, dname)) {
+                                /* Mutual reference — mark as circular. */
+                                ok[di2] = -1; /* -1 = circular dep */
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            free(batch_defs);
+            free(batch_vals);
+        }
+
         for (size_t di = 0; di < decl_count; ++di) {
             JZASTNode *decl = decls[di];
             if (!decl) continue;
 
             /* String CONSTs are valid but don't go through numeric eval. */
             if (decl->block_kind && strcmp(decl->block_kind, "STRING") == 0) {
+                continue;
+            }
+
+            /* If the batch pre-pass identified this CONST as part of a
+             * circular dependency, report CONST_CIRCULAR_DEP and skip
+             * incremental evaluation.  Keep ok[di] == -1 so the
+             * incremental env loop below can exclude circular CONSTs.
+             */
+            if (ok[di] == -1) {
+                if (diagnostics) {
+                    sem_report_rule(diagnostics,
+                                    decl->loc,
+                                    "CONST_CIRCULAR_DEP",
+                                    "circular dependency in CONST definitions");
+                }
                 continue;
             }
 
@@ -1323,7 +1425,8 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
 
             size_t env_count = 0;
             for (size_t pj = 0; pj < di; ++pj) {
-                if (!ok[pj]) continue; /* Skip CONSTs that already failed. */
+                if (ok[pj] == -1) continue; /* Skip circular CONSTs. */
+                if (!ok[pj]) continue;      /* Skip other failed CONSTs. */
                 snprintf(value_strs[pj], sizeof(value_strs[pj]), "%lld", values[pj]);
                 defs[env_count].name = decls[pj]->name;
                 defs[env_count].expr = value_strs[pj];
@@ -1440,18 +1543,28 @@ void sem_check_module_const_blocks(const JZModuleScope *scope,
             memset(&opts, 0, sizeof(opts));
             /* We intentionally suppress low-level CONST00x diagnostics here and
              * instead map any failure to the rule-based
-             * CONST_NEGATIVE_OR_NONINT diagnostic.
+             * CONST_NEGATIVE_OR_NONINT diagnostic.  However, we do NOT suppress
+             * CONST_CIRCULAR_DEP — jz_const_eval_all returns -2 for that case
+             * so we can emit it with the correct source location.
              */
             int rc = jz_const_eval_all(defs, env_count, &opts, env_values);
             if (expanded_expr) {
                 free(expanded_expr);
             }
             if (rc != 0) {
-                /* If we already flagged this initializer for non-positive literal
-                 * width, do not also emit a generic CONST_NEGATIVE_OR_NONINT
-                 * diagnostic on the same CONST.
-                 */
-                if (diagnostics && !sem_expr_has_nonpositive_simple_width_literal(expr_text)) {
+                if (rc == -2) {
+                    /* Circular dependency detected — emit with correct location. */
+                    if (diagnostics) {
+                        sem_report_rule(diagnostics,
+                                        decl->loc,
+                                        "CONST_CIRCULAR_DEP",
+                                        "circular dependency in CONST definitions");
+                    }
+                } else if (diagnostics && !sem_expr_has_nonpositive_simple_width_literal(expr_text)) {
+                    /* If we already flagged this initializer for non-positive literal
+                     * width, do not also emit a generic CONST_NEGATIVE_OR_NONINT
+                     * diagnostic on the same CONST.
+                     */
                     char msg[512];
                     snprintf(msg, sizeof(msg),
                              "CONST '%s' = %.*s does not evaluate to a nonnegative integer\n"
@@ -1966,20 +2079,34 @@ int sem_eval_const_expr_in_module(const char *expr,
     }
 
     int rc = jz_const_eval_all(defs, total, &opts, vals);
+    if (rc == 0) {
+        *out_value = vals[total - 1];
+        if (expanded) free(expanded);
+        if (stripped) free(stripped);
+        for (size_t fi = 0; fi < total; ++fi) { if (owned_exprs[fi]) free(owned_exprs[fi]); }
+        free(owned_exprs);
+        free(defs);
+        free(vals);
+        return 0;
+    }
+
+    /* Batch evaluation failed (e.g. a CONST has an invalid expression like
+     * lit()).  Retry evaluating just the anonymous expression alone — it may
+     * not reference any of the poisoned CONSTs.
+     */
+    long long fallback_val = 0;
+    int fb_rc = jz_const_eval_expr(anon_expr, NULL, &fallback_val);
     if (expanded) free(expanded);
     if (stripped) free(stripped);
     for (size_t fi = 0; fi < total; ++fi) { if (owned_exprs[fi]) free(owned_exprs[fi]); }
     free(owned_exprs);
-    if (rc != 0) {
-        free(defs);
-        free(vals);
-        return -1;
-    }
-
-    *out_value = vals[total - 1];
     free(defs);
     free(vals);
-    return 0;
+    if (fb_rc == 0) {
+        *out_value = fallback_val;
+        return 0;
+    }
+    return -1;
 }
 
 /*

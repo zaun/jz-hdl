@@ -117,5 +117,5 @@ Verify PIN blocks (IN_PINS, OUT_PINS, INOUT_PINS): electrical standards, drive s
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| INFO_SERIALIZER_CASCADE | info | Covered in test_misc-repeat_serializer_io.md (cross-reference: chip-specific serializer cascade) |
-| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Covered in test_misc-repeat_serializer_io.md (cross-reference: chip-specific serializer width limit) |
+| INFO_SERIALIZER_CASCADE | info | Not testable: backend-only diagnostic, not reachable via `--lint` |
+| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Not testable: backend-only diagnostic, not reachable via `--lint` |

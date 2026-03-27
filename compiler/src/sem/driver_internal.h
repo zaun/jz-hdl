@@ -478,7 +478,9 @@ void sem_check_block_assignments(JZASTNode *block,
                                  JZDiagnosticList *diagnostics,
                                  int is_sync,
                                  JZBuffer *mem_out_writes,
-                                 JZBuffer *mem_sync_reads);
+                                 JZBuffer *mem_sync_reads,
+                                 JZBuffer *mem_inout_addrs,
+                                 JZBuffer *mem_inout_wdatas);
 
 /* driver_width.c */
 int sem_instance_width_expr_is_invalid(const char *expr,

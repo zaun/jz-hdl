@@ -1,0 +1,58 @@
+// FEATURE_COND_WIDTH_NOT_1: Feature guard with wide condition in declaration blocks.
+// Tests that @feature conditions in REGISTER and WIRE blocks are checked
+// for width == 1. Also tests @feature at module level.
+// Valid conditions included to verify no false positives.
+
+@project FEATURE_COND_WIDTH_NOT_1_wide_cond_in_decl
+    CONFIG {
+        MODE = 1;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST {
+        FLAG = 1;
+    }
+
+    // Valid: comparison produces width-1 at module level (no trigger)
+    @feature FLAG == 1
+    @endfeat
+
+    // Trigger 1: wide literal in @feature at module level
+    @feature 8'd200
+    @endfeat
+
+    REGISTER {
+        r [1] = 1'b0;
+
+        // Trigger 2: wide literal in @feature inside REGISTER block
+        @feature 4'd3
+            r2 [1] = 1'b0;
+        @endfeat
+    }
+
+    WIRE {
+        // Trigger 3: wide literal in @feature inside WIRE block
+        @feature 4'd15
+            w [1];
+        @endfeat
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

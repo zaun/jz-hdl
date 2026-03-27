@@ -89,7 +89,12 @@ chip "pa35t" {
 
 ## 4. Existing Validation Tests
 
-No validation tests exist for REPEAT, SERIALIZER, or IO rules.
+| Test File | Rule ID | Description |
+|-----------|---------|-------------|
+| misc_HAPPY_PATH-repeat_ok.jz | -- | Happy path: valid @repeat block usage |
+| misc_RPT_COUNT_INVALID-non_numeric_count.jz | RPT_COUNT_INVALID | Non-numeric @repeat count |
+| misc_RPT_COUNT_INVALID-zero_count.jz | RPT_COUNT_INVALID | Zero @repeat count |
+| misc_RPT_NO_MATCHING_END-missing_end.jz | RPT_NO_MATCHING_END | @repeat without matching @end |
 
 ## 5. Rules Matrix
 
@@ -97,14 +102,14 @@ No validation tests exist for REPEAT, SERIALIZER, or IO rules.
 
 | Rule ID | Severity | Description | Test Case(s) |
 |---------|----------|-------------|--------------|
-| RPT_COUNT_INVALID | error | RPT-001 @repeat requires a positive integer count | misc_RPT_COUNT_INVALID-bad_repeat_count.jz |
+| RPT_COUNT_INVALID | error | RPT-001 @repeat requires a positive integer count | misc_RPT_COUNT_INVALID-non_numeric_count.jz, misc_RPT_COUNT_INVALID-zero_count.jz |
 | RPT_NO_MATCHING_END | error | RPT-002 @repeat without matching @end | misc_RPT_NO_MATCHING_END-missing_end.jz |
-| INFO_SERIALIZER_CASCADE | info | Differential output uses cascaded serializers (master+slave) for extended serialization ratio | misc_INFO_SERIALIZER_CASCADE-cascaded_serializers.jz (Scenario 2.4) |
-| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Differential output port width exceeds chip serializer ratio and cascade is not supported | misc_SERIALIZER_WIDTH_EXCEEDS_RATIO-width_exceeds_ratio.jz (Scenario 2.5) |
 
 ### 5.2 Rules Not Tested
 
 | Rule ID | Severity | Reason |
 |---------|----------|--------|
-| IO_BACKEND | error | Not Testable: runtime I/O error, not reachable via --info --lint |
-| IO_IR | error | Not Testable: runtime I/O error, not reachable via --info --lint |
+| INFO_SERIALIZER_CASCADE | info | Not testable: backend-only diagnostic, not reachable via `--lint` |
+| SERIALIZER_WIDTH_EXCEEDS_RATIO | error | Not testable: backend-only diagnostic, not reachable via `--lint` |
+| IO_BACKEND | error | Not testable: runtime I/O error, not reachable via `--lint` |
+| IO_IR | error | Not testable: runtime I/O error, not reachable via `--lint` |

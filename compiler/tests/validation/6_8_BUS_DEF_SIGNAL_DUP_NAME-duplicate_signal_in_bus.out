@@ -3,4 +3,3 @@ File: 6_8_BUS_DEF_SIGNAL_DUP_NAME-duplicate_signal_in_bus.jz
       27:17   error BUS_DEF_SIGNAL_DUP_NAME S6.8 Duplicate signal name inside BUS definition
       35:19   error BUS_DEF_SIGNAL_DUP_NAME S6.8 Duplicate signal name inside BUS definition
       42:17   error BUS_DEF_SIGNAL_DUP_NAME S6.8 Duplicate signal name inside BUS definition
-      54:29   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect

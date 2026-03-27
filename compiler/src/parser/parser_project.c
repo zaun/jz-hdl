@@ -1198,7 +1198,6 @@ JZASTNode *parse_project(Parser *p) {
     }
 
     int saw_non_import = 0;
-    int saw_config = 0;
     int saw_top_new = 0;
 
     while (peek(p)->type != JZ_TOK_EOF && peek(p)->type != JZ_TOK_KW_ENDPROJ) {
@@ -1238,12 +1237,8 @@ JZASTNode *parse_project(Parser *p) {
         saw_non_import = 1;
 
         if (t->type == JZ_TOK_KW_CONFIG) {
-            if (saw_config) {
-                parser_error(p, "multiple CONFIG blocks in a single project are not allowed");
-                jz_ast_free(proj);
-                return NULL;
-            }
-            saw_config = 1;
+            /* Duplicate CONFIG detection deferred to semantic analysis
+             * (CONFIG_MULTIPLE_BLOCKS) so the proper rule ID is emitted. */
             advance(p);
             JZASTNode *blk = parse_block(p, t, "CONFIG", JZ_AST_CONFIG_BLOCK);
             if (!blk) { jz_ast_free(proj); return NULL; }

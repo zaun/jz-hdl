@@ -1480,6 +1480,7 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
         int has_input_port     = 0;
         int has_output_port    = 0;
         int has_inout_port     = 0;
+        int has_bus_port       = 0;
         int has_register_atom  = 0;
         int has_wire_or_port   = 0;
 
@@ -1505,6 +1506,7 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                          * errors on bus signals.
                          */
                         has_input_port = 1;
+                        has_bus_port = 1;
                     }
                 }
             } else if (decl->type == JZ_AST_WIRE_DECL) {
@@ -1571,7 +1573,7 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
             }
         }
 
-        if (has_output_port && !treated_as_driven) {
+        if (has_output_port && !treated_as_driven && !has_bus_port) {
             sem_report_rule(diagnostics,
                             atoms[0]->loc,
                             "WARN_UNCONNECTED_OUTPUT",

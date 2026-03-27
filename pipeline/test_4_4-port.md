@@ -125,6 +125,4 @@ Verify PORT declarations, direction enforcement, BUS ports. Confirm that port wi
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| -- | -- | All assigned rules for this section are covered by existing tests |
+All rules for this section are tested.

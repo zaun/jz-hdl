@@ -1502,6 +1502,44 @@ void sem_check_project_map(JZASTNode *project,
                     }
                 }
 
+                /* MAP_INVALID_BOARD_PIN_ID: validate pin ID format.
+                 * A valid board pin ID is a non-empty alphanumeric string
+                 * (letters, digits, underscores).
+                 */
+                {
+                    const char *ids_to_check[3] = {NULL, NULL, NULL};
+                    int id_count = 0;
+                    if (rhs_is_pair) {
+                        if (p_pin[0]) ids_to_check[id_count++] = p_pin;
+                        if (n_pin[0]) ids_to_check[id_count++] = n_pin;
+                    } else {
+                        ids_to_check[id_count++] = rhs;
+                    }
+                    for (int ci = 0; ci < id_count; ++ci) {
+                        const char *pid = ids_to_check[ci];
+                        if (!pid || !*pid) continue;
+                        int valid = 1;
+                        for (const char *ch = pid; *ch; ++ch) {
+                            if (!((*ch >= 'A' && *ch <= 'Z') ||
+                                  (*ch >= 'a' && *ch <= 'z') ||
+                                  (*ch >= '0' && *ch <= '9') ||
+                                  *ch == '_')) {
+                                valid = 0;
+                                break;
+                            }
+                        }
+                        if (!valid) {
+                            char msg[256];
+                            snprintf(msg, sizeof(msg),
+                                     "'%s' is not a valid board pin ID\n"
+                                     "pin IDs must be alphanumeric (letters, digits, underscores)",
+                                     pid);
+                            sem_report_rule(diagnostics, entry->loc,
+                                            "MAP_INVALID_BOARD_PIN_ID", msg);
+                        }
+                    }
+                }
+
                 /* Physical location duplicate tracking */
                 if (rhs_is_pair) {
                     /* Track both P and N pins */

@@ -169,7 +169,8 @@ int is_decl_identifier_token(const JZToken *tok) {
         !strcmp(name, "CLOCKS") || !strcmp(name, "IN_PINS") ||
         !strcmp(name, "OUT_PINS") || !strcmp(name, "INOUT_PINS") ||
         !strcmp(name, "MAP") ||
-        !strcmp(name, "IDX")) {
+        !strcmp(name, "IDX") ||
+        !strcmp(name, "VCC") || !strcmp(name, "GND")) {
         return 1;
     }
 

@@ -1640,12 +1640,41 @@ static void report_undeclared(JZDiagnosticList *diagnostics,
                     "use of undeclared identifier");
 }
 
+static int instance_has_readable_port(const JZSymbol *inst_sym,
+                                      const JZBuffer *project_symbols,
+                                      const char *port_name)
+{
+    if (!inst_sym || inst_sym->kind != JZ_SYM_INSTANCE) return 0;
+    JZASTNode *inst_node = inst_sym->node;
+    const char *child_mod_name = inst_node ? inst_node->text : NULL;
+    if (!child_mod_name) return 0;
+
+    const JZSymbol *child_sym = project_lookup_module_or_blackbox(project_symbols,
+                                                                   child_mod_name);
+    if (!child_sym || !child_sym->node) return 0;
+
+    JZASTNode *child_mod = child_sym->node;
+    for (size_t i = 0; i < child_mod->child_count; ++i) {
+        JZASTNode *blk = child_mod->children[i];
+        if (!blk || blk->type != JZ_AST_PORT_BLOCK) continue;
+        for (size_t j = 0; j < blk->child_count; ++j) {
+            JZASTNode *pd = blk->children[j];
+            if (!pd || pd->type != JZ_AST_PORT_DECL || !pd->name) continue;
+            if (strcmp(pd->name, port_name) != 0) continue;
+            const char *dir = pd->block_kind ? pd->block_kind : "";
+            if (strcmp(dir, "OUT") == 0 || strcmp(dir, "INOUT") == 0) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 static void resolve_identifier_node(JZASTNode *node,
                                     const JZModuleScope *mod_scope,
                                     const JZBuffer *project_symbols,
                                     JZDiagnosticList *diagnostics)
 {
-    (void)project_symbols;
     if (!node || !node->name) return;
 
     if (node->name[0] == '_' && node->name[1] == '\0') {
@@ -1665,6 +1694,22 @@ static void resolve_identifier_node(JZASTNode *node,
 
     const JZSymbol *sym = module_scope_lookup(mod_scope, node->name);
     if (!sym) {
+        /* Before reporting undeclared, check if any instance has a readable
+         * (OUT/INOUT) port with this name — that means the user likely forgot
+         * the instance prefix, making the reference ambiguous. */
+        if (project_symbols) {
+            size_t count = mod_scope->symbols.len / sizeof(JZSymbol);
+            const JZSymbol *syms = (const JZSymbol *)mod_scope->symbols.data;
+            for (size_t i = 0; i < count; ++i) {
+                if (instance_has_readable_port(&syms[i], project_symbols, node->name)) {
+                    sem_report_rule(diagnostics,
+                                    node->loc,
+                                    "AMBIGUOUS_REFERENCE",
+                                    "identifier matches an instance port; use <instance>.<port> syntax");
+                    return;
+                }
+            }
+        }
         report_undeclared(diagnostics, node);
     }
 }
@@ -1881,6 +1926,18 @@ static void resolve_qualified_identifier_node(JZASTNode *node,
                             "UNDECLARED_IDENTIFIER",
                             "reference to undefined instance port");
         }
+        return;
+    }
+
+    /* Dot access on a non-BUS port/wire/register (e.g. `din.field`). */
+    if (head_sym->kind == JZ_SYM_PORT ||
+        head_sym->kind == JZ_SYM_WIRE ||
+        head_sym->kind == JZ_SYM_REGISTER ||
+        head_sym->kind == JZ_SYM_LATCH) {
+        sem_report_rule(diagnostics,
+                        node->loc,
+                        "BUS_PORT_NOT_BUS",
+                        "dot-access member syntax is only valid on BUS ports");
         return;
     }
 

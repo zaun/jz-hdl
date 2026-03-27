@@ -556,7 +556,8 @@ No validation tests exist for TESTBENCH rules yet. Most rules require `--test` m
 
 | Rule ID | Severity | Test Mode | Test Scenario(s) |
 |---------|----------|-----------|-------------------|
-| TB_PROJECT_MIXED | error | --test | 3.2, Error Cases #2 |
+| TB_WRONG_TOOL | error | --lint | 3.1, Error Cases #1 |
+| TB_PROJECT_MIXED | error | --lint | 3.2, Error Cases #2 |
 | TB_MODULE_NOT_FOUND | error | --test | 3.3, Error Cases #3 |
 | TB_PORT_NOT_CONNECTED | error | --test | 3.4, Error Cases #4 |
 | TB_PORT_WIDTH_MISMATCH | error | --test | 3.5, Error Cases #5 |
@@ -572,6 +573,4 @@ No validation tests exist for TESTBENCH rules yet. Most rules require `--test` m
 
 ### 6.2 Rules Not Tested
 
-| Rule ID | Severity | Gap Description |
-|---------|----------|-----------------|
-| TB_WRONG_TOOL | error | Validation test file for --lint rejection path does not yet exist; scenario is documented in 3.1 |
+All rules for this section are tested. The --test mode rules (TB_MODULE_NOT_FOUND through TB_MULTIPLE_NEW) are documented as test scenarios but require the `--test` test harness rather than the `--lint` validation framework.

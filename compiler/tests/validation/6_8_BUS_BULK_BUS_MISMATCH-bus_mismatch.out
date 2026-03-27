@@ -1,5 +1,2 @@
 File: 6_8_BUS_BULK_BUS_MISMATCH-bus_mismatch.jz
-      27:30   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect
-      49:30   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect
-      71:29   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect
      119:9    error BUS_BULK_BUS_MISMATCH S6.8 Bulk BUS assignment requires both sides to reference the same BUS id

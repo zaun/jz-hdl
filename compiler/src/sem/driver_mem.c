@@ -202,6 +202,25 @@ static void sem_check_mem_file_init(JZASTNode *mem,
     const char *ext = sem_mem_get_file_ext(init_expr->text);
     unsigned long long file_bits = 0ull;
 
+    /* MEM_INIT_FILE_CONTAINS_X: scan text-format files for x/z values. */
+    if (ext && (sem_mem_ext_equals(ext, "hex") || sem_mem_ext_equals(ext, "mem"))) {
+        int ch;
+        int found_xz = 0;
+        while ((ch = fgetc(fp)) != EOF) {
+            if (ch == 'x' || ch == 'X' || ch == 'z' || ch == 'Z') {
+                found_xz = 1;
+                break;
+            }
+        }
+        if (found_xz) {
+            sem_report_rule(diagnostics,
+                            init_expr->loc,
+                            "MEM_INIT_FILE_CONTAINS_X",
+                            "memory initialization file contains x or z values");
+        }
+        rewind(fp);
+    }
+
     if (ext && sem_mem_ext_equals(ext, "hex")) {
         /* Textual hex: count hex digits as 4 bits each. */
         file_bits = sem_mem_count_bits_hex_file(fp);

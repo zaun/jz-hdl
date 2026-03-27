@@ -194,18 +194,21 @@ void sem_check_module_instantiations(const JZModuleScope *scope,
                                 "instance array count must be a positive integer expression");
                 /* Fall back to treating this as a scalar instance to keep analysis going. */
             } else if (rc == 0) {
-                /* Non-simple expression; try resolving as a CONST identifier. */
+                /* Non-simple expression; try full constant evaluation which
+                 * handles CONST references, CONFIG.<name>, arithmetic, and
+                 * clog2().
+                 */
                 int resolved = 0;
-                const JZSymbol *csym = module_scope_lookup(scope, inst->width);
-                if (csym && csym->kind == JZ_SYM_CONST && csym->node &&
-                    csym->node->text) {
-                    unsigned cv = 0;
-                    int crc = eval_simple_positive_decl_int(csym->node->text, &cv);
-                    if (crc == 1 && cv > 0) {
-                        array_count = cv;
+                long long cval = 0;
+                if (sem_eval_const_expr_in_module(inst->width,
+                                                   scope,
+                                                   project_symbols,
+                                                   &cval) == 0) {
+                    if (cval > 0) {
+                        array_count = (unsigned)cval;
                         is_array = 1;
                         resolved = 1;
-                    } else if (crc == -1 || (crc == 1 && cv == 0)) {
+                    } else {
                         sem_report_rule(diagnostics,
                                         inst->loc,
                                         "INSTANCE_ARRAY_COUNT_INVALID",
@@ -238,10 +241,32 @@ void sem_check_module_instantiations(const JZModuleScope *scope,
             }
         }
         if (!child_sym || !child_sym->node) {
-            sem_report_rule(diagnostics,
-                            inst->loc,
-                            "INSTANCE_UNDEFINED_MODULE",
-                            "instantiation references non-existent module or blackbox");
+            /* Distinguish module-not-found from blackbox-not-found.
+             * If the project declares any @blackbox, the undefined name was
+             * likely intended as a blackbox reference; otherwise treat it as
+             * an undefined module. */
+            int has_blackbox = 0;
+            if (project_symbols && project_symbols->data) {
+                const JZSymbol *ps = (const JZSymbol *)project_symbols->data;
+                size_t pc = project_symbols->len / sizeof(JZSymbol);
+                for (size_t k = 0; k < pc; ++k) {
+                    if (ps[k].kind == JZ_SYM_BLACKBOX) {
+                        has_blackbox = 1;
+                        break;
+                    }
+                }
+            }
+            if (has_blackbox) {
+                sem_report_rule(diagnostics,
+                                inst->loc,
+                                "BLACKBOX_UNDEFINED_IN_NEW",
+                                "@new references undefined blackbox name");
+            } else {
+                sem_report_rule(diagnostics,
+                                inst->loc,
+                                "INSTANCE_UNDEFINED_MODULE",
+                                "instantiation references non-existent module");
+            }
             continue;
         }
 

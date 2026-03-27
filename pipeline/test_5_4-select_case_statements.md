@@ -76,6 +76,4 @@ Verify SELECT/CASE syntax, duplicate CASE detection, DEFAULT behavior (optional 
 
 ### 5.2 Rules Not Tested (in this section)
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| (all S5.4 rules have test files) | -- | -- |
+All rules for this section are tested.

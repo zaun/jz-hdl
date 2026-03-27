@@ -1,7 +1,7 @@
 // HAPPY_PATH: Valid @check placement at project scope and module scope.
-// S9.3 permits @check at project and module scope, not inside blocks.
-// Includes @check in various valid positions: after CONFIG, between blocks,
-// inside @feature at module scope, and immediately before blocks.
+// S9.3 permits @check at project and module scope, not inside blocks or
+// @feature bodies. Includes @check in various valid positions: after CONFIG,
+// between blocks, and immediately before blocks.
 
 @project HAPPY_PATH_check_placement_ok
     CONFIG {
@@ -33,11 +33,6 @@
 
     // Valid: @check at module scope in helper module after CONST
     @check (LOCAL_W > 0, "local width ok");
-
-    // Valid: @check inside @feature at module scope (@feature is transparent)
-    @feature CONFIG.ENABLE == 1
-        @check (LOCAL_W == 4, "feature guard check ok");
-    @endfeat
 
     ASYNCHRONOUS {
         data = din;

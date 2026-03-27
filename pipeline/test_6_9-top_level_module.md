@@ -86,6 +86,4 @@ Verify @top directive: module/blackbox reference resolution, port-to-pin binding
 
 ### 5.2 Rules Not Tested
 
-| Rule ID | Severity | Reason |
-|---------|----------|--------|
-| -- | -- | All rules for this section have dedicated validation tests |
+All rules for this section are tested.
