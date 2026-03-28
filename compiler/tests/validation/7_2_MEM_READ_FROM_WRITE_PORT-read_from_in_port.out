@@ -1,0 +1,5 @@
+File: 7_2_MEM_READ_FROM_WRITE_PORT-read_from_in_port.jz
+      28:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      35:16   error MEM_READ_FROM_WRITE_PORT S7.2.2/S7.3.3 Reading from MEM write port (OUT); did you mean to use an IN port?
+      58:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      72:16   error MEM_READ_FROM_WRITE_PORT S7.2.2/S7.3.3 Reading from MEM write port (OUT); did you mean to use an IN port?

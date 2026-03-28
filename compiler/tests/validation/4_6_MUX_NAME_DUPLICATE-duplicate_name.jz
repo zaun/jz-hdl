@@ -1,0 +1,158 @@
+// MUX_NAME_DUPLICATE: MUX identifier duplicates another identifier in module.
+// Tests MUX name conflicting with port, wire, register, and another MUX.
+// Each conflict is in a separate module to avoid cascading errors.
+
+@project MUX_NAME_DUPLICATE_duplicate_name
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: MUX name conflicts with port name
+@module HelperPort
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+
+    // Trigger 1: MUX name 'a' duplicates port name 'a'
+    MUX {
+        a = b, b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = a | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= b;
+    }
+@endmod
+
+// Helper module: MUX name conflicts with wire name
+@module HelperWire
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    // Trigger 2: MUX name 'w' duplicates wire name 'w'
+    MUX {
+        w = a, b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        w = a;
+        data = w | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= a;
+    }
+@endmod
+
+// Helper module: MUX name conflicts with register name
+@module HelperReg
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 3: MUX name 'r' duplicates register name 'r'
+    MUX {
+        r = a, b;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= a;
+    }
+@endmod
+
+// Top module: MUX name conflicts with wire, instantiates helpers
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+
+    WIRE {
+        hp_out [8];
+        hw_out [8];
+        hr_out [8];
+        dup [8];
+    }
+
+    // Trigger 4: MUX name 'dup' duplicates wire name 'dup'
+    MUX {
+        dup = a, b;
+    }
+
+    @new inst_port HelperPort {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] data = hp_out;
+    };
+
+    @new inst_wire HelperWire {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] data = hw_out;
+    };
+
+    @new inst_reg HelperReg {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] data = hr_out;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        dup = a;
+        data = hp_out | hw_out | hr_out | dup | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= a;
+    }
+@endmod

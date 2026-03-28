@@ -1,0 +1,81 @@
+// INSTANCE_NAME_DUP_IN_MODULE: Multiple instances with the same name in a module.
+// Tests duplicate @new instance names in both top and helper modules.
+// Valid unique instance names are included to verify no false positives.
+
+@project INSTANCE_NAME_DUP_IN_MODULE_duplicate_instance_names
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module (structurally valid, used as instantiation target)
+@module HelperA
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module with duplicate instance names
+@module ParentMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Valid: first instance named inst_a
+    @new inst_a HelperA {
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    // Trigger 1: duplicate instance name inst_a
+    @new inst_a HelperA {
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_p ParentMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    // Valid: first instance named inst_x
+    @new inst_x HelperA {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    // Trigger 2: duplicate instance name inst_x in TopMod
+    @new inst_x HelperA {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

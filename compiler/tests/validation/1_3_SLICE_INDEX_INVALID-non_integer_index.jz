@@ -1,0 +1,76 @@
+// SLICE_INDEX_INVALID: Slice index is not a valid non-negative integer.
+// Tests sized literals used as slice indices in async RHS, sync RHS,
+// and sync LHS across modules. Valid integer indices included for no false positives.
+
+@project SLICE_INDEX_INVALID_non_integer_index
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+        OUT [1] out_c = _;
+    }
+@endproj
+
+// Helper: sized literal as slice index in async and sync
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [16] bus;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: sized literal in slice MSB position (async RHS)
+        out_a = bus[8'd5:0];
+        // Valid: plain integer index (no false positive)
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: sized literal in slice LSB position (sync RHS)
+        r <= bus[5:4'd0];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+    WIRE {
+        ha_out_a [1];
+        ha_out_b [1];
+    }
+    REGISTER {
+        r_a [8] = 8'h00;
+        r_b [16] = 16'h0000;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [16] bus = r_b;
+        OUT [1] out_a = ha_out_a;
+        OUT [1] out_b = ha_out_b;
+    };
+
+    ASYNCHRONOUS {
+        out_a = ha_out_a;
+        out_b = ha_out_b;
+        // Read r_a to avoid WARN_UNSINKED_REGISTER
+        out_c = r_a[0:0];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: sized literal in slice MSB on LHS (sync LHS)
+        r_a[4'd7:0] <= r_b[7:0];
+        r_b <= r_b;
+    }
+@endmod

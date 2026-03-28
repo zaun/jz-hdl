@@ -1,0 +1,93 @@
+// CONST_HAPPY_PATH: Valid CONST declarations and usage.
+// Tests numeric CONSTs in port widths, wire widths, register widths,
+// CONST-referencing-CONST, clog2 arithmetic, string CONST declaration,
+// CONST=0 as valid value, large CONST, multi-module instantiation.
+// No diagnostics expected.
+
+@project CONST_HAPPY_PATH_valid_const_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+        OUT [4] out_h = _;
+    }
+@endproj
+
+// Helper module using CONST in various valid contexts
+@module HelperMod
+    CONST {
+        HW = 4;
+    }
+
+    PORT {
+        IN  [1] clk;
+        // Valid: CONST in port width
+        IN  [HW] din;
+        OUT [HW] data;
+    }
+
+    REGISTER {
+        // Valid: CONST in register width
+        r [HW] = 4'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        W = 8;
+        HALF = 4;
+        DEPTH = 16;
+        // Valid: CONST referencing another CONST with clog2
+        ADDR_W = clog2(DEPTH);
+        // Valid: CONST referencing another CONST with arithmetic
+        DOUBLE = W * 2;
+        // Valid: zero is a valid CONST value
+        ZERO = 0;
+        // Valid: large CONST value
+        BIG = 65536;
+        // Valid: string CONST declaration
+        ROM_FILE = "data.hex";
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [W] data;
+        OUT [HALF] out_h;
+    }
+
+    WIRE {
+        // Valid: CONST in wire width
+        w [HALF];
+    }
+
+    REGISTER {
+        // Valid: CONST in register width
+        r [W] = 8'b0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] din = w;
+        OUT [4] data = out_h;
+    };
+
+    ASYNCHRONOUS {
+        w = r[3:0];
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

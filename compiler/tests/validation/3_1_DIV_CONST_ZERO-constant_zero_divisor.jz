@@ -1,0 +1,86 @@
+// DIV_CONST_ZERO: Division/modulus by compile-time constant zero.
+// Tests both / and % with literal zero in sync blocks across modules.
+// Division by constant zero uses literals which trigger ASYNC_ALIAS_LITERAL_RHS
+// in ASYNC blocks, so all triggers are in SYNCHRONOUS blocks.
+// Valid division by nonzero constant included to verify no false positives.
+
+@project DIV_CONST_ZERO_constant_zero_divisor
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data_in = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper module: division and modulus by zero in sync
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] val;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r_div [8] = 8'd0;
+        r_mod [8] = 8'd0;
+        r_ok  [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        out_a = r_div;
+        out_b = r_mod;
+        out_c = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: division by constant zero in sync
+        r_div <= val / 8'd0;
+        // Trigger 2: modulus by constant zero in sync
+        r_mod <= val % 8'd0;
+        // Valid: division by nonzero constant (no false positive)
+        r_ok <= val / 8'd1;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+        ha_c [8];
+    }
+    REGISTER {
+        r_div [8] = 8'd0;
+        r_mod [8] = 8'd0;
+        r_ok  [8] = 8'd0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] val = data_in;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+        OUT [8] out_c = ha_c;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r_div;
+        out_b = r_mod;
+        out_c = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: division by constant zero in top sync
+        r_div <= data_in / 8'd0;
+        // Trigger 4: modulus by constant zero in top sync
+        r_mod <= data_in % 8'd0;
+        // Valid: modulus by nonzero constant (no false positive)
+        r_ok <= data_in % 8'd5;
+    }
+@endmod

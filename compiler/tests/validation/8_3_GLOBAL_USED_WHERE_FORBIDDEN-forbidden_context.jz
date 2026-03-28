@@ -1,0 +1,71 @@
+// GLOBAL_USED_WHERE_FORBIDDEN: GLOBAL.<name> used in a forbidden context.
+// Tests GLOBAL reference in CONFIG block, CONST block, and OVERRIDE block.
+// Valid usage in ASYNCHRONOUS and SYNCHRONOUS RHS is included for negative testing.
+
+@global VALS
+    MAGIC = 8'hAB;
+    OTHER = 8'hCD;
+@endglob
+
+@project GLOBAL_USED_WHERE_FORBIDDEN_forbidden_context
+    // Trigger 1: GLOBAL reference in CONFIG expression
+    CONFIG {
+        WIDTH = VALS.MAGIC;
+    }
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module ChildMod
+    CONST {
+        SIZE = 8;
+    }
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Valid: GLOBAL in async RHS (no trigger)
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: GLOBAL in sync RHS (no trigger)
+        r <= VALS.OTHER;
+    }
+@endmod
+
+@module TopMod
+    // Trigger 2: GLOBAL reference in module CONST initializer
+    CONST {
+        MY_VAL = VALS.MAGIC;
+    }
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    // Trigger 3: GLOBAL reference in OVERRIDE expression
+    @new inst_c ChildMod {
+        OVERRIDE {
+            SIZE = VALS.MAGIC;
+        }
+        IN  [1] clk = clk;
+        OUT [8] dout = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: GLOBAL in sync RHS (no trigger)
+        r <= VALS.OTHER;
+    }
+@endmod

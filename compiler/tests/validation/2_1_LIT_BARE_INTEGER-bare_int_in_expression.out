@@ -1,0 +1,3 @@
+File: 2_1_LIT_BARE_INTEGER-bare_int_in_expression.jz
+      27:14   error LIT_BARE_INTEGER S2.1 Bare integer literal in runtime expression; use a sized literal (e.g. 4'd1) or lit(width, value)
+      59:14   error LIT_BARE_INTEGER S2.1 Bare integer literal in runtime expression; use a sized literal (e.g. 4'd1) or lit(width, value)

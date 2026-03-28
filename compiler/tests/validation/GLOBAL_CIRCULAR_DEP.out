@@ -1,3 +1,0 @@
-File: GLOBAL_CIRCULAR_DEP.jz
-       5:3    error GLOBAL_FORWARD_REF S8.4 Global constant expression references a later constant in the same @global block
-       6:3    error GLOBAL_CIRCULAR_DEP S8.4 Circular dependency between constants in an @global block

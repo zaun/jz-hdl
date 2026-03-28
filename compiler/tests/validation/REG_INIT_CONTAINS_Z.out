@@ -1,2 +1,0 @@
-File: REG_INIT_CONTAINS_Z.jz
-      18:13   error REG_INIT_CONTAINS_Z S2.1/S4.7 Register initialization literal must not contain `z` bits

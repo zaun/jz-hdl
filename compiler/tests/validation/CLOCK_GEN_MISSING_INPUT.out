@@ -1,3 +1,0 @@
-File: CLOCK_GEN_MISSING_INPUT.jz
-      19:3    info  CLOCK_GEN_NO_CHIP_DATA S6.4.1 No chip specified; CLOCK_GEN parameters and constraints cannot be validated
-      20:5    error CLOCK_GEN_MISSING_INPUT S6.4.1 CLOCK_GEN unit must have an IN clock declaration

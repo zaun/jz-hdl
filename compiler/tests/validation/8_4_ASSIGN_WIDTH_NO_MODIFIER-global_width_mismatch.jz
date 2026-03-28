@@ -1,0 +1,100 @@
+// ASSIGN_WIDTH_NO_MODIFIER: Global constant used in assignment with width mismatch.
+// Tests global constants causing width mismatch errors in various assignment contexts.
+// Valid same-width uses of globals are included to verify no false positives.
+
+@global CMD
+    NARROW = 4'b0001;
+    WIDE   = 16'hBEEF;
+    MATCH8 = 8'hAA;
+@endglob
+
+@project ASSIGN_WIDTH_NO_MODIFIER_global_width_mismatch
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+        OUT [8] out_d = _;
+    }
+@endproj
+
+// Helper module — triggers width mismatch with globals in async and sync blocks
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: global too narrow for target in ASYNCHRONOUS = assignment
+        out_a = CMD.NARROW;
+        // Valid: same-width global (no error); also sinks r
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: global too wide for target in SYNCHRONOUS <= assignment
+        r <= CMD.WIDE;
+    }
+@endmod
+
+// Helper module — triggers width mismatch in async alias and sync
+@module HelperB
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 3: global too wide for target in ASYNCHRONOUS <= alias
+        out_a <= CMD.WIDE;
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: global too narrow for target in SYNCHRONOUS <= assignment
+        r <= CMD.NARROW;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+        OUT [8] out_d;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] out_a = out_a;
+        OUT [8] out_b = out_b;
+    };
+
+    @new inst_b HelperB {
+        IN  [1] clk = clk;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 5: global too narrow in top module ASYNCHRONOUS = assignment
+        out_c = CMD.NARROW;
+        // Valid: same-width global (no error); also sinks r
+        out_d = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 6: global too wide in top module SYNCHRONOUS <= assignment
+        r <= CMD.WIDE;
+    }
+@endmod

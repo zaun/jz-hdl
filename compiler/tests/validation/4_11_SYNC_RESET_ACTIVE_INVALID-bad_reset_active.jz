@@ -1,0 +1,73 @@
+// SYNC_RESET_ACTIVE_INVALID: SYNCHRONOUS block RESET_ACTIVE must be High or Low.
+// Tests invalid RESET_ACTIVE parameter values in multiple modules.
+// Valid RESET_ACTIVE values included to verify no false positives.
+
+@project SYNC_RESET_ACTIVE_INVALID_bad_reset_active
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        IN  [1] clk_c = _;
+        IN  [1] rst = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: invalid RESET_ACTIVE value
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    // Trigger 1: invalid RESET_ACTIVE value "Rising"
+    SYNCHRONOUS(CLK=clk RESET=rst RESET_ACTIVE=Rising) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] clk_c;
+        IN  [1] rst;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk_a;
+        IN  [1] rst = rst;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_ok [1] = 1'b0;
+        r_bad [1] = 1'b0;
+        r_ok2 [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+
+    // Valid: RESET_ACTIVE=High — should NOT trigger
+    SYNCHRONOUS(CLK=clk_a RESET=rst RESET_ACTIVE=High) {
+        r_ok <= ~r_ok;
+    }
+
+    // Trigger 2: invalid RESET_ACTIVE value "Positive"
+    SYNCHRONOUS(CLK=clk_b RESET=rst RESET_ACTIVE=Positive) {
+        r_bad <= ~r_bad;
+    }
+
+    // Valid: RESET_ACTIVE=Low — should NOT trigger
+    SYNCHRONOUS(CLK=clk_c RESET=rst RESET_ACTIVE=Low) {
+        r_ok2 <= ~r_ok2;
+    }
+@endmod

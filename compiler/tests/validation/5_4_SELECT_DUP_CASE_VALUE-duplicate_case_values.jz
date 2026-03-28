@@ -1,0 +1,129 @@
+// SELECT_DUP_CASE_VALUE: Duplicate CASE values in SELECT statement.
+// Tests duplicate detection with bare integers, sized hex, sized binary,
+// in ASYNC and SYNC blocks across multiple modules, and in nested SELECT.
+// Valid unique CASE values included to verify no false positives.
+
+@project SELECT_DUP_CASE_VALUE_duplicate_case_values
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] sel = _;
+        IN  [8] opcode = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper: exercises duplicate CASE in ASYNC
+@module HelperA
+    PORT {
+        IN  [4] sel;
+        OUT [1] out_a;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: duplicate bare integer CASE in ASYNC
+        SELECT (sel) {
+            CASE 0 {
+                out_a <= VCC;
+            }
+            CASE 1 {
+                out_a <= GND;
+            }
+            CASE 0 {
+                out_a <= GND;
+            }
+            DEFAULT {
+                out_a <= GND;
+            }
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] sel;
+        IN  [8] opcode;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [8] out_c;
+    }
+
+    @new inst_a HelperA {
+        IN  [4] sel = sel;
+        OUT [1] out_a = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 2: duplicate sized hex literal CASE in ASYNC
+        SELECT (sel) {
+            CASE 4'h3 {
+                out_a <= r;
+            }
+            CASE 4'hA {
+                out_a <= VCC;
+            }
+            CASE 4'h3 {
+                out_a <= GND;
+            }
+            DEFAULT {
+                out_a <= GND;
+            }
+        }
+        // Trigger 3: duplicate sized binary literal CASE in ASYNC
+        SELECT (sel) {
+            CASE 4'b0010 {
+                out_b <= VCC;
+            }
+            CASE 4'b0011 {
+                out_b <= GND;
+            }
+            CASE 4'b0010 {
+                out_b <= r;
+            }
+            DEFAULT {
+                out_b <= GND;
+            }
+        }
+
+        // Trigger 4: duplicate CASE in nested SELECT (inner)
+        SELECT (sel) {
+            CASE 0 {
+                SELECT (opcode) {
+                    CASE 8'h10 {
+                        out_c <= 8'hAA;
+                    }
+                    CASE 8'h20 {
+                        out_c <= 8'hBB;
+                    }
+                    CASE 8'h10 {
+                        out_c <= 8'hCC;
+                    }
+                    DEFAULT {
+                        out_c <= 8'h00;
+                    }
+                }
+            }
+            DEFAULT {
+                out_c <= 8'h00;
+            }
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: duplicate bare integer CASE in SYNC
+        SELECT (sel) {
+            CASE 2 {
+                r <= VCC;
+            }
+            CASE 2 {
+                r <= GND;
+            }
+            DEFAULT {
+                r <= GND;
+            }
+        }
+    }
+@endmod

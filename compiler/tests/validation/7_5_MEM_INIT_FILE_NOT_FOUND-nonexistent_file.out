@@ -1,0 +1,3 @@
+File: 7_5_MEM_INIT_FILE_NOT_FOUND-nonexistent_file.jz
+      26:26   error MEM_INIT_FILE_NOT_FOUND S7.5.2/S7.7.1 @file path does not resolve to readable file
+      55:26   error MEM_INIT_FILE_NOT_FOUND S7.5.2/S7.7.1 @file path does not resolve to readable file

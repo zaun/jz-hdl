@@ -1,0 +1,4 @@
+File: 8_5_LIT_OVERFLOW-global_literal_overflow.jz
+      10:5    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>
+      12:5    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>
+      19:5    error GLOBAL_INVALID_EXPR_TYPE S8.4 Global value must be a sized literal <width>'<base><value>

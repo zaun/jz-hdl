@@ -1,0 +1,81 @@
+// MEM_INOUT_ADDR_IN_ASYNC: INOUT .addr may only be assigned in SYNCHRONOUS blocks.
+// Valid .addr assignment in SYNC block included for no false positives.
+
+@project MEM_INOUT_ADDR_IN_ASYNC_addr_in_async
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: .addr assigned in ASYNC block in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            INOUT rw;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rw.data;
+        // Trigger 1: .addr in ASYNC block
+        mem_a.rw.addr = addr;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.rw.wdata <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            INOUT rw;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_b.rw.data;
+        // Trigger 2: .addr in ASYNC block in top module
+        mem_b.rw.addr = addr;
+    }
+
+    // Valid: .addr assigned in SYNC block (no error expected)
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.rw.addr <= addr;
+        mem_b.rw.wdata <= wdata;
+    }
+@endmod

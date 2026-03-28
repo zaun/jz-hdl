@@ -1,0 +1,6 @@
+File: 4_2_INSTANCE_NAME_CONFLICT-instance_signal_collision.jz
+      43:5    error INSTANCE_NAME_CONFLICT S4.2/S8.1 Instance name matches another identifier (port/wire/register/CONST) in parent module
+      49:5    error INSTANCE_NAME_CONFLICT S4.2/S8.1 Instance name matches another identifier (port/wire/register/CONST) in parent module
+      55:5    error INSTANCE_NAME_CONFLICT S4.2/S8.1 Instance name matches another identifier (port/wire/register/CONST) in parent module
+      61:5    error INSTANCE_NAME_CONFLICT S4.2/S8.1 Instance name matches another identifier (port/wire/register/CONST) in parent module
+      93:5    error INSTANCE_NAME_CONFLICT S4.2/S8.1 Instance name matches another identifier (port/wire/register/CONST) in parent module

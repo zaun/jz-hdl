@@ -1,0 +1,3 @@
+File: 7_3_MEM_ASYNC_PORT_FIELD_DATA-async_port_dot_data.jz
+      31:16   error MEM_ASYNC_PORT_FIELD_DATA S7.2.1/S7.3.1/S7.7.2 ASYNC read ports must be indexed; mem.port.data is SYNC-only
+      62:16   error MEM_ASYNC_PORT_FIELD_DATA S7.2.1/S7.3.1/S7.7.2 ASYNC read ports must be indexed; mem.port.data is SYNC-only

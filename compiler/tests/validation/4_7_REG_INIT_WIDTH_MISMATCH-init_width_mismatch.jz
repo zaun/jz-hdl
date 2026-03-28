@@ -1,0 +1,78 @@
+// REG_INIT_WIDTH_MISMATCH: Register init literal width does not match declared width.
+// Tests width mismatch between register declaration and init value across modules.
+// Valid registers with matching init widths included for no false positives.
+
+@project REG_INIT_WIDTH_MISMATCH_init_width_mismatch
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+        OUT [4] dout_d = _;
+    }
+@endproj
+
+// Helper module with init width mismatch
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data_a;
+        OUT [8] data_b;
+    }
+
+    REGISTER {
+        // Trigger 1: init too narrow (4-bit init for 8-bit register)
+        r_narrow [8] = 4'h0;
+        // Trigger 2: init too wide (16-bit init for 8-bit register)
+        r_wide [8] = 16'h0000;
+        // Valid: matching width
+        r_ok [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data_a = r_narrow;
+        data_b = r_wide;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_narrow <= ~r_narrow;
+        r_wide <= ~r_wide;
+        r_ok <= ~r_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+        OUT [4] dout_d;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] data_a = dout_a;
+        OUT [8] data_b = dout_b;
+    };
+
+    REGISTER {
+        // Trigger 3: init too narrow in top module (1-bit init for 8-bit register)
+        r_narrow_top [8] = 1'b0;
+        // Trigger 4: init too wide in top module (8-bit init for 4-bit register)
+        r_wide_top [4] = 8'hFF;
+        // Valid: matching width
+        r_ok [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        dout_c = r_narrow_top;
+        dout_d = r_wide_top;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_narrow_top <= ~r_narrow_top;
+        r_wide_top <= ~r_wide_top;
+        r_ok <= ~r_ok;
+    }
+@endmod

@@ -1,0 +1,57 @@
+// LIT_UNDERSCORE_AT_EDGES: Literal with underscore as first or last character of value.
+// Tests leading and trailing underscores in binary, decimal, and hex literals.
+// Valid underscore usage (middle of value) included to verify no false positives.
+
+@project LIT_UNDERSCORE_AT_EDGES_underscore_position
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: leading underscore in binary, trailing underscore in hex
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: leading underscore in binary literal
+        data = 8'b_1100_0011;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: trailing underscore in hex literal
+        r <= 8'hFF_;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    WIRE {
+        helper_data [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] data = helper_data;
+    };
+
+    REGISTER {
+        // Trigger 3: leading underscore in register init
+        r [8] = 8'd_255;
+    }
+    ASYNCHRONOUS {
+        // Valid: underscore in middle of value (no false positive)
+        data = helper_data;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: trailing underscore in decimal
+        r <= 8'd255_;
+    }
+@endmod

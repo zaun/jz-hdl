@@ -1,0 +1,2 @@
+File: 7_11_MEM_DISTRIBUTED_RESOURCE_EXCEEDED-exceeds_distributed_capacity.jz
+       6:5    error MEM_DISTRIBUTED_RESOURCE_EXCEEDED S7.1/S6.1 Total DISTRIBUTED memory usage exceeds chip resources

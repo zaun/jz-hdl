@@ -1,0 +1,59 @@
+// CLOCK_GEN_OUTPUT_INVALID_SELECTOR: CLOCK_GEN output selector not valid for type.
+// Tests CLOCK_GEN OUT with a selector name not defined for the generator type.
+// Valid selectors included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_OUTPUT_INVALID_SELECTOR_bad_selector
+    CLOCKS {
+        ref_clk = { period=10 };
+        valid_out;
+        bad_out;
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK ref_clk;
+            // Valid: BASE is a valid PLL output selector (no trigger)
+            OUT BASE valid_out;
+            // Trigger 1: NONSENSE is not a valid PLL output selector
+            OUT NONSENSE bad_out;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

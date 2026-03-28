@@ -1,0 +1,71 @@
+// SSLICE_WIDTH_INVALID: sslice() width parameter must be a positive integer.
+// Tests sslice() with width=0 in ASYNC and SYNC blocks across modules.
+// Valid sslice() with positive width included to verify no false positives.
+
+@project SSLICE_WIDTH_INVALID_zero_width_param
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        IN  [3] idx = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: sslice() with zero width
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] src;
+        IN  [3] idx;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: sslice(src, idx, 0, val) in helper ASYNC
+        out_a <=z sslice(src, idx, 0, 1'b0);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: sslice(src, idx, 0, val) in helper SYNC
+        r <=z sslice(src, idx, 0, 1'b0);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        IN  [3] idx;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] src = data;
+        IN  [3] idx = idx;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: sslice(data, idx, 0, val) in top ASYNC
+        out_a <=z sslice(data, idx, 0, 1'b0);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: sslice(data, idx, 0, val) in top SYNC
+        r <=z sslice(data, idx, 0, 1'b0);
+    }
+@endmod

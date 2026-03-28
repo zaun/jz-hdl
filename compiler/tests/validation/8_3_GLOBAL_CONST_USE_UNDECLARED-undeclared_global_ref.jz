@@ -1,0 +1,55 @@
+// GLOBAL_CONST_USE_UNDECLARED: Use of GLOBAL.<name> where the namespace or constant is not declared.
+// Tests undefined constant in valid namespace in both async and sync contexts.
+// Valid global references are included to verify no false positives.
+
+@global OPCODES
+    ADD = 4'b0001;
+    SUB = 4'b0010;
+@endglob
+
+@project GLOBAL_CONST_USE_UNDECLARED_undeclared_global_ref
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [4] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [4] dout;
+    }
+    REGISTER {
+        r [4] = 4'b0000;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: reference to undefined constant in valid namespace (sync RHS)
+        r <= OPCODES.MUL;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [4] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [4] dout = _;
+    };
+
+    REGISTER {
+        r [4] = 4'b0000;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: reference to another undefined constant in valid namespace (sync RHS)
+        r <= OPCODES.XOR;
+    }
+@endmod

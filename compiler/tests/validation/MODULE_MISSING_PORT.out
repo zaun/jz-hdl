@@ -1,2 +1,0 @@
-File: MODULE_MISSING_PORT.jz
-      10:1    error MODULE_MISSING_PORT S4.2/S4.4/S8.1 Module missing required PORT block or PORT block is empty (no ports declared)

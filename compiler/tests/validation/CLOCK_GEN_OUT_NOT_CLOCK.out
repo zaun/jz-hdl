@@ -1,2 +1,0 @@
-File: CLOCK_GEN_OUT_NOT_CLOCK.jz
-      21:7    error CLOCK_GEN_OUT_NOT_CLOCK S6.4.1 CLOCK_GEN OUT used for non-clock output; use WIRE instead

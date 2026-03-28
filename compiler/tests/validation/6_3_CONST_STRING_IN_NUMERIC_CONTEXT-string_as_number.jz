@@ -1,0 +1,56 @@
+// CONST_STRING_IN_NUMERIC_CONTEXT: String CONFIG value used where numeric expected.
+// Tests string CONFIG entries used in port widths, register widths, CONST initializers.
+// Valid numeric CONFIG references included to verify no false positives.
+
+@project CONST_STRING_IN_NUMERIC_CONTEXT_string_as_number
+    CONFIG {
+        WIDTH = 8;
+        FIRMWARE = "out/fw.bin";
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [CONFIG.WIDTH] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        // Trigger 1: string CONFIG in port width
+        IN  [CONFIG.FIRMWARE] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        // Trigger 2: string CONFIG in CONST initializer (numeric context)
+        BAD_CONST = CONFIG.FIRMWARE;
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [CONFIG.WIDTH] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] din = 1'b0;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        // Trigger 3: string CONFIG in register width
+        r [CONFIG.FIRMWARE] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

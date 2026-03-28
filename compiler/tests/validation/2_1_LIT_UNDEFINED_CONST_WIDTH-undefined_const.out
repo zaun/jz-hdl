@@ -1,0 +1,4 @@
+File: 2_1_LIT_UNDEFINED_CONST_WIDTH-undefined_const.jz
+      29:14   error LIT_UNDEFINED_CONST_WIDTH S2.1 Width uses undefined CONST name
+      53:17   error LIT_UNDEFINED_CONST_WIDTH S2.1 Width uses undefined CONST name
+      60:14   error LIT_UNDEFINED_CONST_WIDTH S2.1 Width uses undefined CONST name

@@ -1,0 +1,100 @@
+// COMB_LOOP_UNCONDITIONAL: Valid programs with no combinational loops.
+// Exercises linear chains, fan-out/reconvergence, long chains, and
+// register-based path breaks to verify no false positives.
+
+@project COMB_LOOP_UNCONDITIONAL_valid_no_loop_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] din = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: linear chain through multiple wires (no cycle)
+@module HelperLinear
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+        w3 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: linear chain din -> w1 -> w2 -> w3 -> dout
+        w1 = din;
+        w2 = w1;
+        w3 = w2;
+        dout = w3;
+    }
+@endmod
+
+// Helper: fan-out and reconvergence (no cycle)
+@module HelperFanout
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+
+    WIRE {
+        a [1];
+        b [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: fan-out from din to a and b, then reconverge at dout
+        a = din;
+        b = din;
+        dout = a & b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] din;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        x [1];
+        y [1];
+        z [1];
+    }
+
+    @new inst_linear HelperLinear {
+        IN  [1] din = din;
+        OUT [1] dout = out_a;
+    };
+
+    @new inst_fanout HelperFanout {
+        IN  [1] din = din;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: linear feed-forward din -> x -> y -> z (no cycle)
+        x = din;
+        y = x;
+        z = y;
+        // Valid: register breaks combinational path
+        out_b = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

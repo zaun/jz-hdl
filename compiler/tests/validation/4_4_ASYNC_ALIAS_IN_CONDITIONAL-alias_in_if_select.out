@@ -1,0 +1,4 @@
+File: 4_4_ASYNC_ALIAS_IN_CONDITIONAL-alias_in_if_select.jz
+      26:13   error ASYNC_ALIAS_IN_CONDITIONAL S4.10/S5.3 Alias `=` inside IF/SELECT is forbidden; did you mean `<=` or `=>`?
+      46:13   error ASYNC_ALIAS_IN_CONDITIONAL S4.10/S5.3 Alias `=` inside IF/SELECT is forbidden; did you mean `<=` or `=>`?
+      75:13   error ASYNC_ALIAS_IN_CONDITIONAL S4.10/S5.3 Alias `=` inside IF/SELECT is forbidden; did you mean `<=` or `=>`?

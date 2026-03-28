@@ -1,0 +1,106 @@
+// COMPILE_ERRORS: Valid program that compiles with no errors.
+// Exercises modules, instances, registers, wires, constants, ports,
+// synchronous, asynchronous, IF/ELSE, ternary, slicing, concatenation,
+// and templates to verify no false positives from any error category.
+
+@project COMPILE_ERRORS_valid_program_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Template for reuse across modules
+@template toggle(r, trigger)
+    r <= trigger ? ~r : r;
+@endtemplate
+
+// Helper module with combinational logic and slicing
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [4] upper;
+        OUT [4] lower;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    ASYNCHRONOUS {
+        w = din;
+        upper = w[7:4];
+        lower = w[3:0];
+    }
+@endmod
+
+// Counter module with register, constant, and synchronous block
+@module CounterMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] enable;
+        OUT [4] count;
+    }
+
+    CONST {
+        INIT_VAL = 0;
+    }
+
+    REGISTER {
+        cnt [4] = 4'b0000;
+    }
+
+    ASYNCHRONOUS {
+        count = cnt;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (enable) {
+            cnt <= cnt + 4'b0001;
+        }
+    }
+@endmod
+
+// Top module instantiates helpers and uses various features
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    WIRE {
+        combined [8];
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] din = combined;
+        OUT [4] upper = _;
+        OUT [4] lower = _;
+    };
+
+    @new inst_c CounterMod {
+        IN  [1] clk = clk;
+        IN  [1] enable = toggle_r;
+        OUT [4] count = _;
+    };
+
+    REGISTER {
+        toggle_r [1] = 1'b0;
+        r [8] = 8'b0000_0000;
+    }
+
+    ASYNCHRONOUS {
+        // Valid ternary, concatenation, slicing
+        combined <= toggle_r ? {4'b1010, r[3:0]} : 8'b0000_0000;
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        @apply toggle(toggle_r, 1'b1);
+        r <= r + 8'b0000_0001;
+    }
+@endmod

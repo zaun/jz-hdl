@@ -1,0 +1,28 @@
+// RPT_NO_MATCHING_END: @repeat without matching @end.
+// Triggers RPT-002 because the @repeat block is never closed.
+// The error is fatal — the repeat expander stops processing the file.
+
+@project RPT_NO_MATCHING_END_missing_end
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: @repeat 2 without @end
+        @repeat 2
+            r <= ~r;
+    }
+@endmod

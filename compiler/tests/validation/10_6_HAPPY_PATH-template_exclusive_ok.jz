@@ -1,0 +1,121 @@
+// HAPPY_PATH: Valid template usage does not produce false positives for S10.6.
+// Scenarios: @apply in exclusive IF/ELSE branches, non-overlapping signals,
+// single @apply, multi-module @apply usage.
+
+@project HAPPY_PATH_template_exclusive_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+@template set_one(out)
+    out <= VCC;
+@endtemplate
+
+@template set_zero(out)
+    out <= GND;
+@endtemplate
+
+@template set_reg(reg, val)
+    reg <= val;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+    }
+
+    REGISTER {
+        r1 [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: single @apply to wire (no conflict)
+        @apply set_one(w1);
+
+        // Valid: @apply in exclusive IF/ELSE branches
+        IF (sel) {
+            @apply set_one(w2);
+        } ELSE {
+            @apply set_zero(w2);
+        }
+
+        out_a = w1 | r1;
+        out_b = w2;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: single @apply to register in SYNC
+        @apply set_reg(r1, sel);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+        ha [1];
+        hb [1];
+    }
+
+    REGISTER {
+        r1 [1] = 1'b0;
+        r2 [1] = 1'b0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] sel = sel;
+        OUT [1] out_a = ha;
+        OUT [1] out_b = hb;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: single @apply per wire
+        @apply set_one(w1);
+
+        // Valid: @apply in exclusive IF/ELSE branches (top module)
+        IF (sel) {
+            @apply set_one(w2);
+        } ELSE {
+            @apply set_zero(w2);
+        }
+
+        out_a = w1 | r1;
+        out_b = w2 | r2;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: @apply in exclusive IF/ELSE for register
+        IF (sel) {
+            @apply set_reg(r1, VCC);
+        } ELSE {
+            @apply set_reg(r1, GND);
+        }
+
+        // Valid: single @apply to register
+        @apply set_reg(r2, sel);
+    }
+@endmod

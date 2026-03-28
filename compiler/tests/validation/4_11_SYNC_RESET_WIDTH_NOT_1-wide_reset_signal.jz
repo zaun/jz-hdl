@@ -1,0 +1,67 @@
+// SYNC_RESET_WIDTH_NOT_1: SYNCHRONOUS block RESET signal must have width [1].
+// Tests RESET parameter bound to multi-bit ports in multiple modules.
+// Valid width-1 RESET included to verify no false positives.
+
+@project SYNC_RESET_WIDTH_NOT_1_wide_reset_signal
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        IN  [1] rst = _;
+        IN  [8] wide_rst = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: RESET bound to 8-bit port
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [8] rst_wide;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    // Trigger 1: RESET is 8-bit port
+    SYNCHRONOUS(CLK=clk RESET=rst_wide) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] rst;
+        IN  [8] wide_rst;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk_a;
+        IN  [8] rst_wide = wide_rst;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_ok [1] = 1'b0;
+        r_bad [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok;
+    }
+
+    // Valid: RESET bound to 1-bit port — should NOT trigger
+    SYNCHRONOUS(CLK=clk_a RESET=rst) {
+        r_ok <= ~r_ok;
+    }
+
+    // Trigger 2: RESET bound to 8-bit port in top module
+    SYNCHRONOUS(CLK=clk_b RESET=wide_rst) {
+        r_bad <= ~r_bad;
+    }
+@endmod

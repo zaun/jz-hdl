@@ -1,2 +1,0 @@
-File: B2OH_WIDTH_INVALID.jz
-      18:12   error B2OH_WIDTH_INVALID S5.5.13 b2oh() width must be a positive constant >= 2

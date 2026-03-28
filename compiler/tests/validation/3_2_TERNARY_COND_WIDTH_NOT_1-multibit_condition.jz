@@ -1,0 +1,88 @@
+// TERNARY_COND_WIDTH_NOT_1: Ternary condition must be 1 bit wide.
+// Tests multi-bit condition in async and sync blocks across modules.
+// Valid 1-bit condition included to verify no false positives.
+
+@project TERNARY_COND_WIDTH_NOT_1_multibit_condition
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] bit_sel = _;
+        IN  [8] sel = _;
+        IN  [8] val_a = _;
+        IN  [8] val_b = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper module with multi-bit ternary condition
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] bit_sel;
+        IN  [8] sel;
+        IN  [8] val_a;
+        IN  [8] val_b;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: 8-bit condition in async
+        out_a = sel ? val_a : val_b;
+        // Valid: 1-bit condition (no false positive)
+        out_b = bit_sel ? val_a : val_b;
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: 8-bit condition in sync
+        r <= sel ? val_a : val_b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] bit_sel;
+        IN  [8] sel;
+        IN  [8] val_a;
+        IN  [8] val_b;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+        ha_c [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] bit_sel = bit_sel;
+        IN  [8] sel = sel;
+        IN  [8] val_a = val_a;
+        IN  [8] val_b = val_b;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+        OUT [8] out_c = ha_c;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: 8-bit condition in top async
+        out_a = sel ? val_a : val_b;
+        // Valid: 1-bit condition
+        out_b = bit_sel ? ha_a : ha_b;
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: 8-bit condition in top sync
+        r <= sel ? val_a : val_b;
+    }
+@endmod

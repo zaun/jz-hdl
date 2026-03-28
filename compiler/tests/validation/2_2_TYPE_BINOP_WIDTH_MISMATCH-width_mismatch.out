@@ -1,0 +1,5 @@
+File: 2_2_TYPE_BINOP_WIDTH_MISMATCH-width_mismatch.jz
+      28:20   error TYPE_BINOP_WIDTH_MISMATCH S2.2/3.2/8.1 Binary operator requires equal operand widths but receives mismatched widths
+      32:17   error TYPE_BINOP_WIDTH_MISMATCH S2.2/3.2/8.1 Binary operator requires equal operand widths but receives mismatched widths
+      57:22   error TYPE_BINOP_WIDTH_MISMATCH S2.2/3.2/8.1 Binary operator requires equal operand widths but receives mismatched widths
+      62:16   error TYPE_BINOP_WIDTH_MISMATCH S2.2/3.2/8.1 Binary operator requires equal operand widths but receives mismatched widths

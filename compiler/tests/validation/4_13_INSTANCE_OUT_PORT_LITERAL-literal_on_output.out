@@ -1,0 +1,4 @@
+File: 4_13_INSTANCE_OUT_PORT_LITERAL-literal_on_output.jz
+      35:24   error INSTANCE_OUT_PORT_LITERAL S4.13 OUT port binding in @new may not be a literal value
+      43:24   error INSTANCE_OUT_PORT_LITERAL S4.13 OUT port binding in @new may not be a literal value
+      67:24   error INSTANCE_OUT_PORT_LITERAL S4.13 OUT port binding in @new may not be a literal value

@@ -1,0 +1,68 @@
+// DOMAIN_CONFLICT: Register used in SYNCHRONOUS block whose CLK does not match its home-domain clock.
+// Tests register assigned in one clock domain but written in another.
+// Valid same-domain register use included to verify no false positives.
+
+@project DOMAIN_CONFLICT_register_wrong_domain
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: register written in wrong domain
+@module HelperA
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+    REGISTER {
+        r_a [1] = 1'b0;
+        r_b [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r_a ^ r_b;
+    }
+    // r_a's home domain is clk_a (first assignment)
+    SYNCHRONOUS(CLK=clk_a) {
+        r_a <= ~r_a;
+    }
+    // Trigger 1: r_a read in clk_b domain (wrong domain)
+    SYNCHRONOUS(CLK=clk_b) {
+        r_b <= r_a;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_ok [1] = 1'b0;
+        r_top [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_ok ^ r_top;
+    }
+
+    // Valid: r_ok used in its home domain clk_a
+    SYNCHRONOUS(CLK=clk_a) {
+        r_ok <= ~r_ok;
+    }
+
+    // Trigger 2: r_ok read in clk_b domain (wrong domain)
+    SYNCHRONOUS(CLK=clk_b) {
+        r_top <= r_ok;
+    }
+@endmod

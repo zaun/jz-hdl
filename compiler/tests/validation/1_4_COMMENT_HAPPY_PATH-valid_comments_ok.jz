@@ -1,0 +1,78 @@
+// COMMENT_HAPPY_PATH: Valid comment usage in all positions where whitespace is allowed.
+// Exercises line comments, block comments, multi-line block comments, empty block
+// comments, comments with stars, adjacent block comments, and comments between
+// every type of token. No diagnostics expected.
+
+/* Block comment at file scope */
+
+@project COMMENT_HAPPY_PATH_valid_comments
+    CONFIG {
+        WIDTH = 8; // line comment after config value
+    }
+
+    @top TopMod {
+        IN  [1] clk = _; /* block comment in @top binding */
+        OUT [1] data = _;
+    }
+@endproj
+
+// Line comment between modules
+/* Block comment between modules */
+
+/*
+ * Multi-line block comment
+ * spanning several lines
+ */
+
+@module HelperA
+    PORT {
+        IN  [1] clk; // line comment after port decl
+        OUT [1] data; /* block comment after port decl */
+    }
+    CONST {
+        /* block comment before const */ VAL = 1;
+    }
+    REGISTER {
+        r [1] = 1'b0; // line comment after register
+    }
+    ASYNCHRONOUS {
+        // line comment inside async block
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        /* block comment inside sync block */
+        r <= ~r;
+    }
+@endmod
+
+// Adjacent block comments
+/**/ /* a */ /* b */
+
+// Comment with stars inside
+/* ** star ** */
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    WIRE {
+        w [1]; // line comment after wire
+    }
+
+    // Comment before @new
+    @new inst_a /* comment between @new parts */ HelperA {
+        IN  [1] clk = clk;
+        OUT [1] data = w;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = /* comment in expression */ w;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r; // line comment at end of sync statement
+    }
+@endmod // line comment after @endmod

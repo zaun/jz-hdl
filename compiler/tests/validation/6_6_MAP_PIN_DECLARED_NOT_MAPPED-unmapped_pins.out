@@ -1,0 +1,6 @@
+File: 6_6_MAP_PIN_DECLARED_NOT_MAPPED-unmapped_pins.jz
+      10:9    error MAP_PIN_DECLARED_NOT_MAPPED S6.6/S6.10/S6.9 Pin declared in PIN blocks but not mapped in MAP
+      12:9    error MAP_PIN_DECLARED_NOT_MAPPED S6.6/S6.10/S6.9 Pin declared in PIN blocks but not mapped in MAP
+      18:9    error MAP_PIN_DECLARED_NOT_MAPPED S6.6/S6.10/S6.9 Pin declared in PIN blocks but not mapped in MAP
+      20:9    error MAP_PIN_DECLARED_NOT_MAPPED S6.6/S6.10/S6.9 Pin declared in PIN blocks but not mapped in MAP
+      26:9    error MAP_PIN_DECLARED_NOT_MAPPED S6.6/S6.10/S6.9 Pin declared in PIN blocks but not mapped in MAP

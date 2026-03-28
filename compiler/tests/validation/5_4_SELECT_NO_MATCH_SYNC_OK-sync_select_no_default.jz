@@ -1,0 +1,75 @@
+// SELECT_NO_MATCH_SYNC_OK: SYNC SELECT without DEFAULT holds registers.
+// Tests missing DEFAULT in SYNC blocks across multiple modules.
+// SYNC SELECT with DEFAULT included for no false positive.
+
+@project SELECT_NO_MATCH_SYNC_OK_sync_no_default
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] sel = _;
+        OUT [1] out_a = _;
+    }
+@endproj
+
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [4] sel;
+        OUT [1] out_a;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: SYNC SELECT without DEFAULT in helper module
+        SELECT (sel) {
+            CASE 0 {
+                r <= VCC;
+            }
+            CASE 1 {
+                r <= GND;
+            }
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] sel;
+        OUT [1] out_a;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [4] sel = sel;
+        OUT [1] out_a = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+        s [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        out_a <= r | s;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: SYNC SELECT without DEFAULT in top module
+        SELECT (sel) {
+            CASE 4'h0 {
+                r <= VCC;
+            }
+        }
+        // Valid: SYNC SELECT with DEFAULT (no false positive)
+        SELECT (sel) {
+            CASE 0 {
+                s <= VCC;
+            }
+            DEFAULT {
+                s <= GND;
+            }
+        }
+    }
+@endmod

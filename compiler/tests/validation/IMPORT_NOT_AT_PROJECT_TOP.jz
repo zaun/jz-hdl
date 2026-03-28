@@ -1,7 +1,0 @@
-// IMPORT_NOT_AT_PROJECT_TOP: @import appears after other project blocks.
-// Verified
-
-@project IMPORT_NOT_AT_PROJECT_TOP_EXAMPLE
-  CONFIG { X = 1; }
-  @import "import module.jz";
-@endproj

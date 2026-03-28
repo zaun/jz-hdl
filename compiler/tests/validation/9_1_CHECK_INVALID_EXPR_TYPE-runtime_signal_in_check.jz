@@ -1,0 +1,93 @@
+// CHECK_INVALID_EXPR_TYPE: @check condition contains non-constant expressions.
+// Tests that runtime signals (ports, registers, wires) and undefined identifiers
+// are rejected in @check expressions. Valid uses with CONST, CONFIG, and literals
+// are included to verify no false positives.
+
+@project CHECK_INVALID_EXPR_TYPE_runtime_signal_in_check
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    // Trigger 1: undefined identifier at project scope
+    @check (UNKNOWN_VAR > 0, "unknown var");
+
+    // Valid: CONFIG reference at project scope (no error)
+    @check (CONFIG.WIDTH == 8, "config check");
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module — triggers rule with port signal in @check
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST { SIZE = 4; }
+
+    // Valid: CONST in @check (no error)
+    @check (SIZE > 0, "size ok");
+
+    // Trigger 2: port signal in @check (helper module)
+    @check (din == 1'b1, "port in helper");
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST { WIDTH = 8; }
+
+    WIRE {
+        w [1];
+    }
+
+    // Valid: CONST in @check (no error)
+    @check (WIDTH == 8, "width ok");
+
+    // Valid: CONFIG in @check (no error)
+    @check (CONFIG.WIDTH == 8, "config ok");
+
+    // Valid: literal expression in @check (no error)
+    @check (1 == 1, "literal ok");
+
+    // Valid: clog2 of CONST in @check (no error)
+    @check (clog2(WIDTH) == 3, "clog2 ok");
+
+    // Trigger 3: port signal in @check (top module)
+    @check (clk == 1'b1, "port in top");
+
+    // Trigger 4: register signal in @check
+    @check (r == 1'b0, "register in check");
+
+    // Trigger 5: wire signal in @check
+    @check (w == 1'b0, "wire in check");
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        w = r;
+        data = w;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

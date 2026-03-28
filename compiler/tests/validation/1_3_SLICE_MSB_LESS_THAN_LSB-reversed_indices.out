@@ -1,0 +1,4 @@
+File: 1_3_SLICE_MSB_LESS_THAN_LSB-reversed_indices.jz
+      35:17   error SLICE_MSB_LESS_THAN_LSB S1.3/S8.1 Slice uses MSB < LSB
+      41:14   error SLICE_MSB_LESS_THAN_LSB S1.3/S8.1 Slice uses MSB < LSB
+      77:9    error SLICE_MSB_LESS_THAN_LSB S1.3/S8.1 Slice uses MSB < LSB

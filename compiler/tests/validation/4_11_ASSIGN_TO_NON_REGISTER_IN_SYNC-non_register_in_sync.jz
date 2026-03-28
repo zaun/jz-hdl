@@ -1,0 +1,58 @@
+// ASSIGN_TO_NON_REGISTER_IN_SYNC: Only REGISTERs may be assigned in SYNCHRONOUS blocks.
+// Tests OUT port assigned in SYNCHRONOUS blocks in multiple modules.
+// Valid REGISTER assignments in SYNC verify no false positives.
+
+@project ASSIGN_TO_NON_REGISTER_IN_SYNC_non_register_in_sync
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: OUT port assigned in SYNCHRONOUS block
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [1] din;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+        // Trigger 1: OUT port assigned in SYNCHRONOUS block
+        data <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [1] din = data;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: REGISTER assigned in SYNCHRONOUS — should NOT trigger
+        r <= ~r;
+        // Trigger 2: OUT port assigned in SYNCHRONOUS block in top module
+        data <= 1'b0;
+    }
+@endmod

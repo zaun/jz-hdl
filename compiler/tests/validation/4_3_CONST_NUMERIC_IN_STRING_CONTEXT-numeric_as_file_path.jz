@@ -1,0 +1,43 @@
+// CONST_NUMERIC_IN_STRING_CONTEXT: Numeric CONST used where string expected.
+// Tests numeric CONST used in @file() path argument in MEM initialization.
+// String CONST declaration included as negative test (valid, not used in @file).
+
+@project CONST_NUMERIC_IN_STRING_CONTEXT_numeric_as_file_path
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module TopMod
+    CONST {
+        NUM_C = 42;
+        DEPTH = 4;
+        // Valid: string CONST declared (not used in @file to avoid PATH_OUTSIDE_SANDBOX)
+        VALID_FILE = "data.hex";
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    // Trigger 1: numeric CONST used in @file path
+    MEM {
+        bad_mem [8] [DEPTH] = @file(NUM_C) {
+            OUT rd ASYNC;
+        };
+    }
+
+    REGISTER {
+        r [8] = 8'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= bad_mem.rd[2'b00];
+    }
+@endmod

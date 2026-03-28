@@ -1,0 +1,36 @@
+// FEATURE_NESTED: Nested @feature guard in ASYNCHRONOUS block.
+// Parser stops at first nested @feature; split by context for coverage.
+
+@project FEATURE_NESTED_nested_feature_in_async
+    CONFIG {
+        MODE = 1;
+    }
+
+    @top TopMod {
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST {
+        FLAG = 1;
+        MODE = 0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: nested @feature inside ASYNCHRONOUS block @feature body
+        @feature FLAG == 1
+            @feature MODE == 0
+                data = din;
+            @endfeat
+        @else
+            data = ~din;
+        @endfeat
+    }
+@endmod

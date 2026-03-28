@@ -1,0 +1,99 @@
+// ASYNC_INVALID_STATEMENT_TARGET: MEM SYNC OUT port assigned in ASYNC block.
+// Tests that assigning a MEM SYNC OUT port .addr in ASYNCHRONOUS context
+// triggers the ASYNC_INVALID_STATEMENT_TARGET error. MEM SYNC ports must
+// be accessed only in SYNCHRONOUS blocks.
+// Valid uses: MEM ASYNC OUT port read in ASYNC, MEM SYNC port in SYNC.
+
+@project ASYNC_INVALID_STATEMENT_TARGET_mem_sync_in_async
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] rdata_a = _;
+        OUT [8] rdata_b = _;
+        OUT [8] rdata_c = _;
+    }
+@endproj
+
+// Helper module: MEM SYNC OUT port .addr assigned in ASYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata;
+    }
+
+    MEM(type=BLOCK) {
+        mem_h [8] [16] = 8'h00 {
+            OUT rd SYNC;
+            IN  wr;
+        };
+    }
+
+    REGISTER {
+        r_rd [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        rdata = r_rd;
+        // Trigger 1: MEM SYNC OUT port .addr in ASYNC (helper module)
+        mem_h.rd.addr <= addr;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_rd <= mem_h.rd.data;
+        mem_h.wr[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] rdata_a;
+        OUT [8] rdata_b;
+        OUT [8] rdata_c;
+    }
+
+    MEM(type=BLOCK) {
+        mem_t [8] [16] = 8'h00 {
+            OUT rd_t SYNC;
+            IN  wr_t;
+        };
+    }
+
+    // Valid: MEM with ASYNC OUT port read in ASYNC (no error)
+    MEM(type=DISTRIBUTED) {
+        mem_d [8] [16] = 8'h00 {
+            OUT rd_d ASYNC;
+        };
+    }
+
+    REGISTER {
+        r_a [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] rdata = rdata_a;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: register read in ASYNC
+        rdata_b = r_a;
+        // Valid: MEM ASYNC OUT port read in ASYNC (no error)
+        rdata_c = mem_d.rd_d[addr];
+        // Trigger 2: MEM SYNC OUT port .addr in ASYNC root (top module)
+        mem_t.rd_t.addr <= addr;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: MEM SYNC port in SYNC (correct context)
+        r_a <= mem_t.rd_t.data;
+        mem_t.wr_t[addr] <= wdata;
+    }
+@endmod

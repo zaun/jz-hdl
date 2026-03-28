@@ -1,0 +1,5 @@
+File: 3_2_DIV_UNGUARDED_RUNTIME_ZERO-unguarded_division.jz
+      42:0    warn  DIV_UNGUARDED_RUNTIME_ZERO S3.2 Divisor may be zero at runtime; guard with IF (divisor != 0) or use a compile-time constant
+      44:0    warn  DIV_UNGUARDED_RUNTIME_ZERO S3.2 Divisor may be zero at runtime; guard with IF (divisor != 0) or use a compile-time constant
+      96:0    warn  DIV_UNGUARDED_RUNTIME_ZERO S3.2 Divisor may be zero at runtime; guard with IF (divisor != 0) or use a compile-time constant
+      98:0    warn  DIV_UNGUARDED_RUNTIME_ZERO S3.2 Divisor may be zero at runtime; guard with IF (divisor != 0) or use a compile-time constant

@@ -1,0 +1,83 @@
+// TERNARY_BRANCH_WIDTH_MISMATCH: Ternary true/false branches must have matching widths.
+// Tests mismatched branch widths in async and sync blocks across modules.
+// Valid matching branch widths included to verify no false positives.
+
+@project TERNARY_BRANCH_WIDTH_MISMATCH_branch_mismatch
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        IN  [8] val8 = _;
+        IN  [4] val4 = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper module with mismatched ternary branches
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [8] val8;
+        IN  [4] val4;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: 8-bit vs 4-bit branches in async
+        out_a = sel ? val8 : val4;
+        // Valid: matching widths (no false positive)
+        out_b = sel ? val8 : val8;
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: 8-bit vs 4-bit branches in sync
+        r <= sel ? val8 : val4;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [8] val8;
+        IN  [4] val4;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+        ha_c [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] sel = sel;
+        IN  [8] val8 = val8;
+        IN  [4] val4 = val4;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+        OUT [8] out_c = ha_c;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: 4-bit vs 8-bit branches in top async
+        out_a = sel ? val4 : val8;
+        out_b = ha_b;
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: mismatched branches in top sync
+        r <= sel ? val4 : val8;
+    }
+@endmod

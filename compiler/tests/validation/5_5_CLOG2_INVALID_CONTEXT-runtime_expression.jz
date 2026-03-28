@@ -1,0 +1,75 @@
+// CLOG2_INVALID_CONTEXT: clog2() used outside compile-time constant context.
+// Tests clog2() in ASYNCHRONOUS and SYNCHRONOUS blocks across modules.
+// Valid clog2() in CONST included to verify no false positives.
+
+@project CLOG2_INVALID_CONTEXT_runtime_expression
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data_in = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: clog2() in runtime contexts
+@module HelperMod
+    CONST {
+        // Valid: clog2() in CONST (compile-time, no false positive)
+        LOG_VAL = clog2(128);
+    }
+    PORT {
+        IN  [1] clk;
+        IN  [8] val;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: clog2() in ASYNC block
+        out_a <=z clog2(val);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: clog2() in SYNC block
+        r <=z clog2(val);
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        // Valid: clog2() in CONST (compile-time, no false positive)
+        LOG_W = clog2(256);
+    }
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [LOG_W] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] val = data_in;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: clog2() in ASYNC block
+        out_a <=z clog2(data_in);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: clog2() in SYNC block
+        r <=z clog2(data_in);
+    }
+@endmod

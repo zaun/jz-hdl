@@ -1,0 +1,3 @@
+File: 6_8_BUS_BULK_ROLE_CONFLICT-role_conflict.jz
+      98:9    error BUS_BULK_ROLE_CONFLICT S6.8 Bulk BUS assignment between instances with the same BUS role (SOURCE/SOURCE or TARGET/TARGET) is not allowed
+     101:9    error BUS_BULK_ROLE_CONFLICT S6.8 Bulk BUS assignment between instances with the same BUS role (SOURCE/SOURCE or TARGET/TARGET) is not allowed

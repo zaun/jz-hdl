@@ -1,3 +1,0 @@
-File: CONST_NUMERIC_IN_STRING_CONTEXT.jz
-      26:21   error CONST_NUMERIC_IN_STRING_CONTEXT S4.3/S6.3 Numeric CONST/CONFIG value used where a string is expected (e.g. @file path)
-      48:21   error CONST_NUMERIC_IN_STRING_CONTEXT S4.3/S6.3 Numeric CONST/CONFIG value used where a string is expected (e.g. @file path)

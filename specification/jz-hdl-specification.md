@@ -2285,7 +2285,7 @@ SELECT (<expr>) {
 
 **Rules:**
 - Evaluate expression and compare against `CASE` values (equality)
-- `CASE` values are integer constants or `CONST` names
+- `CASE` values are sized integer literals or `@global` constants
 - **`x` bits in `CASE` values act as wildcards (don't-care):** A `CASE` value containing `x` bits matches the selector regardless of the selector's value in those bit positions. The `x` bits are used solely to express intentional irrelevance in pattern matching and do not propagate into any result or observable sink. This is the only context where `x` acts as a wildcard rather than a literal unknown.
 - Multiple `CASE` labels matching the same value -> compile error
 - `DEFAULT` is optional in `SYNCHRONOUS` (default behavior = hold state)

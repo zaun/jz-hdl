@@ -1,2 +1,0 @@
-File: SBIT_INDEX_OUT_OF_RANGE.jz
-      18:20   error SBIT_INDEX_OUT_OF_RANGE S5.5.7 sbit() index is out of range for source width

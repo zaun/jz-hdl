@@ -1,0 +1,37 @@
+// AMBIGUOUS_REFERENCE: Bare identifier matches an instance port name.
+// Tests that the compiler catches references to names that exist only as
+// instance OUT/INOUT ports, requiring an instance prefix for disambiguation.
+
+@project AMBIGUOUS_REFERENCE_ambiguous_without_prefix
+    @top TopMod {
+        OUT [8] result = _;
+    }
+@endproj
+
+// Child module with OUT port named "data"
+@module ChildMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Top module: bare reference to "data" which is only an instance port
+@module TopMod
+    PORT {
+        OUT [8] result;
+    }
+
+    @new inst1 ChildMod {
+        IN  [8] din = inst1.data;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger: bare "data" matches inst1's OUT port but is not in module scope
+        result = data;
+    }
+@endmod

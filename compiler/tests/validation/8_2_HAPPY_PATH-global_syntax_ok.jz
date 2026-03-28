@@ -1,0 +1,64 @@
+// HAPPY_PATH: Valid @global syntax with sized literals and multiple entries.
+// Verifies that proper @global blocks produce no diagnostics.
+// Tests: single entry, multiple entries, multiple @global blocks, empty block,
+// and usage of global constants across modules.
+
+@global ISA
+    INST_ADD = 17'b01100110000000000;
+    INST_SUB = 17'b01100110100000000;
+    INST_AND = 17'b01100110000000100;
+@endglob
+
+@global STATUS
+    OK   = 8'h00;
+    ERR  = 8'hFF;
+    BUSY = 8'h01;
+@endglob
+
+@global EMPTY
+@endglob
+
+@project HAPPY_PATH_global_syntax_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [8] result;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        result = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= STATUS.OK;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [8] result = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= STATUS.ERR;
+    }
+@endmod

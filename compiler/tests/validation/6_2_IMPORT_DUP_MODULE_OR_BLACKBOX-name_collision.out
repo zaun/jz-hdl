@@ -1,0 +1,2 @@
+File: 6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libB.jz
+       4:1    error IMPORT_DUP_MODULE_OR_BLACKBOX S6.2.1/S6.10 Imported module/blackbox name duplicates existing project name

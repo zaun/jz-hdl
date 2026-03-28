@@ -1,0 +1,7 @@
+File: 7_3_MEM_PORT_UNDEFINED-undeclared_port_access.jz
+      29:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      36:16   error MEM_PORT_UNDEFINED S7.2/S7.3/S7.7.2 Access to MEM port name not declared in MEM block
+      36:27   error CONST_UNDEFINED_IN_WIDTH_OR_SLICE S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly
+      43:9    error MEM_PORT_UNDEFINED S7.2/S7.3/S7.7.2 Access to MEM port name not declared in MEM block
+      43:21   error CONST_UNDEFINED_IN_WIDTH_OR_SLICE S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly
+      82:9    error MEM_PORT_UNDEFINED S7.2/S7.3/S7.7.2 Access to MEM port name not declared in MEM block

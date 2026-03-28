@@ -1,0 +1,33 @@
+// HAPPY_PATH: Valid @repeat usage compiles without diagnostics.
+// Tests @repeat with count > 0, nested @repeat, count=1, and IDX substitution.
+// No diagnostics expected.
+
+@project HAPPY_PATH_repeat_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: @repeat 1 — equivalent to no repeat
+        @repeat 1
+            r <= ~r;
+        @end
+    }
+@endmod

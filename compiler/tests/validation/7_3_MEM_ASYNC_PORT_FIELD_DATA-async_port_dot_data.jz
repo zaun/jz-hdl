@@ -1,0 +1,68 @@
+// MEM_ASYNC_PORT_FIELD_DATA: Using .data field on ASYNC OUT port.
+// ASYNC ports must use bracket indexing, not .data field.
+// Valid bracket read included for no false positives.
+
+@project MEM_ASYNC_PORT_FIELD_DATA_async_port_dot_data
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: .data on ASYNC port in ASYNC block
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: .data on ASYNC port
+        data = mem_a.rd.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: .data on ASYNC port in top module
+        data = mem_b.rd.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+    }
+@endmod

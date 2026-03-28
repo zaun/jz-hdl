@@ -1,0 +1,6 @@
+File: 2_3_ASSIGN_CONCAT_WIDTH_MISMATCH-concat_width_mismatch.jz
+      33:9    error ASSIGN_CONCAT_WIDTH_MISMATCH S4.10/S5.1/S5.2 Concatenation on either side of assignment has width sum that does not match paired expression width
+      39:9    error ASSIGN_CONCAT_WIDTH_MISMATCH S4.10/S5.1/S5.2 Concatenation on either side of assignment has width sum that does not match paired expression width
+      72:9    error ASSIGN_CONCAT_WIDTH_MISMATCH S4.10/S5.1/S5.2 Concatenation on either side of assignment has width sum that does not match paired expression width
+      74:9    error ASSIGN_CONCAT_WIDTH_MISMATCH S4.10/S5.1/S5.2 Concatenation on either side of assignment has width sum that does not match paired expression width
+      80:9    error ASSIGN_CONCAT_WIDTH_MISMATCH S4.10/S5.1/S5.2 Concatenation on either side of assignment has width sum that does not match paired expression width

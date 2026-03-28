@@ -1,0 +1,125 @@
+// ID_SYNTAX_INVALID: Happy-path test for valid identifiers.
+// Exercises various valid identifier forms: lowercase, uppercase, mixed case,
+// leading underscore, double underscore, max length (255 chars), single char,
+// underscore-separated, case sensitivity (Foo vs foo), and directive-like words.
+// No diagnostics expected.
+
+@project ID_SYNTAX_INVALID_valid_identifiers_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Module with various valid identifier forms in ports and registers
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [1] _data;
+        OUT [1] mySignal_01;
+    }
+    REGISTER {
+        x [1] = 1'b0;
+        clk_en_out [1] = 1'b0;
+        __ [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        mySignal_01 = x;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        x <= _data;
+        clk_en_out <= ~clk_en_out;
+        __ <= ~__;
+    }
+@endmod
+
+// Module testing case sensitivity: Foo and foo are distinct
+@module HelperB
+    PORT {
+        IN  [1] clk;
+        OUT [1] dout;
+    }
+
+    CONST {
+        Foo = 1;
+        foo = 2;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Module testing 255-char identifier and directive-like word as wire name
+@module HelperC
+    PORT {
+        IN  [1] clk;
+        OUT [1] dout;
+    }
+
+    CONST {
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 7;
+    }
+
+    // Valid: directive-like lowercase word used as wire name
+    WIRE {
+        project [1];
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        project <= r;
+        dout = project;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Top module instantiates all helpers
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [1] _data = r;
+        OUT [1] mySignal_01 = _;
+    };
+
+    @new inst_b HelperB {
+        IN  [1] clk = clk;
+        OUT [1] dout = _;
+    };
+
+    @new inst_c HelperC {
+        IN  [1] clk = clk;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

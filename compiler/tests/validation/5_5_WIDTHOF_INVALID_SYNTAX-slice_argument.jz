@@ -1,0 +1,69 @@
+// WIDTHOF_INVALID_SYNTAX: widthof() argument must be a plain identifier.
+// Tests widthof() with slice and concat arguments in CONST blocks.
+// Valid widthof() with plain identifier included to verify no false positives.
+// NOTE: Compiler bug — this rule is not implemented. See issues.md.
+
+@project WIDTHOF_INVALID_SYNTAX_slice_argument
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data_in = _;
+        OUT [8] out_a = _;
+    }
+@endproj
+
+// Helper module: widthof() with slice argument
+@module HelperMod
+    CONST {
+        // Trigger 1: widthof() with slice expression in helper
+        BAD_W = widthof(val[3:0]);
+        // Valid: widthof() with plain identifier (no false positive)
+        GOOD_W = widthof(val);
+    }
+    PORT {
+        IN  [1] clk;
+        IN  [8] val;
+        OUT [8] out_a;
+    }
+    REGISTER {
+        r [GOOD_W] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= val;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        // Trigger 2: widthof() with slice expression in top
+        BAD_W2 = widthof(data_in[7:4]);
+        // Valid: widthof() with plain identifier (no false positive)
+        DIN_W = widthof(data_in);
+    }
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] out_a;
+    }
+    WIRE {
+        ha_a [8];
+    }
+    REGISTER {
+        r [DIN_W] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] val = data_in;
+        OUT [8] out_a = ha_a;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= data_in;
+    }
+@endmod

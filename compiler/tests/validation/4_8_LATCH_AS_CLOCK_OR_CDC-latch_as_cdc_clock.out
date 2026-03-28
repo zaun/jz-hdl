@@ -1,0 +1,5 @@
+File: 4_8_LATCH_AS_CLOCK_OR_CDC-latch_as_cdc_clock.jz
+      29:9    error MULTI_CLK_ASSIGN S4.11/S4.12 Same register assigned in SYNCHRONOUS blocks driven by different clocks or conflicting CDC home domains
+      36:20   error LATCH_AS_CLOCK_OR_CDC S4.8/S4.12 LATCH may not be used as a clock signal or in CDC declarations
+      38:38   error LATCH_AS_CLOCK_OR_CDC S4.8/S4.12 LATCH may not be used as a clock signal or in CDC declarations
+      49:9    error DOMAIN_CONFLICT S4.11/S4.12 Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock

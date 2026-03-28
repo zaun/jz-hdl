@@ -29,7 +29,7 @@ int jz_verbose = 0;
 
 static void print_usage(const char *prog) {
     fprintf(stderr,
-            "Usage: %s JZ_FILE --lint [--warn-as-error] [--color] [--info] [--explain] [--Wno-group=NAME] [-o OUT_FILE]\n"
+            "Usage: %s JZ_FILE --lint [--warn-as-error] [--color] [--info] [--explain] [--Wno-group=NAME] [--tristate-default=GND|VCC] [-o OUT_FILE]\n"
             "       %s JZ_FILE --verilog [-o OUT_FILE] [--sdc SDC_FILE] [--xdc XDC_FILE] [--pcf PCF_FILE] [--cst CST_FILE] [--tristate-default=GND|VCC]\n"
             "       %s JZ_FILE --rtlil [-o OUT_FILE] [--sdc SDC_FILE] [--xdc XDC_FILE] [--pcf PCF_FILE] [--cst CST_FILE] [--tristate-default=GND|VCC]\n"
             "       %s JZ_FILE --alias-report [-o OUT_FILE]\n"
@@ -37,8 +37,8 @@ static void print_usage(const char *prog) {
             "       %s JZ_FILE --tristate-report [-o OUT_FILE]\n"
             "       %s JZ_FILE --ast [-o OUT_FILE]\n"
             "       %s JZ_FILE --ir [-o OUT_FILE] [--tristate-default=GND|VCC]\n"
-            "       %s JZ_FILE --test [--verbose] [--seed=0xHEX]\n"
-            "       %s JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--jzw] [--verbose] [--seed=0xHEX]\n"
+            "       %s JZ_FILE --test [--verbose] [--seed=0xHEX] [--tristate-default=GND|VCC]\n"
+            "       %s JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--jzw] [--verbose] [--seed=0xHEX] [--tristate-default=GND|VCC]\n"
             "       %s --chip-info [CHIP_ID] [-o OUT_FILE]\n"
             "       %s --lint-rules\n"
             "       %s --lsp\n"
@@ -488,8 +488,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "--sdc/--xdc/--pcf/--cst may only be used with --verilog or --rtlil\n");
         return 1;
     }
-    if (tristate_default != 0 && !is_verilog_mode && !is_rtlil_mode && !is_ir_mode) {
-        fprintf(stderr, "--tristate-default may only be used with --verilog, --rtlil, or --ir\n");
+    if (tristate_default != 0 && is_ast_mode) {
+        fprintf(stderr, "--tristate-default may not be used with --ast\n");
         return 1;
     }
     int alias_report_active = alias_report && is_lint_mode;
@@ -662,6 +662,16 @@ int main(int argc, char **argv) {
                                &compiler.diagnostics) == 0 &&
             compiler.ir_root) {
             if (verbose) fprintf(stderr, "[verbose] ir_build (lint): %.1f ms\n", elapsed_ms(phase_t0));
+            if (tristate_default != 0) {
+                phase_t0 = clock();
+                compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
+                if (jz_ir_tristate_transform(compiler.ir_root,
+                                              &compiler.ir_arena,
+                                              &compiler.diagnostics) != 0) {
+                    rc = 1;
+                }
+                if (verbose) fprintf(stderr, "[verbose] tristate_transform (lint): %.1f ms\n", elapsed_ms(phase_t0));
+            }
             phase_t0 = clock();
             jz_ir_div_guard_check(compiler.ir_root, &compiler.diagnostics);
             if (verbose) fprintf(stderr, "[verbose] div_guard_check: %.1f ms\n", elapsed_ms(phase_t0));
@@ -873,6 +883,18 @@ int main(int argc, char **argv) {
             }
         }
         if (rc == 0 && compiler.ir_root) {
+            if (tristate_default != 0) {
+                phase_t0 = clock();
+                compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
+                if (jz_ir_tristate_transform(compiler.ir_root,
+                                              &compiler.ir_arena,
+                                              &compiler.diagnostics) != 0) {
+                    rc = 1;
+                }
+                if (verbose) fprintf(stderr, "[verbose] tristate_transform (test): %.1f ms\n", elapsed_ms(phase_t0));
+            }
+        }
+        if (rc == 0 && compiler.ir_root) {
             jz_ir_div_guard_check(compiler.ir_root, &compiler.diagnostics);
         }
         if (rc == 0 && compiler.ir_root) {
@@ -911,6 +933,18 @@ int main(int argc, char **argv) {
                                        &compiler.ir_arena,
                                        &compiler.diagnostics) != 0) {
                     rc = 1;
+                }
+            }
+            if (rc == 0 && compiler.ir_root) {
+                if (tristate_default != 0) {
+                    phase_t0 = clock();
+                    compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
+                    if (jz_ir_tristate_transform(compiler.ir_root,
+                                                  &compiler.ir_arena,
+                                                  &compiler.diagnostics) != 0) {
+                        rc = 1;
+                    }
+                    if (verbose) fprintf(stderr, "[verbose] tristate_transform (simulate): %.1f ms\n", elapsed_ms(phase_t0));
                 }
             }
             if (rc == 0 && compiler.ir_root) {

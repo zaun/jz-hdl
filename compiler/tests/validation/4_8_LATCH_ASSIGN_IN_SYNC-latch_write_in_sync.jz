@@ -1,0 +1,83 @@
+// LATCH_ASSIGN_IN_SYNC: LATCH may not be written in SYNCHRONOUS blocks.
+// Tests latch guarded assignment inside SYNCHRONOUS block across modules.
+// Valid latch assignment in ASYNCHRONOUS and valid register write in SYNC
+// included to verify no false positives.
+
+@project LATCH_ASSIGN_IN_SYNC_latch_write_in_sync
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] enable = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: latch written inside SYNCHRONOUS block
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] enable;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    LATCH {
+        lat_ok [8] D;
+        lat_bad [8] D;
+    }
+
+    REGISTER {
+        r_ok [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: latch assignment in ASYNC (should NOT trigger)
+        lat_ok <= enable : din;
+        data <= r_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: register write in SYNC (should NOT trigger)
+        r_ok <= lat_ok;
+        // Trigger 1: latch guarded assignment in SYNC block (helper module)
+        lat_bad <= enable : din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] enable;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] enable = enable;
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    LATCH {
+        lat_top_ok [8] D;
+        lat_top_bad [8] D;
+    }
+
+    REGISTER {
+        r_top [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: latch assignment in ASYNC
+        lat_top_ok <= enable : din;
+        data <= r_top;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: register write in SYNC
+        r_top <= lat_top_ok;
+        // Trigger 2: latch guarded assignment in SYNC block (top module)
+        lat_top_bad <= enable : din;
+    }
+@endmod

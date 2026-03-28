@@ -1,2 +1,0 @@
-File: MEM_INIT_CONTAINS_X.jz
-      18:17   error MEM_INIT_CONTAINS_X S2.1/S7.5.1 Memory initialization literal must not contain `x` bits

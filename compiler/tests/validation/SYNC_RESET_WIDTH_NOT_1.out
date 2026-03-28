@@ -1,2 +1,0 @@
-File: SYNC_RESET_WIDTH_NOT_1.jz
-      27:29   error SYNC_RESET_WIDTH_NOT_1 S4.11 SYNCHRONOUS block RESET signal must have width [1]

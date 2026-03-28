@@ -1,0 +1,78 @@
+// HAPPY_PATH: All MEM ports accessed, all paths reachable, full initialization.
+// Verifies no MEM_WARN_PORT_NEVER_ACCESSED, MEM_WARN_DEAD_CODE_ACCESS, or
+// MEM_WARN_PARTIAL_INIT warnings are emitted.
+
+@project HAPPY_PATH_error_checking_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [2] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_h [8] [4] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // All ports used: rd read here, wr written below
+        data = mem_h.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_h.wr[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [4] = 8'h00 {
+            OUT rd_a ASYNC;
+            IN  wr_a;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [2] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_a.rd_a[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.wr_a[addr] <= wdata;
+    }
+@endmod

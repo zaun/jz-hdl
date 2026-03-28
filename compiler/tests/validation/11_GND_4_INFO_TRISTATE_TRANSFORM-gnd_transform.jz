@@ -1,0 +1,91 @@
+// INFO_TRISTATE_TRANSFORM: Tri-state nets transformed with --tristate-default=GND.
+// Verifies that INFO_TRISTATE_TRANSFORM is emitted for each module containing
+// internal tri-state wires when --tristate-default=GND is active.
+// Contexts: helper module with tri-state wire, top module with tri-state wire.
+// Valid: INOUT port with z is not transformed (preserved for I/O pads).
+// Valid: Non-tri-state wires do not trigger the info.
+
+@project INFO_TRISTATE_TRANSFORM_gnd_transform
+    @top TopMod {
+        IN    [1] clk = _;
+        IN    [1] en = _;
+        OUT   [8] data = _;
+        INOUT [8] bidir = _;
+    }
+@endproj
+
+// Helper module with internal tri-state wire (single-driver conditional z)
+@module HelperMod
+    PORT {
+        IN  [1] en;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w_internal [8];
+    }
+
+    ASYNCHRONOUS {
+        IF (en) {
+            w_internal <= din;
+        } ELSE {
+            w_internal <= 8'bzzzz_zzzz;
+        }
+        data <= w_internal;
+    }
+@endmod
+
+// Top module with internal tri-state wire, INOUT z preserved, non-tri-state wire
+@module TopMod
+    PORT {
+        IN    [1] clk;
+        IN    [1] en;
+        OUT   [8] data;
+        INOUT [8] bidir;
+    }
+
+    REGISTER {
+        r [8] = 8'b0000_0000;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] en = en;
+        IN  [8] din = r;
+        OUT [8] data = _;
+    };
+
+    WIRE {
+        w_top [8];
+        w_plain [8];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger: tri-state wire in top module, should be transformed
+        IF (en) {
+            w_top <= r;
+        } ELSE {
+            w_top <= 8'bzzzz_zzzz;
+        }
+
+        // Valid: INOUT port z is preserved, not transformed
+        IF (en) {
+            bidir <= r;
+        } ELSE {
+            bidir <= 8'bzzzz_zzzz;
+        }
+
+        // Valid: non-tri-state wire, no z assignment
+        IF (en) {
+            w_plain <= r;
+        } ELSE {
+            w_plain <= 8'b0000_0000;
+        }
+
+        data <= w_top | w_plain;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

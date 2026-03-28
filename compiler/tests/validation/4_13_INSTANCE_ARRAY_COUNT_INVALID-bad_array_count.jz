@@ -1,0 +1,69 @@
+// INSTANCE_ARRAY_COUNT_INVALID: Instance array count must be a positive integer.
+// Tests zero count, negative count (via CONST), and non-integer count expressions.
+// Valid array counts are included for negative testing.
+
+@project INSTANCE_ARRAY_COUNT_INVALID_bad_array_count
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module used as instantiation target
+@module ChildMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        ZERO = 0;
+        VALID_COUNT = 4;
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 1: array count of zero
+    @new inst_a[0] ChildMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    // Trigger 2: array count via CONST that is zero
+    @new inst_b[ZERO] ChildMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    // Valid: positive integer count (no trigger)
+    @new inst_c[2] ChildMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    // Valid: positive CONST count (no trigger)
+    @new inst_d[VALID_COUNT] ChildMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

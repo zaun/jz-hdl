@@ -1,0 +1,5 @@
+File: 6_8_BUS_DEF_SIGNAL_DUP_NAME-duplicate_signal_in_bus.jz
+      19:17   error BUS_DEF_SIGNAL_DUP_NAME S6.8 Duplicate signal name inside BUS definition
+      27:17   error BUS_DEF_SIGNAL_DUP_NAME S6.8 Duplicate signal name inside BUS definition
+      35:19   error BUS_DEF_SIGNAL_DUP_NAME S6.8 Duplicate signal name inside BUS definition
+      42:17   error BUS_DEF_SIGNAL_DUP_NAME S6.8 Duplicate signal name inside BUS definition

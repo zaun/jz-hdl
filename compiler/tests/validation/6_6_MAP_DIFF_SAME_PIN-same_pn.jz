@@ -1,0 +1,53 @@
+// MAP_DIFF_SAME_PIN: Differential MAP entry has same physical pin for P and N.
+// Triggers: P==N on IN, P==N on OUT, P==N on INOUT differential pins.
+// Valid different P and N included to verify no false positives.
+
+@project MAP_DIFF_SAME_PIN_same_pn
+    IN_PINS {
+        // Trigger 1: P and N are same pin on IN
+        diff_in = { mode=DIFFERENTIAL, standard=LVDS25 };
+        // Valid: P and N are different
+        valid_diff = { mode=DIFFERENTIAL, standard=LVDS25 };
+    }
+
+    OUT_PINS {
+        // Trigger 2: P and N are same pin on OUT
+        diff_out = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=diff_in, pclk=diff_in, reset=diff_in };
+    }
+
+    INOUT_PINS {
+        // Trigger 3: P and N are same pin on INOUT
+        diff_io = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5 };
+    }
+
+    MAP {
+        diff_in = { P=10, N=10 };
+        valid_diff = { P=12, N=13 };
+        diff_out = { P=20, N=20 };
+        diff_io = { P=30, N=30 };
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

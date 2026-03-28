@@ -1,0 +1,73 @@
+// MEM_SYNC_DATA_IN_ASYNC_BLOCK: Read sync port .data in ASYNCHRONOUS block.
+// Valid sync .data read in SYNC block included for no false positives.
+
+@project MEM_SYNC_DATA_IN_ASYNC_BLOCK_sync_data_in_async
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: read sync .data in ASYNC block
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: sync .data in ASYNC block
+        data = mem_a.rd.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.rd.addr <= addr;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: sync .data in ASYNC block in top module
+        data = mem_b.rd.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.rd.addr <= addr;
+    }
+@endmod

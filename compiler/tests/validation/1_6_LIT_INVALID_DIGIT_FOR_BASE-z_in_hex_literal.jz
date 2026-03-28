@@ -1,0 +1,52 @@
+// LIT_INVALID_DIGIT_FOR_BASE: z digit used in hex literal (not allowed).
+// Tests z digits in hex literals across multiple expression contexts.
+// Valid binary z literals and valid hex literals included to verify no false positives.
+
+@project LIT_INVALID_DIGIT_FOR_BASE_z_in_hex_literal
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module HelperA
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: z in hex literal in async driven assignment
+        data <= 8'hz0;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    CONST {
+        // Trigger 2: z in hex literal in CONST value
+        BAD_CONST = 8'hzz;
+    }
+    REGISTER {
+        // Trigger 3: z in hex literal in register init
+        r_bad [8] = 8'h0z;
+        // Valid: normal hex literal
+        r_ok [8] = 8'hFF;
+    }
+    @new inst_a HelperA {
+        // Trigger 4: z in hex literal in instance port binding
+        IN  [8] din = 8'hzz;
+        OUT [8] data = _;
+    };
+    ASYNCHRONOUS {
+        // Valid: normal hex — no error
+        data = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: z in hex literal in sync assignment
+        r_bad <= 8'hz0;
+        r_ok <= ~r_ok;
+    }
+@endmod

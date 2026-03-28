@@ -1,0 +1,3 @@
+File: 5_1_ASYNC_INVALID_STATEMENT_TARGET-mem_sync_in_async.jz
+      41:9    error MEM_SYNC_ADDR_IN_ASYNC_BLOCK S7.2.1/S7.3.2/S7.7.2 SYNC read addresses must be assigned in SYNCHRONOUS blocks
+      91:9    error MEM_SYNC_ADDR_IN_ASYNC_BLOCK S7.2.1/S7.3.2/S7.7.2 SYNC read addresses must be assigned in SYNCHRONOUS blocks

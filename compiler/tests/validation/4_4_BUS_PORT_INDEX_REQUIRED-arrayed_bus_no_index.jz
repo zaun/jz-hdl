@@ -1,0 +1,78 @@
+// BUS_PORT_INDEX_REQUIRED: Arrayed BUS access requires an explicit index or wildcard.
+// Tests accessing arrayed BUS signals without index in read and write contexts.
+// Valid indexed access included to verify no false positives.
+
+@project BUS_PORT_INDEX_REQUIRED_arrayed_bus_no_index
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+    }
+@endproj
+
+// Helper module: trigger on arrayed BUS without index
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        BUS MY_BUS SOURCE [2] abus;
+        OUT [8] data_ok;
+        OUT [8] data_err;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: indexed access (no error)
+        abus[0].tx <= r;
+        abus[1].tx <= r;
+        data_ok <= abus[0].rx;
+        // Trigger 1: write to arrayed BUS without index
+        abus.tx <= r;
+        // Trigger 2: read from arrayed BUS without index
+        data_err <= abus.rx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        BUS MY_BUS SOURCE [2] abus = _;
+        OUT [8] data_ok = dout_a;
+        OUT [8] data_err = dout_b;
+    };
+
+    ASYNCHRONOUS {
+        dout_c <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

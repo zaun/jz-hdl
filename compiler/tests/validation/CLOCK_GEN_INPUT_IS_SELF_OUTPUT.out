@@ -1,4 +1,0 @@
-File: CLOCK_GEN_INPUT_IS_SELF_OUTPUT.jz
-      16:3    info  CLOCK_GEN_NO_CHIP_DATA S6.4.1 No chip specified; CLOCK_GEN parameters and constraints cannot be validated
-      18:7    error CLOCK_GEN_INPUT_NO_PERIOD S6.4.1 CLOCK_GEN input clock must have a period declared in CLOCKS block
-      18:7    error CLOCK_GEN_INPUT_IS_SELF_OUTPUT S6.4.1 CLOCK_GEN input clock is an output of the same CLOCK_GEN block

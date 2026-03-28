@@ -1,0 +1,219 @@
+// HAPPY_PATH: Valid usage of all 28 intrinsic operators produces no diagnostics.
+// Exercises uadd, sadd, umul, smul, clog2, widthof, gbit, sbit, gslice, sslice,
+// lit, oh2b, b2oh, prienc, lzc, usub, ssub, abs, umin, umax, smin, smax,
+// popcount, reverse, bswap, reduce_and, reduce_or, reduce_xor.
+
+@project HAPPY_PATH_intrinsic_operators_ok
+    @top TopMod {
+        IN  [1]  clk = _;
+        IN  [8]  din = _;
+        IN  [16] wide_in = _;
+        IN  [4]  narrow_in = _;
+        OUT [9]  out_uadd = _;
+        OUT [9]  out_sadd = _;
+        OUT [16] out_umul = _;
+        OUT [16] out_smul = _;
+        OUT [9]  out_usub = _;
+        OUT [9]  out_ssub = _;
+        OUT [9]  out_abs = _;
+        OUT [8]  out_umin = _;
+        OUT [8]  out_umax = _;
+        OUT [8]  out_smin = _;
+        OUT [8]  out_smax = _;
+        OUT [1]  out_gbit = _;
+        OUT [8]  out_sbit = _;
+        OUT [4]  out_gslice = _;
+        OUT [16] out_sslice = _;
+        OUT [8]  out_lit = _;
+        OUT [3]  out_oh2b = _;
+        OUT [8]  out_b2oh = _;
+        OUT [3]  out_prienc = _;
+        OUT [4]  out_lzc = _;
+        OUT [4]  out_popcount = _;
+        OUT [8]  out_reverse = _;
+        OUT [16] out_bswap = _;
+        OUT [1]  out_rand = _;
+        OUT [1]  out_ror = _;
+        OUT [1]  out_rxor = _;
+    }
+@endproj
+
+// Helper module: exercises several intrinsics in ASYNCHRONOUS
+@module HelperMod
+    PORT {
+        IN  [8]  a;
+        IN  [8]  b;
+        OUT [9]  out_uadd;
+        OUT [16] out_umul;
+        OUT [8]  out_reverse;
+        OUT [1]  out_rand;
+    }
+    ASYNCHRONOUS {
+        // Valid: uadd(8,8) -> 9 bits
+        out_uadd <= uadd(a, b);
+        // Valid: umul(8,8) -> 16 bits
+        out_umul <= umul(a, b);
+        // Valid: reverse(8) -> 8 bits
+        out_reverse = reverse(a);
+        // Valid: reduce_and(8) -> 1 bit
+        out_rand = reduce_and(a);
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        // Valid: clog2() in CONST block
+        LOG_W = clog2(256);
+        // Valid: widthof() in CONST block
+        DIN_W = widthof(din);
+    }
+    PORT {
+        IN  [1]  clk;
+        IN  [8]  din;
+        IN  [16] wide_in;
+        IN  [4]  narrow_in;
+        OUT [9]  out_uadd;
+        OUT [9]  out_sadd;
+        OUT [16] out_umul;
+        OUT [16] out_smul;
+        OUT [9]  out_usub;
+        OUT [9]  out_ssub;
+        OUT [9]  out_abs;
+        OUT [8]  out_umin;
+        OUT [8]  out_umax;
+        OUT [8]  out_smin;
+        OUT [8]  out_smax;
+        OUT [1]  out_gbit;
+        OUT [8]  out_sbit;
+        OUT [4]  out_gslice;
+        OUT [16] out_sslice;
+        OUT [8]  out_lit;
+        OUT [3]  out_oh2b;
+        OUT [8]  out_b2oh;
+        OUT [3]  out_prienc;
+        OUT [4]  out_lzc;
+        OUT [4]  out_popcount;
+        OUT [8]  out_reverse;
+        OUT [16] out_bswap;
+        OUT [1]  out_rand;
+        OUT [1]  out_ror;
+        OUT [1]  out_rxor;
+    }
+
+    WIRE {
+        h_uadd  [9];
+        h_umul  [16];
+        h_rev   [8];
+        h_rand  [1];
+    }
+
+    REGISTER {
+        r_sadd   [9]  = 9'd0;
+        r_smul   [16] = 16'd0;
+        r_usub   [9]  = 9'd0;
+        r_ssub   [9]  = 9'd0;
+        r_abs    [9]  = 9'd0;
+        r_umin   [8]  = 8'd0;
+        r_umax   [8]  = 8'd0;
+        r_smin   [8]  = 8'd0;
+        r_smax   [8]  = 8'd0;
+        r_gbit   [1]  = 1'b0;
+        r_sbit   [8]  = 8'd0;
+        r_gslice [4]  = 4'd0;
+        r_sslice [16] = 16'd0;
+        r_lit    [8]  = 8'd0;
+        r_oh2b   [3]  = 3'd0;
+        r_b2oh   [8]  = 8'd0;
+        r_prienc [3]  = 3'd0;
+        r_lzc    [4]  = 4'd0;
+        r_pop    [4]  = 4'd0;
+        r_bswap  [16] = 16'd0;
+        r_ror    [1]  = 1'b0;
+        r_rxor   [1]  = 1'b0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8]  a = din;
+        IN  [8]  b = din;
+        OUT [9]  out_uadd = h_uadd;
+        OUT [16] out_umul = h_umul;
+        OUT [8]  out_reverse = h_rev;
+        OUT [1]  out_rand = h_rand;
+    };
+
+    ASYNCHRONOUS {
+        out_uadd = h_uadd;
+        out_sadd = r_sadd;
+        out_umul = h_umul;
+        out_smul = r_smul;
+        out_usub = r_usub;
+        out_ssub = r_ssub;
+        out_abs = r_abs;
+        out_umin = r_umin;
+        out_umax = r_umax;
+        out_smin = r_smin;
+        out_smax = r_smax;
+        out_gbit = r_gbit;
+        out_sbit = r_sbit;
+        out_gslice = r_gslice;
+        out_sslice = r_sslice;
+        out_lit = r_lit;
+        out_oh2b = r_oh2b;
+        out_b2oh = r_b2oh;
+        out_prienc = r_prienc;
+        out_lzc = r_lzc;
+        out_popcount = r_pop;
+        out_reverse = h_rev;
+        out_bswap = r_bswap;
+        out_rand = h_rand;
+        out_ror = r_ror;
+        out_rxor = r_rxor;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: sadd(8,8) -> 9 bits
+        r_sadd <= sadd(din, din);
+        // Valid: smul(8,8) -> 16 bits
+        r_smul <= smul(din, din);
+        // Valid: usub(8,8) -> 9 bits
+        r_usub <= usub(din, din);
+        // Valid: ssub(8,8) -> 9 bits
+        r_ssub <= ssub(din, din);
+        // Valid: abs(8) -> 9 bits
+        r_abs <= abs(din);
+        // Valid: umin(8,8) -> 8 bits
+        r_umin <= umin(din, din);
+        // Valid: umax(8,8) -> 8 bits
+        r_umax <= umax(din, din);
+        // Valid: smin(8,8) -> 8 bits
+        r_smin <= smin(din, din);
+        // Valid: smax(8,8) -> 8 bits
+        r_smax <= smax(din, din);
+        // Valid: gbit(8, 3-bit idx) -> 1 bit
+        r_gbit <= gbit(din, narrow_in[2:0]);
+        // Valid: sbit(8, 3-bit idx, 1-bit val) -> 8 bits
+        r_sbit <= sbit(din, narrow_in[2:0], 1'b1);
+        // Valid: gslice(16, 4-bit idx, W=4) -> 4 bits
+        r_gslice <= gslice(wide_in, narrow_in, 4);
+        // Valid: sslice(16, 4-bit idx, W=4, 4-bit val) -> 16 bits
+        r_sslice <= sslice(wide_in, narrow_in, 4, narrow_in);
+        // Valid: lit(8, 42) -> 8 bits
+        r_lit <= lit(8, 42);
+        // Valid: oh2b(8) -> 3 bits
+        r_oh2b <= oh2b(din);
+        // Valid: b2oh(3, 8) -> 8 bits
+        r_b2oh <= b2oh(narrow_in[2:0], 8);
+        // Valid: prienc(8) -> 3 bits
+        r_prienc <= prienc(din);
+        // Valid: lzc(8) -> 4 bits
+        r_lzc <= lzc(din);
+        // Valid: popcount(8) -> 4 bits
+        r_pop <= popcount(din);
+        // Valid: bswap(16) -> 16 bits
+        r_bswap <= bswap(wide_in);
+        // Valid: reduce_or(8) -> 1 bit
+        r_ror <= reduce_or(din);
+        // Valid: reduce_xor(8) -> 1 bit
+        r_rxor <= reduce_xor(din);
+    }
+@endmod

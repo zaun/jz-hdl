@@ -1,0 +1,85 @@
+// MUX_SLICE_WIDTH_NOT_DIVISOR: Auto-slicing form requires wide_source width to be exact multiple of element_width.
+// Tests non-divisible element widths with ports, wires, and registers.
+// Valid divisible auto-slicing included to verify no false positives.
+
+@project MUX_SLICE_WIDTH_NOT_DIVISOR_non_divisible_width
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: non-divisible auto-slice on port
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    // Trigger 1: 8-bit port sliced by 3 (8 % 3 != 0)
+    MUX {
+        bad_slice [3] = a;
+        // Valid: 8-bit sliced by 4 (8 % 4 == 0, no false positive)
+        ok_slice [4] = a;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = ok_slice[sel] | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= a;
+    }
+@endmod
+
+// Top module: non-divisible auto-slice on wire
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w16 [16];
+        helper_out [8];
+    }
+
+    // Trigger 2: 16-bit wire sliced by 5 (16 % 5 != 0)
+    MUX {
+        top_bad [5] = w16;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [1] sel = sel;
+        OUT [8] data = helper_out;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        w16 = {a, a};
+        data = helper_out | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= a;
+    }
+@endmod

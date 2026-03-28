@@ -1,0 +1,66 @@
+// NET_DANGLING_UNUSED: Signal is neither driven nor read (dangling unused).
+// Tests wires declared but never connected across multiple modules.
+// Properly used wires included to verify no false positives.
+
+@project NET_DANGLING_UNUSED_unused_signal
+    CONFIG {
+        WIDTH = 8;
+    }
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with unused wire
+@module HelperA
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    WIRE {
+        // Trigger 1: wire declared but never driven or read in helper module
+        dangling_a [1];
+        // Valid: wire that IS used (driven and read)
+        used_w [1];
+    }
+    ASYNCHRONOUS {
+        used_w = din;
+        data = used_w;
+    }
+@endmod
+
+// Top module with unused wires
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    WIRE {
+        // Trigger 2: wire declared but never driven or read in top module
+        dangling_b [1];
+        // Trigger 3: wider wire also unused
+        dangling_c [8];
+        // Valid: wire that IS used
+        ok_wire [1];
+    }
+
+    ASYNCHRONOUS {
+        ok_wire = r;
+        data = ok_wire;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

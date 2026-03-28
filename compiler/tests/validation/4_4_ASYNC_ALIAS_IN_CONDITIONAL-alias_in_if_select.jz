@@ -1,0 +1,87 @@
+// ASYNC_ALIAS_IN_CONDITIONAL: Alias = inside IF/SELECT is forbidden.
+// Tests alias operator in IF then-branch, ELSE-branch, and top module IF.
+// Valid <= inside IF included for no false positives.
+
+@project ASYNC_ALIAS_IN_CONDITIONAL_alias_in_if_select
+    @top TopMod {
+        IN  [1] ctrl = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+    }
+@endproj
+
+// Helper module: trigger in IF then-branch
+@module HelperMod
+    PORT {
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] data_out;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: alias inside IF then-branch
+        IF (ctrl) {
+            data_out = din;
+        } ELSE {
+            data_out <= din;
+        }
+    }
+@endmod
+
+// Module with alias in IF else-branch
+@module ElseMod
+    PORT {
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] data_out;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: alias inside IF else-branch
+        IF (ctrl) {
+            data_out <= din;
+        } ELSE {
+            data_out = din;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] ctrl = ctrl;
+        IN  [8] din = din;
+        OUT [8] data_out = _;
+    };
+
+    @new inst_e ElseMod {
+        IN  [1] ctrl = ctrl;
+        IN  [8] din = din;
+        OUT [8] data_out = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: alias inside IF in top module
+        IF (ctrl) {
+            dout_a = din;
+        } ELSE {
+            dout_a <= din;
+        }
+        // Valid: receive-assign inside IF (not alias)
+        IF (ctrl) {
+            dout_b <= din;
+        } ELSE {
+            dout_b <= din;
+        }
+        dout_c <= din;
+    }
+@endmod

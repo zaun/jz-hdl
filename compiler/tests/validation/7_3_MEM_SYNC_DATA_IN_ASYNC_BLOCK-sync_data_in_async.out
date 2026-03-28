@@ -1,0 +1,3 @@
+File: 7_3_MEM_SYNC_DATA_IN_ASYNC_BLOCK-sync_data_in_async.jz
+      32:16   error MEM_SYNC_DATA_IN_ASYNC_BLOCK S7.2.1/S7.3.2/S7.7.2 SYNC MEM read data (mem.port.data) may not be read in ASYNCHRONOUS blocks
+      66:16   error MEM_SYNC_DATA_IN_ASYNC_BLOCK S7.2.1/S7.3.2/S7.7.2 SYNC MEM read data (mem.port.data) may not be read in ASYNCHRONOUS blocks

@@ -1,2 +1,0 @@
-File: MEM_MULTIPLE_WRITES_SAME_IN.jz
-      38:5    error MEM_MULTIPLE_WRITES_SAME_IN S7.2.2/S7.3.3/S7.7.2 Multiple writes to same IN port within single SYNCHRONOUS block

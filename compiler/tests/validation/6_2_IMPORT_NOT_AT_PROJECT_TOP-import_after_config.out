@@ -1,0 +1,2 @@
+File: 6_2_IMPORT_NOT_AT_PROJECT_TOP-import_after_config.jz
+      12:5    error IMPORT_NOT_AT_PROJECT_TOP S6.2.1 @import appears after CONFIG/CLOCKS/PIN/blackbox/top-level new blocks

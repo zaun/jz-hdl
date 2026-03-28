@@ -1,0 +1,88 @@
+// CDC_SOURCE_NOT_PLAIN_REG: CDC source must be a plain register identifier,
+// not a slice or expression. Tests sliced register as CDC source in multiple
+// modules. Valid plain register source included to verify no false positives.
+
+@project CDC_SOURCE_NOT_PLAIN_REG_sliced_source
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with sliced register as CDC source
+@module HelperMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        wide_reg [8] = 8'h00;
+        ok_reg [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 1: sliced register as CDC source
+        BIT wide_reg[0:0] (clk_a) => slice_sync (clk_b);
+        // Valid: plain register identifier
+        BIT ok_reg (clk_a) => ok_sync (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        data = ok_sync;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        wide_reg <= 8'hAA;
+        ok_reg <= ~ok_reg;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (slice_sync) {
+            // reading alias
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        top_reg [8] = 8'h00;
+        top_ok [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 2: single-bit index as CDC source
+        BIT top_reg[0:0] (clk_a) => top_slice_sync (clk_b);
+        // Valid: plain register identifier
+        BIT top_ok (clk_a) => top_ok_sync (clk_b);
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = top_ok_sync;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        top_reg <= 8'hBB;
+        top_ok <= ~top_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (top_slice_sync) {
+            // reading alias
+        }
+    }
+@endmod

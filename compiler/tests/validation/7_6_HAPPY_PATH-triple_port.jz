@@ -1,0 +1,87 @@
+// HAPPY_PATH: Valid triple-port memory with 2 async reads and 1 sync write (S7.6.5).
+// Exercises multi-port MEM (2R1W) with independent read addresses,
+// conditional SYNC write, and cross-module instantiation.
+
+@project HAPPY_PATH_triple_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] rd_addr_0 = _;
+        IN  [8] rd_addr_1 = _;
+        OUT [32] rd_data_0 = _;
+        OUT [32] rd_data_1 = _;
+        IN  [8] wr_addr = _;
+        IN  [32] wr_data = _;
+        IN  [1] wr_en = _;
+        OUT [32] helper_data = _;
+    }
+@endproj
+
+// Helper: single read + write memory
+@module TripleHelper
+    PORT {
+        IN  [1] clk;
+        IN  [8] addr;
+        IN  [32] wdata;
+        IN  [1] we;
+        OUT [32] rdata;
+    }
+
+    MEM {
+        mem [32] [256] = 32'h0000_0000 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = mem.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            mem.wr[addr] <= wdata;
+        }
+    }
+@endmod
+
+// Top module: triple-port memory (2 async read, 1 sync write)
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] rd_addr_0;
+        IN  [8] rd_addr_1;
+        OUT [32] rd_data_0;
+        OUT [32] rd_data_1;
+        IN  [8] wr_addr;
+        IN  [32] wr_data;
+        IN  [1] wr_en;
+        OUT [32] helper_data;
+    }
+
+    MEM {
+        mem [32] [256] = 32'h0000_0000 {
+            OUT rd_0 ASYNC;
+            OUT rd_1 ASYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_helper TripleHelper {
+        IN  [1] clk = clk;
+        IN  [8] addr = wr_addr;
+        IN  [32] wdata = wr_data;
+        IN  [1] we = wr_en;
+        OUT [32] rdata = helper_data;
+    };
+
+    ASYNCHRONOUS {
+        rd_data_0 = mem.rd_0[rd_addr_0];
+        rd_data_1 = mem.rd_1[rd_addr_1];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (wr_en) {
+            mem.wr[wr_addr] <= wr_data;
+        }
+    }
+@endmod

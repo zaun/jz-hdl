@@ -1,0 +1,78 @@
+// HAPPY_PATH: Valid design with tri-state only on INOUT ports.
+// No internal tri-state nets, so no WARN_INTERNAL_TRISTATE should fire.
+
+@project HAPPY_PATH_tristate_default_ok
+    @top TopMod {
+        IN    [1] clk = _;
+        IN    [1] en = _;
+        IN    [8] din = _;
+        OUT   [8] dout = _;
+        INOUT [8] bidir = _;
+    }
+@endproj
+
+// Helper module: no tri-state usage at all
+@module HelperMod
+    PORT {
+        IN  [1] en;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w_internal [8];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: wire driven with non-z values only
+        IF (en) {
+            w_internal <= din;
+        } ELSE {
+            w_internal <= 8'h00;
+        }
+        data <= w_internal;
+    }
+@endmod
+
+// Top module: INOUT port uses z (valid, no warning), no internal tri-state
+@module TopMod
+    PORT {
+        IN    [1] clk;
+        IN    [1] en;
+        IN    [8] din;
+        OUT   [8] dout;
+        INOUT [8] bidir;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] en = en;
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    WIRE {
+        w_safe [8];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: wire driven without z
+        w_safe <= r;
+
+        // Valid: INOUT port with z (external tri-state, no warning)
+        IF (en) {
+            bidir <= r;
+        } ELSE {
+            bidir <= 8'bzzzz_zzzz;
+        }
+
+        dout <= w_safe;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

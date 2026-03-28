@@ -1,2 +1,0 @@
-File: SSLICE_VALUE_WIDTH_MISMATCH.jz
-      20:28   error SSLICE_VALUE_WIDTH_MISMATCH S5.5.9 sslice() value argument width does not match width parameter

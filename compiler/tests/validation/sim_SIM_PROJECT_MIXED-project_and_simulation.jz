@@ -1,0 +1,44 @@
+// SIM_PROJECT_MIXED: A file contains both @project and @simulation directives.
+// These cannot coexist in the same file.
+
+@module mix_mod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        out = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Valid @project block
+@project MixedProject
+    @top mix_mod {
+        IN  [1] clk = _;
+        OUT [1] out = _;
+    }
+@endproj
+
+// Trigger 1: @simulation in same file as @project
+@simulation mix_mod
+    CLOCK {
+        clk = { period=10.0 };
+    }
+    WIRE {
+        out [1];
+    }
+    @new dut mix_mod {
+        clk [1] = clk;
+        out [1] = out;
+    }
+    @run(ns=100)
+@endsim

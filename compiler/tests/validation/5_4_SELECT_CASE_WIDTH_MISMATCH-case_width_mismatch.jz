@@ -1,0 +1,84 @@
+// SELECT_CASE_WIDTH_MISMATCH: CASE value width must match selector width.
+// Tests width mismatch with sized literals wider and narrower than selector
+// in both ASYNC and SYNC blocks across multiple modules.
+// Bare integers (implicitly cast) and matching-width literals are valid.
+
+@project SELECT_CASE_WIDTH_MISMATCH_case_width_mismatch
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+@module HelperA
+    PORT {
+        IN  [4] sel;
+        OUT [1] out_a;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: CASE wider than selector (8-bit vs 4-bit) in ASYNC
+        SELECT (sel) {
+            CASE 8'hFF {
+                out_a <= VCC;
+            }
+            DEFAULT {
+                out_a <= GND;
+            }
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    @new inst_a HelperA {
+        IN  [4] sel = sel;
+        OUT [1] out_a = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 2: CASE narrower than selector (2-bit vs 4-bit) in ASYNC
+        // Trigger 3: CASE narrower than selector (1-bit vs 4-bit) in ASYNC
+        SELECT (sel) {
+            CASE 2'b01 {
+                out_a <= r;
+            }
+            // Valid: bare integer implicitly cast (no false positive)
+            CASE 5 {
+                out_a <= VCC;
+            }
+            // Valid: matching 4-bit width (no false positive)
+            CASE 4'hB {
+                out_a <= GND;
+            }
+            CASE 1'b0 {
+                out_a <= r;
+            }
+            DEFAULT {
+                out_a <= GND;
+            }
+        }
+        out_b = sel[0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: CASE wider than selector (8-bit vs 4-bit) in SYNC
+        SELECT (sel) {
+            CASE 8'h0A {
+                r <= VCC;
+            }
+            DEFAULT {
+                r <= GND;
+            }
+        }
+    }
+@endmod

@@ -1,0 +1,63 @@
+// LIT_VALUE_INVALID: lit() value must be a nonnegative integer constant expression.
+// Tests lit() with negative value arguments in ASYNC and SYNC blocks across modules.
+// Valid lit(8, 42) included to verify no false positives.
+
+@project LIT_VALUE_INVALID_negative_value
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: lit() with negative value
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: lit(8, -1) in helper ASYNC
+        out_a <= lit(8, -1);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: lit(8, -5) in helper SYNC
+        r <= lit(8, -5);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: lit(8, -1) in top ASYNC
+        out_a <= lit(8, -1);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: lit(8, -5) in top SYNC
+        r <= lit(8, -5);
+    }
+@endmod

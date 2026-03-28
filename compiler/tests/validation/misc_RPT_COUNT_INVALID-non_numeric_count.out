@@ -1,0 +1,2 @@
+File: misc_RPT_COUNT_INVALID-non_numeric_count.jz
+      25:1    error RPT_COUNT_INVALID RPT-001 @repeat requires a positive integer count

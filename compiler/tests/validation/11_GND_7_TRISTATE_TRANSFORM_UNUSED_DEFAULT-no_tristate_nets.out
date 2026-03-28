@@ -1,0 +1,2 @@
+File: <input>
+       0:0    warn  TRISTATE_TRANSFORM_UNUSED_DEFAULT S11.7 --tristate-default specified but no internal tri-state nets found to transform

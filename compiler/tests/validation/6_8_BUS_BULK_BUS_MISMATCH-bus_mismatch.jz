@@ -1,0 +1,121 @@
+// BUS_BULK_BUS_MISMATCH: Bulk BUS assignment requires both sides to reference the same BUS id.
+// Tests bulk assignment between instances whose BUS ports reference different BUS types.
+// Valid bulk assignment with matching BUS ids included to verify no false positives.
+
+@project BUS_BULK_BUS_MISMATCH_bus_mismatch
+
+    BUS ALPHA_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    BUS BETA_BUS {
+        OUT [8] data;
+        IN  [8] resp;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Module with ALPHA_BUS SOURCE port
+@module AlphaSource
+    PORT {
+        IN  [1] clk;
+        BUS ALPHA_BUS SOURCE abus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        abus.tx = r;
+        data = abus.rx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= abus.rx;
+    }
+@endmod
+
+// Module with ALPHA_BUS TARGET port
+@module AlphaTarget
+    PORT {
+        IN  [1] clk;
+        BUS ALPHA_BUS TARGET abus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        abus.rx = r;
+        data = abus.tx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= abus.tx;
+    }
+@endmod
+
+// Module with BETA_BUS SOURCE port
+@module BetaSource
+    PORT {
+        IN  [1] clk;
+        BUS BETA_BUS SOURCE bbus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        bbus.data = r;
+        data = bbus.resp;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= bbus.resp;
+    }
+@endmod
+
+// Top module with mismatched and valid bulk assignments
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+    }
+
+    @new inst_as AlphaSource {
+        IN  [1] clk = clk;
+        BUS ALPHA_BUS SOURCE abus = _;
+        OUT [8] data = dout;
+    };
+
+    @new inst_at AlphaTarget {
+        IN  [1] clk = clk;
+        BUS ALPHA_BUS TARGET abus = _;
+        OUT [8] data = _;
+    };
+
+    @new inst_bs BetaSource {
+        IN  [1] clk = clk;
+        BUS BETA_BUS SOURCE bbus = _;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: matching BUS ids (ALPHA_BUS SOURCE = ALPHA_BUS TARGET)
+        inst_as.abus = inst_at.abus;
+
+        // Trigger 1: mismatched BUS ids (ALPHA_BUS SOURCE = BETA_BUS SOURCE)
+        inst_as.abus = inst_bs.bbus;
+    }
+@endmod

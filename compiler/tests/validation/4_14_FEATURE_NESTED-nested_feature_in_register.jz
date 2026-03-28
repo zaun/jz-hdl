@@ -1,0 +1,44 @@
+// FEATURE_NESTED: Nested @feature guard in REGISTER block.
+// Tests that nested @feature inside REGISTER declaration blocks is rejected.
+
+@project FEATURE_NESTED_nested_feature_in_register
+    CONFIG {
+        MODE = 1;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST {
+        FLAG = 1;
+        LEVEL = 0;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+
+        // Trigger 1: nested @feature inside REGISTER block @feature body
+        @feature FLAG == 1
+            @feature LEVEL == 0
+                r2 [1] = 1'b0;
+            @endfeat
+        @endfeat
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

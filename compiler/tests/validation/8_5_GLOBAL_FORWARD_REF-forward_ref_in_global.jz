@@ -1,0 +1,43 @@
+// GLOBAL_FORWARD_REF: Forward reference inside a @global block.
+// A constant expression references a later constant in the same @global block.
+// Valid sized literals are included to verify no false positives.
+
+// Trigger 1: B references C which is defined later in the same block
+// Trigger 2: D references E which is defined later in the same block
+@global VALS
+    A = 8'hAA;
+    B = C;
+    C = 8'hCC;
+    D = E;
+    E = 8'hEE;
+@endglob
+
+// Valid: only sized literals, no references (should NOT trigger)
+@global GOOD
+    X = 8'h01;
+    Y = 8'h02;
+    Z = 8'h03;
+@endglob
+
+@project GLOBAL_FORWARD_REF_forward_ref_in_global
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= VALS.A;
+    }
+@endmod

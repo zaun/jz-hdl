@@ -1,3 +1,0 @@
-File: MEM_WRITE_TO_READ_PORT.jz
-      24:13   error MEM_INVALID_PORT_TYPE S7.1/S7.7.1 Invalid port type or qualifier (e.g. OUT ASYNC, unknown keyword)
-      30:16   error MEM_READ_FROM_WRITE_PORT S7.2.2/S7.3.3 Reading from MEM write port (OUT); did you mean to use an IN port?

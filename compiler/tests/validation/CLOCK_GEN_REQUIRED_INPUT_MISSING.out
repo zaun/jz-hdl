@@ -1,3 +1,0 @@
-File: CLOCK_GEN_REQUIRED_INPUT_MISSING.jz
-      23:9    error CLOCK_GEN_MISSING_INPUT S6.4.1 CLOCK_GEN unit must have an IN clock declaration
-      23:9    error CLOCK_GEN_REQUIRED_INPUT_MISSING S6.4.1 CLOCK_GEN required input is not provided

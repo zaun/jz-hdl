@@ -1,2 +1,0 @@
-File: MUX_AGG_SOURCE_WIDTH_MISMATCH.jz
-      23:5    error MUX_AGG_SOURCE_WIDTH_MISMATCH S4.6 Aggregation form sources must all have identical bit-width

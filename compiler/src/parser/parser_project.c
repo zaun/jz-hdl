@@ -969,6 +969,18 @@ JZASTNode *jz_parse_file(const char *filename,
                                "@scratch found at file top level; @scratch declares temporary wires\n"
                                "and may only be used inside a @template body");
             advance(&p);
+        } else if (t->type == JZ_TOK_KW_APPLY) {
+            /* @apply outside ASYNCHRONOUS/SYNCHRONOUS block. */
+            parser_report_rule(&p, t, "TEMPLATE_APPLY_OUTSIDE_BLOCK",
+                               "@apply found at file scope; @apply may only appear\n"
+                               "inside ASYNCHRONOUS or SYNCHRONOUS blocks");
+            /* Skip past the semicolon to recover */
+            advance(&p);
+            while (peek(&p)->type != JZ_TOK_EOF &&
+                   peek(&p)->type != JZ_TOK_SEMICOLON) {
+                advance(&p);
+            }
+            if (peek(&p)->type == JZ_TOK_SEMICOLON) advance(&p);
         } else if (t->type == JZ_TOK_KW_ENDMOD ||
                    t->type == JZ_TOK_KW_ENDPROJ ||
                    t->type == JZ_TOK_KW_ENDGLOB ||
@@ -1198,7 +1210,6 @@ JZASTNode *parse_project(Parser *p) {
     }
 
     int saw_non_import = 0;
-    int saw_config = 0;
     int saw_top_new = 0;
 
     while (peek(p)->type != JZ_TOK_EOF && peek(p)->type != JZ_TOK_KW_ENDPROJ) {
@@ -1238,12 +1249,8 @@ JZASTNode *parse_project(Parser *p) {
         saw_non_import = 1;
 
         if (t->type == JZ_TOK_KW_CONFIG) {
-            if (saw_config) {
-                parser_error(p, "multiple CONFIG blocks in a single project are not allowed");
-                jz_ast_free(proj);
-                return NULL;
-            }
-            saw_config = 1;
+            /* Duplicate CONFIG detection deferred to semantic analysis
+             * (CONFIG_MULTIPLE_BLOCKS) so the proper rule ID is emitted. */
             advance(p);
             JZASTNode *blk = parse_block(p, t, "CONFIG", JZ_AST_CONFIG_BLOCK);
             if (!blk) { jz_ast_free(proj); return NULL; }

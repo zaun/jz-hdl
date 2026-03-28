@@ -1,0 +1,64 @@
+// LATCH_ENABLE_WIDTH_NOT_1: D-latch enable expression must have width [1].
+// Tests D-latch guarded assignment with enable wider than 1 bit across modules.
+// Valid 1-bit enable included to verify no false positives.
+
+@project LATCH_ENABLE_WIDTH_NOT_1_enable_not_1bit
+    @top TopMod {
+        IN  [1] enable = _;
+        IN  [8] enable_wide = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: wide enable on D-latch
+@module HelperMod
+    PORT {
+        IN  [1] enable;
+        IN  [8] enable_wide;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    LATCH {
+        lat_ok [8] D;
+        lat_bad [8] D;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: 1-bit enable (should NOT trigger)
+        lat_ok <= enable : din;
+        // Trigger 1: 8-bit enable in helper module
+        lat_bad <= enable_wide : din;
+        data <= lat_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] enable;
+        IN  [8] enable_wide;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] enable = enable;
+        IN  [8] enable_wide = enable_wide;
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    LATCH {
+        lat_top_ok [8] D;
+        lat_top_bad [8] D;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: 1-bit enable
+        lat_top_ok <= enable : din;
+        // Trigger 2: 8-bit enable in top module
+        lat_top_bad <= enable_wide : din;
+        data <= lat_top_ok;
+    }
+@endmod

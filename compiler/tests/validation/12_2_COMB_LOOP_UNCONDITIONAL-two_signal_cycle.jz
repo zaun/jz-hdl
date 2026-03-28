@@ -1,0 +1,98 @@
+// COMB_LOOP_UNCONDITIONAL: Direct two-signal cycle and cycle through expression.
+// Tests the simplest form of combinational loop (a=b; b=a), loops where
+// the feedback path goes through an expression (a=b&c; c=a), and
+// self-assignment through expression (a=a+0).
+// Valid feed-forward paths included to verify no false positives.
+
+@project COMB_LOOP_UNCONDITIONAL_two_signal_cycle
+    @top TopMod {
+        IN  [1] in_a = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+        OUT [1] out_c = _;
+    }
+@endproj
+
+// Helper: direct two-signal cycle
+@module HelperDirect
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        a [1];
+        b [1];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: direct two-signal cycle a -> b -> a
+        a <= b;
+        b <= a;
+        out_a = a;
+        // Valid: feed-forward (no loop)
+        out_b = in_a;
+    }
+@endmod
+
+// Helper: cycle through expression
+@module HelperExpr
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        a [1];
+        b [1];
+        c [1];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: cycle through expression a -> (b & c) -> c -> a
+        a <= b & c;
+        c <= a;
+        // Valid: b is driven by input (no loop through b)
+        b <= in_a;
+        out_a = a;
+        out_b = c;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+
+    WIRE {
+        x [1];
+        y [1];
+    }
+
+    @new inst_direct HelperDirect {
+        IN  [1] in_a = in_a;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    };
+
+    @new inst_expr HelperExpr {
+        IN  [1] in_a = in_a;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: direct two-signal cycle x -> y -> x in top module
+        x <= y;
+        y <= x;
+        out_a = x;
+        // Valid: feed-forward (no loop)
+        out_b = in_a;
+        out_c = in_a;
+    }
+@endmod

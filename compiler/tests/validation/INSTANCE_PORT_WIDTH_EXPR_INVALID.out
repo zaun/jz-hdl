@@ -1,2 +1,0 @@
-File: INSTANCE_PORT_WIDTH_EXPR_INVALID.jz
-      36:21   error INSTANCE_PORT_WIDTH_EXPR_INVALID S4.13 Width expression in instantiation uses undefined CONST/CONFIG or invalid expression

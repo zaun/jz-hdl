@@ -1,0 +1,6 @@
+File: 9_1_CHECK_INVALID_EXPR_TYPE-runtime_signal_in_check.jz
+      12:13   error CHECK_INVALID_EXPR_TYPE S9.1 @check condition must be a nonnegative integer constant expression over literals, module CONST, and project CONFIG.<name> (no runtime signals)
+      36:13   error CHECK_INVALID_EXPR_TYPE S9.1 @check condition must be a nonnegative integer constant expression over literals, module CONST, and project CONFIG.<name> (no runtime signals)
+      68:13   error CHECK_INVALID_EXPR_TYPE S9.1 @check condition must be a nonnegative integer constant expression over literals, module CONST, and project CONFIG.<name> (no runtime signals)
+      71:13   error CHECK_INVALID_EXPR_TYPE S9.1 @check condition must be a nonnegative integer constant expression over literals, module CONST, and project CONFIG.<name> (no runtime signals)
+      74:13   error CHECK_INVALID_EXPR_TYPE S9.1 @check condition must be a nonnegative integer constant expression over literals, module CONST, and project CONFIG.<name> (no runtime signals)

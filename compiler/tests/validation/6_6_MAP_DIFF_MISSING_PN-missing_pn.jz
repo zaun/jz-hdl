@@ -1,0 +1,56 @@
+// MAP_DIFF_MISSING_PN: Differential MAP entry missing P or N identifier.
+// Triggers: missing N (IN), missing P (IN), missing N (OUT), missing P (INOUT).
+// Valid complete {P,N} mapping included to verify no false positives.
+
+@project MAP_DIFF_MISSING_PN_missing_pn
+    IN_PINS {
+        // Trigger 1: missing N in differential MAP
+        diff_a = { mode=DIFFERENTIAL, standard=LVDS25 };
+        // Trigger 2: missing P in differential MAP
+        diff_b = { mode=DIFFERENTIAL, standard=LVDS25 };
+        // Valid: complete {P,N}
+        valid_diff = { mode=DIFFERENTIAL, standard=LVDS25 };
+    }
+
+    OUT_PINS {
+        // Trigger 3: missing N in OUT differential MAP
+        diff_out = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=diff_a, pclk=diff_a, reset=diff_a };
+    }
+
+    INOUT_PINS {
+        // Trigger 4: missing P in INOUT differential MAP
+        diff_io = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5 };
+    }
+
+    MAP {
+        diff_a = { P=10 };
+        diff_b = { N=12 };
+        valid_diff = { P=14, N=15 };
+        diff_out = { P=16 };
+        diff_io = { N=18 };
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

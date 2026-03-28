@@ -1,0 +1,5 @@
+File: 5_1_ASYNC_ALIAS_LITERAL_RHS-alias_literal_rhs.jz
+      26:9    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?
+      50:9    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?
+      53:9    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?
+      56:9    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?

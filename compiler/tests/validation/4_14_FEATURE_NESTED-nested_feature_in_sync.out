@@ -1,0 +1,2 @@
+File: 4_14_FEATURE_NESTED-nested_feature_in_sync.jz
+      39:13   error FEATURE_NESTED S4.14 @feature guards may not be nested inside other @feature guards

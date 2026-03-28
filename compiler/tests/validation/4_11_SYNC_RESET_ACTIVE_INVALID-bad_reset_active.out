@@ -1,0 +1,3 @@
+File: 4_11_SYNC_RESET_ACTIVE_INVALID-bad_reset_active.jz
+      29:48   error SYNC_RESET_ACTIVE_INVALID S4.11 SYNCHRONOUS block RESET_ACTIVE must be High or Low
+      65:50   error SYNC_RESET_ACTIVE_INVALID S4.11 SYNCHRONOUS block RESET_ACTIVE must be High or Low

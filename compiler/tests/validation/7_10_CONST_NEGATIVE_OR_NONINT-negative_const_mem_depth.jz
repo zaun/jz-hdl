@@ -1,0 +1,109 @@
+// CONST_NEGATIVE_OR_NONINT: Negative CONST value used for MEM dimension.
+// Tests negative CONST in helper module (depth) and top module (width).
+// Valid positive CONST values in MEM included to verify no false positives.
+
+@project CONST_NEGATIVE_OR_NONINT_negative_const_mem_depth
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: negative CONST declared for MEM depth in helper module
+@module HelperMod
+    CONST {
+        NEG_DEPTH = -4;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod
+
+// Trigger 2: negative CONST declared for MEM width in second helper
+@module HelperMod2
+    CONST {
+        NEG_WIDTH = -2;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        VALID_WIDTH = 8;
+        VALID_DEPTH = 16;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Valid: positive CONST values (no error expected)
+    MEM {
+        mem_ok [VALID_WIDTH] [VALID_DEPTH] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    @new inst_h2 HelperMod2 {
+        IN  [1] clk = clk;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_ok.wr_ok[addr] <= wdata;
+    }
+@endmod

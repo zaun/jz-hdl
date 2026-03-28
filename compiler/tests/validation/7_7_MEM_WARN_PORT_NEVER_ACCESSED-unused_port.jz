@@ -1,0 +1,98 @@
+// MEM_WARN_PORT_NEVER_ACCESSED: MEM port declared but never used.
+// Each port type (OUT ASYNC, OUT SYNC, IN, INOUT) tested unused.
+// Used ports included alongside to verify no false positives.
+
+@project MEM_WARN_PORT_NEVER_ACCESSED_unused_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [2] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: unused OUT ASYNC port in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_h [8] [4] = 8'h00 {
+            OUT rd_used ASYNC;
+            // Trigger 1: OUT ASYNC port never read
+            OUT rd_unused ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Valid: rd_used is accessed (no warning)
+        data = mem_h.rd_used[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_h.wr[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: unused IN port
+    MEM {
+        mem_a [8] [4] = 8'h00 {
+            OUT rd_a ASYNC;
+            IN  wr_unused;
+        };
+    }
+
+    // Trigger 3: unused INOUT port
+    MEM {
+        mem_b [8] [4] = 8'h00 {
+            INOUT rw_unused;
+        };
+    }
+
+    // Trigger 4: unused OUT SYNC port
+    MEM {
+        mem_c [8] [4] = 8'h00 {
+            OUT rd_sync_unused SYNC;
+            IN  wr_c;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [2] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: mem_a.rd_a is used (no warning)
+        data = mem_a.rd_a[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_c.wr_c[addr] <= wdata;
+    }
+@endmod

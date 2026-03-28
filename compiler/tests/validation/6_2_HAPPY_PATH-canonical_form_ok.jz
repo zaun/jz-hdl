@@ -1,0 +1,68 @@
+// HAPPY_PATH: Valid project with canonical ordering, imports, CONFIG, and multi-module hierarchy.
+// Exercises @import before CONFIG, multi-module structure, and @blackbox in project scope.
+// No diagnostics expected.
+
+@project HAPPY_PATH_canonical_form_ok
+
+    @import "6_2_HAPPY_PATH-canonical_form_ok_lib.jz";
+
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @blackbox ExtIp {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    @new inst_lib LibMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    @new inst_bb ExtIp {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod

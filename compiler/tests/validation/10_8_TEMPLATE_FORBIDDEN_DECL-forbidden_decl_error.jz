@@ -1,0 +1,96 @@
+// TEMPLATE_FORBIDDEN_DECL: Cross-reference test for S10.4 declaration blocks in template error.
+// Tests WIRE, REGISTER, and PORT declarations inside templates at file scope
+// and module scope. Valid template with only @scratch included for negative testing.
+
+@project TEMPLATE_FORBIDDEN_DECL_forbidden_decl_error
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: template with @scratch only (no error)
+@template valid_tmpl(a, b)
+    @scratch tmp [1];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Trigger 1: WIRE inside file-scoped template
+@template wire_tmpl(a, b)
+    WIRE {
+        w [1];
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 2: REGISTER inside file-scoped template
+@template reg_tmpl(a, b)
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 3: PORT inside file-scoped template
+@template port_tmpl(a, b)
+    PORT {
+        IN [1] p;
+    }
+    a <= b;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 4: WIRE in module-scoped template
+    @template mod_wire(a, b)
+        WIRE {
+            mw [1];
+        }
+        a <= b;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 5: REGISTER in module-scoped template in TopMod
+    @template mod_reg(a, b)
+        REGISTER {
+            mr [1] = 1'b0;
+        }
+        a <= b;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

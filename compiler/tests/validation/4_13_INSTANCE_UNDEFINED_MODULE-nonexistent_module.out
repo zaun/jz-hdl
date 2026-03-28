@@ -1,0 +1,4 @@
+File: 4_13_INSTANCE_UNDEFINED_MODULE-nonexistent_module.jz
+      31:5    error INSTANCE_UNDEFINED_MODULE S4.13/S6.9 Instantiation references non-existent module
+      43:5    error INSTANCE_UNDEFINED_MODULE S4.13/S6.9 Instantiation references non-existent module
+      60:5    error INSTANCE_UNDEFINED_MODULE S4.13/S6.9 Instantiation references non-existent module

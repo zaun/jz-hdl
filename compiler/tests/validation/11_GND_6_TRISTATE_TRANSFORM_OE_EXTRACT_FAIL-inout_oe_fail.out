@@ -1,0 +1,7 @@
+File: 11_GND_6_TRISTATE_TRANSFORM_OE_EXTRACT_FAIL-inout_oe_fail.jz
+      17:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+      30:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+      51:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+
+File: <input>
+      34:0    error TRISTATE_TRANSFORM_OE_EXTRACT_FAIL S11.7 Could not extract output-enable condition from tri-state port; _oe driven high as fallback

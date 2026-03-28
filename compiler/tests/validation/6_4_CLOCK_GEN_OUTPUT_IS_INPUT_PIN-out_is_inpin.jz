@@ -1,0 +1,63 @@
+// CLOCK_GEN_OUTPUT_IS_INPUT_PIN: CLOCK_GEN output clock must not be declared as IN_PINS.
+// Tests CLOCK_GEN OUT that refers to a clock also in IN_PINS.
+// Valid CLOCK_GEN OUT (not in IN_PINS) included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_OUTPUT_IS_INPUT_PIN_out_is_inpin
+    CLOCKS {
+        ref_clk = { period=10 };
+        // Trigger: this clock is in IN_PINS but used as CLOCK_GEN OUT
+        inpin_clk;
+        // Valid: CLOCK_GEN OUT not in IN_PINS
+        valid_out;
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+        inpin_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+        inpin_clk = 2;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK ref_clk;
+            // Trigger 1: output is also an IN_PIN
+            OUT BASE inpin_clk;
+            // Valid: output not in IN_PINS (no trigger)
+            OUT PHASE valid_out;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

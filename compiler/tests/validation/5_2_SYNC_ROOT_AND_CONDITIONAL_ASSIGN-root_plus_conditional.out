@@ -1,0 +1,6 @@
+File: 5_2_SYNC_ROOT_AND_CONDITIONAL_ASSIGN-root_plus_conditional.jz
+      37:13   error SYNC_ROOT_AND_CONDITIONAL_ASSIGN S5.2/S1.5/S8.1 Root-level register assignment combined with nested conditional assignment to same bits
+      75:13   error SYNC_ROOT_AND_CONDITIONAL_ASSIGN S5.2/S1.5/S8.1 Root-level register assignment combined with nested conditional assignment to same bits
+      81:17   error SYNC_ROOT_AND_CONDITIONAL_ASSIGN S5.2/S1.5/S8.1 Root-level register assignment combined with nested conditional assignment to same bits
+      84:17   error SYNC_ROOT_AND_CONDITIONAL_ASSIGN S5.2/S1.5/S8.1 Root-level register assignment combined with nested conditional assignment to same bits
+      87:17   error SYNC_ROOT_AND_CONDITIONAL_ASSIGN S5.2/S1.5/S8.1 Root-level register assignment combined with nested conditional assignment to same bits

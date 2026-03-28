@@ -1,0 +1,3 @@
+File: 12_3_WARN_UNUSED_WIRE-unused_wire.jz
+      21:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused
+      46:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused

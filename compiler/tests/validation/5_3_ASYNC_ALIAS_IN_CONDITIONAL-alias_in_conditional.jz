@@ -1,0 +1,59 @@
+// ASYNC_ALIAS_IN_CONDITIONAL: Alias operators inside IF/ELIF/ELSE are forbidden in ASYNC.
+// Tests alias (=) in IF body, ELSE body, and ELIF body across modules.
+// Valid receive (<=) inside conditional and alias outside conditional verify no false positives.
+
+@project ASYNC_ALIAS_IN_CONDITIONAL_alias_in_conditional
+    @top TopMod {
+        IN  [1] sel = _;
+        IN  [8] din = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper: alias inside IF and ELSE in ASYNC
+@module HelperMod
+    PORT {
+        IN  [1] sel;
+        IN  [8] din;
+        OUT [8] out_a;
+    }
+    ASYNCHRONOUS {
+        IF (sel) {
+            // Trigger 1: alias (=) inside IF body
+            out_a = din;
+        } ELSE {
+            // Trigger 2: alias (=) inside ELSE body
+            out_a = din;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] sel;
+        IN  [8] din;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] sel = sel;
+        IN  [8] din = din;
+        OUT [8] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        IF (sel) {
+            // Valid: receive (<=) inside IF — no diagnostic
+            out_a <= din;
+        } ELIF (~sel) {
+            // Trigger 3: alias (=) inside ELIF body
+            out_a = din;
+        } ELSE {
+            out_a <= 8'h00;
+        }
+        // Valid: alias outside conditional — no diagnostic
+        out_b = din;
+    }
+@endmod

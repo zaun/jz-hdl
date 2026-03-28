@@ -1,0 +1,70 @@
+// CONST_STRING_IN_NUMERIC_CONTEXT: String CONST used where numeric expected.
+// Tests string CONST in port width, wire width, and register width contexts.
+// Valid numeric CONST in width included to verify no false positives.
+
+@project CONST_STRING_IN_NUMERIC_CONTEXT_string_as_width
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+        OUT [1] out_h = _;
+    }
+@endproj
+
+// Helper with string CONST in port width
+@module HelperMod
+    CONST {
+        STR_C = "hello.hex";
+        NUM_C = 1;
+    }
+
+    PORT {
+        // Trigger 1: string CONST used as port width
+        IN  [STR_C] din;
+        // Valid: numeric CONST as port width
+        OUT [NUM_C] data;
+    }
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        MY_STR = "path.hex";
+        MY_W = 1;
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+        OUT [1] out_h;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = out_h;
+    };
+
+    WIRE {
+        // Trigger 2: string CONST in wire width
+        w_bad [MY_STR];
+    }
+
+    REGISTER {
+        // Trigger 3: string CONST in register width
+        r_bad [MY_STR] = 1'b0;
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+        // Read w_bad and r_bad to avoid unused warnings
+        w_bad = r_bad;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+        r_bad <= ~r;
+    }
+@endmod

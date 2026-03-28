@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "parser_internal.h"
+#include "rules.h"
 
 /**
  * @brief Conditionally consume the next token if it matches a given type.
@@ -86,6 +87,21 @@ void parser_error(const Parser *p, const char *msg) {
                 t->loc.line, t->loc.column,
                 t->lexeme ? t->lexeme : "<eof>",
                 msg);
+    }
+}
+
+void parser_error_rule(const Parser *p, const char *rule_id) {
+    const JZToken *t = peek(p);
+    const JZRuleInfo *rule = jz_rule_lookup(rule_id);
+    const char *msg = rule ? rule->description : rule_id;
+    if (p->diagnostics) {
+        jz_diagnostic_report(p->diagnostics, t->loc, JZ_SEVERITY_ERROR,
+                             rule_id, msg);
+    } else {
+        fprintf(stderr, "%s:%d:%d: %s: %s\n",
+                t->loc.filename ? t->loc.filename : "<input>",
+                t->loc.line, t->loc.column,
+                rule_id, msg);
     }
 }
 
@@ -169,7 +185,8 @@ int is_decl_identifier_token(const JZToken *tok) {
         !strcmp(name, "CLOCKS") || !strcmp(name, "IN_PINS") ||
         !strcmp(name, "OUT_PINS") || !strcmp(name, "INOUT_PINS") ||
         !strcmp(name, "MAP") ||
-        !strcmp(name, "IDX")) {
+        !strcmp(name, "IDX") ||
+        !strcmp(name, "VCC") || !strcmp(name, "GND")) {
         return 1;
     }
 

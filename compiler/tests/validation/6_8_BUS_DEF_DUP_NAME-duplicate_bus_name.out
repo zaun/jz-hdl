@@ -1,0 +1,4 @@
+File: 6_8_BUS_DEF_DUP_NAME-duplicate_bus_name.jz
+      20:5    error BUS_DEF_DUP_NAME S6.8 Duplicate BUS definition name in project
+      26:5    error BUS_DEF_DUP_NAME S6.8 Duplicate BUS definition name in project
+      31:5    error BUS_DEF_DUP_NAME S6.8 Duplicate BUS definition name in project

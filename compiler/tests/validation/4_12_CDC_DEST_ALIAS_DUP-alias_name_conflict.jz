@@ -1,0 +1,78 @@
+// CDC_DEST_ALIAS_DUP: CDC destination alias name conflicts with existing identifier.
+// Tests dest alias conflicting with register and port names in multiple modules.
+// Valid unique alias names included to verify no false positives.
+
+@project CDC_DEST_ALIAS_DUP_alias_name_conflict
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with alias conflicting with register name
+@module HelperMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        src_reg [1] = 1'b0;
+        existing_reg [1] = 1'b0;
+        ok_src [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 1: dest alias conflicts with register name 'existing_reg'
+        BIT src_reg (clk_a) => existing_reg (clk_b);
+        // Valid: unique alias name
+        BIT ok_src (clk_a) => ok_alias (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        data = ok_alias;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        src_reg <= ~src_reg;
+        existing_reg <= ~existing_reg;
+        ok_src <= ~ok_src;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        // no-op
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        top_src [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 2: dest alias conflicts with port name 'clk_b'
+        BIT top_src (clk_a) => clk_b (clk_b);
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = top_src;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        top_src <= ~top_src;
+    }
+@endmod

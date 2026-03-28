@@ -1,0 +1,72 @@
+// PIN_DECLARED_MULTIPLE_BLOCKS: Same pin name in multiple PIN blocks.
+// Tests pin appearing across IN_PINS/OUT_PINS, IN_PINS/INOUT_PINS,
+// and OUT_PINS/INOUT_PINS combinations.
+// Valid unique pins included to verify no false positives.
+
+@project PIN_DECLARED_MULTIPLE_BLOCKS_cross_block_duplicate
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Trigger 1a: dup_io also in OUT_PINS
+        dup_io = { standard=LVCMOS33 };
+        // Trigger 2a: dup_bi also in INOUT_PINS
+        dup_bi = { standard=LVCMOS33 };
+        // Valid: unique input pin
+        valid_in = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        // Trigger 1b: dup_io also in IN_PINS
+        dup_io = { standard=LVCMOS33, drive=8 };
+        // Trigger 3a: dup_oi also in INOUT_PINS
+        dup_oi = { standard=LVCMOS33, drive=8 };
+        // Valid: unique output pin
+        valid_out = { standard=LVCMOS33, drive=8 };
+    }
+
+    INOUT_PINS {
+        // Trigger 2b: dup_bi also in IN_PINS
+        dup_bi = { standard=LVCMOS33, drive=4 };
+        // Trigger 3b: dup_oi also in OUT_PINS
+        dup_oi = { standard=LVCMOS33, drive=4 };
+        // Valid: unique inout pin
+        valid_io = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        sys_clk = 1;
+        dup_io = 2;
+        dup_bi = 3;
+        valid_in = 4;
+        dup_oi = 5;
+        valid_out = 6;
+        valid_io = 7;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

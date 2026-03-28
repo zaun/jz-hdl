@@ -1,0 +1,64 @@
+// DIRECTIVE_INVALID_CONTEXT: @check inside ASYNCHRONOUS block is forbidden.
+// S9.3 says @check may only appear at module or project scope, not inside blocks.
+// Valid @check at module and project scope included for negative testing.
+
+@project DIRECTIVE_INVALID_CONTEXT_check_in_async
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    // Valid: @check at project scope (no error)
+    @check (CONFIG.WIDTH == 8, "width ok");
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST { SIZE = 4; }
+
+    // Valid: @check at module scope in helper (no error)
+    @check (SIZE > 0, "size ok");
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST { DEPTH = 16; }
+
+    // Valid: @check at module scope (no error)
+    @check (DEPTH > 0, "depth ok");
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: @check inside ASYNCHRONOUS block
+        @check (1, "async check");
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

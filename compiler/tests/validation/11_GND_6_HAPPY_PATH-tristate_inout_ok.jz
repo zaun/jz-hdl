@@ -1,0 +1,90 @@
+// HAPPY_PATH: INOUT ports are preserved (not transformed) under --tristate-default=GND.
+// Covers: (1) top-level INOUT port preserved with IF/ELSE z pattern,
+// (2) OE extraction success through shared INOUT bus with mutually exclusive enables,
+// (3) bidirectional bus usage (read from INOUT-connected wire),
+// (4) nested INOUT through module hierarchy via @new instantiation,
+// (5) internal tri-state wire transformed while INOUT preserved.
+
+@project HAPPY_PATH_tristate_inout_ok
+    @top TopMod {
+        IN    [1] clk = _;
+        IN    [1] en = _;
+        IN    [8] din = _;
+        OUT   [8] dout = _;
+        INOUT [8] bidir = _;
+    }
+@endproj
+
+// DriverA: drives shared INOUT bus when en == 1'b1
+@module DriverA
+    PORT {
+        IN    [1] en;
+        IN    [8] din;
+        INOUT [8] data;
+    }
+
+    ASYNCHRONOUS {
+        data <= (en == 1'b1) ? din : 8'bzzzz_zzzz;
+    }
+@endmod
+
+// DriverB: drives shared INOUT bus when en == 1'b0 (mutually exclusive with DriverA)
+@module DriverB
+    PORT {
+        IN    [1] en;
+        IN    [8] din;
+        INOUT [8] data;
+    }
+
+    ASYNCHRONOUS {
+        data <= (en == 1'b0) ? din : 8'bzzzz_zzzz;
+    }
+@endmod
+
+// Top module: shared bus via INOUT hierarchy; top-level INOUT preserved
+@module TopMod
+    PORT {
+        IN    [1] clk;
+        IN    [1] en;
+        IN    [8] din;
+        OUT   [8] dout;
+        INOUT [8] bidir;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    WIRE {
+        bus [8];
+    }
+
+    // Nested INOUT through hierarchy: two drivers share 'bus' via INOUT ports
+    @new inst_a DriverA {
+        IN    [1] en = en;
+        IN    [8] din = din;
+        INOUT [8] data = bus;
+    };
+
+    @new inst_b DriverB {
+        IN    [1] en = en;
+        IN    [8] din = din;
+        INOUT [8] data = bus;
+    };
+
+    ASYNCHRONOUS {
+        // Bidirectional bus: read from shared INOUT bus
+        dout <= bus;
+
+        // Top-level INOUT preserved — not transformed by --tristate-default
+        IF (en) {
+            bidir <= r;
+        } ELSE {
+            bidir <= 8'bzzzz_zzzz;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

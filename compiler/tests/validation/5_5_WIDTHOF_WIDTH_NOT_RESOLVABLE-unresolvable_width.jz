@@ -1,0 +1,69 @@
+// WIDTHOF_WIDTH_NOT_RESOLVABLE: widthof() target found but width cannot be resolved.
+// Tests widthof() on a signal whose width depends on an undefined CONST.
+// Valid widthof() on a signal with known width included to verify no false positives.
+// NOTE: Compiler bug — this rule is not implemented. See issues.md.
+
+@project WIDTHOF_WIDTH_NOT_RESOLVABLE_unresolvable_width
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data_in = _;
+        OUT [8] out_a = _;
+    }
+@endproj
+
+// Helper module: widthof() on wire with unresolvable width
+@module HelperMod
+    CONST {
+        // Trigger 1: widthof() on wire with undefined CONST width
+        BAD_W = widthof(w_bad);
+        // Valid: widthof() on port with known width (no false positive)
+        GOOD_W = widthof(val);
+    }
+    PORT {
+        IN  [1] clk;
+        IN  [8] val;
+        OUT [8] out_a;
+    }
+    WIRE {
+        w_bad [UNDEFINED_CONST];
+    }
+    REGISTER {
+        r [GOOD_W] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= val;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        DIN_W = widthof(data_in);
+    }
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] out_a;
+    }
+    WIRE {
+        ha_a [8];
+    }
+    REGISTER {
+        r [DIN_W] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] val = data_in;
+        OUT [8] out_a = ha_a;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= data_in;
+    }
+@endmod

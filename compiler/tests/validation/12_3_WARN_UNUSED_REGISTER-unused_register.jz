@@ -1,0 +1,63 @@
+// WARN_UNUSED_REGISTER: Register declared but never read or written.
+// Tests unused register detection across multiple modules and widths.
+// Valid registers (read and/or written) included for no false positives.
+
+@project WARN_UNUSED_REGISTER_unused_register
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with an unused register
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        // Trigger 1: register never read or written in helper module
+        unused_r [1] = 1'b0;
+        // Valid: register that is both read and written
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Top module with unused registers and valid usage
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        // Trigger 2: unused register (wider width) in top module
+        dead_reg [8] = 8'b0000_0000;
+        // Trigger 3: another unused register (1-bit)
+        dead_flag [1] = 1'b1;
+        // Valid: register that is read and written
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

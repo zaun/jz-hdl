@@ -1,0 +1,63 @@
+// LIT_WIDTH_INVALID: lit() width must be a positive integer constant expression.
+// Tests lit() with width=0 in ASYNCHRONOUS and SYNCHRONOUS blocks across modules.
+// Valid lit(8, 42) included to verify no false positives.
+
+@project LIT_WIDTH_INVALID_non_positive_width
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: lit() with zero width
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: lit(0, 5) in helper ASYNC
+        out_a <=z lit(0, 5);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: lit(0, 10) in helper SYNC
+        r <=z lit(0, 10);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: lit(0, 5) in top ASYNC
+        out_a <=z lit(0, 5);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: lit(0, 10) in top SYNC
+        r <=z lit(0, 10);
+    }
+@endmod

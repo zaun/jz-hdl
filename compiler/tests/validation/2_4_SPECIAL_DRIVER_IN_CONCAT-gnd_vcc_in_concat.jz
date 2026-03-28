@@ -1,0 +1,68 @@
+// SPECIAL_DRIVER_IN_CONCAT: GND/VCC may not appear in concatenations.
+// Tests GND and VCC inside concatenation expressions in async and sync blocks.
+// Valid standalone uses of GND/VCC included to verify no false positives.
+
+@project SPECIAL_DRIVER_IN_CONCAT_gnd_vcc_in_concat
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    }
+@endproj
+
+// Helper: GND/VCC in concatenation in async and sync blocks
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: GND in concatenation (async RHS)
+        out_a <= {4'b0000, GND};
+        // Trigger 2: VCC in concatenation (async RHS)
+        out_b <= {VCC, 4'b1111};
+        // Valid: register read (no false positive)
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: GND in concatenation (sync RHS)
+        r <= {4'b0000, GND};
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: GND as standalone RHS (no false positive)
+        out_a = r;
+        out_b = r;
+        // Trigger 4: VCC in concatenation (async, top module)
+        out_c <= {4'b0000, VCC};
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: GND as standalone register assignment (no false positive)
+        r <= GND;
+    }
+@endmod

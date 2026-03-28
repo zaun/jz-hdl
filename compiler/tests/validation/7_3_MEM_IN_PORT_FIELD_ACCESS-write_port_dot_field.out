@@ -1,0 +1,5 @@
+File: 7_3_MEM_IN_PORT_FIELD_ACCESS-write_port_dot_field.jz
+      43:9    error MEM_IN_PORT_FIELD_ACCESS S7.2.2/S7.3.3 IN (write) port requires bracket syntax mem.port[addr] <= data; .addr/.data fields are not valid
+      45:9    error MEM_IN_PORT_FIELD_ACCESS S7.2.2/S7.3.3 IN (write) port requires bracket syntax mem.port[addr] <= data; .addr/.data fields are not valid
+      83:9    error MEM_IN_PORT_FIELD_ACCESS S7.2.2/S7.3.3 IN (write) port requires bracket syntax mem.port[addr] <= data; .addr/.data fields are not valid
+      85:9    error MEM_IN_PORT_FIELD_ACCESS S7.2.2/S7.3.3 IN (write) port requires bracket syntax mem.port[addr] <= data; .addr/.data fields are not valid

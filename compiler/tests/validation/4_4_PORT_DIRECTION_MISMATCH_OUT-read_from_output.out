@@ -1,0 +1,3 @@
+File: 4_4_PORT_DIRECTION_MISMATCH_OUT-read_from_output.jz
+      32:14   error PORT_DIRECTION_MISMATCH_OUT S4.4/S5.1/S5.2/S8.1 Reading from OUT port inside module (outputs are write-only)
+      57:19   error PORT_DIRECTION_MISMATCH_OUT S4.4/S5.1/S5.2/S8.1 Reading from OUT port inside module (outputs are write-only)

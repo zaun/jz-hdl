@@ -1,0 +1,79 @@
+// HAPPY_PATH: Valid tristate validation rules — mutually exclusive enables
+// and full-width z assignments allow transformation to succeed.
+// Covers: IF/ELSE provably exclusive enables, full-width z in else branch,
+// complex enable expressions, multi-module tristate through helper and top.
+
+@project HAPPY_PATH_tristate_validation_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] en_a = _;
+        IN  [1] en_b = _;
+        IN  [8] din = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Helper module: single-driver tristate with IF/ELSE exclusion and full-width z
+@module HelperMod
+    PORT {
+        IN  [1] en;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: IF/ELSE guarantees mutual exclusion; z is full-width
+        IF (en) {
+            w <= din;
+        } ELSE {
+            w <= 8'bzzzz_zzzz;
+        }
+        data <= w;
+    }
+@endmod
+
+// Top module: tristate with IF/ELSE exclusion, instantiates helper
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] en_a;
+        IN  [1] en_b;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        w_top [8];
+        w_safe [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] en = en_a;
+        IN  [8] din = din;
+        OUT [8] data = w_safe;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: IF/ELSE guarantees mutual exclusion; z is full-width
+        IF (en_b) {
+            w_top <= r;
+        } ELSE {
+            w_top <= 8'bzzzz_zzzz;
+        }
+
+        // Output driven by non-tristate path
+        dout <= w_safe;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

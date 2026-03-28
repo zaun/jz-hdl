@@ -1,0 +1,143 @@
+// INSTANCE_HAPPY_PATH: Happy path for Section 4.13 module instantiation.
+// Exercises simple instantiation, OVERRIDE constants, no-connect output,
+// instance arrays with IDX and broadcast mapping, BUS port binding,
+// literal tie-off on IN, and port referencing via inst.port syntax.
+
+@project INSTANCE_HAPPY_PATH_valid_instantiation_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Simple child module
+@module SimpleMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Child with configurable width via CONST
+@module ConfigMod
+    CONST {
+        SIZE = 8;
+    }
+    PORT {
+        IN  [SIZE] din;
+        OUT [SIZE] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Child with BUS port
+@module BusMod
+    PORT {
+        IN  [1] clk;
+        BUS MY_BUS SOURCE sbus;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        sbus.tx = r;
+        data = r[0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= sbus.rx;
+    }
+@endmod
+
+// Child with 1-bit ports for array testing
+@module BitMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] din;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+// Top module exercises all instantiation features
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        result [8];
+        bus_out [4];
+    }
+
+    // Feature 1: Simple scalar instantiation
+    @new inst_simple SimpleMod {
+        IN  [8] din = din;
+        OUT [8] data = result;
+    };
+
+    // Feature 2: OVERRIDE constants
+    @new inst_config ConfigMod {
+        OVERRIDE {
+            SIZE = 8;
+        }
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    // Feature 3: No-connect output
+    @new inst_noconnect SimpleMod {
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    // Feature 4: BUS port binding
+    @new inst_bus BusMod {
+        IN  [1] clk = clk;
+        BUS MY_BUS SOURCE sbus = _;
+        OUT [1] data = _;
+    };
+
+    // Feature 5: Literal tie-off on IN port
+    @new inst_literal SimpleMod {
+        IN  [8] din = 8'hFF;
+        OUT [8] data = _;
+    };
+
+    // Feature 6: Instance array with broadcast (clk) and IDX mapping (data)
+    @new inst_arr[4] BitMod {
+        IN  [1] clk = clk;
+        IN  [1] din = din[IDX];
+        OUT [1] data = bus_out[IDX];
+    };
+
+    ASYNCHRONOUS {
+        // Feature 7: Port referencing via inst.port
+        dout = inst_simple.data;
+    }
+@endmod

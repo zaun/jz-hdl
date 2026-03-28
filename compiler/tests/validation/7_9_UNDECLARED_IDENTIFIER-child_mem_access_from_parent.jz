@@ -1,0 +1,134 @@
+// UNDECLARED_IDENTIFIER: Parent module attempts direct access to child instance's MEM.
+// Memories are internal to modules (S7.9) and cannot be accessed hierarchically.
+// Valid MEM access within own module included for no false positives.
+
+@project UNDECLARED_IDENTIFIER_child_mem_access_from_parent
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Child module with internal MEM — accessed correctly within itself
+@module ChildMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        child_mem [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Valid: accessing own MEM
+        data = child_mem.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        child_mem.wr[addr] <= wdata;
+    }
+@endmod
+
+// Intermediate module that instantiates ChildMod and has its own MEM
+@module MidMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mid_mem [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_child ChildMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: accessing own MEM
+        data = mid_mem.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mid_mem.wr[addr] <= wdata;
+
+        // Trigger 1: direct write to child instance's MEM from intermediate module
+        inst_child.child_mem.wr[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        top_mem [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_mid MidMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    WIRE {
+        bad_rd [8];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: accessing own MEM read port
+        data = top_mem.rd[addr];
+
+        // Trigger 2: direct async read of child instance's MEM from top module
+        bad_rd = inst_mid.mid_mem.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+        top_mem.wr[addr] <= r;
+
+        // Trigger 3: direct sync write to child instance's MEM from top module
+        inst_mid.mid_mem.wr[addr] <= wdata;
+
+        // Trigger 4: deep hierarchical access (two levels deep)
+        inst_mid.inst_child.child_mem.wr[addr] <= wdata;
+    }
+@endmod

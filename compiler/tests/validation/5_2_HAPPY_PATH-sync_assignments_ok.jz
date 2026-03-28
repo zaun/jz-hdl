@@ -1,0 +1,133 @@
+// HAPPY_PATH: Valid SYNCHRONOUS assignment forms produce no diagnostics.
+// Exercises simple receive (<=), conditional load, zero-extend (<=z),
+// sign-extend (<=s), sliced, non-overlapping slices, concat decomposition,
+// register hold, SELECT-based with DEFAULT, IF/ELSE mutually exclusive,
+// empty SYNC body, deeply nested conditionals.
+
+@project HAPPY_PATH_sync_assignments_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        IN  [4] narrow = _;
+        IN  [1] sel = _;
+        IN  [2] state = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+        OUT [8] out_d = _;
+        OUT [8] out_e = _;
+        OUT [8] out_f = _;
+        OUT [8] out_g = _;
+    }
+@endproj
+
+// Helper module: basic valid SYNC assignments and empty SYNC body
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        IN  [1] sel;
+        OUT [8] out_a;
+    }
+    REGISTER {
+        r_simple [8] = 8'h00;
+        r_cond   [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        IF (sel) {
+            out_a <= r_simple;
+        } ELSE {
+            out_a <= r_cond;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: simple receive
+        r_simple <= din;
+        // Valid: conditional load with implicit hold
+        IF (sel) {
+            r_cond <= din;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        IN  [4] narrow;
+        IN  [1] sel;
+        IN  [2] state;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+        OUT [8] out_d;
+        OUT [8] out_e;
+        OUT [8] out_f;
+        OUT [8] out_g;
+    }
+    REGISTER {
+        r_zext   [8] = 8'h00;
+        r_sext   [8] = 8'h00;
+        r_slice  [8] = 8'h00;
+        r_ca     [4] = 4'h0;
+        r_cb     [4] = 4'h0;
+        r_sel    [8] = 8'h00;
+        r_ifelse [8] = 8'h00;
+        r_nested [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        IN  [1] sel = sel;
+        OUT [8] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r_zext;
+        out_b = r_sext;
+        out_c[7:4] <= r_ca;
+        out_c[3:0] <= r_cb;
+        out_d = r_slice;
+        out_e = r_sel;
+        out_f = r_ifelse;
+        out_g = r_nested;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: zero-extend
+        r_zext <=z narrow;
+        // Valid: sign-extend
+        r_sext <=s narrow;
+        // Valid: sliced assignments (non-overlapping)
+        r_slice[7:4] <= din[3:0];
+        r_slice[3:0] <= din[7:4];
+        // Valid: concat decomposition
+        {r_ca, r_cb} <= din;
+        // Valid: SELECT-based assignment with DEFAULT
+        SELECT (state) {
+            CASE (2'b00) {
+                r_sel <= din;
+            }
+            CASE (2'b01) {
+                r_sel <= 8'hFF;
+            }
+            DEFAULT {
+                r_sel <= 8'h00;
+            }
+        }
+        // Valid: IF/ELSE mutually exclusive
+        IF (sel) {
+            r_ifelse <= din;
+        } ELSE {
+            r_ifelse <= 8'h00;
+        }
+        // Valid: deeply nested conditionals
+        IF (sel) {
+            IF (state[0]) {
+                IF (state[1]) {
+                    r_nested <= din;
+                }
+            }
+        }
+    }
+@endmod

@@ -1,0 +1,2 @@
+File: 10_5_TEMPLATE_APPLY_OUTSIDE_BLOCK-apply_at_file_scope.jz
+      21:1    error TEMPLATE_APPLY_OUTSIDE_BLOCK S10.5 @apply may only appear inside ASYNCHRONOUS or SYNCHRONOUS blocks

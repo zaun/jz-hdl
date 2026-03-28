@@ -1,0 +1,103 @@
+// LIT_HAPPY_PATH: Valid sized literals in all bases with extension and formatting.
+// Exercises binary, decimal, hex, CONST-based widths, underscores, zero/x/z extension,
+// edge cases (1-bit, large width, leading zeros), across multiple modules.
+// No diagnostics expected — all literals are valid.
+
+@project LIT_HAPPY_PATH_valid_literals
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: exercises binary and hex literals in sync and async contexts
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'b0000_0000;
+        s [8] = 8'hFF;
+    }
+    ASYNCHRONOUS {
+        data = r ^ s;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Binary with underscores, exact width
+        r <= 8'b1100_0011;
+        // Hex zero-extend (intrinsic 4 bits, extended to 8)
+        s <= 8'hF;
+    }
+@endmod
+
+// Helper: exercises decimal literals
+@module HelperB
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Decimal max for 8-bit width
+        r <= 8'd255;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    CONST {
+        MY_WIDTH = 8;
+    }
+
+    WIRE {
+        ha_data [8];
+        hb_data [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] data = ha_data;
+    };
+
+    @new inst_b HelperB {
+        IN  [1] clk = clk;
+        OUT [8] data = hb_data;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+        // CONST-based width in init
+        s [8] = MY_WIDTH'hAB;
+        // Binary zero-extend in init (intrinsic 3 bits, extended to 8)
+        u [8] = 8'b101;
+        // Hex with mixed case
+        v [8] = 8'hAb;
+    }
+    ASYNCHRONOUS {
+        data = ha_data ^ hb_data ^ r ^ s ^ u ^ v;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Hex full width
+        r <= 8'hFF;
+        // CONST-based width
+        s <= MY_WIDTH'h0F;
+        // Binary zero-extend
+        u <= 8'b101;
+        // Hex with mixed case
+        v <= 8'hAb;
+    }
+@endmod

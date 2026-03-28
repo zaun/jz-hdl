@@ -1,0 +1,18 @@
+Memory Report
+-------------
+Project: src/ice_sugar_v15.jz
+Chip: ICE40UP-5K-SG48
+
+Memory Summary
+--------------
+Block Memory:
+    Requested: 0 bytes
+    Max Available: 15360 bytes (30 blocks x 4 Kbits)
+    Used: 0 / 30 blocks (one per BLOCK MEMORY)
+
+Distributed Memory:
+    Requested: 0 bytes
+    Max Available: Unknown
+    Used: 0 bytes
+
+Errors: 0

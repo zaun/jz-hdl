@@ -1,0 +1,53 @@
+// CONFIG_MULTIPLE_BLOCKS: More than one CONFIG block in project.
+// Trigger: second CONFIG block inside @project.
+// Valid single CONFIG block would be the first one; the second is the error.
+
+@project CONFIG_MULTIPLE_BLOCKS_multiple_config
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    // Trigger 1: second CONFIG block in same project
+    CONFIG {
+        DEPTH = 4;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [CONFIG.WIDTH] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [CONFIG.WIDTH] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

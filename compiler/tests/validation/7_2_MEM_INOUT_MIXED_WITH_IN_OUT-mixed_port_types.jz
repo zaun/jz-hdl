@@ -1,0 +1,95 @@
+// MEM_INOUT_MIXED_WITH_IN_OUT: INOUT ports cannot be mixed with IN/OUT ports.
+// Pure INOUT and pure IN/OUT MEM blocks included for no false positives.
+
+@project MEM_INOUT_MIXED_WITH_IN_OUT_mixed_port_types
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: INOUT mixed with OUT in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 1: INOUT mixed with OUT
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            INOUT rw;
+            OUT rd ASYNC;
+        };
+    }
+
+    // Valid: pure IN/OUT (no error)
+    MEM {
+        mem_ok [8] [16] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_ok.wr_ok[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: INOUT mixed with IN
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            INOUT rw;
+            IN  wr;
+        };
+    }
+
+    // Valid: pure INOUT (no error)
+    MEM {
+        mem_ok2 [8] [16] = 8'h00 {
+            INOUT rw_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_ok2.rw_ok.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_ok2.rw_ok.addr <= addr;
+        mem_ok2.rw_ok.wdata <= wdata;
+    }
+@endmod

@@ -1,2 +1,0 @@
-File: TEMPLATE_FORBIDDEN_DECL.jz
-      12:3    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals

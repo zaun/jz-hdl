@@ -1,2 +1,0 @@
-File: GSLICE_WIDTH_INVALID.jz
-      18:25   error GSLICE_WIDTH_INVALID S5.5.8 gslice() width parameter must be a positive integer

@@ -1,0 +1,80 @@
+// PORT_TRISTATE_MISMATCH: Only INOUT ports may use z for tri-state.
+// Tests z assignment to OUT ports in ASYNC root and ASYNC IF across modules.
+// Valid z on INOUT included to verify no false positives.
+
+@project PORT_TRISTATE_MISMATCH_tristate_on_non_inout
+    @top TopMod {
+        IN  [1] ctrl = _;
+        IN  [8] din = _;
+        INOUT [8] bidir = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: trigger z on OUT port in ASYNC IF
+@module HelperMod
+    PORT {
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] data_out;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: z literal assigned to OUT port inside IF else-branch
+        IF (ctrl) {
+            data_out <= din;
+        } ELSE {
+            data_out <= 8'bz;
+        }
+    }
+@endmod
+
+// Module with z on OUT in ASYNC root
+@module RootZMod
+    PORT {
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] data_out;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: z literal assigned to OUT port in ASYNC root IF
+        IF (ctrl) {
+            data_out <= din;
+        } ELSE {
+            data_out <= 8'bz;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] ctrl;
+        IN  [8] din;
+        INOUT [8] bidir;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] ctrl = ctrl;
+        IN  [8] din = din;
+        OUT [8] data_out = dout_a;
+    };
+
+    @new inst_r RootZMod {
+        IN  [1] ctrl = ctrl;
+        IN  [8] din = din;
+        OUT [8] data_out = dout_b;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: z on INOUT port (no error expected)
+        IF (ctrl) {
+            bidir <= din;
+        } ELSE {
+            bidir <= 8'bz;
+        }
+    }
+@endmod

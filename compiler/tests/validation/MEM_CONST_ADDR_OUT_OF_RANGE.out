@@ -1,2 +1,0 @@
-File: MEM_CONST_ADDR_OUT_OF_RANGE.jz
-      32:14   error MEM_CONST_ADDR_OUT_OF_RANGE S7.2/S7.3/S7.7.2 Constant address index >= depth

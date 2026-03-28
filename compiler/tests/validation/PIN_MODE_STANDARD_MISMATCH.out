@@ -1,6 +1,0 @@
-File: PIN_MODE_STANDARD_MISMATCH.jz
-       6:5    error PIN_MODE_STANDARD_MISMATCH S6.5/S6.9 Pin mode conflicts with I/O standard (e.g. DIFFERENTIAL with single-ended standard)
-       6:5    error PIN_DIFF_OUT_MISSING_FCLK S6.5/S6.9 Differential output pin missing required fclk attribute
-       6:5    error PIN_DIFF_OUT_MISSING_PCLK S6.5/S6.9 Differential output pin missing required pclk attribute
-       6:5    error PIN_DIFF_OUT_MISSING_RESET S6.5/S6.9 Differential output pin missing required reset attribute
-       7:5    error PIN_MODE_STANDARD_MISMATCH S6.5/S6.9 Pin mode conflicts with I/O standard (e.g. DIFFERENTIAL with single-ended standard)

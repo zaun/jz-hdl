@@ -1,0 +1,4 @@
+File: 6_3_CONST_STRING_IN_NUMERIC_CONTEXT-string_as_number.jz
+      20:31   error CONST_STRING_IN_NUMERIC_CONTEXT S4.3/S6.3 String CONST/CONFIG value used where a numeric expression is expected
+      31:9    error CONST_STRING_IN_NUMERIC_CONTEXT S4.3/S6.3 String CONST/CONFIG value used where a numeric expression is expected
+      46:9    error CONST_STRING_IN_NUMERIC_CONTEXT S4.3/S6.3 String CONST/CONFIG value used where a numeric expression is expected

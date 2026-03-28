@@ -1,0 +1,54 @@
+// INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE: IDX-dependent slice exceeds parent signal width.
+// Tests slices that go out of range for some instance indices in the array.
+// Valid IDX slices within range are included for negative testing.
+
+@project INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE_idx_slice_oob
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with 1-bit output
+@module ChildMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        narrow [2] = 2'b00;
+        wide [8] = 8'h00;
+    }
+
+    // Trigger 1: IDX goes out of range — narrow is 2 bits, 4 instances need bits 0-3
+    @new inst_a[4] ChildMod {
+        IN  [1] din = narrow[IDX];
+        OUT [1] data = _;
+    };
+
+    // Valid: IDX within range — wide is 8 bits, 4 instances need bits 0-3
+    @new inst_b[4] ChildMod {
+        IN  [1] din = wide[IDX];
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = narrow[0];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        narrow <= ~narrow;
+        wide <= ~wide;
+    }
+@endmod

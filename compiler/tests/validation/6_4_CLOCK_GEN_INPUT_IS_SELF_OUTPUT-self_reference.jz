@@ -1,0 +1,71 @@
+// CLOCK_GEN_INPUT_IS_SELF_OUTPUT: CLOCK_GEN input clock is output of same block.
+// Tests a CLOCK_GEN block whose IN refers to its own OUT.
+// Valid CLOCK_GEN with separate input included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_INPUT_IS_SELF_OUTPUT_self_reference
+    CLOCKS {
+        ext_clk = { period=10 };
+        // For the self-referencing PLL
+        self_clk;
+        // For the valid PLL
+        valid_out;
+    }
+
+    IN_PINS {
+        ext_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ext_clk = 1;
+    }
+
+    CLOCK_GEN {
+        // Trigger 1: PLL input is its own output
+        PLL {
+            IN REF_CLK self_clk;
+            OUT BASE self_clk;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+
+        // Valid: PLL input is an external clock (no trigger)
+        PLL {
+            IN REF_CLK ext_clk;
+            OUT BASE valid_out;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ext_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

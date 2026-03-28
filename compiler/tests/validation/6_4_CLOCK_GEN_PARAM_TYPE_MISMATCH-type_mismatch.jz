@@ -1,0 +1,69 @@
+// CLOCK_GEN_PARAM_TYPE_MISMATCH: CLOCK_GEN CONFIG parameter type mismatch.
+// Tests integer parameter given a decimal/float value.
+// Valid integer parameters included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_PARAM_TYPE_MISMATCH_type_mismatch
+    CLOCKS {
+        ref_clk = { period=10 };
+        bad_out;
+        valid_out;
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+    }
+
+    CLOCK_GEN {
+        // Trigger: IDIV is integer type but given decimal value
+        PLL {
+            IN REF_CLK ref_clk;
+            OUT BASE bad_out;
+
+            CONFIG {
+                IDIV = 1.5;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+
+        // Valid: all params correct type (no trigger)
+        PLL {
+            IN REF_CLK ref_clk;
+            OUT BASE valid_out;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

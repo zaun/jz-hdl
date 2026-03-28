@@ -1,0 +1,55 @@
+// LIT_WIDTH_NOT_POSITIVE: Literal with zero or non-positive width.
+// Tests zero-width literals in sync RHS and register init across modules.
+// Valid positive-width literals included to verify no false positives.
+
+@project LIT_WIDTH_NOT_POSITIVE_zero_width
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: zero-width literal in sync context
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: zero-width binary literal in sync RHS
+        r <= 0'b0;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    WIRE {
+        helper_data [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [8] data = helper_data;
+    };
+
+    REGISTER {
+        // Trigger 2: zero-width decimal in register init
+        r [8] = 0'd0;
+    }
+    ASYNCHRONOUS {
+        data = helper_data ^ r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: zero-width hex in sync RHS
+        r <= 0'h0;
+    }
+@endmod

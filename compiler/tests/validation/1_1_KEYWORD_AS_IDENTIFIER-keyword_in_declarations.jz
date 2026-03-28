@@ -1,0 +1,85 @@
+// KEYWORD_AS_IDENTIFIER: Reserved keywords used as identifiers in declaration contexts.
+// Tests keywords in module name, const name, port name, instance name,
+// register name, and @new port binding contexts.
+// Keywords tested: SELECT (module name), CONFIG (port, register, @new binding), WIRE (const), MUX (instance).
+// Valid identifiers are included alongside invalid ones to verify no false positives.
+
+@project KEYWORD_AS_IDENTIFIER_keyword_in_declarations
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: keyword SELECT used as module name
+@module SELECT
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Helper module with keyword as port name
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        // Trigger 2: keyword CONFIG used as port name
+        OUT [1] CONFIG;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        CONFIG = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 3: keyword WIRE used as const name
+    CONST {
+        WIRE = 1;
+    }
+
+    // Instantiate keyword-named module (Trigger 1 fires on @module, not here)
+    @new inst_s SELECT {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    // Trigger 4: keyword MUX used as instance name
+    @new MUX HelperA {
+        IN  [1] clk = clk;
+        // Trigger 5: keyword CONFIG used in @new port binding (matches HelperA port)
+        OUT [1] CONFIG = _;
+    };
+
+    REGISTER {
+        // Trigger 6: keyword CONFIG used as register name
+        CONFIG [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = CONFIG;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        CONFIG <= ~CONFIG;
+    }
+@endmod

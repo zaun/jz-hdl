@@ -1,0 +1,98 @@
+// WIRE_HAPPY_PATH: Valid WIRE declarations and usage compile without errors.
+// Tests standard wire, wire as intermediate, multiple wires, wire driving
+// OUT port, 1-bit wire, wide wire, and cross-module wire usage.
+
+@project WIRE_HAPPY_PATH_valid_wire_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] ctrl = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+    }
+@endproj
+
+// Helper module: wire as intermediate, wire driving OUT port
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] data_out;
+    }
+
+    WIRE {
+        w_intermediate [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: wire driven in ASYNC
+        w_intermediate <= data_in ^ 8'hFF;
+        // Valid: wire driving OUT port
+        data_out <= w_intermediate | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: read wire in SYNC (not write)
+        r <= w_intermediate;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] ctrl;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+    }
+
+    WIRE {
+        // Multiple wires of varying widths
+        w_standard [8];
+        w_flag [1];
+        w_wide [256];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data_in = din;
+        OUT [8] data_out = dout_a;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: standard wire driven and read in ASYNC
+        w_standard <= din & 8'hF0;
+        dout_b <= w_standard;
+
+        // Valid: 1-bit wire
+        w_flag <= ctrl;
+        IF (w_flag) {
+            dout_c <= din;
+        } ELSE {
+            dout_c <= r;
+        }
+
+        // Valid: wide wire driven in ASYNC
+        w_wide[7:0] <= din;
+        w_wide[255:8] <= 248'h0;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: read wire in SYNC
+        r <= w_standard;
+    }
+@endmod

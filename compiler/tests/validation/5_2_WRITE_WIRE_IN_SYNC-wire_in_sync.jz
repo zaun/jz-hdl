@@ -1,0 +1,78 @@
+// WRITE_WIRE_IN_SYNC: Cannot assign to WIRE in SYNCHRONOUS block.
+// Tests wire assignment in SYNC in multiple contexts.
+// Valid register assignments included to verify no false positives.
+// Note: WRITE_WIRE_IN_SYNC fires alongside ASSIGN_TO_NON_REGISTER_IN_SYNC
+// but suppresses it due to higher priority (2 vs 1).
+
+@project WRITE_WIRE_IN_SYNC_wire_in_sync
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        IN  [1] sel = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: wire assigned in SYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [8] out_a;
+    }
+    WIRE {
+        w [8];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        w = data;
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: wire assigned at root of SYNC in helper
+        w <= data;
+        // Valid: register assignment (should NOT trigger)
+        r <= data;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        IN  [1] sel;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        w_top [8];
+    }
+    REGISTER {
+        r_ok [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data = data;
+        OUT [8] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        w_top = data;
+        out_a = r_ok;
+        out_b = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: wire assigned at root of SYNC in top module
+        w_top <= data;
+        // Trigger 3: wire assigned inside IF in SYNC
+        IF (sel) {
+            w_top <= 8'hFF;
+        }
+        // Valid: register assignment (should NOT trigger)
+        r_ok <= data;
+    }
+@endmod

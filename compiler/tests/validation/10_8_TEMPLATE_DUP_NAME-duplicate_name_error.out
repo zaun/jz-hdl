@@ -1,0 +1,4 @@
+File: 10_8_TEMPLATE_DUP_NAME-duplicate_name_error.jz
+      22:1    error TEMPLATE_DUP_NAME S10.2 Duplicate template name in the same scope
+      38:5    error TEMPLATE_DUP_NAME S10.2 Duplicate template name in the same scope
+      64:5    error TEMPLATE_DUP_NAME S10.2 Duplicate template name in the same scope

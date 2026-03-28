@@ -1,0 +1,6 @@
+File: 3_2_UNARY_ARITH_MISSING_PARENS-unparenthesized_unary.jz
+      30:17   error UNARY_ARITH_MISSING_PARENS S3.2/S8.1 Unary arithmetic `-flag`/`+flag` used without required parentheses
+      37:14   error UNARY_ARITH_MISSING_PARENS S3.2/S8.1 Unary arithmetic `-flag`/`+flag` used without required parentheses
+      70:17   error UNARY_ARITH_MISSING_PARENS S3.2/S8.1 Unary arithmetic `-flag`/`+flag` used without required parentheses
+      72:17   error UNARY_ARITH_MISSING_PARENS S3.2/S8.1 Unary arithmetic `-flag`/`+flag` used without required parentheses
+      78:14   error UNARY_ARITH_MISSING_PARENS S3.2/S8.1 Unary arithmetic `-flag`/`+flag` used without required parentheses

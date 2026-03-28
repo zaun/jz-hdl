@@ -1,0 +1,85 @@
+// TEMPLATE_DUP_PARAM: Duplicate parameter names in template definitions are rejected.
+// Tests duplicate params in file-scoped and module-scoped templates, including
+// triple-duplicate and multiple distinct duplicates. Valid templates with unique
+// params are included to verify no false positives.
+
+@project TEMPLATE_DUP_PARAM_duplicate_param_names
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: file-scoped template with unique params (no error)
+@template valid_file(a, b, c)
+    a <= b;
+@endtemplate
+
+// Trigger 1: Duplicate param in file-scoped template
+@template dup_file(x, y, x)
+    x <= y;
+@endtemplate
+
+// Trigger 2: Triple duplicate param in file-scoped template
+@template triple_file(p, p, p)
+    p <= p;
+@endtemplate
+
+// Trigger 3: Multiple distinct duplicates in file-scoped template
+@template multi_dup_file(a, b, a, b)
+    a <= b;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Valid: module-scoped template with unique params (no error)
+    @template valid_mod(a, b)
+        a <= b;
+    @endtemplate
+
+    // Trigger 4: Duplicate param in module-scoped template (HelperMod)
+    @template dup_mod(m, n, m)
+        m <= n;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 5: Duplicate param in module-scoped template (TopMod)
+    @template dup_top(q, r, q)
+        q <= r;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r_reg;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r_reg [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r_reg;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_reg <= ~r_reg;
+    }
+@endmod

@@ -1,0 +1,5 @@
+File: 3_2_DIV_CONST_ZERO-constant_zero_divisor.jz
+      38:22   error DIV_CONST_ZERO S3.2 Division/modulus by compile-time constant zero divisor
+      40:22   error DIV_CONST_ZERO S3.2 Division/modulus by compile-time constant zero divisor
+      80:26   error DIV_CONST_ZERO S3.2 Division/modulus by compile-time constant zero divisor
+      82:26   error DIV_CONST_ZERO S3.2 Division/modulus by compile-time constant zero divisor

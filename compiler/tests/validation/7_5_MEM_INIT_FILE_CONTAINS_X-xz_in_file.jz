@@ -1,0 +1,52 @@
+// MEM_INIT_FILE_CONTAINS_X: Memory init file must not contain x or z values.
+// Tests .hex and .mem files with x/z content.
+// Valid .hex file without x/z included to verify no false positives.
+
+@project MEM_INIT_FILE_CONTAINS_X_xz_in_file
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [2] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        // Trigger 1: .hex file containing x/z
+        mem_hex_bad [8] [4] = @file("mem_xz_data.hex") {
+            OUT rd_a ASYNC;
+            IN  wr_a;
+        };
+        // Trigger 2: .mem file containing x/z
+        mem_mem_bad [8] [4] = @file("mem_xz_data.mem") {
+            OUT rd_b ASYNC;
+            IN  wr_b;
+        };
+        // Valid: .hex file without x/z (should NOT trigger)
+        mem_hex_ok [8] [4] = @file("mem_clean_data.hex") {
+            OUT rd_c ASYNC;
+            IN  wr_c;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_hex_bad.rd_a[addr] ^ mem_mem_bad.rd_b[addr] ^ mem_hex_ok.rd_c[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_hex_bad.wr_a[addr] <= 8'h00;
+        mem_mem_bad.wr_b[addr] <= 8'h00;
+        mem_hex_ok.wr_c[addr] <= 8'h00;
+    }
+@endmod

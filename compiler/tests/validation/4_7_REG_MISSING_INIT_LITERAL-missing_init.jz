@@ -1,0 +1,64 @@
+// REG_MISSING_INIT_LITERAL: Register declared without mandatory reset/power-on literal.
+// Each trigger tests a register declaration missing its init value.
+// Valid registers with init literals included for no false positives.
+
+@project REG_MISSING_INIT_LITERAL_missing_init
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout = _;
+        OUT [8] dout_h = _;
+    }
+@endproj
+
+// Helper module: register missing init
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        // Trigger 1: missing init literal in helper module
+        r_noinit [8];
+        // Valid: register with proper init
+        r_ok [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data_out = r_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_ok <= ~r_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+        OUT [8] dout_h;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] data_out = dout_h;
+    };
+
+    REGISTER {
+        // Trigger 2: missing init literal in top module (8-bit)
+        r_noinit_top [8];
+        // Trigger 3: missing init literal (1-bit)
+        r_noinit_1bit [1];
+        // Valid: register with proper init
+        r_ok [8] = 8'hFF;
+    }
+
+    ASYNCHRONOUS {
+        dout = r_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_ok <= ~r_ok;
+    }
+@endmod

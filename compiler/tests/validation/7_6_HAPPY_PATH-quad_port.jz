@@ -1,0 +1,97 @@
+// HAPPY_PATH: Valid quad-port memory with 2 async reads and 2 sync writes (S7.6.6).
+// Exercises multi-port MEM (2R2W) with independent read/write addresses,
+// dual conditional SYNC writes, and cross-module instantiation.
+
+@project HAPPY_PATH_quad_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [7] rd_addr_0 = _;
+        IN  [7] rd_addr_1 = _;
+        OUT [16] rd_data_0 = _;
+        OUT [16] rd_data_1 = _;
+        IN  [7] wr_addr_0 = _;
+        IN  [7] wr_addr_1 = _;
+        IN  [16] wr_data_0 = _;
+        IN  [16] wr_data_1 = _;
+        IN  [1] wr_en_0 = _;
+        IN  [1] wr_en_1 = _;
+        OUT [16] helper_data = _;
+    }
+@endproj
+
+// Helper: dual-port (1R1W)
+@module QuadHelper
+    PORT {
+        IN  [1] clk;
+        IN  [7] addr;
+        IN  [16] wdata;
+        IN  [1] we;
+        OUT [16] rdata;
+    }
+
+    MEM {
+        mem [16] [128] = 16'h0000 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = mem.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            mem.wr[addr] <= wdata;
+        }
+    }
+@endmod
+
+// Top module: quad-port memory (2 async read, 2 sync write)
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [7] rd_addr_0;
+        IN  [7] rd_addr_1;
+        OUT [16] rd_data_0;
+        OUT [16] rd_data_1;
+        IN  [7] wr_addr_0;
+        IN  [7] wr_addr_1;
+        IN  [16] wr_data_0;
+        IN  [16] wr_data_1;
+        IN  [1] wr_en_0;
+        IN  [1] wr_en_1;
+        OUT [16] helper_data;
+    }
+
+    MEM {
+        mem [16] [128] = 16'h0000 {
+            OUT rd_0 ASYNC;
+            OUT rd_1 ASYNC;
+            IN  wr_0;
+            IN  wr_1;
+        };
+    }
+
+    @new inst_helper QuadHelper {
+        IN  [1] clk = clk;
+        IN  [7] addr = wr_addr_0;
+        IN  [16] wdata = wr_data_0;
+        IN  [1] we = wr_en_0;
+        OUT [16] rdata = helper_data;
+    };
+
+    ASYNCHRONOUS {
+        rd_data_0 = mem.rd_0[rd_addr_0];
+        rd_data_1 = mem.rd_1[rd_addr_1];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (wr_en_0) {
+            mem.wr_0[wr_addr_0] <= wr_data_0;
+        }
+        IF (wr_en_1) {
+            mem.wr_1[wr_addr_1] <= wr_data_1;
+        }
+    }
+@endmod

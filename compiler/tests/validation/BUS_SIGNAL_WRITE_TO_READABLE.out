@@ -1,2 +1,0 @@
-File: BUS_SIGNAL_WRITE_TO_READABLE.jz
-      22:5    error BUS_SIGNAL_WRITE_TO_READABLE S4.4.1 Write access to readable BUS signal is not allowed

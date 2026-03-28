@@ -1,0 +1,3 @@
+File: 4_12_CDC_STAGES_INVALID-non_positive_stages.jz
+      28:9    error CDC_STAGES_INVALID S4.12 CDC stages parameter must be a positive integer
+      62:9    error CDC_STAGES_INVALID S4.12 CDC stages parameter must be a positive integer

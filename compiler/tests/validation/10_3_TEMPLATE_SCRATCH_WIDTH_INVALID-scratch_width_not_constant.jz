@@ -1,0 +1,93 @@
+// TEMPLATE_SCRATCH_WIDTH_INVALID: @scratch width must be a positive integer constant expression.
+// Tests invalid scratch widths: zero, non-constant (parameter used as width),
+// and expression involving non-constant. Valid scratch widths included for negative testing.
+
+@project TEMPLATE_SCRATCH_WIDTH_INVALID_scratch_width_not_constant
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: scratch with literal constant width (no error)
+@template valid_literal(a, b)
+    @scratch tmp [8];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Trigger 1: scratch with zero width
+@template zero_width(a, b)
+    @scratch bad [0];
+    a <= b;
+@endtemplate
+
+// Trigger 2: scratch with parameter as width (not a constant)
+@template param_width(a, b, w)
+    @scratch bad [w];
+    a <= b;
+@endtemplate
+
+// Valid: scratch with CONST-based width (no error expected)
+@template const_width(a, b)
+    @scratch tmp [WIDTH];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    // Trigger 3: scratch with zero width in module-scoped template
+    @template mod_zero(a, b)
+        @scratch bad [0];
+        a <= b;
+    @endtemplate
+
+    // Trigger 4: scratch with parameter as width in module-scoped template
+    @template mod_param_w(a, b, n)
+        @scratch bad [n];
+        a <= b;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 5: scratch with zero width in TopMod template
+    @template top_zero(a, b)
+        @scratch bad [0];
+        a <= b;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [8] din = 8'b0000_0000;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

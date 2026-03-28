@@ -1,0 +1,46 @@
+// CHECK_INVALID_PLACEMENT: @check inside @feature body is not allowed.
+// Tests that @check nested in @feature THEN and ELSE bodies triggers
+// CHECK_INVALID_PLACEMENT. Valid @check at module scope is included
+// to verify no false positives.
+
+@project CHECK_INVALID_PLACEMENT_check_in_feature
+    CONFIG {
+        MODE = 1;
+    }
+
+    @top TopMod {
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST {
+        FLAG = 1;
+        SIZE = 8;
+    }
+
+    // Valid: @check at module scope (no error)
+    @check (SIZE > 0, "size positive");
+
+    // Trigger 1: @check in @feature THEN body
+    @feature FLAG == 1
+        @check (SIZE == 8, "size must be 8");
+    @endfeat
+
+    // Trigger 2: @check in @feature ELSE body
+    @feature FLAG == 0
+        data = din;
+    @else
+        @check (SIZE > 4, "size must exceed 4");
+    @endfeat
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod

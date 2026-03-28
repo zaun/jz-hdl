@@ -1,0 +1,59 @@
+// COMB_LOOP_UNCONDITIONAL: Combinational loop in ASYNCHRONOUS assignments.
+// Tests direct feedback loops through receive-assign in ASYNC blocks.
+// Valid feed-forward assignments included to verify no false positives.
+
+@project COMB_LOOP_UNCONDITIONAL_unconditional_loop
+    @top TopMod {
+        IN  [1] in_a = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: direct loop through wires
+@module HelperA
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        a [1];
+        b [1];
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: direct loop a -> b -> a
+        a <= b;
+        b <= a;
+        out_a = a;
+        // Valid: feed-forward (no loop)
+        out_b = in_a;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        x [1];
+        y [1];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] in_a = in_a;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: direct loop x -> y -> x
+        x <= y;
+        y <= x;
+        out_a = x;
+        // Valid: feed-forward (no loop)
+        out_b = in_a;
+    }
+@endmod

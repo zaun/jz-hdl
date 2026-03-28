@@ -1,0 +1,7 @@
+File: 4_2_ID_DUP_IN_MODULE-duplicate_identifiers.jz
+      34:17   error ID_DUP_IN_MODULE S4.2/S8.1 Duplicate identifier within module (ports, wires, registers, consts, instances)
+      39:9    error ID_DUP_IN_MODULE S4.2/S8.1 Duplicate identifier within module (ports, wires, registers, consts, instances)
+      57:9    error ID_DUP_IN_MODULE S4.2/S8.1 Duplicate identifier within module (ports, wires, registers, consts, instances)
+      67:9    error ID_DUP_IN_MODULE S4.2/S8.1 Duplicate identifier within module (ports, wires, registers, consts, instances)
+      93:9    error ID_DUP_IN_MODULE S4.2/S8.1 Duplicate identifier within module (ports, wires, registers, consts, instances)
+      99:9    error ID_DUP_IN_MODULE S4.2/S8.1 Duplicate identifier within module (ports, wires, registers, consts, instances)

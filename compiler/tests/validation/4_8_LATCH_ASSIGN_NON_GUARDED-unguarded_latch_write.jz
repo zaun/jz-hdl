@@ -1,0 +1,60 @@
+// LATCH_ASSIGN_NON_GUARDED: LATCH must use guarded assignment syntax.
+// Tests latch written with unguarded '<=' (no enable:data guard) in ASYNC block.
+// Valid guarded assignments included to verify no false positives.
+
+@project LATCH_ASSIGN_NON_GUARDED_unguarded_latch_write
+    @top TopMod {
+        IN  [1] enable = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: latch written with unguarded receive-assign
+@module HelperMod
+    PORT {
+        IN  [1] enable;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    LATCH {
+        lat_ok [8] D;
+        lat_bad [8] D;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: guarded latch assignment (should NOT trigger)
+        lat_ok <= enable : din;
+        // Trigger 1: unguarded receive-assign to latch in helper module
+        lat_bad <= din;
+        data <= lat_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] enable;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] enable = enable;
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    LATCH {
+        lat_top_ok [8] D;
+        lat_top_bad [8] D;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: guarded latch assignment
+        lat_top_ok <= enable : din;
+        // Trigger 2: unguarded receive-assign to latch in top module
+        lat_top_bad <= din;
+        data <= lat_top_ok;
+    }
+@endmod

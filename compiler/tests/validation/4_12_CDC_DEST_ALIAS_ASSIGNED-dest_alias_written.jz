@@ -1,0 +1,80 @@
+// CDC_DEST_ALIAS_ASSIGNED: CDC destination alias may not be assigned directly.
+// Tests writing to dest alias via alias (=) in ASYNC, receive (<=) in ASYNC,
+// and receive (<=) in SYNC across multiple modules.
+// Valid reads of dest alias included to verify no false positives.
+
+@project CDC_DEST_ALIAS_ASSIGNED_dest_alias_written
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module: assign to dest alias in ASYNC block
+@module HelperMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        src_reg [1] = 1'b0;
+    }
+
+    CDC {
+        BIT src_reg (clk_a) => dest_sync (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: alias-assign to dest alias in ASYNC
+        dest_sync = din;
+        // Valid: reading dest alias
+        data = dest_sync;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        src_reg <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        top_src [1] = 1'b0;
+    }
+
+    CDC {
+        BIT top_src (clk_a) => top_dest (clk_b);
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: reading dest alias
+        data = top_dest;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        top_src <= din;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        // Trigger 2: receive-assign to dest alias in SYNC
+        top_dest <= din;
+    }
+@endmod

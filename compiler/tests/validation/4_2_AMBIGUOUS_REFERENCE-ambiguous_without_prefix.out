@@ -1,0 +1,2 @@
+File: 4_2_AMBIGUOUS_REFERENCE-ambiguous_without_prefix.jz
+      35:18   error AMBIGUOUS_REFERENCE S4.2/S8.1 Identifier reference ambiguous without instance prefix

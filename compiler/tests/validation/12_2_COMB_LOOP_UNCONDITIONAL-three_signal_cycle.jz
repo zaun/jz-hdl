@@ -1,0 +1,68 @@
+// COMB_LOOP_UNCONDITIONAL: Three-signal and multi-signal combinational loops.
+// Tests cycles involving 3+ signals to verify the compiler catches loops
+// beyond the simple two-signal case. Valid feed-forward included.
+
+@project COMB_LOOP_UNCONDITIONAL_three_signal_cycle
+    @top TopMod {
+        IN  [1] in_a = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: three-signal cycle a -> b -> c -> a
+@module HelperA
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        a [1];
+        b [1];
+        c [1];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: three-signal cycle a -> b -> c -> a
+        a <= b;
+        b <= c;
+        c <= a;
+        out_a = a;
+        // Valid: feed-forward (no loop)
+        out_b = in_a;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        x [1];
+        y [1];
+        z [1];
+        w [1];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] in_a = in_a;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: four-signal cycle x -> y -> z -> w -> x
+        x <= y;
+        y <= z;
+        z <= w;
+        w <= x;
+        out_a = x;
+        // Valid: feed-forward (no loop)
+        out_b = in_a;
+    }
+@endmod

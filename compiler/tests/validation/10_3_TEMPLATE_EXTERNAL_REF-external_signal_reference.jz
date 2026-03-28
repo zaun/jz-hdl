@@ -1,0 +1,127 @@
+// TEMPLATE_EXTERNAL_REF: Identifiers in template body must be parameters, @scratch wires,
+// or compile-time constants. External signals must be passed as arguments.
+// Tests external refs on RHS of <=, in expressions, in alias RHS, in IF conditions,
+// in SELECT condition, on LHS of <=, and on RHS of =>.
+// Valid uses of params, scratch, and CONST included for negative testing.
+
+@project TEMPLATE_EXTERNAL_REF_external_signal_reference
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+        OUT [1] flag = _;
+        OUT [8] dout2 = _;
+    }
+@endproj
+
+// Trigger 1: external wire on RHS of <=
+@template ext_rhs(a)
+    a <= ext_w;
+@endtemplate
+
+// Trigger 2: external wire in expression on RHS
+@template ext_expr(a, b)
+    a <= b + ext_w;
+@endtemplate
+
+// Trigger 3: external wire in SELECT condition
+@template ext_select(a, b)
+    SELECT (ext_w) {
+        CASE 8'h00 {
+            a <= b;
+        }
+        DEFAULT {
+            a <= 8'h00;
+        }
+    }
+@endtemplate
+
+// Valid: only params and scratch (no error)
+@template valid_tmpl(a, b)
+    @scratch tmp [8];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Valid: CONST reference (no error)
+@template valid_const(a, b)
+    @scratch tmp [WIDTH];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        ext_w [8];
+    }
+
+    // Trigger 4: external wire on RHS of = (alias) in module-scoped template
+    @template ext_alias_rhs(a)
+        a = ext_w;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        ext_w = din;
+        @apply ext_alias_rhs(data);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] data;
+        OUT [1] flag;
+        OUT [8] dout2;
+    }
+
+    WIRE {
+        ext_w [8];
+        w1 [8];
+        w2 [8];
+        w3 [8];
+        w4 [8];
+    }
+
+    // Trigger 5: external register in IF condition
+    @template ext_if_cond(a, b)
+        IF (ext_r) {
+            a <= b;
+        } ELSE {
+            a <= 8'h00;
+        }
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        ext_r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        ext_w = din;
+        flag = ext_r;
+        @apply ext_rhs(w1);
+        @apply ext_expr(w2, din);
+        @apply valid_tmpl(din, w3);
+        @apply valid_const(din, w4);
+        @apply ext_if_cond(data, din);
+        @apply ext_select(dout2, din);
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        ext_r <= ~ext_r;
+    }
+@endmod

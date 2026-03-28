@@ -1,0 +1,153 @@
+// HAPPY_PATH: Valid usage of all 9 assignment operator variants.
+// Exercises =, =>, <=, =z, =s, =>z, =>s, <=z, <=s with correct widths.
+// Includes same-width bare operators, extension operators, redundant modifiers,
+// 1-bit signals, maximum extension (1-bit to 256-bit), sliced and concat assignments.
+
+@project HAPPY_PATH_assignment_operators_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1]   clk = _;
+        IN  [8]   din = _;
+        IN  [1]   narrow_in = _;
+        OUT [8]   dout_a = _;
+        OUT [8]   dout_b = _;
+        OUT [8]   dout_c = _;
+        OUT [8]   dout_d = _;
+        OUT [8]   dout_e = _;
+        OUT [8]   dout_f = _;
+        OUT [8]   dout_g = _;
+        OUT [1]   dout_1bit = _;
+        OUT [256] dout_wide = _;
+    }
+@endproj
+
+// Helper module: exercises all 6 extension operator variants in ASYNC
+@module ExtMod
+    PORT {
+        IN  [1] narrow_in;
+        OUT [8] zext_alias_out;
+        OUT [8] sext_alias_out;
+        OUT [8] zext_drive_out;
+        OUT [8] sext_drive_out;
+        OUT [8] zext_recv_out;
+        OUT [8] sext_recv_out;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: =z alias with zero-extend (1 -> 8)
+        zext_alias_out =z narrow_in;
+        // Valid: =s alias with sign-extend (1 -> 8)
+        sext_alias_out =s narrow_in;
+        // Valid: =>z drive with zero-extend (1 -> 8)
+        narrow_in =>z zext_drive_out;
+        // Valid: =>s drive with sign-extend (1 -> 8)
+        narrow_in =>s sext_drive_out;
+        // Valid: <=z receive with zero-extend (1 -> 8)
+        zext_recv_out <=z narrow_in;
+        // Valid: <=s receive with sign-extend (1 -> 8)
+        sext_recv_out <=s narrow_in;
+    }
+@endmod
+
+// Helper module: exercises base operators with same widths
+@module BaseMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] alias_out;
+        OUT [8] drive_out;
+        OUT [8] recv_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: = alias (same width)
+        alias_out = din;
+        // Valid: => drive (same width)
+        din => drive_out;
+        // Valid: <= receive (same width)
+        recv_out <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: <= receive in SYNC (same width)
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1]   clk;
+        IN  [8]   din;
+        IN  [1]   narrow_in;
+        OUT [8]   dout_a;
+        OUT [8]   dout_b;
+        OUT [8]   dout_c;
+        OUT [8]   dout_d;
+        OUT [8]   dout_e;
+        OUT [8]   dout_f;
+        OUT [8]   dout_g;
+        OUT [1]   dout_1bit;
+        OUT [256] dout_wide;
+    }
+
+    WIRE {
+        w_redundant [8];
+    }
+
+    REGISTER {
+        r_wide [8] = 8'h00;
+    }
+
+    @new inst_ext ExtMod {
+        IN  [1] narrow_in = narrow_in;
+        OUT [8] zext_alias_out = dout_a;
+        OUT [8] sext_alias_out = dout_b;
+        OUT [8] zext_drive_out = _;
+        OUT [8] sext_drive_out = _;
+        OUT [8] zext_recv_out = _;
+        OUT [8] sext_recv_out = _;
+    };
+
+    @new inst_base BaseMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        OUT [8] alias_out = dout_c;
+        OUT [8] drive_out = _;
+        OUT [8] recv_out = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: redundant modifier =z on same-width (harmless)
+        w_redundant =z din;
+        // Valid: redundant modifier =s on same-width (harmless)
+        dout_d =s din;
+
+        // Valid: 1-bit signal with base alias operator
+        dout_1bit = narrow_in;
+
+        // Valid: maximum extension (1 -> 256)
+        dout_wide <=z narrow_in;
+
+        // Valid: sliced assignment exact width (4 = 4), also reads register
+        dout_e[7:4] <= r_wide[7:4];
+        dout_e[3:0] <= din[3:0];
+
+        // Valid: concatenation decomposition (4+4=8)
+        {dout_f[7:4], dout_f[3:0]} <= din;
+
+        // Connect remaining outputs
+        dout_g <= w_redundant;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: <=z in SYNC (extension)
+        r_wide <=z narrow_in;
+    }
+@endmod

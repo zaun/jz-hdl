@@ -1,0 +1,63 @@
+// WIDTH_ASSIGN_MISMATCH_NO_EXT: Alias (=) with mismatched widths and no modifier.
+// The compiler emits ASSIGN_WIDTH_NO_MODIFIER (higher priority) which suppresses
+// WIDTH_ASSIGN_MISMATCH_NO_EXT at the same location. This test captures the actual
+// compiler output. Valid same-width aliases verify no false positives.
+
+@project WIDTH_ASSIGN_MISMATCH_NO_EXT_alias_width_mismatch
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [8]  din = _;
+        IN  [4]  narrow = _;
+        IN  [16] wide = _;
+        OUT [8]  dout_a = _;
+        OUT [8]  dout_b = _;
+    }
+@endproj
+
+// Helper module: alias width mismatch in ASYNC
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        IN  [4] narrow;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        w_wide [16];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: alias narrow into wider (4 = 8, widths differ)
+        narrow = din;
+        // Trigger 2: alias wider wire into narrower input (16 = 8, widths differ)
+        w_wide = din;
+        // Valid: same-width alias (no error)
+        dout = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [8]  din;
+        IN  [4]  narrow;
+        IN  [16] wide;
+        OUT [8]  dout_a;
+        OUT [8]  dout_b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] din = din;
+        IN  [4] narrow = narrow;
+        OUT [8] dout = dout_a;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: alias wider into narrower (16 = 8, top module)
+        wide = din;
+        // Valid: same-width alias (no error)
+        dout_b = din;
+    }
+@endmod

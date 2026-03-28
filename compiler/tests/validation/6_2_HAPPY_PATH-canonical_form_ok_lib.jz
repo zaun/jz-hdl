@@ -1,0 +1,18 @@
+// Library file for HAPPY_PATH canonical form test.
+// Contains a valid module imported by the main test file.
+
+@module LibMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

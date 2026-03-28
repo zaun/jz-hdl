@@ -1,0 +1,96 @@
+// MEM_DUP_PORT_NAME: Duplicate port names inside MEM block triggers error.
+// Tests OUT-OUT, IN-IN, and OUT-IN duplicates. Unique names for no false positives.
+
+@project MEM_DUP_PORT_NAME_duplicate_port_name
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: duplicate OUT-OUT port name in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.wr[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: duplicate IN-IN port name in top module
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd_b ASYNC;
+            IN  wr;
+            IN  wr;
+        };
+    }
+
+    // Trigger 3: duplicate OUT-IN same name in top module
+    MEM {
+        mem_c [8] [16] = 8'h00 {
+            OUT same ASYNC;
+            IN  same;
+        };
+    }
+
+    // Valid: unique port names (no error expected)
+    MEM {
+        mem_ok [8] [16] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_ok.wr_ok[addr] <= wdata;
+    }
+@endmod

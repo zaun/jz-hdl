@@ -1,0 +1,71 @@
+// COMB_LOOP_CONDITIONAL_SAFE: Conditional cycle in mutually exclusive branches.
+// Tests cycles that only exist across IF/ELSE branches (flow-sensitive safe).
+// Valid feed-forward and unconditional paths included to verify no false positives.
+
+@project COMB_LOOP_CONDITIONAL_SAFE_conditional_safe_cycle
+    @top TopMod {
+        IN  [1] sel = _;
+        IN  [1] in_a = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: conditional cycle in IF/ELSE branches
+@module HelperA
+    PORT {
+        IN  [1] sel;
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        a [1];
+        b [1];
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: conditional cycle — a depends on b in IF, b depends on a in ELSE
+        IF (sel) {
+            a <= in_a;
+            b <= a;
+        } ELSE {
+            b <= in_a;
+            a <= b;
+        }
+        out_a = a;
+        out_b = b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] sel;
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    WIRE {
+        x [1];
+        y [1];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] sel = sel;
+        IN  [1] in_a = in_a;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: conditional cycle — x depends on y in IF, y depends on x in ELSE
+        IF (sel) {
+            x <= in_a;
+            y <= x;
+        } ELSE {
+            y <= in_a;
+            x <= y;
+        }
+        out_a = x;
+        out_b = y;
+    }
+@endmod

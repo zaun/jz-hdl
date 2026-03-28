@@ -1,0 +1,55 @@
+// PATH_TRAVERSAL_FORBIDDEN: Paths with '..' traversal in @file() MEM init
+// forbidden without --allow-traversal.
+// Tests traversal rejection in @file() context.
+
+@project PATH_TRAVERSAL_FORBIDDEN_traversal_file_init
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [8] din;
+        OUT [8] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    @new inst_h Helper {
+        IN  [8] din = r;
+        OUT [8] dout = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 1: @file() with .. traversal in MEM init
+    MEM {
+        rom [8] [16] = @file("../escape/init.bin") {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = rom.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        rom.wr[addr] <= 8'h00;
+    }
+@endmod

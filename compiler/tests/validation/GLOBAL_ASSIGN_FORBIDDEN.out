@@ -1,2 +1,0 @@
-File: GLOBAL_ASSIGN_FORBIDDEN.jz
-      23:5    error GLOBAL_ASSIGN_FORBIDDEN S8.5 Assignment to GLOBAL constant is forbidden; globals are read-only

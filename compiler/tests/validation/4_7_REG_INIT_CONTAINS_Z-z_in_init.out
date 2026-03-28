@@ -1,0 +1,5 @@
+File: 4_7_REG_INIT_CONTAINS_Z-z_in_init.jz
+      22:22   error REG_INIT_CONTAINS_Z S2.1/S4.7 Register initialization literal must not contain `z` bits
+      24:22   error REG_INIT_CONTAINS_Z S2.1/S4.7 Register initialization literal must not contain `z` bits
+      54:22   error REG_INIT_CONTAINS_Z S2.1/S4.7 Register initialization literal must not contain `z` bits
+      56:20   error REG_INIT_CONTAINS_Z S2.1/S4.7 Register initialization literal must not contain `z` bits

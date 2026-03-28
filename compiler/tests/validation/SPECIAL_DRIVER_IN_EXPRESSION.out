@@ -1,2 +1,0 @@
-File: SPECIAL_DRIVER_IN_EXPRESSION.jz
-      15:15   error SPECIAL_DRIVER_IN_EXPRESSION S2.3 GND/VCC may not appear in arithmetic/logical expressions

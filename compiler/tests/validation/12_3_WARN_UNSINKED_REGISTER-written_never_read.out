@@ -1,0 +1,4 @@
+File: 12_3_WARN_UNSINKED_REGISTER-written_never_read.jz
+      21:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      50:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      52:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read

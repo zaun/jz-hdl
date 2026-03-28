@@ -1,0 +1,62 @@
+// COMMENT_NESTED_BLOCK: Nested block comment detected.
+// Tests that /* inside an existing block comment is rejected in multiple contexts.
+// Valid block comments and line comments are included to verify no false positives.
+
+/* valid block comment at file scope */
+// valid line comment at file scope
+
+@project COMMENT_NESTED_BLOCK_nested_block_comment
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: nested block comment at file scope
+/* outer /* inner */ */
+
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        /* valid comment in async block */
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: nested block comment in sync block
+        /* outer /* inner */ */
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    WIRE {
+        w [1];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [1] data = w;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 3: nested block comment in async block
+        /* a /* b */ */
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -1,0 +1,71 @@
+// FUNC_RESULT_TRUNCATED_SILENTLY: Function result truncated by assignment without
+// explicit slice or width check. Tests intrinsic results assigned to narrower targets.
+// Valid same-width assignments included to verify no false positives.
+// NOTE: Compiler bug — FUNC_RESULT_TRUNCATED_SILENTLY is not emitted;
+// compiler fires ASSIGN_WIDTH_NO_MODIFIER instead. See issues.md.
+
+@project FUNC_RESULT_TRUNCATED_SILENTLY_intrinsic_truncation
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: uadd result (9-bit) assigned to 8-bit target
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: uadd(8,8) = 9 bits, assigned to 8-bit out in async
+        out_a <= uadd(a, b);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: umul(8,8) = 16 bits, assigned to 8-bit reg in sync
+        r <= umul(a, b);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        h_a [8];
+        h_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = data;
+        IN  [8] b = data;
+        OUT [8] out_a = h_a;
+        OUT [8] out_b = h_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: usub(8,8) = 9 bits, assigned to 8-bit out in async
+        out_a <= usub(data, data);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: sadd(8,8) = 9 bits, assigned to 8-bit reg in sync
+        r <= sadd(data, data);
+    }
+@endmod

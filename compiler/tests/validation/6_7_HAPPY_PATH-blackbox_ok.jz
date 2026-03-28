@@ -1,0 +1,88 @@
+// HAPPY_PATH: Valid blackbox declarations and instantiations.
+// Verifies no false positives for correctly formed blackbox usage.
+// Covers: simple blackbox, multiple blackboxes, instantiation without OVERRIDE,
+// INOUT ports on blackbox.
+
+@project HAPPY_PATH_blackbox_ok
+    // Valid: simple blackbox with IN and OUT
+    @blackbox bb_pll {
+        PORT {
+            IN  [1] clk_in;
+            IN  [1] reset;
+            OUT [1] clk_out;
+            OUT [1] locked;
+        }
+    }
+
+    // Valid: blackbox with INOUT ports
+    @blackbox bb_i2c {
+        PORT {
+            IN    [1] clk;
+            INOUT [1] sda;
+            INOUT [1] scl;
+            OUT   [1] irq;
+        }
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] reset = _;
+        OUT [1] locked = _;
+        OUT [1] irq = _;
+    }
+@endproj
+
+@module SubMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] reset;
+        OUT [1] locked;
+    }
+
+    // Valid: blackbox instantiation without OVERRIDE
+    @new pll_inst bb_pll {
+        IN  [1] clk_in = clk;
+        IN  [1] reset = reset;
+        OUT [1] clk_out = _;
+        OUT [1] locked = locked;
+    };
+
+    ASYNCHRONOUS {
+        // no extra logic needed
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] reset;
+        OUT [1] locked;
+        OUT [1] irq;
+    }
+
+    // Valid: blackbox instantiation without OVERRIDE
+    @new pll_inst bb_pll {
+        IN  [1] clk_in = clk;
+        IN  [1] reset = reset;
+        OUT [1] clk_out = _;
+        OUT [1] locked = locked;
+    };
+
+    // Valid: blackbox with INOUT instantiation
+    @new i2c_inst bb_i2c {
+        IN    [1] clk = clk;
+        INOUT [1] sda = _;
+        INOUT [1] scl = _;
+        OUT   [1] irq = irq;
+    };
+
+    @new sub_inst SubMod {
+        IN  [1] clk = clk;
+        IN  [1] reset = reset;
+        OUT [1] locked = _;
+    };
+
+    ASYNCHRONOUS {
+        // no extra logic needed
+    }
+@endmod

@@ -1,0 +1,103 @@
+// BUS_BULK_ROLE_CONFLICT: Bulk BUS assignment between instances with same BUS role.
+// Tests SOURCE-to-SOURCE and TARGET-to-TARGET bulk assignments.
+// Valid SOURCE-to-TARGET bulk assignment included to verify no false positives.
+
+@project BUS_BULK_ROLE_CONFLICT_role_conflict
+
+    BUS DATA_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Module with DATA_BUS SOURCE port
+@module SourceMod
+    PORT {
+        IN  [1] clk;
+        BUS DATA_BUS SOURCE sbus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        sbus.tx = r;
+        data = sbus.rx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= sbus.rx;
+    }
+@endmod
+
+// Module with DATA_BUS TARGET port
+@module TargetMod
+    PORT {
+        IN  [1] clk;
+        BUS DATA_BUS TARGET tbus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        tbus.rx = r;
+        data = tbus.tx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= tbus.tx;
+    }
+@endmod
+
+// Top module with valid and invalid bulk assignments
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+    }
+
+    @new inst_s1 SourceMod {
+        IN  [1] clk = clk;
+        BUS DATA_BUS SOURCE sbus = _;
+        OUT [8] data = dout;
+    };
+
+    @new inst_s2 SourceMod {
+        IN  [1] clk = clk;
+        BUS DATA_BUS SOURCE sbus = _;
+        OUT [8] data = _;
+    };
+
+    @new inst_t1 TargetMod {
+        IN  [1] clk = clk;
+        BUS DATA_BUS TARGET tbus = _;
+        OUT [8] data = _;
+    };
+
+    @new inst_t2 TargetMod {
+        IN  [1] clk = clk;
+        BUS DATA_BUS TARGET tbus = _;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: complementary roles (SOURCE = TARGET)
+        inst_s1.sbus = inst_t1.tbus;
+
+        // Trigger 1: SOURCE-to-SOURCE bulk assignment
+        inst_s1.sbus = inst_s2.sbus;
+
+        // Trigger 2: TARGET-to-TARGET bulk assignment
+        inst_t1.tbus = inst_t2.tbus;
+    }
+@endmod

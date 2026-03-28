@@ -1,4 +1,0 @@
-File: INSTANCE_ARRAY_PARENT_BIT_OVERLAP.jz
-      13:13   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it
-      18:5    error ASYNC_ALIAS_LITERAL_RHS S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?
-      31:13   error INSTANCE_ARRAY_PARENT_BIT_OVERLAP S4.13.1 Instance array OUT mappings drive overlapping bits of the same parent signal for different instance indices

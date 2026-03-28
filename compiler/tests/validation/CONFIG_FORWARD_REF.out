@@ -1,2 +1,0 @@
-File: CONFIG_FORWARD_REF.jz
-       6:5    error CONFIG_FORWARD_REF S6.3 CONFIG entry references later CONFIG.<name> (forward reference)

@@ -1,2 +1,0 @@
-File: NET_DANGLING_UNUSED.jz
-      19:5    warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it

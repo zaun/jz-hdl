@@ -134,6 +134,7 @@ void sem_report_rule(JZDiagnosticList *diagnostics,
 /* Simple integer parsing helpers used across driver translation units. */
 int parse_simple_positive_int(const char *s, unsigned *out);
 int parse_simple_nonnegative_int(const char *s, unsigned *out);
+int parse_literal_unsigned_value(const char *s, unsigned *out);
 int eval_simple_positive_decl_int(const char *s, unsigned *out);
 int parse_simple_signed_int(const char *s, long long *out);
 int sem_resolve_bus_access(const JZASTNode *expr,
@@ -197,6 +198,14 @@ int sem_expand_widthof_in_width_expr(const char *expr,
                                      const JZBuffer *project_symbols,
                                      char **out_expanded,
                                      int depth);
+
+int sem_expand_widthof_in_width_expr_diag(const char *expr,
+                                          const JZModuleScope *scope,
+                                          const JZBuffer *project_symbols,
+                                          char **out_expanded,
+                                          int depth,
+                                          JZDiagnosticList *diagnostics,
+                                          JZLocation loc);
 
 int sem_expr_has_lit_call(const char *expr_text);
 
@@ -469,7 +478,9 @@ void sem_check_block_assignments(JZASTNode *block,
                                  JZDiagnosticList *diagnostics,
                                  int is_sync,
                                  JZBuffer *mem_out_writes,
-                                 JZBuffer *mem_sync_reads);
+                                 JZBuffer *mem_sync_reads,
+                                 JZBuffer *mem_inout_addrs,
+                                 JZBuffer *mem_inout_wdatas);
 
 /* driver_width.c */
 int sem_instance_width_expr_is_invalid(const char *expr,

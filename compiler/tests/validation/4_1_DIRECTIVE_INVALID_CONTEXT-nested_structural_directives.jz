@@ -1,0 +1,64 @@
+// DIRECTIVE_INVALID_CONTEXT: Structural directives used inside a module body.
+// Tests @module, @project, @endproj, @blackbox, @import, @global inside module scope.
+// Valid module structure surrounds each trigger to verify no false positives.
+
+@project DIRECTIVE_INVALID_CONTEXT_nested_structural_directives
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with structural directives inside its body
+@module HelperA
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 1: @module inside module
+    @module
+
+    // Trigger 2: @project inside module
+    @project
+
+    // Trigger 3: @blackbox inside module
+    @blackbox
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    // Trigger 4: @import inside module
+    @import
+
+    // Trigger 5: @global inside module
+    @global
+
+    // Trigger 6: @endproj inside module
+    @endproj
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

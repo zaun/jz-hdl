@@ -1,0 +1,79 @@
+// HAPPY_PATH: Valid @check placement at project scope and module scope.
+// S9.3 permits @check at project and module scope, not inside blocks or
+// @feature bodies. Includes @check in various valid positions: after CONFIG,
+// between blocks, and immediately before blocks.
+
+@project HAPPY_PATH_check_placement_ok
+    CONFIG {
+        WIDTH = 8;
+        DEPTH = 256;
+        ENABLE = 1;
+    }
+
+    // Valid: @check at project scope after CONFIG
+    @check (CONFIG.WIDTH == 8, "width is 8");
+
+    // Valid: multiple @check at project scope in sequence
+    @check (CONFIG.DEPTH > 0, "depth positive");
+    @check (CONFIG.WIDTH > 0, "width positive");
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST { LOCAL_W = 4; }
+
+    // Valid: @check at module scope in helper module after CONST
+    @check (LOCAL_W > 0, "local width ok");
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST { SIZE = 16; }
+    CONST { ADDR_W = 4; }
+
+    // Valid: @check at module scope after CONST
+    @check (SIZE > 0, "size ok");
+
+    // Valid: @check with clog2 expression
+    @check (ADDR_W == clog2(SIZE), "addr width matches");
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    // Valid: @check between @new and REGISTER (module scope)
+    @check (1, "between blocks ok");
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    // Valid: @check immediately before ASYNCHRONOUS block (module scope)
+    @check (SIZE == 16, "before async block ok");
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

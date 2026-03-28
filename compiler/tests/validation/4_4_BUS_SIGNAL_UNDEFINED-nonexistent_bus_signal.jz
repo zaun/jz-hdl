@@ -1,0 +1,102 @@
+// BUS_SIGNAL_UNDEFINED: BUS signal does not exist in BUS definition.
+// Tests accessing nonexistent signals via read on scalar and arrayed BUS ports.
+// Valid signal accesses included to verify no false positives.
+
+@project BUS_SIGNAL_UNDEFINED_nonexistent_bus_signal
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+        OUT [8] dout_d = _;
+    }
+@endproj
+
+// Helper module: scalar BUS port with nonexistent signal access
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        BUS MY_BUS SOURCE sbus;
+        OUT [8] data_ok;
+        OUT [8] data_err;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: read existing readable signal (rx is IN for SOURCE = readable)
+        data_ok <= sbus.rx;
+        // Valid: write existing writable signal (tx is OUT for SOURCE = writable)
+        sbus.tx <= r;
+        // Trigger 1: read from nonexistent signal on scalar BUS
+        data_err <= sbus.nonexistent;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= sbus.rx;
+    }
+@endmod
+
+// Module with arrayed BUS port
+@module ArrayMod
+    PORT {
+        IN  [1] clk;
+        BUS MY_BUS SOURCE [2] abus;
+        OUT [8] data_ok;
+        OUT [8] data_err;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: access existing signals on arrayed BUS
+        abus[0].tx <= r;
+        abus[1].tx <= r;
+        data_ok <= abus[0].rx;
+        // Trigger 2: read from nonexistent signal on arrayed BUS
+        data_err <= abus[1].bogus;
+        // Trigger 3: write to nonexistent signal on arrayed BUS
+        abus[0].missing <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= abus[0].rx;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+        OUT [8] dout_d;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        BUS MY_BUS SOURCE sbus = _;
+        OUT [8] data_ok = dout_a;
+        OUT [8] data_err = dout_b;
+    };
+
+    @new inst_a ArrayMod {
+        IN  [1] clk = clk;
+        BUS MY_BUS SOURCE [2] abus = _;
+        OUT [8] data_ok = dout_c;
+        OUT [8] data_err = dout_d;
+    };
+
+    ASYNCHRONOUS {
+        // TopMod passes through instance outputs
+    }
+@endmod

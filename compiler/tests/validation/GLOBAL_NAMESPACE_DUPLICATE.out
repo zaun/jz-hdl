@@ -1,2 +1,0 @@
-File: GLOBAL_NAMESPACE_DUPLICATE.jz
-       8:1    error GLOBAL_NAMESPACE_DUPLICATE S8.4 Duplicate @global namespace name in compilation root

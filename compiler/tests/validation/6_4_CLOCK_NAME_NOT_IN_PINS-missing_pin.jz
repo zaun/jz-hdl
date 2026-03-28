@@ -1,0 +1,46 @@
+// CLOCK_NAME_NOT_IN_PINS: Clock name in CLOCKS has no matching IN_PINS declaration.
+// Tests clocks declared in CLOCKS that are not in IN_PINS and not CLOCK_GEN outputs.
+// Valid clocks (in IN_PINS) included to verify no false positives.
+
+@project CLOCK_NAME_NOT_IN_PINS_missing_pin
+    CLOCKS {
+        // Valid: declared in IN_PINS (no trigger)
+        good_clk = { period=10 };
+        // Trigger 1: not in IN_PINS, not a CLOCK_GEN output
+        orphan_clk = { period=20 };
+        // Trigger 2: another orphan clock
+        ghost_clk = { period=30 };
+    }
+
+    IN_PINS {
+        good_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        good_clk = 1;
+    }
+
+    @top TopMod {
+        IN  [1] clk = good_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -1,0 +1,46 @@
+// TEMPLATE_FORBIDDEN_DIRECTIVE: @module directive in module-scoped template.
+// Realistic syntax with full module definition. Parser does not recover after
+// the error, producing cascading PARSE000.
+
+@project TEMPLATE_FORBIDDEN_DIRECTIVE_module_in_mod_template
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger: @module directive inside module-scoped template
+    @template mod_in_mod_tmpl(a, b)
+        @module InnerMod
+            PORT {
+                IN  [1] din;
+                OUT [1] data;
+            }
+            ASYNCHRONOUS {
+                data = din;
+            }
+        @endmod
+    @endtemplate
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

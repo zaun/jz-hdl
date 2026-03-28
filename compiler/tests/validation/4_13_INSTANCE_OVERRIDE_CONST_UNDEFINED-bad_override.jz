@@ -1,0 +1,98 @@
+// INSTANCE_OVERRIDE_CONST_UNDEFINED: Override LHS not a CONST declared in child module.
+// Tests OVERRIDE of nonexistent CONSTs in scalar and array instantiation contexts.
+// Valid OVERRIDE of existing CONSTs is included for negative testing.
+
+@project INSTANCE_OVERRIDE_CONST_UNDEFINED_bad_override
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with one CONST
+@module ChildMod
+    CONST {
+        WIDTH = 8;
+    }
+
+    PORT {
+        IN  [WIDTH] din;
+        OUT [WIDTH] data;
+    }
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module that overrides nonexistent CONSTs
+@module MidMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    // Trigger 1: OVERRIDE of nonexistent CONST in scalar instance
+    @new inst_a ChildMod {
+        OVERRIDE {
+            NONEXISTENT = 16;
+        }
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    // Valid: OVERRIDE of existing CONST (no trigger)
+    @new inst_b ChildMod {
+        OVERRIDE {
+            WIDTH = 16;
+        }
+        IN  [16] din = _;
+        OUT [16] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 2: OVERRIDE of nonexistent CONST in top module
+    @new inst_c ChildMod {
+        OVERRIDE {
+            ALSO_MISSING = 4;
+        }
+        IN  [8] din = _;
+        OUT [8] data = _;
+    };
+
+    // Trigger 3: OVERRIDE of nonexistent CONST in array instance
+    @new inst_d[2] ChildMod {
+        OVERRIDE {
+            NOT_A_CONST = 32;
+        }
+        IN  [8] din = _;
+        OUT [8] data = _;
+    };
+
+    @new inst_e MidMod {
+        IN  [8] din = _;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

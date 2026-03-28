@@ -1,0 +1,5 @@
+File: 4_4_PORT_TRISTATE_MISMATCH-tristate_on_non_inout.jz
+      20:17   warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      28:13   error PORT_TRISTATE_MISMATCH S4.4/S4.10/S8.1 Only INOUT ports may use `z` for tri-state; IN/OUT ports must drive 0/1/x
+      38:17   warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      46:13   error PORT_TRISTATE_MISMATCH S4.4/S4.10/S8.1 Only INOUT ports may use `z` for tri-state; IN/OUT ports must drive 0/1/x

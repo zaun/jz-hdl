@@ -1,0 +1,101 @@
+// OBS_X_TO_OBSERVABLE_SINK: x bits within operator expressions driving observable sinks.
+// Tests x-bit literals used inside arithmetic, bitwise, ternary, and concatenation
+// expressions that drive registers. Valid expressions without x bits
+// are included to verify no false positives.
+
+@project OBS_X_TO_OBSERVABLE_SINK_x_bits_in_expressions
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] val = _;
+        IN  [4] nibble = _;
+        IN  [1] sel = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+        OUT [8] out_d = _;
+    }
+@endproj
+
+// Helper module: x bits in arithmetic and bitwise expressions
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] val;
+        IN  [1] sel;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+        OUT [8] out_d;
+    }
+    REGISTER {
+        r_add  [8] = 8'h00;
+        r_or   [8] = 8'h00;
+        r_tern [8] = 8'h00;
+        r_ok   [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        out_a = r_add;
+        out_b = r_or;
+        out_c = r_tern;
+        out_d = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: x bits in addition driving register
+        r_add <= 8'bxxxx_0000 + val;
+        // Trigger 2: x bits in bitwise OR driving register
+        r_or <= val | 8'b0000_xxxx;
+        // Trigger 3: x bits in ternary true branch driving register
+        r_tern <= sel ? 8'bxxxx_1111 : val;
+        // Valid: no x bits in expression (no false positive)
+        r_ok <= val + 8'hFF;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] val;
+        IN  [4] nibble;
+        IN  [1] sel;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+        OUT [8] out_d;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+        ha_c [8];
+        ha_d [8];
+    }
+    REGISTER {
+        r_cat [8] = 8'h00;
+        r_sub [8] = 8'h00;
+        r_ok  [8] = 8'h00;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] val = val;
+        IN  [1] sel = sel;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+        OUT [8] out_c = ha_c;
+        OUT [8] out_d = ha_d;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r_cat;
+        out_b = r_sub;
+        out_c = r_ok;
+        out_d = ha_d;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: x bits in concatenation driving register
+        r_cat <= {4'bxxxx, nibble};
+        // Trigger 5: x bits in subtraction driving register
+        r_sub <= val - 8'bxx00_00xx;
+        // Valid: no x bits (no false positive)
+        r_ok <= val & 8'hFF;
+    }
+@endmod

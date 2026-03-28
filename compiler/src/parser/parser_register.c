@@ -93,7 +93,11 @@ int parse_register_block_body(Parser *p, JZASTNode *parent) {
 
         if (!match(p, JZ_TOK_OP_ASSIGN)) {
             if (width_text) free(width_text);
-            parser_error(p, "expected '=' and initialization literal in REGISTER block");
+            if (peek(p)->type == JZ_TOK_LBRACKET) {
+                parser_error_rule(p, "REG_MULTI_DIMENSIONAL");
+            } else {
+                parser_error_rule(p, "REG_MISSING_INIT_LITERAL");
+            }
             return -1;
         }
 

@@ -1,0 +1,58 @@
+// FEATURE_EXPR_INVALID_CONTEXT: Runtime signal in @feature inside declaration blocks.
+// Tests that @feature conditions referencing runtime signals (ports, wires,
+// registers) are rejected in REGISTER and WIRE blocks, and at module level.
+// Valid references (CONFIG, CONST, literals) included to verify no false positives.
+
+@project FEATURE_EXPR_INVALID_CONTEXT_signal_in_decl_block
+    CONFIG {
+        MODE = 1;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST {
+        FLAG = 1;
+    }
+
+    // Valid: CONST reference at module level (no trigger)
+    @feature FLAG == 1
+    @endfeat
+
+    // Trigger 1: port reference in @feature at module level
+    @feature clk == 1'b1
+    @endfeat
+
+    REGISTER {
+        r [1] = 1'b0;
+
+        // Trigger 2: port reference in @feature inside REGISTER block
+        @feature clk == 1'b1
+            r2 [1] = 1'b0;
+        @endfeat
+    }
+
+    WIRE {
+        // Trigger 3: port reference in @feature inside WIRE block
+        @feature clk == 1'b1
+            w [1];
+        @endfeat
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

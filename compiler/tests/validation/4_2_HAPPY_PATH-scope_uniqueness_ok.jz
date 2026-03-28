@@ -1,0 +1,79 @@
+// HAPPY_PATH: Valid scope and uniqueness constructs.
+// Two modules with different names, same signal name in different modules,
+// unique identifiers within each module, CONST module-local only,
+// unique instance names. No diagnostics expected.
+
+@project HAPPY_PATH_scope_uniqueness_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Module A: uses signal name "data" and CONST "WIDTH"
+@module ModA
+    CONST {
+        WIDTH = 4;
+    }
+    PORT {
+        IN  [WIDTH] din;
+        OUT [WIDTH] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module B: also uses signal name "data" and CONST "WIDTH" — valid (module-local)
+@module ModB
+    CONST {
+        WIDTH = 8;
+    }
+    PORT {
+        IN  [WIDTH] din;
+        OUT [WIDTH] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Top module: unique identifiers (port, wire, register, const all different names)
+// Unique instance names, references to both modules
+@module TopMod
+    CONST {
+        MY_C = 1;
+    }
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w [1];
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    // Unique instance names
+    @new inst_a ModA {
+        IN  [4] din = 4'b0000;
+        OUT [4] data = _;
+    };
+
+    @new inst_b ModB {
+        IN  [8] din = 8'h00;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+        w = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

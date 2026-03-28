@@ -1,3 +1,0 @@
-File: OBS_X_TO_OBSERVABLE_SINK.jz
-      25:10   error OBS_X_TO_OBSERVABLE_SINK S1.2/S2.1/S3.2 Expression containing `x` bits drives REGISTER, MEM, or output; mask `x` bits before use
-      31:10   error OBS_X_TO_OBSERVABLE_SINK S1.2/S2.1/S3.2 Expression containing `x` bits drives REGISTER, MEM, or output; mask `x` bits before use

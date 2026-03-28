@@ -1,0 +1,115 @@
+// INSTANCE_NAME_CONFLICT: Instance name matches another identifier in parent module.
+// Tests instance names colliding with ports, wires, registers, and CONSTs.
+// Valid instance names that do not collide are included for negative testing.
+
+@project INSTANCE_NAME_CONFLICT_instance_signal_collision
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module (structurally valid, used as instantiation target)
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module with instance names that collide with various identifiers
+@module CollisionMod
+    CONST {
+        MY_CONST = 1;
+    }
+
+    PORT {
+        IN  [1] my_port;
+        OUT [1] data;
+    }
+
+    WIRE {
+        my_wire [1];
+    }
+
+    REGISTER {
+        my_reg [1] = 1'b0;
+    }
+
+    // Trigger 1: instance name matches port name
+    @new my_port HelperMod {
+        IN  [1] din = my_port;
+        OUT [1] data = _;
+    };
+
+    // Trigger 2: instance name matches wire name
+    @new my_wire HelperMod {
+        IN  [1] din = my_port;
+        OUT [1] data = _;
+    };
+
+    // Trigger 3: instance name matches register name
+    @new my_reg HelperMod {
+        IN  [1] din = my_port;
+        OUT [1] data = _;
+    };
+
+    // Trigger 4: instance name matches CONST name
+    @new MY_CONST HelperMod {
+        IN  [1] din = my_port;
+        OUT [1] data = _;
+    };
+
+    // Valid: unique instance name (no trigger)
+    @new inst_ok HelperMod {
+        IN  [1] din = my_port;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = my_reg;
+        my_wire = my_port;
+    }
+
+    SYNCHRONOUS(CLK=my_port) {
+        my_reg <= ~my_reg;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    WIRE {
+        top_wire [1];
+    }
+
+    // Trigger 5: instance name matches wire in top module
+    @new top_wire HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    @new inst_c CollisionMod {
+        IN  [1] my_port = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+        top_wire = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

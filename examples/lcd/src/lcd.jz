@@ -1,0 +1,255 @@
+@module lcd
+    CONST {
+        // State machine
+        S_RESET_LO = 0;
+        S_RESET_HI = 1;
+        S_INIT     = 2;
+        S_INIT_DLY = 3;
+        S_SPI      = 4;
+        S_PIX_HI   = 5;
+        S_PIX_LO   = 6;
+        S_PIX_ADV  = 7;
+        S_FRAME    = 8;
+        ST_W       = 4;
+
+        // Delays at ~18.375 MHz
+        DLY_10MS   = 183750;
+        DLY_150MS  = 2756250;
+        DLY_W      = clog2(DLY_150MS);
+
+        // Display 320x240 (landscape)
+        DISP_W = 320;
+        DISP_H = 240;
+        X_W    = clog2(DISP_W);
+        Y_W    = clog2(DISP_H);
+
+        // Init sequence length
+        INIT_LEN = 25;
+        IDX_W    = clog2(INIT_LEN + 1);
+
+        // Heartbeat (~0.5s toggle)
+        HB_MAX = 9000000;
+        HB_W   = clog2(HB_MAX);
+    }
+
+    PORT {
+        IN  [1] PCLK;
+        IN  [1] RST;
+        OUT [1] SPI_CS;
+        OUT [1] SPI_CLK;
+        OUT [1] SPI_MOSI;
+        OUT [1] LCD_DC;
+        OUT [1] LCD_RST;
+        OUT [1] HB;
+        OUT [1] PCLK_OUT;
+        OUT [1] DBG;
+    }
+
+    WIRE {
+        init_byte    [8];
+        init_is_cmd  [1];
+        init_has_dly [1];
+    }
+
+    REGISTER {
+        state   [ST_W]  = ST_W'b0;
+        dbg_st  [1]     = 1'b0;
+        ret     [ST_W]  = ST_W'b0;
+        spi_sr  [8]     = 8'h00;
+        spi_cnt [4]     = 4'd0;
+        spi_ph  [1]     = 1'b0;
+        dc      [1]     = 1'b0;
+        cs      [1]     = 1'b1;
+        rst_out [1]     = 1'b1;
+        dly     [DLY_W] = DLY_W'b0;
+        idx     [IDX_W] = IDX_W'b0;
+        px      [X_W]   = X_W'b0;
+        py      [Y_W]   = Y_W'b0;
+        hb_cnt  [HB_W]  = HB_W'b0;
+        hb_st   [1]     = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        PCLK_OUT = PCLK;
+        SPI_CS   <= cs;
+        SPI_CLK  <= spi_ph;
+        SPI_MOSI <= spi_sr[7];
+        LCD_DC   <= dc;
+        LCD_RST  <= rst_out;
+        HB       <= hb_st;
+        DBG      <= dbg_st;
+
+        // ILI9341 init sequence
+        SELECT (idx) {
+            CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
+            CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
+            CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
+            CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
+            CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
+            CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+            CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
+            CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+            CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+            CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
+            CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
+            CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
+            CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
+            CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
+            CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
+            CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
+            CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
+            CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
+            CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
+            CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
+            CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
+            CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
+            CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
+            CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
+            CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
+            DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+        }
+    }
+
+    SYNCHRONOUS(CLK=PCLK RESET=RST RESET_ACTIVE=Low) {
+        // Heartbeat
+        IF (hb_cnt == lit(HB_W, HB_MAX - 1)) {
+            hb_cnt <= HB_W'b0;
+            hb_st <= ~hb_st;
+        } ELSE {
+            hb_cnt <= hb_cnt + lit(HB_W, 1);
+        }
+
+        // Main state machine
+        SELECT (state) {
+            CASE (ST_W'd0) {
+                // S_RESET_LO: hold LCD reset low for 10ms
+                rst_out <= 1'b0;
+                cs <= 1'b1;
+                IF (dly == lit(DLY_W, DLY_10MS - 1)) {
+                    dly <= DLY_W'b0;
+                    state <= lit(ST_W, S_RESET_HI);
+                } ELSE {
+                    dly <= dly + lit(DLY_W, 1);
+                }
+            }
+
+            CASE (ST_W'd1) {
+                // S_RESET_HI: release reset, wait 150ms
+                rst_out <= 1'b1;
+                IF (dly == lit(DLY_W, DLY_150MS - 1)) {
+                    dly <= DLY_W'b0;
+                    state <= lit(ST_W, S_INIT);
+                } ELSE {
+                    dly <= dly + lit(DLY_W, 1);
+                }
+            }
+
+            CASE (ST_W'd2) {
+                // S_INIT: send next init command/data byte
+                IF (idx == lit(IDX_W, INIT_LEN)) {
+                    dc <= 1'b1;
+                    state <= lit(ST_W, S_PIX_HI);
+                } ELSE {
+                    spi_sr <= init_byte;
+                    dc <= ~init_is_cmd;
+                    cs <= 1'b0;
+                    idx <= idx + lit(IDX_W, 1);
+                    spi_cnt <= 4'd0;
+                    spi_ph <= 1'b0;
+                    IF (init_has_dly == 1'b1) {
+                        ret <= lit(ST_W, S_INIT_DLY);
+                    } ELSE {
+                        ret <= lit(ST_W, S_INIT);
+                    }
+                    state <= lit(ST_W, S_SPI);
+                }
+            }
+
+            CASE (ST_W'd3) {
+                // S_INIT_DLY: deassert CS, delay 150ms
+                cs <= 1'b1;
+                IF (dly == lit(DLY_W, DLY_150MS - 1)) {
+                    dly <= DLY_W'b0;
+                    state <= lit(ST_W, S_INIT);
+                } ELSE {
+                    dly <= dly + lit(DLY_W, 1);
+                }
+            }
+
+            CASE (ST_W'd4) {
+                // S_SPI: clock out one byte MSB first (SPI Mode 0)
+                // Divide clock by 16 (~1.15 MHz SPI)
+                IF (dly[2:0] != 3'b111) {
+                    dly <= dly + lit(DLY_W, 1);
+                } ELSE {
+                    dly <= DLY_W'b0;
+                    IF (spi_ph == 1'b0) {
+                        spi_ph <= 1'b1;
+                    } ELSE {
+                        spi_ph <= 1'b0;
+                        IF (spi_cnt == 4'd7) {
+                            state <= ret;
+                            spi_cnt <= 4'd0;
+                        } ELSE {
+                            spi_sr <= { spi_sr[6:0], 1'b0 };
+                            spi_cnt <= spi_cnt + 4'd1;
+                        }
+                    }
+                }
+            }
+
+            CASE (ST_W'd5) {
+                // S_PIX_HI: send pixel high byte
+                dbg_st <= 1'b1;
+                spi_sr <= 8'hF8;
+                dc <= 1'b1;
+                cs <= 1'b0;
+                spi_cnt <= 4'd0;
+                spi_ph <= 1'b0;
+                ret <= lit(ST_W, S_PIX_LO);
+                state <= lit(ST_W, S_SPI);
+            }
+
+            CASE (ST_W'd6) {
+                // S_PIX_LO: send pixel low byte
+                spi_sr <= 8'h00;
+                spi_cnt <= 4'd0;
+                spi_ph <= 1'b0;
+                ret <= lit(ST_W, S_PIX_ADV);
+                state <= lit(ST_W, S_SPI);
+            }
+
+            CASE (ST_W'd7) {
+                // S_PIX_ADV: advance to next pixel
+                IF (px == lit(X_W, DISP_W - 1)) {
+                    px <= X_W'b0;
+                    IF (py == lit(Y_W, DISP_H - 1)) {
+                        py <= Y_W'b0;
+                        state <= lit(ST_W, S_FRAME);
+                    } ELSE {
+                        py <= py + lit(Y_W, 1);
+                        state <= lit(ST_W, S_PIX_HI);
+                    }
+                } ELSE {
+                    px <= px + lit(X_W, 1);
+                    state <= lit(ST_W, S_PIX_HI);
+                }
+            }
+
+            CASE (ST_W'd8) {
+                // S_FRAME: deassert CS, send RAMWR, restart
+                cs <= 1'b1;
+                spi_sr <= 8'h2C;
+                dc <= 1'b0;
+                spi_cnt <= 4'd0;
+                spi_ph <= 1'b0;
+                ret <= lit(ST_W, S_PIX_HI);
+                state <= lit(ST_W, S_SPI);
+            }
+
+            DEFAULT {
+                state <= ST_W'b0;
+            }
+        }
+    }
+@endmod

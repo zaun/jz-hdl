@@ -1,0 +1,40 @@
+// IMPORT_DUP_MODULE_OR_BLACKBOX: Imported module name duplicates existing project name.
+// Tests that importing two files which both define a module with the same name
+// produces an error. The first import succeeds; the second triggers the collision.
+// The diagnostic points to the module definition in the second imported file.
+
+@project IMPORT_DUP_MODULE_OR_BLACKBOX_name_collision
+
+    // Valid: first import of SharedMod
+    @import "6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libA.jz";
+
+    // Trigger 1: second import contains SharedMod which collides with libA's SharedMod
+    @import "6_2_IMPORT_DUP_MODULE_OR_BLACKBOX-name_collision_libB.jz";
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a SharedMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

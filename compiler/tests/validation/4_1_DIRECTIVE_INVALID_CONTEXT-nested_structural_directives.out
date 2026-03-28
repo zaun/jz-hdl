@@ -1,0 +1,7 @@
+File: 4_1_DIRECTIVE_INVALID_CONTEXT-nested_structural_directives.jz
+      20:5    error DIRECTIVE_INVALID_CONTEXT S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location
+      23:5    error DIRECTIVE_INVALID_CONTEXT S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location
+      26:5    error DIRECTIVE_INVALID_CONTEXT S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location
+      49:5    error DIRECTIVE_INVALID_CONTEXT S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location
+      52:5    error DIRECTIVE_INVALID_CONTEXT S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location
+      55:5    error DIRECTIVE_INVALID_CONTEXT S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location

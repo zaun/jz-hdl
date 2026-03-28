@@ -1,0 +1,71 @@
+// CONST_USED_WHERE_FORBIDDEN: CONST identifier in runtime expression context.
+// Tests CONST used in ASYNCHRONOUS and SYNCHRONOUS block expressions.
+// Valid CONST uses in width expressions included to verify no false positives.
+
+@project CONST_USED_WHERE_FORBIDDEN_const_in_runtime_expr
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module with CONST in SYNC runtime expression
+@module HelperMod
+    CONST {
+        MASK = 255;
+        WIDTH = 8;
+    }
+
+    PORT {
+        // Valid: CONST in port width (no trigger)
+        IN  [1] din;
+        OUT [WIDTH] data;
+    }
+
+    REGISTER {
+        r [WIDTH] = 8'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=din) {
+        // Trigger 1: CONST used in SYNC runtime expression
+        r <= MASK;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        MY_C = 42;
+        W = 8;
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [W] data;
+        OUT [W] out_b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] din = clk;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        r [W] = 8'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+        // Trigger 2: CONST in ASYNC expression in top module
+        out_b = MY_C;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: CONST in SYNC expression in top module
+        r <= MY_C;
+    }
+@endmod

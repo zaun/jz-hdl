@@ -1,0 +1,4 @@
+File: 7_3_MEM_PORT_FIELD_UNDEFINED-invalid_field_name.jz
+      40:9    error MEM_PORT_FIELD_UNDEFINED S7.2/S7.7.2 Invalid MEM port field; expected '.addr', '.data', or '.wdata'
+      84:9    error MEM_PORT_FIELD_UNDEFINED S7.2/S7.7.2 Invalid MEM port field; expected '.addr', '.data', or '.wdata'
+      86:9    error MEM_PORT_FIELD_UNDEFINED S7.2/S7.7.2 Invalid MEM port field; expected '.addr', '.data', or '.wdata'

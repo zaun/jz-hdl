@@ -413,20 +413,31 @@ static int sem_check_check_expr_allowed(JZASTNode *expr,
             return 0;
         }
         if (sym->kind != JZ_SYM_CONST) {
-            const char *kind_str = "identifier";
-            if (sym->kind == JZ_SYM_REGISTER) kind_str = "REGISTER";
-            else if (sym->kind == JZ_SYM_PORT) kind_str = "PORT";
-            else if (sym->kind == JZ_SYM_WIRE) kind_str = "WIRE";
-            else if (sym->kind == JZ_SYM_LATCH) kind_str = "LATCH";
-            char explain[256];
-            snprintf(explain, sizeof(explain),
-                     "'%s' is a %s, not a CONST. @check conditions may only\n"
-                     "reference module CONST, CONFIG.<name>, and literals.",
-                     expr->name, kind_str);
-            sem_report_rule(diagnostics,
-                            expr->loc,
-                            "CHECK_INVALID_EXPR_TYPE",
-                            explain);
+            if (sym->kind == JZ_SYM_LATCH) {
+                char explain[256];
+                snprintf(explain, sizeof(explain),
+                         "'%s' is a LATCH. LATCH identifiers may not be used in\n"
+                         "compile-time constant contexts (@check/@feature conditions).",
+                         expr->name);
+                sem_report_rule(diagnostics,
+                                expr->loc,
+                                "LATCH_IN_CONST_CONTEXT",
+                                explain);
+            } else {
+                const char *kind_str = "identifier";
+                if (sym->kind == JZ_SYM_REGISTER) kind_str = "REGISTER";
+                else if (sym->kind == JZ_SYM_PORT) kind_str = "PORT";
+                else if (sym->kind == JZ_SYM_WIRE) kind_str = "WIRE";
+                char explain[256];
+                snprintf(explain, sizeof(explain),
+                         "'%s' is a %s, not a CONST. @check conditions may only\n"
+                         "reference module CONST, CONFIG.<name>, and literals.",
+                         expr->name, kind_str);
+                sem_report_rule(diagnostics,
+                                expr->loc,
+                                "CHECK_INVALID_EXPR_TYPE",
+                                explain);
+            }
             return -1;
         }
         return 0;
@@ -705,6 +716,25 @@ void sem_check_project_checks(JZASTNode *root,
     }
 }
 
+/* Recursively scan for @check nodes inside @feature bodies and report
+ * CHECK_INVALID_PLACEMENT for each one found. */
+static void sem_scan_feature_for_checks(JZASTNode *node,
+                                        JZDiagnosticList *diagnostics)
+{
+    if (!node) return;
+    for (size_t i = 0; i < node->child_count; ++i) {
+        JZASTNode *child = node->children[i];
+        if (!child) continue;
+        if (child->type == JZ_AST_CHECK) {
+            sem_report_rule(diagnostics, child->loc,
+                            "CHECK_INVALID_PLACEMENT",
+                            "@check may not appear inside @feature bodies");
+        }
+        /* Recurse into nested feature guards and block nodes. */
+        sem_scan_feature_for_checks(child, diagnostics);
+    }
+}
+
 void sem_check_module_checks(const JZModuleScope *scope,
                                     const JZBuffer *project_symbols,
                                     JZDiagnosticList *diagnostics)
@@ -714,7 +744,19 @@ void sem_check_module_checks(const JZModuleScope *scope,
     JZASTNode *mod = scope->node;
     for (size_t i = 0; i < mod->child_count; ++i) {
         JZASTNode *child = mod->children[i];
-        if (!child || child->type != JZ_AST_CHECK) continue;
+        if (!child) continue;
+
+        /* Detect @check inside @feature bodies. */
+        if (child->type == JZ_AST_FEATURE_GUARD) {
+            /* child[0] is the condition; child[1] is THEN; child[2] is ELSE. */
+            if (child->child_count > 1 && child->children[1])
+                sem_scan_feature_for_checks(child->children[1], diagnostics);
+            if (child->child_count > 2 && child->children[2])
+                sem_scan_feature_for_checks(child->children[2], diagnostics);
+            continue;
+        }
+
+        if (child->type != JZ_AST_CHECK) continue;
 
         JZASTNode *expr = (child->child_count > 0) ? child->children[0] : NULL;
         const char *expr_text = child->width;
@@ -1264,12 +1306,71 @@ static void sem_check_port_direction_expr_recursive(JZASTNode *node,
     }
 }
 
+/* Recursively scan for @feature guards in non-executable blocks (REGISTER,
+ * WIRE, CONST, PIN, module-level) and check condition width, valid references,
+ * and nesting.  ASYNC/SYNC blocks are already handled by
+ * sem_check_block_expressions_inner.
+ */
+static void sem_check_feature_cond_recursive(JZASTNode *node,
+                                              const JZModuleScope *mod_scope,
+                                              const JZBuffer *project_symbols,
+                                              int in_feature,
+                                              JZDiagnosticList *diagnostics)
+{
+    if (!node) return;
+    for (size_t i = 0; i < node->child_count; ++i) {
+        JZASTNode *child = node->children[i];
+        if (!child) continue;
+        if (child->type == JZ_AST_FEATURE_GUARD) {
+            /* FEATURE_NESTED: detect nested @feature guards. */
+            if (in_feature) {
+                sem_report_rule(diagnostics,
+                                child->loc,
+                                "FEATURE_NESTED",
+                                "@feature guard is nested inside another @feature guard.\n"
+                                "Nesting is not allowed — combine conditions with logical\n"
+                                "operators in a single @feature instead.");
+            }
+            sem_check_feature_guard_cond(child, mod_scope, project_symbols, diagnostics);
+            /* Recurse into THEN/ELSE bodies with in_feature=1. */
+            if (child->child_count > 1 && child->children[1])
+                sem_check_feature_cond_recursive(child->children[1], mod_scope, project_symbols, 1, diagnostics);
+            if (child->child_count > 2 && child->children[2])
+                sem_check_feature_cond_recursive(child->children[2], mod_scope, project_symbols, 1, diagnostics);
+        } else {
+            sem_check_feature_cond_recursive(child, mod_scope, project_symbols, in_feature, diagnostics);
+        }
+    }
+}
+
 void sem_check_module_expressions(const JZModuleScope *scope,
                                          const JZBuffer *project_symbols,
                                          JZDiagnosticList *diagnostics)
 {
     if (!scope || !scope->node) return;
     JZASTNode *mod = scope->node;
+
+    /* Check @feature guard conditions in non-executable blocks. */
+    for (size_t i = 0; i < mod->child_count; ++i) {
+        JZASTNode *child = mod->children[i];
+        if (!child) continue;
+        /* Skip ASYNC/SYNC — already handled by sem_check_block_expressions_inner. */
+        if (child->type == JZ_AST_BLOCK && child->block_kind &&
+            (strcmp(child->block_kind, "ASYNCHRONOUS") == 0 ||
+             strcmp(child->block_kind, "SYNCHRONOUS") == 0)) {
+            continue;
+        }
+        /* Check @feature at module level or inside declaration blocks. */
+        if (child->type == JZ_AST_FEATURE_GUARD) {
+            sem_check_feature_guard_cond(child, scope, project_symbols, diagnostics);
+            if (child->child_count > 1 && child->children[1])
+                sem_check_feature_cond_recursive(child->children[1], scope, project_symbols, 1, diagnostics);
+            if (child->child_count > 2 && child->children[2])
+                sem_check_feature_cond_recursive(child->children[2], scope, project_symbols, 1, diagnostics);
+        } else {
+            sem_check_feature_cond_recursive(child, scope, project_symbols, 0, diagnostics);
+        }
+    }
 
     for (size_t i = 0; i < mod->child_count; ++i) {
         JZASTNode *child = mod->children[i];
@@ -1296,9 +1397,13 @@ void sem_check_module_expressions(const JZModuleScope *scope,
          */
         JZBuffer mem_out_writes = (JZBuffer){0};
         JZBuffer mem_sync_reads = (JZBuffer){0};
-        sem_check_block_assignments(child, scope, project_symbols, diagnostics, is_sync, &mem_out_writes, &mem_sync_reads);
+        JZBuffer mem_inout_addrs = (JZBuffer){0};
+        JZBuffer mem_inout_wdatas = (JZBuffer){0};
+        sem_check_block_assignments(child, scope, project_symbols, diagnostics, is_sync, &mem_out_writes, &mem_sync_reads, &mem_inout_addrs, &mem_inout_wdatas);
         jz_buf_free(&mem_out_writes);
         jz_buf_free(&mem_sync_reads);
+        jz_buf_free(&mem_inout_addrs);
+        jz_buf_free(&mem_inout_wdatas);
 
         /* CONTROL_FLOW_IF_SELECT: IF/ELIF conditions and SELECT/CASE structure. */
         sem_check_block_control_flow(child, scope, project_symbols, is_async, is_sync, diagnostics);

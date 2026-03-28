@@ -1,0 +1,99 @@
+// TEMPLATE_DUP_NAME: Duplicate template names in the same scope are rejected.
+// Tests file-scoped duplicates and module-scoped duplicates in multiple modules.
+// Valid uses: same name in different scopes (file vs module), same name in different modules.
+
+@project TEMPLATE_DUP_NAME_duplicate_template_names
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// File-scoped template (valid, first definition)
+@template file_tmpl(a, b)
+    a <= b;
+@endtemplate
+
+// Trigger 1: Duplicate file-scoped template name
+@template file_tmpl(x, y)
+    x <= y;
+@endtemplate
+
+// Another file-scoped template (valid, unique name)
+@template file_other(a, b)
+    a <= b;
+@endtemplate
+
+// Trigger 2: Second duplicate at file scope (different template name)
+@template file_other(c, d)
+    c <= d;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Module-scoped template (valid, first definition in HelperMod)
+    @template mod_tmpl(a, b)
+        a <= b;
+    @endtemplate
+
+    // Trigger 3: Duplicate module-scoped template name in HelperMod
+    @template mod_tmpl(x, y)
+        x <= y;
+    @endtemplate
+
+    // Valid: same name as file-scoped template (different scope, no error)
+    @template file_tmpl(a, b)
+        a <= b;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Module-scoped template (valid, first definition in TopMod)
+    @template inner_tmpl(a, b)
+        a <= b;
+    @endtemplate
+
+    // Trigger 4: Duplicate module-scoped template name in TopMod
+    @template inner_tmpl(c, d)
+        c <= d;
+    @endtemplate
+
+    // Valid: same name as HelperMod's template (different module scope, no error)
+    @template mod_tmpl(a, b)
+        a <= b;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

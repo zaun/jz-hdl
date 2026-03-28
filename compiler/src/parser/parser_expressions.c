@@ -1071,7 +1071,11 @@ JZASTNode *parse_simple_index_expr(Parser *p) {
         return parse_expression(p);
     }
 
-    parser_error(p, "expected expression in index");
+    if (t->type == JZ_TOK_KW_GND || t->type == JZ_TOK_KW_VCC) {
+        parser_error_rule(p, "SPECIAL_DRIVER_IN_INDEX");
+    } else {
+        parser_error(p, "expected expression in index");
+    }
     return NULL;
 }
 

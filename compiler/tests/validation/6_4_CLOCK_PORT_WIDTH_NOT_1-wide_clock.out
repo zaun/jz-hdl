@@ -1,0 +1,2 @@
+File: 6_4_CLOCK_PORT_WIDTH_NOT_1-wide_clock.jz
+      15:9    error CLOCK_PORT_WIDTH_NOT_1 S6.4/S6.5/S6.9 Clock pin width is not [1]

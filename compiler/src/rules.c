@@ -19,7 +19,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "PARSE", "COMMENT_IN_TOKEN",                                  0, JZ_RULE_MODE_ERR, "S1.4 Comment appears inside a token (identifier/number/operator/literal)" },
     { "PARSE", "COMMENT_NESTED_BLOCK",                              0, JZ_RULE_MODE_ERR, "S1.4 Nested block comment `/* ... /* ... */ ... */` detected" },
     { "PARSE", "DIRECTIVE_INVALID_CONTEXT",                         0, JZ_RULE_MODE_ERR, "S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location" },
-    { "PARSE", "KEYWORD_AS_IDENTIFIER",                             0, JZ_RULE_MODE_ERR, "S1.1 Reserved keyword used as identifier" },
+    { "PARSE", "KEYWORD_AS_IDENTIFIER",                             2, JZ_RULE_MODE_ERR, "S1.1 Reserved keyword used as identifier" },
     { "PARSE", "IF_COND_MISSING_PARENS",                            0, JZ_RULE_MODE_ERR, "S5.3 IF/ELIF condition missing required parentheses" },
     { "PARSE", "INSTANCE_UNDEFINED_MODULE",                         0, JZ_RULE_MODE_ERR, "S4.13/S6.9 Instantiation references non-existent module" },
     { "PARSE", "LIT_DECIMAL_HAS_XZ",                                0, JZ_RULE_MODE_ERR, "S2.1 Decimal literal with `x` or `z` digits (e.g. `8'd10x`)" },
@@ -107,7 +107,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "LATCH_RULES", "LATCH_ALIAS_FORBIDDEN",                       0, JZ_RULE_MODE_ERR, "S4.8 LATCH may not be aliased using '='; latches must not be merged into other nets" },
     { "LATCH_RULES", "LATCH_INVALID_TYPE",                         0, JZ_RULE_MODE_ERR, "S4.8 LATCH type must be D or SR" },
     { "LATCH_RULES", "LATCH_WIDTH_INVALID",                        0, JZ_RULE_MODE_ERR, "S4.8 LATCH width must be a positive integer" },
-    { "LATCH_RULES", "LATCH_SR_WIDTH_MISMATCH",                    0, JZ_RULE_MODE_ERR, "S4.8 SR latch set/reset expression width does not match latch width" },
+    { "LATCH_RULES", "LATCH_SR_WIDTH_MISMATCH",                    2, JZ_RULE_MODE_ERR, "S4.8 SR latch set/reset expression width does not match latch width" },
     { "LATCH_RULES", "LATCH_AS_CLOCK_OR_CDC",                      0, JZ_RULE_MODE_ERR, "S4.8/S4.12 LATCH may not be used as a clock signal or in CDC declarations" },
     { "LATCH_RULES", "LATCH_IN_CONST_CONTEXT",                     0, JZ_RULE_MODE_ERR, "S4.8 LATCH identifier may not be used in compile-time constant contexts (@check/@feature conditions)" },
     { "LATCH_RULES", "LATCH_CHIP_UNSUPPORTED",                    0, JZ_RULE_MODE_ERR, "S4.8 LATCH type not supported by selected CHIP" },
@@ -150,12 +150,12 @@ const JZRuleInfo jz_rule_table[] = {
     { "ASYNC_BLOCK_RULES", "ASYNC_INVALID_STATEMENT_TARGET",        1, JZ_RULE_MODE_ERR, "S4.10/S5.1/S8.1 LHS in ASYNCHRONOUS assignment is not assignable (e.g. CONST, function call)" },
     { "ASYNC_BLOCK_RULES", "ASYNC_ASSIGN_REGISTER",                 0, JZ_RULE_MODE_ERR, "S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block" },
     { "ASYNC_BLOCK_RULES", "ASYNC_ALIAS_LITERAL_RHS",               0, JZ_RULE_MODE_ERR, "S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?" },
-    { "ASYNC_BLOCK_RULES", "ASYNC_FLOATING_Z_READ",                 0, JZ_RULE_MODE_ERR, "S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)" },
+
 
     /* [SYNC_BLOCK_RULES] */
     { "SYNC_BLOCK_RULES", "SYNC_MULTI_ASSIGN_SAME_REG_BITS",        0, JZ_RULE_MODE_ERR, "S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block" },
     { "SYNC_BLOCK_RULES", "SYNC_ROOT_AND_CONDITIONAL_ASSIGN",       0, JZ_RULE_MODE_ERR, "S5.2/S1.5/S8.1 Root-level register assignment combined with nested conditional assignment to same bits" },
-    { "SYNC_BLOCK_RULES", "SYNC_SLICE_WIDTH_MISMATCH",              0, JZ_RULE_MODE_ERR, "S5.2 Register slice assignment expression width not equal to slice width" },
+    { "SYNC_BLOCK_RULES", "SYNC_SLICE_WIDTH_MISMATCH",              3, JZ_RULE_MODE_ERR, "S5.2 Register slice assignment expression width not equal to slice width" },
     { "SYNC_BLOCK_RULES", "SYNC_CONCAT_DUP_REG",                    1, JZ_RULE_MODE_ERR, "S5.2 Concatenation LHS includes same register more than once" },
     { "SYNC_BLOCK_RULES", "SYNC_NO_ALIAS",                          0, JZ_RULE_MODE_ERR, "S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?" },
     { "SYNC_BLOCK_RULES", "DOMAIN_CONFLICT",                        0, JZ_RULE_MODE_ERR, "S4.11/S4.12 Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock" },
@@ -171,7 +171,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "SYNC_BLOCK_RULES", "SYNC_UNKNOWN_PARAM",                    0, JZ_RULE_MODE_ERR, "S4.11 Unknown SYNCHRONOUS block parameter; valid parameters are CLK, RESET, EDGE, RESET_ACTIVE, RESET_TYPE" },
     { "SYNC_BLOCK_RULES", "SYNC_MISSING_CLK",                      0, JZ_RULE_MODE_ERR, "S4.11 SYNCHRONOUS block must declare a CLK parameter" },
     { "SYNC_BLOCK_RULES", "CDC_SOURCE_NOT_PLAIN_REG",              0, JZ_RULE_MODE_ERR, "S4.12 CDC source must be a plain register identifier, not a slice or expression" },
-    { "SYNC_BLOCK_RULES", "CDC_DEST_ALIAS_ASSIGNED",               0, JZ_RULE_MODE_ERR, "S4.12 CDC destination alias may not be assigned directly in block statements" },
+    { "SYNC_BLOCK_RULES", "CDC_DEST_ALIAS_ASSIGNED",               3, JZ_RULE_MODE_ERR, "S4.12 CDC destination alias may not be assigned directly in block statements" },
     { "SYNC_BLOCK_RULES", "CDC_STAGES_INVALID",                    0, JZ_RULE_MODE_ERR, "S4.12 CDC stages parameter must be a positive integer" },
     { "SYNC_BLOCK_RULES", "CDC_TYPE_INVALID",                      0, JZ_RULE_MODE_ERR, "S4.12 CDC type must be BIT, BUS, FIFO, HANDSHAKE, PULSE, MCP, or RAW" },
     { "SYNC_BLOCK_RULES", "CDC_RAW_STAGES_FORBIDDEN",              0, JZ_RULE_MODE_ERR, "S4.12 RAW CDC type does not accept a stages parameter" },
@@ -192,7 +192,6 @@ const JZRuleInfo jz_rule_table[] = {
     { "FEATURE_GUARDS", "FEATURE_COND_WIDTH_NOT_1",                 0, JZ_RULE_MODE_ERR, "S4.14 Feature guard condition expression width must be 1" },
     { "FEATURE_GUARDS", "FEATURE_EXPR_INVALID_CONTEXT",             0, JZ_RULE_MODE_ERR, "S4.14 Feature guard condition may only reference CONFIG.<name>, module CONST, and literals" },
     { "FEATURE_GUARDS", "FEATURE_NESTED",                          0, JZ_RULE_MODE_ERR, "S4.14 @feature guards may not be nested inside other @feature guards" },
-    { "FEATURE_GUARDS", "FEATURE_VALIDATION_BOTH_PATHS",           0, JZ_RULE_MODE_ERR, "S4.14 Both branches of @feature guard must pass full semantic validation" },
 
     /* [FUNCTIONS_AND_CLOG2] */
     { "FUNCTIONS_AND_CLOG2", "CLOG2_NONPOSITIVE_ARG",               0, JZ_RULE_MODE_ERR, "S5.5.5 Argument to clog2() <= 0" },
@@ -202,7 +201,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "FUNCTIONS_AND_LIT",  "LIT_VALUE_INVALID",                   0, JZ_RULE_MODE_ERR, "S5.5.11 lit() value must be a nonnegative integer constant expression" },
     { "FUNCTIONS_AND_LIT",  "LIT_VALUE_OVERFLOW",                  0, JZ_RULE_MODE_ERR, "S5.5.11 lit() value exceeds declared width" },
     { "FUNCTIONS_AND_LIT",  "LIT_INVALID_CONTEXT",                 0, JZ_RULE_MODE_ERR, "S5.5.11 lit() used where a compile-time integer constant is required" },
-    { "FUNCTIONS_AND_CLOG2", "FUNC_RESULT_TRUNCATED_SILENTLY",      0, JZ_RULE_MODE_ERR, "S5.5/S5.2 Function result truncated by assignment without explicit slice or width check" },
+    { "FUNCTIONS_AND_CLOG2", "FUNC_RESULT_TRUNCATED_SILENTLY",      2, JZ_RULE_MODE_ERR, "S5.5/S5.2 Function result truncated by assignment without explicit slice or width check" },
     { "FUNCTIONS_AND_CLOG2", "WIDTHOF_INVALID_TARGET",             0, JZ_RULE_MODE_ERR, "S5.5.10 widthof() argument does not resolve to a WIRE, REGISTER, PORT, or BUS" },
     { "FUNCTIONS_AND_CLOG2", "WIDTHOF_INVALID_SYNTAX",             0, JZ_RULE_MODE_ERR, "S5.5.10 widthof() argument must be a plain identifier, not a slice/concat/qualified expression" },
     { "FUNCTIONS_AND_CLOG2", "WIDTHOF_WIDTH_NOT_RESOLVABLE",       0, JZ_RULE_MODE_ERR, "S5.5.10 widthof() target found but its width cannot be resolved" },
@@ -224,7 +223,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "BUS_RULES", "BUS_DEF_DUP_NAME",                               0, JZ_RULE_MODE_ERR, "S6.8 Duplicate BUS definition name in project" },
     { "BUS_RULES", "BUS_DEF_SIGNAL_DUP_NAME",                        0, JZ_RULE_MODE_ERR, "S6.8 Duplicate signal name inside BUS definition" },
     { "BUS_RULES", "BUS_DEF_INVALID_DIR",                            0, JZ_RULE_MODE_ERR, "S6.8 BUS signal direction must be IN, OUT, or INOUT" },
-    { "BUS_RULES", "BUS_PORT_UNKNOWN_BUS",                           0, JZ_RULE_MODE_ERR, "S4.4.1/S6.8 BUS port references BUS name not declared in project" },
+    { "BUS_RULES", "BUS_PORT_UNKNOWN_BUS",                           2, JZ_RULE_MODE_ERR, "S4.4.1/S6.8 BUS port references BUS name not declared in project" },
     { "BUS_RULES", "BUS_PORT_INVALID_ROLE",                          2, JZ_RULE_MODE_ERR, "S4.4.1 BUS port role must be SOURCE or TARGET" },
     { "BUS_RULES", "BUS_PORT_ARRAY_COUNT_INVALID",                   0, JZ_RULE_MODE_ERR, "S4.4.1 BUS array count must be a positive integer constant expression" },
     { "BUS_RULES", "BUS_PORT_INDEX_REQUIRED",                        0, JZ_RULE_MODE_ERR, "S4.4.1 Arrayed BUS access requires an explicit index or wildcard" },
@@ -347,7 +346,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "TOP_LEVEL_INSTANTIATION", "TOP_NO_CONNECT_WITHOUT_WIDTH",    0, JZ_RULE_MODE_ERR, "S6.9 Port bound to `_` but missing explicit width in top-level @top list" },
 
     /* [MEM_DECLARATION] */
-    { "MEM_DECLARATION", "MEM_UNDEFINED_NAME",                      0, JZ_RULE_MODE_ERR, "S7.7.1 Access to MEM name not declared in module" },
+    { "MEM_DECLARATION", "MEM_UNDEFINED_NAME",                      2, JZ_RULE_MODE_ERR, "S7.7.1 Access to MEM name not declared in module" },
     { "MEM_DECLARATION", "MEM_DUP_NAME",                            0, JZ_RULE_MODE_ERR, "S7.1/S7.7.1 Two MEM blocks declared with same name in module" },
     { "MEM_DECLARATION", "MEM_INVALID_WORD_WIDTH",                  0, JZ_RULE_MODE_ERR, "S7.1/S7.7.1 Word width <= 0 or non-integer" },
     { "MEM_DECLARATION", "MEM_INVALID_DEPTH",                       0, JZ_RULE_MODE_ERR, "S7.1/S7.7.1 Depth <= 0 or non-integer" },
@@ -405,8 +404,8 @@ const JZRuleInfo jz_rule_table[] = {
     { "MEM_WARNINGS", "MEM_WARN_DEAD_CODE_ACCESS",                  0, JZ_RULE_MODE_WRN, "S7.7.3 Memory access appears only in unreachable code" },
 
     /* [TRISTATE_TRANSFORM] */
-    { "TRISTATE_TRANSFORM", "TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL", 0, JZ_RULE_MODE_ERR, "S11.7 Tri-state drivers for same signal have non-mutually-exclusive enable conditions; cannot build safe priority chain" },
-    { "TRISTATE_TRANSFORM", "TRISTATE_TRANSFORM_PER_BIT_FAIL",          0, JZ_RULE_MODE_ERR, "S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed" },
+    { "TRISTATE_TRANSFORM", "TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL", 2, JZ_RULE_MODE_ERR, "S11.7 Tri-state drivers for same signal have non-mutually-exclusive enable conditions; cannot build safe priority chain" },
+    { "TRISTATE_TRANSFORM", "TRISTATE_TRANSFORM_PER_BIT_FAIL",          1, JZ_RULE_MODE_ERR, "S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed" },
     { "TRISTATE_TRANSFORM", "TRISTATE_TRANSFORM_BLACKBOX_PORT",         0, JZ_RULE_MODE_ERR, "S11.7 Tri-state signal driven by blackbox port cannot be transformed; use external pull resistor" },
     { "TRISTATE_TRANSFORM", "TRISTATE_TRANSFORM_SINGLE_DRIVER",         0, JZ_RULE_MODE_WRN, "S11.7 Single-driver tri-state net transformed to default value; original z replaced with GND/VCC" },
     { "TRISTATE_TRANSFORM", "TRISTATE_TRANSFORM_OE_EXTRACT_FAIL",       0, JZ_RULE_MODE_ERR, "S11.7 Could not extract output-enable condition from tri-state port; _oe driven high as fallback" },
@@ -467,8 +466,8 @@ const JZRuleInfo jz_rule_table[] = {
     { "GENERAL_WARNINGS", "WARN_INCOMPLETE_SELECT_ASYNC",           0, JZ_RULE_MODE_WRN, "S5.4/S8.3 Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block" },
     { "GENERAL_WARNINGS", "WARN_DEAD_CODE_UNREACHABLE",             0, JZ_RULE_MODE_WRN, "S7.7.3/S8.3 Dead code (unreachable statements detected by analysis)" },
     { "GENERAL_WARNINGS", "WARN_UNUSED_MODULE",                     0, JZ_RULE_MODE_WRN, "S8.3 Module declared but never instantiated; remove it or add a @new" },
-    { "GENERAL_WARNINGS", "WARN_UNUSED_WIRE",                      0, JZ_RULE_MODE_WRN, "S12.3 WIRE declared but never driven or read; remove it if unused" },
-    { "GENERAL_WARNINGS", "WARN_UNUSED_PORT",                      0, JZ_RULE_MODE_WRN, "S12.3 PORT declared but never used; remove it if unused" },
+    { "GENERAL_WARNINGS", "WARN_UNUSED_WIRE",                      1, JZ_RULE_MODE_WRN, "S12.3 WIRE declared but never driven or read; remove it if unused" },
+    { "GENERAL_WARNINGS", "WARN_UNUSED_PORT",                      1, JZ_RULE_MODE_WRN, "S12.3 PORT declared but never used; remove it if unused" },
     { "GENERAL_WARNINGS", "WARN_INTERNAL_TRISTATE",                0, JZ_RULE_MODE_WRN, "S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC" },
 
     /* [IO] */

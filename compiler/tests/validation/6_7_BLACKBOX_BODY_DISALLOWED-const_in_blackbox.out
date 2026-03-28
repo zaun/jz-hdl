@@ -1,0 +1,4 @@
+File: 6_7_BLACKBOX_BODY_DISALLOWED-const_in_blackbox.jz
+       9:9    error BLACKBOX_BODY_DISALLOWED S6.7 Blackbox contains forbidden blocks (ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM)
+      18:9    error BLACKBOX_BODY_DISALLOWED S6.7 Blackbox contains forbidden blocks (ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM)
+      30:9    error BLACKBOX_BODY_DISALLOWED S6.7 Blackbox contains forbidden blocks (ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM)

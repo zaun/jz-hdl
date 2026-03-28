@@ -1,0 +1,58 @@
+// MAP_INVALID_BOARD_PIN_ID: Board pin ID format must be alphanumeric.
+// Tests invalid pin IDs containing special characters.
+// Valid alphanumeric pin IDs included to verify no false positives.
+
+@project MAP_INVALID_BOARD_PIN_ID_bad_pin_format
+    CHIP = "gw1nr-9-qn88-c6-i5";
+
+    IN_PINS {
+        clk_in [1] = { standard=LVCMOS33 };
+        btn [1] = { standard=LVCMOS33 };
+        bad1 [1] = { standard=LVCMOS33 };
+        bad2 [1] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        led [1] = { standard=LVCMOS33, drive=4 };
+    }
+
+    MAP {
+        // Valid: numeric pin ID
+        clk_in = 52;
+        // Valid: alphanumeric pin ID
+        btn = P14;
+        // Trigger 1: pin ID with special character
+        bad1 = A#5;
+        // Trigger 2: pin ID with space-like issues via dot
+        bad2 = X.3;
+        // Valid: simple numeric
+        led = 10;
+    }
+
+    @top TopMod {
+        IN  [1] clk = clk_in;
+        IN  [1] btn_in = btn;
+        IN  [1] b1 = bad1;
+        IN  [1] b2 = bad2;
+        OUT [1] led_out = led;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] btn_in;
+        IN  [1] b1;
+        IN  [1] b2;
+        OUT [1] led_out;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        led_out = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= btn_in ^ b1 ^ b2;
+    }
+@endmod

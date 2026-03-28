@@ -1,0 +1,2 @@
+File: 7_11_MEM_BLOCK_RESOURCE_EXCEEDED-exceeds_bsram_capacity.jz
+       8:5    error MEM_BLOCK_RESOURCE_EXCEEDED S7.1/S6.1 Total BLOCK memory usage exceeds chip resources

@@ -1,0 +1,59 @@
+// ASYNC_INVALID_STATEMENT_TARGET: LHS in ASYNCHRONOUS assignment is not assignable.
+// Tests CONST assignment in ASYNC blocks across multiple modules.
+// Valid assignments (WIRE, PORT OUT) verify no false positives.
+
+@project ASYNC_INVALID_STATEMENT_TARGET_invalid_lhs_in_async
+    @top TopMod {
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: CONST assigned in ASYNC
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    CONST {
+        MY_CONST = 8;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: assign to CONST in ASYNC (helper module)
+        MY_CONST <= din;
+        // Valid: wire assignment (no error)
+        w <= din;
+        dout = w;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    CONST {
+        TOP_CONST = 42;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: assign to CONST in ASYNC (top module)
+        TOP_CONST <= din;
+        // Valid: PORT OUT assignment (no error)
+        dout_b <= din;
+    }
+@endmod

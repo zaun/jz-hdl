@@ -1,0 +1,5 @@
+File: 6_3_CONST_NUMERIC_IN_STRING_CONTEXT-numeric_as_string.jz
+      27:36   error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
+      27:36   error CONST_NUMERIC_IN_STRING_CONTEXT S4.3/S6.3 Numeric CONST/CONFIG value used where a string is expected (e.g. @file path)
+      55:36   error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
+      55:36   error CONST_NUMERIC_IN_STRING_CONTEXT S4.3/S6.3 Numeric CONST/CONFIG value used where a string is expected (e.g. @file path)

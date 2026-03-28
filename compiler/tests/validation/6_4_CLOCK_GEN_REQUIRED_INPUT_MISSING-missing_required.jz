@@ -1,0 +1,64 @@
+// CLOCK_GEN_REQUIRED_INPUT_MISSING: CLOCK_GEN required input is not provided.
+// Tests CLKDIV without the required REF_CLK input.
+// Valid CLKDIV with REF_CLK included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_REQUIRED_INPUT_MISSING_missing_required
+    CLOCKS {
+        ref_clk = { period=10 };
+        bad_out;
+        valid_out;
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+    }
+
+    CLOCK_GEN {
+        // Trigger 1: CLKDIV requires REF_CLK but none provided
+        CLKDIV {
+            OUT BASE bad_out;
+
+            CONFIG {
+                DIV_MODE = 2;
+            };
+        };
+
+        // Valid: CLKDIV with required REF_CLK (no trigger)
+        CLKDIV {
+            IN REF_CLK ref_clk;
+            OUT BASE valid_out;
+
+            CONFIG {
+                DIV_MODE = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

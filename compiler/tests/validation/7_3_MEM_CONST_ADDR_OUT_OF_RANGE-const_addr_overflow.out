@@ -1,0 +1,5 @@
+File: 7_3_MEM_CONST_ADDR_OUT_OF_RANGE-const_addr_overflow.jz
+      36:16   error MEM_CONST_ADDR_OUT_OF_RANGE S7.2/S7.3/S7.7.2 Constant address index >= depth
+      44:9    error MEM_CONST_ADDR_OUT_OF_RANGE S7.2/S7.3/S7.7.2 Constant address index >= depth
+      75:16   error MEM_CONST_ADDR_OUT_OF_RANGE S7.2/S7.3/S7.7.2 Constant address index >= depth
+      83:9    error MEM_CONST_ADDR_OUT_OF_RANGE S7.2/S7.3/S7.7.2 Constant address index >= depth

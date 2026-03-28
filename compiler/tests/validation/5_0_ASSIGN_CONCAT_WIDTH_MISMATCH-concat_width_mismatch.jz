@@ -1,0 +1,82 @@
+// ASSIGN_CONCAT_WIDTH_MISMATCH: Concatenation on either side of assignment has
+// width sum that does not match paired expression width. Tests concat LHS
+// in ASYNC and SYNC across multiple modules. Valid same-width concats included.
+
+@project ASSIGN_CONCAT_WIDTH_MISMATCH_concat_width_mismatch
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [4] out_hi = _;
+        OUT [4] out_lo = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: concat width mismatch in ASYNC and SYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [4] out_hi;
+        OUT [4] out_lo;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        r_hi [4] = 4'h0;
+        r_lo [4] = 4'h0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: concat LHS sum (4+4=8) != RHS width (4), ASYNC helper
+        {out_hi, out_lo} <= din[3:0];
+        // Valid: read registers in ASYNC (no error)
+        dout <= {r_hi, r_lo};
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: concat LHS sum (4+4=8) != RHS width (6), SYNC helper
+        {r_hi, r_lo} <= din[5:0];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [4] out_hi;
+        OUT [4] out_lo;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    REGISTER {
+        r_a [4] = 4'h0;
+        r_b [4] = 4'h0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        OUT [4] out_hi = _;
+        OUT [4] out_lo = _;
+        OUT [8] dout = dout_a;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: concat LHS sum (4+4=8) != RHS width (4), ASYNC top
+        {out_hi, out_lo} <= din[3:0];
+        // Valid: read registers and connect output (no error)
+        dout_b <= {r_a, r_b};
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: concat LHS in SYNC (4+4=8) != RHS width (5)
+        {r_a, r_b} <= din[4:0];
+    }
+@endmod

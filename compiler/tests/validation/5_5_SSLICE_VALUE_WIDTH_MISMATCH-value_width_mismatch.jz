@@ -1,0 +1,71 @@
+// SSLICE_VALUE_WIDTH_MISMATCH: sslice() value argument width does not match width parameter.
+// Tests sslice() where value width != width parameter in ASYNC and SYNC blocks.
+// Valid sslice() with matching widths included to verify no false positives.
+
+@project SSLICE_VALUE_WIDTH_MISMATCH_value_width_mismatch
+    @top TopMod {
+        IN  [1]  clk = _;
+        IN  [16] data = _;
+        IN  [4]  idx = _;
+        OUT [16] out_a = _;
+        OUT [16] out_b = _;
+    }
+@endproj
+
+// Helper module: sslice() with mismatched value width
+@module HelperMod
+    PORT {
+        IN  [1]  clk;
+        IN  [16] src;
+        IN  [4]  idx;
+        OUT [16] out_a;
+        OUT [16] out_b;
+    }
+    REGISTER {
+        r [16] = 16'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: sslice(src, idx, 4, 8-bit) — value is 8 bits, width param is 4
+        out_a <= sslice(src, idx, 4, src[7:0]);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: sslice(src, idx, 4, 8-bit) in helper SYNC
+        r <= sslice(src, idx, 4, src[7:0]);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1]  clk;
+        IN  [16] data;
+        IN  [4]  idx;
+        OUT [16] out_a;
+        OUT [16] out_b;
+    }
+    WIRE {
+        ha_a [16];
+        ha_b [16];
+    }
+    REGISTER {
+        r [16] = 16'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1]  clk = clk;
+        IN  [16] src = data;
+        IN  [4]  idx = idx;
+        OUT [16] out_a = ha_a;
+        OUT [16] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: sslice(data, idx, 4, 8-bit) in top ASYNC
+        out_a <= sslice(data, idx, 4, data[7:0]);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: sslice(data, idx, 4, 8-bit) in top SYNC
+        r <= sslice(data, idx, 4, data[7:0]);
+    }
+@endmod

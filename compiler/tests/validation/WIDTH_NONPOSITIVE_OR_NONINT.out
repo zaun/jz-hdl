@@ -1,5 +1,0 @@
-File: WIDTH_NONPOSITIVE_OR_NONINT.jz
-       7:13   error TOP_NO_CONNECT_WITHOUT_WIDTH S6.9 Port bound to `_` but missing explicit width in top-level @top list
-      14:13   error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer
-      19:5    error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer
-      24:5    error WIDTH_NONPOSITIVE_OR_NONINT S2.2/S8.1 Declared width <= 0 or not an integer

@@ -1,0 +1,59 @@
+// HAPPY_PATH: Valid MAP block with scalar, bus, differential, and INOUT pin mappings.
+// Verifies no false positives for correctly formed MAP entries.
+
+@project HAPPY_PATH_map_ok
+    IN_PINS {
+        clk = { standard=LVCMOS33 };
+        btn = { standard=LVCMOS33 };
+        diff_in = { mode=DIFFERENTIAL, standard=LVDS25 };
+    }
+
+    OUT_PINS {
+        led[4] = { standard=LVCMOS33, drive=8 };
+        diff_out = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=clk, pclk=clk, reset=btn };
+    }
+
+    INOUT_PINS {
+        gpio = { standard=LVCMOS33, drive=4 };
+    }
+
+    CLOCKS {
+        clk = { period=20, edge=Rising };
+    }
+
+    MAP {
+        clk = 52;
+        btn = 3;
+        diff_in = { P=30, N=31 };
+        led[0] = 10;
+        led[1] = 11;
+        led[2] = 13;
+        led[3] = 14;
+        diff_out = { P=33, N=34 };
+        gpio = 40;
+    }
+
+    @top TopMod {
+        IN  [1] clk = clk;
+        OUT [1] data = led[0];
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

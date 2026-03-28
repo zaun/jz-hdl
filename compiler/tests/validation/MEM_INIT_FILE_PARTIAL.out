@@ -1,2 +1,0 @@
-File: MEM_INIT_FILE_PARTIAL.jz
-      18:25   warn  MEM_WARN_PARTIAL_INIT S7.5.2/S7.7.3 Initialization file smaller than depth (zero-padded)

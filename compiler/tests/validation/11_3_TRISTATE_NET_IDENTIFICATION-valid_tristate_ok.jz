@@ -1,0 +1,90 @@
+// TRISTATE_NET_IDENTIFICATION: Valid single-driver and non-tri-state patterns.
+// Verifies that nets with a single driver per wire are not falsely flagged as
+// multi-driver or all-z-read errors. Exercises cross-module wiring with
+// exactly one driver per net, conditional branching, and instance bindings.
+// This is a happy-path test: no diagnostics expected.
+
+@project TRISTATE_NET_IDENTIFICATION_valid_tristate_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper A: single driver on output, conditional values — no tri-state
+@module HelperA
+    PORT {
+        IN  [1] en;
+        OUT [8] data;
+    }
+
+    ASYNCHRONOUS {
+        IF (en) {
+            data <= 8'b1010_1010;
+        } ELSE {
+            data <= 8'b0101_0101;
+        }
+    }
+@endmod
+
+// Helper B: single driver on output, different values — no tri-state
+@module HelperB
+    PORT {
+        IN  [1] en;
+        OUT [8] data;
+    }
+
+    ASYNCHRONOUS {
+        IF (en) {
+            data <= 8'b1111_0000;
+        } ELSE {
+            data <= 8'b0000_1111;
+        }
+    }
+@endmod
+
+// Top module: each wire driven by exactly one instance — no conflicts
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'b0000_0000;
+    }
+
+    WIRE {
+        w_a [8];
+        w_b [8];
+    }
+
+    // Single driver per wire — no multi-driver conflict
+    @new inst_a HelperA {
+        IN  [1] en = sel;
+        OUT [8] data = w_a;
+    };
+
+    @new inst_b HelperB {
+        IN  [1] en = sel;
+        OUT [8] data = w_b;
+    };
+
+    ASYNCHRONOUS {
+        IF (sel) {
+            data <= w_a;
+        } ELSE {
+            data <= w_b;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -605,6 +605,7 @@ typedef struct IR_Module {
     int             source_file_id;   /**< Index into IR_Design.source_files (-1 if unknown). */
     int             source_line;      /**< Module declaration line. */
     bool            eliminated;       /**< True if unreachable from @top (dead module). */
+    bool            is_blackbox;      /**< True if module originated from @blackbox declaration. */
 } IR_Module;
 
 /**

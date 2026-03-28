@@ -1,0 +1,64 @@
+// PORT_DIRECTION_MISMATCH_OUT: Reading from OUT port inside module.
+// Tests reading OUT port in ASYNC RHS, SYNC RHS, and IF condition across modules.
+// Valid writes to OUT ports included to verify no false positives.
+
+@project PORT_DIRECTION_MISMATCH_OUT_read_from_output
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: trigger in non-top module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: drive OUT port
+        data_out <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: read from OUT port in SYNC RHS
+        r <= data_out;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] data_out = _;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: drive OUT port from register
+        dout_a <= r;
+        // Trigger 2: read from OUT port in ASYNC RHS
+        dout_b <= dout_a;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: read from IN port
+        r <= din;
+    }
+@endmod

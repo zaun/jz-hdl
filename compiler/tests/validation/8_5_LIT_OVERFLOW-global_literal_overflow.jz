@@ -1,0 +1,43 @@
+// LIT_OVERFLOW: Literal overflow inside @global blocks.
+// Tests that the compiler catches literal values whose intrinsic width exceeds
+// the declared width when used inside @global constant definitions.
+// Valid sized literals are included to verify no false positives.
+
+// Trigger 1: 4'hFF requires 8 bits but only 4 declared
+// Trigger 2: 2'b111 requires 3 bits but only 2 declared
+@global CODES
+    VALID_A = 8'hFF;
+    OVER_A  = 4'hFF;
+    VALID_B = 3'b111;
+    OVER_B  = 2'b111;
+    VALID_C = 4'hF;
+@endglob
+
+// Trigger 3: overflow in a second @global block
+@global MORE
+    VALID_X = 8'b0000_0001;
+    OVER_X  = 1'b11;
+@endglob
+
+@project LIT_OVERFLOW_global_literal_overflow
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= CODES.VALID_A;
+    }
+@endmod
