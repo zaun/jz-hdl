@@ -64,22 +64,6 @@
 
 | Rule                                          | Severity    | Description                                                                              |
 |-----------------------------------------------|-------------|------------------------------------------------------------------------------------------|
-| TRISTATE_TRANSFORM_SINGLE_DRIVER              | Bug         | Rule defined but never emitted; only INFO_TRISTATE_TRANSFORM fires                      |
-| WIDTHOF_INVALID_SYNTAX                        | Bug         | Rule defined but never emitted for slice arguments                                       |
-| WIDTHOF_INVALID_TARGET                        | Bug         | Rule defined but never emitted for CONST names                                           |
-| WIDTHOF_WIDTH_NOT_RESOLVABLE                  | Bug         | Rule defined but never emitted for unresolvable targets                                  |
-| WIRE_MULTI_DIMENSIONAL                        | Bug         | Parser emits PARSE000; semantic rule unreachable                                         |
-| BUS_DEF_INVALID_DIR                           | Dead code   | Parser rejects invalid BUS direction; semantic check unreachable                         |
-| LATCH_WIDTH_INVALID                           | Dead code   | WIDTH_NONPOSITIVE_OR_NONINT always fires first for same condition                        |
-| NET_TRI_STATE_ALL_Z_READ                      | Dead code   | ASYNC_FLOATING_Z_READ covers same condition; no code emits this rule                     |
-| WARN_INCOMPLETE_SELECT_ASYNC                  | Dead code   | SELECT_DEFAULT_RECOMMENDED_ASYNC covers same condition; redundant rule                   |
-| CONST_NUMERIC_IN_STRING_CONTEXT               | Gap         | Not emitted for CONFIG.name in @file(); parser fires PARSE000 instead                   |
-| FEATURE_VALIDATION_BOTH_PATHS                 | Gap         | Rule defined but no semantic pass validates both feature paths                           |
-| LATCH_AS_CLOCK_OR_CDC                         | Gap         | Only checks CLK parameter; latch as CDC source not detected                              |
-| MAP_DUP_PHYSICAL_LOCATION                     | Gap         | Does not check differential P/N values for duplicate locations                           |
-| PATH_OUTSIDE_SANDBOX                          | Gap         | Requires filesystem sandbox config; not testable via --lint                              |
-| PATH_SYMLINK_ESCAPE                           | Gap         | Requires actual symlinks; not testable via --lint                                        |
-| CONST_USED_WHERE_FORBIDDEN                    | Limitation  | CONST identifiers rejected in CASE values; spec says they should work                   |
 | FEATURE_NESTED                                | Limitation  | Compiler stops processing after first occurrence per file                                |
 | LIT_BARE_INTEGER                              | Limitation  | Semantic literal rules untestable in async context due to co-firing                      |
 | @import                                       | Limitation  | Path error stops compilation; prevents combining @import and @file() tests               |

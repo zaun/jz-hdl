@@ -3,8 +3,7 @@
 // and no driver ever provides an active value, yet the net is consumed.
 // Contexts: conditional all-z in helper module, conditional all-z in top
 // module, unconditional z in top module.
-// Note: Compiler fires ASYNC_FLOATING_Z_READ for this scenario instead of
-// NET_TRI_STATE_ALL_Z_READ (see issues.md).
+
 
 @project NET_TRI_STATE_ALL_Z_READ_all_drivers_z_but_read
     @top TopMod {

@@ -1378,7 +1378,6 @@ void sem_check_project_map(JZASTNode *project,
 
     typedef struct JZPhysLoc {
         char  id[64];
-        int   seen;
     } JZPhysLoc;
     JZPhysLoc phys[128];
     size_t phys_count = 0;
@@ -1549,20 +1548,16 @@ void sem_check_project_map(JZASTNode *project,
                         size_t k;
                         for (k = 0; k < phys_count; ++k) {
                             if (strcmp(phys[k].id, pair_pins[pp_idx]) == 0) {
-                                if (!phys[k].seen) {
-                                    sem_report_rule(diagnostics,
-                                                    entry->loc,
-                                                    "MAP_DUP_PHYSICAL_LOCATION",
-                                                    "two logical pins mapped to same physical board pin");
-                                    phys[k].seen = 1;
-                                }
+                                sem_report_rule(diagnostics,
+                                                entry->loc,
+                                                "MAP_DUP_PHYSICAL_LOCATION",
+                                                "two logical pins mapped to same physical board pin");
                                 break;
                             }
                         }
                         if (k == phys_count && phys_count < sizeof(phys) / sizeof(phys[0])) {
                             strncpy(phys[phys_count].id, pair_pins[pp_idx], sizeof(phys[phys_count].id) - 1);
                             phys[phys_count].id[sizeof(phys[phys_count].id) - 1] = '\0';
-                            phys[phys_count].seen = 0;
                             ++phys_count;
                         }
                     }
@@ -1573,20 +1568,16 @@ void sem_check_project_map(JZASTNode *project,
                         size_t k;
                         for (k = 0; k < phys_count; ++k) {
                             if (strcmp(phys[k].id, phys_id) == 0) {
-                                if (!phys[k].seen) {
-                                    sem_report_rule(diagnostics,
-                                                    entry->loc,
-                                                    "MAP_DUP_PHYSICAL_LOCATION",
-                                                    "two logical pins mapped to same physical board pin");
-                                    phys[k].seen = 1;
-                                }
+                                sem_report_rule(diagnostics,
+                                                entry->loc,
+                                                "MAP_DUP_PHYSICAL_LOCATION",
+                                                "two logical pins mapped to same physical board pin");
                                 break;
                             }
                         }
                         if (k == phys_count && phys_count < sizeof(phys) / sizeof(phys[0])) {
                             strncpy(phys[phys_count].id, phys_id, sizeof(phys[phys_count].id) - 1);
                             phys[phys_count].id[sizeof(phys[phys_count].id) - 1] = '\0';
-                            phys[phys_count].seen = 0;
                             ++phys_count;
                         }
                     }

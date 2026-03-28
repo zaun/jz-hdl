@@ -163,29 +163,35 @@ int parse_mem_block_body(Parser *p, JZASTNode *parent) {
                     }
                     jz_ast_set_text(init_expr, path_tok->lexeme);
                     advance(p); /* consume string */
-                } else if (path_tok->type == JZ_TOK_IDENTIFIER && path_tok->lexeme) {
-                    /* CONST or CONFIG.NAME reference: @file(MY_PATH) or @file(CONFIG.SAMPLE) */
+                } else if (path_tok->type == JZ_TOK_KW_CONFIG) {
+                    /* CONFIG.NAME reference: @file(CONFIG.SAMPLE) */
                     char ref_name[256];
-                    ref_name[0] = '\0';
-                    if (strcmp(path_tok->lexeme, "CONFIG") == 0) {
-                        advance(p); /* consume 'CONFIG' */
-                        if (!match(p, JZ_TOK_DOT)) {
-                            jz_ast_free(mem);
-                            parser_error(p, "expected '.' after CONFIG in @file(CONFIG.NAME)");
-                            return -1;
-                        }
-                        const JZToken *name_tok2 = peek(p);
-                        if (name_tok2->type != JZ_TOK_IDENTIFIER || !name_tok2->lexeme) {
-                            jz_ast_free(mem);
-                            parser_error(p, "expected identifier after CONFIG. in @file()");
-                            return -1;
-                        }
-                        snprintf(ref_name, sizeof(ref_name), "CONFIG.%s", name_tok2->lexeme);
-                        advance(p); /* consume name */
-                    } else {
-                        snprintf(ref_name, sizeof(ref_name), "%s", path_tok->lexeme);
-                        advance(p); /* consume identifier */
+                    advance(p); /* consume 'CONFIG' */
+                    if (!match(p, JZ_TOK_DOT)) {
+                        jz_ast_free(mem);
+                        parser_error(p, "expected '.' after CONFIG in @file(CONFIG.NAME)");
+                        return -1;
                     }
+                    const JZToken *name_tok2 = peek(p);
+                    if (name_tok2->type != JZ_TOK_IDENTIFIER || !name_tok2->lexeme) {
+                        jz_ast_free(mem);
+                        parser_error(p, "expected identifier after CONFIG. in @file()");
+                        return -1;
+                    }
+                    snprintf(ref_name, sizeof(ref_name), "CONFIG.%s", name_tok2->lexeme);
+                    advance(p); /* consume name */
+                    init_expr = jz_ast_new(JZ_AST_EXPR_IDENTIFIER, init_loc);
+                    if (!init_expr) {
+                        jz_ast_free(mem);
+                        return -1;
+                    }
+                    jz_ast_set_name(init_expr, ref_name);
+                    jz_ast_set_block_kind(init_expr, "FILE_REF");
+                } else if (path_tok->type == JZ_TOK_IDENTIFIER && path_tok->lexeme) {
+                    /* CONST reference: @file(MY_PATH) */
+                    char ref_name[256];
+                    snprintf(ref_name, sizeof(ref_name), "%s", path_tok->lexeme);
+                    advance(p); /* consume identifier */
                     init_expr = jz_ast_new(JZ_AST_EXPR_IDENTIFIER, init_loc);
                     if (!init_expr) {
                         jz_ast_free(mem);

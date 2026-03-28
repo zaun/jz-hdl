@@ -1114,7 +1114,10 @@ void sem_check_module_decl_widths(const JZModuleScope *scope,
                     }
                 }
 
-                /* LATCH_WIDTH_INVALID: latch width must be a positive integer. */
+                /* LATCH_WIDTH_INVALID: latch width must be a positive integer.
+                 * Defense-in-depth: WIDTH_NONPOSITIVE_OR_NONINT (below) also
+                 * catches this for all declaration types. This latch-specific
+                 * check provides a more targeted diagnostic message. */
                 if (decl->type == JZ_AST_LATCH_DECL &&
                     decl->width) {
                     unsigned lw = 0;

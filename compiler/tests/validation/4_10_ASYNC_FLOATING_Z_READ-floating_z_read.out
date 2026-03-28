@@ -1,5 +1,0 @@
-File: 4_10_ASYNC_FLOATING_Z_READ-floating_z_read.jz
-      24:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
-      30:9    error ASYNC_FLOATING_Z_READ S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)
-      45:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
-      57:9    error ASYNC_FLOATING_Z_READ S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)

@@ -150,7 +150,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "ASYNC_BLOCK_RULES", "ASYNC_INVALID_STATEMENT_TARGET",        1, JZ_RULE_MODE_ERR, "S4.10/S5.1/S8.1 LHS in ASYNCHRONOUS assignment is not assignable (e.g. CONST, function call)" },
     { "ASYNC_BLOCK_RULES", "ASYNC_ASSIGN_REGISTER",                 0, JZ_RULE_MODE_ERR, "S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block" },
     { "ASYNC_BLOCK_RULES", "ASYNC_ALIAS_LITERAL_RHS",               0, JZ_RULE_MODE_ERR, "S4.10/S5.1 Literal on RHS of `=` in ASYNCHRONOUS block; did you mean `<=` or `=>`?" },
-    { "ASYNC_BLOCK_RULES", "ASYNC_FLOATING_Z_READ",                 0, JZ_RULE_MODE_ERR, "S4.10/S1.5/S8.1 Net has sinks but all drivers assign `z` (tri-state bus fully released while read)" },
+
 
     /* [SYNC_BLOCK_RULES] */
     { "SYNC_BLOCK_RULES", "SYNC_MULTI_ASSIGN_SAME_REG_BITS",        0, JZ_RULE_MODE_ERR, "S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block" },
@@ -192,7 +192,6 @@ const JZRuleInfo jz_rule_table[] = {
     { "FEATURE_GUARDS", "FEATURE_COND_WIDTH_NOT_1",                 0, JZ_RULE_MODE_ERR, "S4.14 Feature guard condition expression width must be 1" },
     { "FEATURE_GUARDS", "FEATURE_EXPR_INVALID_CONTEXT",             0, JZ_RULE_MODE_ERR, "S4.14 Feature guard condition may only reference CONFIG.<name>, module CONST, and literals" },
     { "FEATURE_GUARDS", "FEATURE_NESTED",                          0, JZ_RULE_MODE_ERR, "S4.14 @feature guards may not be nested inside other @feature guards" },
-    { "FEATURE_GUARDS", "FEATURE_VALIDATION_BOTH_PATHS",           0, JZ_RULE_MODE_ERR, "S4.14 Both branches of @feature guard must pass full semantic validation" },
 
     /* [FUNCTIONS_AND_CLOG2] */
     { "FUNCTIONS_AND_CLOG2", "CLOG2_NONPOSITIVE_ARG",               0, JZ_RULE_MODE_ERR, "S5.5.5 Argument to clog2() <= 0" },

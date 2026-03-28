@@ -589,10 +589,9 @@ All other scenarios (unary negation, arithmetic vs logical shift, carry capture 
 
 ## test_5_4-select_case_statements.md
 
-### CONST identifiers rejected in CASE values
-- **Severity:** Bug / Spec discrepancy
-- **Description:** The spec (S5.4) says "CASE values are integer constants or CONST names" but using a CONST identifier as a CASE value fires `CONST_USED_WHERE_FORBIDDEN` ("CONST identifier used outside compile-time constant expression contexts"). This prevents using CONST names in SELECT/CASE, which the spec explicitly allows.
-- **Reproduction:** `CONST { MY_VAL = 5; } ... SELECT (sel) { CASE MY_VAL { ... } }` → `CONST_USED_WHERE_FORBIDDEN` error.
+### CONST identifiers rejected in CASE values (resolved — not a bug)
+- **Severity:** Closed
+- **Description:** The spec previously said "CASE values are integer constants or CONST names" but CONST values are unsized compile-time integers with no width, making them incompatible with CASE pattern matching which requires width-matched values. The spec was corrected: CASE labels are sized integer literals or `@global` constants. The compiler correctly rejects CONST in CASE via `CONST_USED_WHERE_FORBIDDEN`.
 
 ### WARN_INCOMPLETE_SELECT_ASYNC is dead code
 - **Severity:** Minor (dead code)

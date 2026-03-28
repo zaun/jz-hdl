@@ -502,7 +502,7 @@ All rules from this test plan are tested. No missing rules, no untestable scenar
 - **WARN_INCOMPLETE_SELECT_ASYNC** — This rule exists in rules.c (GENERAL_WARNINGS category) but `sem_report_rule` is never called with this rule ID anywhere in the semantic analysis code. The functionally equivalent `SELECT_DEFAULT_RECOMMENDED_ASYNC` (CONTROL_FLOW_IF_SELECT category) is what actually fires. WARN_INCOMPLETE_SELECT_ASYNC appears to be dead code.
 
 ### Rules not testable due to compiler behavior
-- **CONST in CASE values** — Using a CONST identifier as a CASE value fires `CONST_USED_WHERE_FORBIDDEN` ("CONST identifier used outside compile-time constant expression contexts"), preventing testing of CONST name duplicate detection in SELECT. The spec (S5.4) says "CASE values are integer constants or CONST names" but the compiler rejects CONST names in CASE.
+- **CONST in CASE values** — CONST values are unsized compile-time integers with no width, making them incompatible with CASE pattern matching which requires width-matched values. The spec was corrected: CASE labels are sized integer literals or `@global` constants. The compiler correctly rejects CONST in CASE via `CONST_USED_WHERE_FORBIDDEN`.
 
 ### Inherent co-firing limitations
 - **SELECT_DEFAULT_RECOMMENDED_ASYNC** always co-fires with **ASYNC_UNDEFINED_PATH_NO_DRIVER** — An ASYNC SELECT without DEFAULT leaves ports/wires undriven on some execution paths, which triggers the "signal undriven" error on the port declaration.
@@ -513,7 +513,7 @@ All rules from this test plan are tested. No missing rules, no untestable scenar
 - `SELECT_CASE_WIDTH_MISMATCH` → listed as missing in test plan (Section 6.2) but it EXISTS in rules.c and is fully implemented (tested)
 
 ### Happy-path and edge-case scenarios (not testable in lint framework)
-- Simple SELECT, multiple CASEs, x-wildcard CASE, fall-through, SYNC without DEFAULT (valid hold behavior), CONST in CASE, nested SELECT, single CASE + DEFAULT, many CASEs (256), all-x CASE — these verify correct parsing and runtime behavior, not lint diagnostics.
+- Simple SELECT, multiple CASEs, x-wildcard CASE, fall-through, SYNC without DEFAULT (valid hold behavior), nested SELECT, single CASE + DEFAULT, many CASEs (256), all-x CASE — these verify correct parsing and runtime behavior, not lint diagnostics.
 
 ## From test_5_5-intrinsic_operators.md
 

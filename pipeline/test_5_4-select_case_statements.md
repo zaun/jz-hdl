@@ -17,7 +17,7 @@ Verify SELECT/CASE syntax, duplicate CASE detection, DEFAULT behavior (optional 
 | 3 | x-wildcard CASE | `CASE 8'b1010_xxxx { ... }` | Valid, don't-care bits |
 | 4 | Fall-through | `CASE 0 CASE 1 { ... }` | Valid, shared handler |
 | 5 | SYNC without DEFAULT | SELECT in SYNC, no DEFAULT | Valid, registers hold |
-| 6 | CONST in CASE | `CASE MY_CONST { ... }` | Valid, compile-time constant |
+| 6 | @global in CASE | `CASE MY_GLOBAL { ... }` | Valid, sized global constant |
 | 7 | Nested SELECT | SELECT inside CASE body | Valid |
 | 8 | Partial x-wildcard | `CASE 8'b10xx_0011` | Valid, partial don't-care |
 

@@ -1193,6 +1193,10 @@ void sem_check_project_buses(JZASTNode *project,
                 }
             }
 
+            /* Defense-in-depth: the parser already enforces valid direction
+             * (IN/OUT/INOUT) before creating BUS_DECL nodes, so this check
+             * is normally unreachable. Kept as a guard against future parser
+             * changes or malformed AST construction. */
             const char *dir = decl->block_kind ? decl->block_kind : "";
             if (strcmp(dir, "IN") != 0 &&
                 strcmp(dir, "OUT") != 0 &&

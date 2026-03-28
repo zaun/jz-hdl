@@ -328,6 +328,36 @@ void sem_check_sync_clock_domains(JZBuffer *module_scopes,
                     continue;
                 }
 
+                /* LATCH_AS_CLOCK_OR_CDC: CDC clocks must not be latches. */
+                {
+                    const JZSymbol *src_clk_sym = module_scope_lookup(scope, src_clk_name);
+                    if (src_clk_sym && src_clk_sym->kind == JZ_SYM_LATCH) {
+                        char explain[256];
+                        snprintf(explain, sizeof(explain),
+                                 "'%s' is a LATCH, not a clock. LATCHes are level-sensitive\n"
+                                 "storage elements and cannot be used as CDC source clock.\n"
+                                 "Use a declared clock signal instead.",
+                                 src_clk_name);
+                        sem_report_rule(diagnostics,
+                                        src_clk->loc,
+                                        "LATCH_AS_CLOCK_OR_CDC",
+                                        explain);
+                    }
+                    const JZSymbol *dst_clk_sym = module_scope_lookup(scope, dst_clk_name);
+                    if (dst_clk_sym && dst_clk_sym->kind == JZ_SYM_LATCH) {
+                        char explain[256];
+                        snprintf(explain, sizeof(explain),
+                                 "'%s' is a LATCH, not a clock. LATCHes are level-sensitive\n"
+                                 "storage elements and cannot be used as CDC destination clock.\n"
+                                 "Use a declared clock signal instead.",
+                                 dst_clk_name);
+                        sem_report_rule(diagnostics,
+                                        dst_clk->loc,
+                                        "LATCH_AS_CLOCK_OR_CDC",
+                                        explain);
+                    }
+                }
+
                 const JZSymbol *src_sym = module_scope_lookup_kind(scope, src_name, JZ_SYM_REGISTER);
                 if (!src_sym || !src_sym->node) {
                     char explain[256];

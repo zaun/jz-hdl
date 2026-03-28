@@ -1864,9 +1864,9 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
             }
             int total_non_z = non_z_assign_driver_count + instance_non_z_capable_count;
             if (total_non_z == 0 && has_z_only_driver && effective_has_sink) {
-                /* Report ASYNC_FLOATING_Z_READ at the point where the net is
-                 * actually read, not at its declaration. This makes the
-                 * diagnostic much more actionable (e.g. points at
+                /* Report at the point where the net is actually read, not at
+                 * its declaration. This makes the diagnostic much more
+                 * actionable (e.g. points at
                  *   out_a = data;  // read of fully released tri-state bus
                  * instead of the PORT/WIRE declaration).
                  */
@@ -1880,8 +1880,8 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
 
                 sem_report_rule(diagnostics,
                                 loc,
-                                "ASYNC_FLOATING_Z_READ",
-                                "net has sinks but all drivers assign 'z' (tri-state bus fully released while read)");
+                                "NET_TRI_STATE_ALL_Z_READ",
+                                "all drivers assign 'z' but signal is read; at least one driver must provide a value");
             }
         }
     }

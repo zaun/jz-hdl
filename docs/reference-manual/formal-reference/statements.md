@@ -86,7 +86,7 @@ SELECT (<expr>) {
 }
 ```
 
-- CASE labels are integer literals or `CONST` names.
+- CASE labels are sized integer literals or `@global` constants.
 - `x` may appear in CASE patterns (don't-care matching); x bits do not propagate into results.
 - Multiple CASE labels matching the same value are a compile error.
 - DEFAULT is optional in SYNCHRONOUS (register holds state); recommended in ASYNCHRONOUS (prevents floating nets).
