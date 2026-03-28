@@ -1,5 +1,6 @@
 // MEM_INOUT_MIXED_WITH_IN_OUT: INOUT ports mixed with IN/OUT ports triggers error.
-// Tests INOUT + OUT, INOUT + IN combinations. Pure INOUT for no false positives.
+// Tests INOUT+OUT, INOUT+IN, and INOUT+OUT+IN combinations.
+// Valid pure INOUT MEM included for no false positives.
 
 @project MEM_INOUT_MIXED_WITH_IN_OUT_mixed_inout
     @top TopMod {
@@ -23,10 +24,10 @@
         r [8] = 8'h00;
     }
 
-    MEM(type=BLOCK) {
+    MEM {
         mem_a [8] [16] = 8'h00 {
             INOUT rw;
-            OUT rd SYNC;
+            OUT   rd;
         };
     }
 
@@ -52,19 +53,19 @@
     }
 
     // Trigger 2: INOUT mixed with IN in top module
-    MEM(type=BLOCK) {
+    MEM {
         mem_b [8] [16] = 8'h00 {
             INOUT rw;
-            IN  wr;
+            IN    wr;
         };
     }
 
-    // Trigger 3: INOUT mixed with both IN and OUT
-    MEM(type=BLOCK) {
+    // Trigger 3: INOUT mixed with both OUT and IN in top module
+    MEM {
         mem_c [8] [16] = 8'h00 {
             INOUT rw;
-            OUT rd SYNC;
-            IN  wr;
+            OUT   rd;
+            IN    wr;
         };
     }
 
@@ -87,8 +88,7 @@
     }
 
     SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
         mem_ok.rw_ok.addr <= addr;
-        r <= mem_ok.rw_ok.data;
-        mem_ok.rw_ok.wdata <= wdata;
     }
 @endmod

@@ -1,5 +1,5 @@
 // MEM_PORT_USED_AS_SIGNAL: Reference MEM port without .field or [index].
-// Triggers on ASYNC port and SYNC port.
+// Triggers on ASYNC, SYNC, and INOUT port types.
 // Valid field/index access included for no false positives.
 
 @project MEM_PORT_USED_AS_SIGNAL_bare_port_ref
@@ -36,7 +36,6 @@
     }
 
     SYNCHRONOUS(CLK=clk) {
-        // Valid: bracket write uses addr
         mem_a.wr[addr] <= wdata;
         // Trigger 1: bare ASYNC port ref used as signal
         r <= mem_a.rd;
@@ -62,6 +61,12 @@
         };
     }
 
+    MEM(type=BLOCK) {
+        mem_c [8] [16] = 8'h00 {
+            INOUT rw;
+        };
+    }
+
     @new inst_h HelperMod {
         IN  [1] clk = clk;
         IN  [4] addr = addr;
@@ -76,7 +81,11 @@
     SYNCHRONOUS(CLK=clk) {
         mem_b.rd.addr <= addr;
         mem_b.wr[addr] <= wdata;
+        mem_c.rw.addr <= addr;
+        mem_c.rw.wdata <= wdata;
         // Trigger 2: bare SYNC port ref
         r <= mem_b.rd;
+        // Trigger 3: bare INOUT port ref
+        r <= mem_c.rw;
     }
 @endmod

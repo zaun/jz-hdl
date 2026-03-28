@@ -1,10 +1,8 @@
-// TRISTATE_TRANSFORM_PER_BIT_FAIL: Per-bit tri-state pattern with different
-// enable conditions per bit group. Verifies that the compiler detects when
-// individual bit slices of the same signal have different driver sets.
-// Contexts: helper module with per-bit tristate wire, top module with per-bit
-// tristate wire.
-// NOTE: Compiler does not emit TRISTATE_TRANSFORM_PER_BIT_FAIL — it transforms
-// the per-bit pattern without error. See issues.md.
+// TRISTATE_TRANSFORM_PER_BIT_FAIL: Per-bit tri-state pattern detected.
+// Different enable conditions control different bit slices of the same signal,
+// so only partial-width z assignments are used. The compiler requires
+// full-width z for transformation.
+// Contexts: helper module with per-bit tristate, top module with per-bit tristate.
 
 @project TRISTATE_TRANSFORM_PER_BIT_FAIL_per_bit
     @top TopMod {
@@ -14,7 +12,7 @@
     }
 @endproj
 
-// Helper module with per-bit tri-state: different enables for different slices
+// Trigger 1: helper module with per-bit tri-state pattern
 @module HelperMod
     PORT {
         IN  [1] en_a;
@@ -41,7 +39,7 @@
     }
 @endmod
 
-// Top module with per-bit tri-state pattern
+// Trigger 2: top module with per-bit tri-state pattern
 @module TopMod
     PORT {
         IN  [1] en_a;

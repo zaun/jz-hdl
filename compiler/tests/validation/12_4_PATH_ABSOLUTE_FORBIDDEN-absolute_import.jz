@@ -1,6 +1,6 @@
 // PATH_ABSOLUTE_FORBIDDEN: Absolute paths in @import forbidden without --allow-absolute-paths.
-// Tests absolute path rejection in @import context.
-// Valid relative-path constructs surround the trigger to verify no false positives.
+// Trigger 1: @import with absolute path.
+// Valid relative-path constructs surround trigger to verify no false positives.
 
 @project PATH_ABSOLUTE_FORBIDDEN_absolute_import
 

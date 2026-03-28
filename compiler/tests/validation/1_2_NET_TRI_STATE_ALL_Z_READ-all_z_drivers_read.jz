@@ -1,0 +1,68 @@
+// NET_TRI_STATE_ALL_Z_READ: All drivers assign z but signal is read.
+// Each trigger is commented. A net with z driver only and no sinks is valid.
+
+@project NET_TRI_STATE_ALL_Z_READ_all_z_drivers_read
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] sel = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Trigger 1: all-z driver with read in helper module
+@module HelperA
+    PORT {
+        IN  [1] sel;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        all_z [8];
+        no_read_z [8];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: all drivers assign z, then net is read
+        IF (sel) {
+            all_z <= 8'bzzzz_zzzz;
+        } ELSE {
+            all_z <= 8'bzzzz_zzzz;
+        }
+        dout <= all_z;
+
+        // Valid: z driver only but net has no sinks (not read)
+        no_read_z <= 8'bzzzz_zzzz;
+    }
+@endmod
+
+// Top module with its own all-z trigger
+@module TopMod
+    PORT {
+        IN  [1] sel;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    WIRE {
+        all_z_top [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] sel = sel;
+        OUT [8] dout = dout_a;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: all drivers z in top module, net read
+        IF (sel) {
+            all_z_top <= 8'bzzzz_zzzz;
+        } ELSE {
+            all_z_top <= 8'bzzzz_zzzz;
+        }
+        dout_b <= all_z_top;
+    }
+@endmod

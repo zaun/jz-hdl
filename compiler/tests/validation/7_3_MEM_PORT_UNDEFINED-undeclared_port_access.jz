@@ -1,5 +1,5 @@
 // MEM_PORT_UNDEFINED: Access a port name not declared in the MEM block.
-// Triggers in async read, sync write, and sync read contexts.
+// Triggers in async read, sync write, and sync field access contexts.
 // Valid port accesses included for no false positives.
 
 @project MEM_PORT_UNDEFINED_undeclared_port_access

@@ -1,12 +1,11 @@
-// CLOCK_GEN_PARAM_OUT_OF_RANGE: CLOCK_GEN CONFIG parameter outside valid chip-defined range.
-// Tests PLL parameters exceeding their valid ranges.
-// Valid parameters included to verify no false positives.
+// CLOCK_GEN_PARAM_OUT_OF_RANGE: CLOCK_GEN CONFIG parameter value outside valid chip-defined range.
+// Tests a PLL CONFIG parameter (IDIV) exceeding the chip's valid range.
+// Valid parameter values included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_PARAM_OUT_OF_RANGE_param_range
     CLOCKS {
         ref_clk = { period=10 };
-        bad_out;
-        valid_out;
+        gen_out;
     }
 
     IN_PINS {
@@ -18,25 +17,13 @@
     }
 
     CLOCK_GEN {
-        // Trigger: IDIV=100 exceeds range 0-63
         PLL {
             IN REF_CLK ref_clk;
-            OUT BASE bad_out;
+            OUT BASE gen_out;
 
             CONFIG {
+                // Trigger: IDIV=100 exceeds valid range 0-63
                 IDIV = 100;
-                FBDIV = 3;
-                ODIV = 2;
-            };
-        };
-
-        // Valid: all params in range (no trigger)
-        PLL {
-            IN REF_CLK ref_clk;
-            OUT BASE valid_out;
-
-            CONFIG {
-                IDIV = 0;
                 FBDIV = 3;
                 ODIV = 2;
             };

@@ -1,11 +1,11 @@
 // CLOCK_GEN_OUTPUT_NOT_DECLARED: CLOCK_GEN output clock not declared in CLOCKS block.
-// Tests CLOCK_GEN with OUT referring to a clock not in the CLOCKS block.
-// Valid CLOCK_GEN with declared output included to verify no false positives.
+// Tests a PLL whose OUT references a clock not in CLOCKS.
+// Valid PLL with declared output included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_OUTPUT_NOT_DECLARED_undeclared_output
     CLOCKS {
         ref_clk = { period=10 };
-        valid_out;
+        good_out;
     }
 
     IN_PINS {
@@ -17,12 +17,22 @@
     }
 
     CLOCK_GEN {
+        // Trigger: phantom_out is not declared in CLOCKS
         PLL {
             IN REF_CLK ref_clk;
-            // Trigger 1: output "phantom_out" not in CLOCKS
             OUT BASE phantom_out;
-            // Valid: output declared in CLOCKS (no trigger)
-            OUT PHASE valid_out;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+
+        // Valid: good_out is declared in CLOCKS (no trigger)
+        PLL {
+            IN REF_CLK ref_clk;
+            OUT BASE good_out;
 
             CONFIG {
                 IDIV = 0;

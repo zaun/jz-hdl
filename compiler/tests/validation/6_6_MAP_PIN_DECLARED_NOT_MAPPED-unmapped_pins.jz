@@ -1,6 +1,6 @@
 // MAP_PIN_DECLARED_NOT_MAPPED: Pin declared in PIN blocks but not mapped in MAP.
-// Triggers: unmapped IN scalar, unmapped OUT scalar, partially mapped bus,
-//           unmapped INOUT scalar, unmapped differential IN pin.
+// Triggers: unmapped IN scalar, unmapped differential IN, unmapped OUT scalar,
+//           partially mapped OUT bus (bit 1 omitted), unmapped INOUT scalar.
 // Valid mapped pins included to verify no false positives.
 
 @project MAP_PIN_DECLARED_NOT_MAPPED_unmapped_pins

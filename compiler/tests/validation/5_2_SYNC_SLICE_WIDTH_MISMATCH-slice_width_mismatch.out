@@ -1,4 +1,5 @@
 File: 5_2_SYNC_SLICE_WIDTH_MISMATCH-slice_width_mismatch.jz
-      33:9    error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width
-      64:9    error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width
-      69:13   error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width
+      31:9    error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width
+      62:9    error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width
+      67:13   error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width
+      72:17   error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width

@@ -1,12 +1,11 @@
 // CLOCK_GEN_OUT_NOT_CLOCK: CLOCK_GEN OUT used for non-clock output; use WIRE instead.
-// Tests using OUT keyword for a PLL LOCK signal (is_clock=false).
+// Tests using OUT keyword for a non-clock output like LOCK.
 // Valid OUT for clock output included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_OUT_NOT_CLOCK_out_for_nonclock
     CLOCKS {
         ref_clk = { period=10 };
-        valid_out;
-        // Trigger: LOCK is not a clock but declared in CLOCKS via OUT
+        gen_out;
         lock_sig;
     }
 
@@ -22,8 +21,8 @@
         PLL {
             IN REF_CLK ref_clk;
             // Valid: BASE is a clock output (no trigger)
-            OUT BASE valid_out;
-            // Trigger 1: LOCK is not a clock, should use WIRE
+            OUT BASE gen_out;
+            // Trigger: LOCK is not a clock output, should use WIRE
             OUT LOCK lock_sig;
 
             CONFIG {

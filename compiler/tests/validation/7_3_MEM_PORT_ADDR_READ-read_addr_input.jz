@@ -1,12 +1,14 @@
 // MEM_PORT_ADDR_READ: Try to read .addr which is a write-only input.
-// Triggers on SYNC OUT .addr read in helper and top modules.
+// Triggers on SYNC OUT .addr and INOUT .addr read contexts.
 // Valid .data read included for no false positives.
 
 @project MEM_PORT_ADDR_READ_read_addr_input
     @top TopMod {
         IN  [1] clk = _;
         IN  [4] addr = _;
+        IN  [8] wdata = _;
         OUT [4] raddr = _;
+        OUT [8] data = _;
     }
 @endproj
 
@@ -34,7 +36,7 @@
 
     SYNCHRONOUS(CLK=clk) {
         mem_a.rd.addr <= addr;
-        // Trigger 1: read .addr (write-only input) on SYNC port
+        // Trigger 1: read .addr (write-only) on SYNC port
         r <= mem_a.rd.addr;
     }
 @endmod
@@ -43,7 +45,9 @@
     PORT {
         IN  [1] clk;
         IN  [4] addr;
+        IN  [8] wdata;
         OUT [4] raddr;
+        OUT [8] data;
     }
 
     REGISTER {
@@ -56,6 +60,12 @@
         };
     }
 
+    MEM(type=BLOCK) {
+        mem_c [8] [16] = 8'h00 {
+            INOUT rw;
+        };
+    }
+
     @new inst_h HelperMod {
         IN  [1] clk = clk;
         IN  [4] addr = addr;
@@ -64,11 +74,16 @@
 
     ASYNCHRONOUS {
         raddr = r;
+        data = mem_c.rw.data;
     }
 
     SYNCHRONOUS(CLK=clk) {
         mem_b.rd.addr <= addr;
+        mem_c.rw.addr <= addr;
+        mem_c.rw.wdata <= wdata;
         // Trigger 2: read .addr on SYNC port in top
         r <= mem_b.rd.addr;
+        // Trigger 3: read .addr on INOUT port
+        r <= mem_c.rw.addr;
     }
 @endmod

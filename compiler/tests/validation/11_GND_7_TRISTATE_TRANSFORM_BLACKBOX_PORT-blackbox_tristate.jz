@@ -1,10 +1,9 @@
 // TRISTATE_TRANSFORM_BLACKBOX_PORT: Tri-state signal driven by blackbox port.
 // Verifies error when a blackbox module's INOUT port is connected to a wire
 // that also has a local tri-state driver, making the wire untransformable.
-// Contexts: blackbox INOUT + normal driver on shared wire.
-// NOTE: Compiler emits TRISTATE_TRANSFORM_OE_EXTRACT_FAIL instead of
-// TRISTATE_TRANSFORM_BLACKBOX_PORT — the rule is defined in rules.c but
-// never emitted. See issues.md.
+// Contexts: blackbox INOUT sharing wire with normal driver instance,
+// blackbox INOUT sharing wire with local tristate driver.
+// Valid: wires not connected to blackbox ports are not flagged.
 
 @project TRISTATE_TRANSFORM_BLACKBOX_PORT_blackbox_tristate
     @blackbox ExtMod {
@@ -46,7 +45,7 @@
         bus [8];
     }
 
-    // Trigger: blackbox INOUT + normal driver share same wire
+    // Trigger: blackbox INOUT + normal driver instance share same wire
     @new inst_drv DriverMod {
         IN    [1] en = en;
         IN    [8] din = din;

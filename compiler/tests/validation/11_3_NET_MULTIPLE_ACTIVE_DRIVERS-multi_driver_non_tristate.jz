@@ -1,8 +1,8 @@
 // NET_MULTIPLE_ACTIVE_DRIVERS: Multiple active drivers on same signal.
-// Tests that the compiler detects when multiple module instances drive the
-// same wire through output port bindings without proper tri-state discipline.
-// Contexts: two-driver conflict in helper, two-driver conflict in top,
-// three-driver conflict in top, cross-module conflict via instantiation.
+// Tests that the compiler detects when multiple module instances drive
+// the same wire through output port bindings without proper tri-state
+// discipline. Contexts: two-driver conflict in helper module, two-driver
+// conflict in top module, three-driver conflict in top module.
 // Valid: single-driver wires included for negative testing.
 
 @project NET_MULTIPLE_ACTIVE_DRIVERS_multi_driver_non_tristate

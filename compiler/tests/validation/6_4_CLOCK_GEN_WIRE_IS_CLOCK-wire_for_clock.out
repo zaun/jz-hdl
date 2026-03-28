@@ -1,2 +1,2 @@
 File: 6_4_CLOCK_GEN_WIRE_IS_CLOCK-wire_for_clock.jz
-      25:13   error CLOCK_GEN_WIRE_IS_CLOCK S6.4.1 CLOCK_GEN WIRE used for clock output; use OUT instead
+      24:13   error CLOCK_GEN_WIRE_IS_CLOCK S6.4.1 CLOCK_GEN WIRE used for clock output; use OUT instead

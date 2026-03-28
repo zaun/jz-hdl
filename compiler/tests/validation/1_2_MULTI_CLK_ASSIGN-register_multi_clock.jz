@@ -1,74 +1,81 @@
-// MULTI_CLK_ASSIGN: Same register assigned in SYNCHRONOUS blocks with different clocks.
-// Tests register driven by multiple clock domains across modules.
-// Single-domain registers included to verify no false positives.
+// MULTI_CLK_ASSIGN: Same register assigned in SYNCHRONOUS blocks driven by
+// different clocks.
+// Each trigger is commented. Valid single-clock assignment for no false positives.
 
 @project MULTI_CLK_ASSIGN_register_multi_clock
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] clk_a = _;
         IN  [1] clk_b = _;
-        OUT [1] data = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
     }
 @endproj
 
-// Helper module: register assigned under two different clocks
+// Trigger 1: register assigned under two different clocks in helper
 @module HelperA
     PORT {
         IN  [1] clk_a;
         IN  [1] clk_b;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout;
     }
+
     REGISTER {
-        r [1] = 1'b0;
-        r_ok [1] = 1'b0;
+        r [8] = 8'h00;
     }
 
     ASYNCHRONOUS {
-        data = r;
+        dout <= r;
     }
 
-    // Trigger 1: r assigned in clk_a domain
+    // First clock domain (home domain)
     SYNCHRONOUS(CLK=clk_a) {
-        r <= ~r;
-        r_ok <= ~r_ok;
+        r <= din;
     }
 
-    // Trigger 1 (cont): r also assigned in clk_b domain -> MULTI_CLK_ASSIGN
+    // Trigger 1: same register under second clock domain
     SYNCHRONOUS(CLK=clk_b) {
-        r <= 1'b1;
+        r <= din;
     }
 @endmod
 
+// Top module with its own multi-clock trigger
 @module TopMod
     PORT {
         IN  [1] clk_a;
         IN  [1] clk_b;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    REGISTER {
+        r_multi [8] = 8'h00;
     }
 
     @new inst_a HelperA {
         IN  [1] clk_a = clk_a;
         IN  [1] clk_b = clk_b;
-        OUT [1] data = _;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
     };
 
-    REGISTER {
-        r_multi [1] = 1'b0;
-        r_single [1] = 1'b0;
-    }
-
     ASYNCHRONOUS {
-        data = r_multi;
+        dout_b <= r_multi;
     }
 
-    // Trigger 2: r_multi assigned in clk_a
+    // First clock domain (home domain)
     SYNCHRONOUS(CLK=clk_a) {
-        r_multi <= ~r_multi;
-        // Valid: r_single only in one domain
-        r_single <= ~r_single;
+        r_multi <= din;
     }
 
-    // Trigger 2 (cont): r_multi also assigned in clk_b -> MULTI_CLK_ASSIGN
+    // Trigger 2: same register under second clock domain in top module
     SYNCHRONOUS(CLK=clk_b) {
-        r_multi <= 1'b0;
+        r_multi <= din;
     }
 @endmod

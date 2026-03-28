@@ -1,7 +1,7 @@
 // HAPPY_PATH: Valid @check placement at project scope and module scope.
 // S9.3 permits @check at project and module scope, not inside blocks or
-// @feature bodies. Includes @check in various valid positions: after CONFIG,
-// between blocks, and immediately before blocks.
+// @feature bodies. This test exercises @check in every valid position:
+// after CONFIG, between blocks, before blocks, and in helper modules.
 
 @project HAPPY_PATH_check_placement_ok
     CONFIG {

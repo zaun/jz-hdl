@@ -18,7 +18,7 @@
     }
 
     REGISTER {
-        // Trigger 1: binary literal with x bits in helper module
+        // Trigger 1: binary literal with all x bits in helper module
         r_xbin [8] = 8'bxxxx_0000;
         // Trigger 2: single x bit in binary
         r_xone [8] = 8'b0000_000x;

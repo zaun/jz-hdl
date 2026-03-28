@@ -1,0 +1,88 @@
+// HAPPY_PATH: Valid @check usage across all allowed positions.
+// S9.7 consolidates all @check error conditions. This test verifies that
+// valid @check expressions produce no diagnostics. Exercises @check at
+// project scope and module scope with CONST, CONFIG, literals, clog2,
+// comparisons, and logical operators.
+
+@project HAPPY_PATH_check_error_conditions_ok
+    CONFIG {
+        WIDTH = 8;
+        DEPTH = 256;
+        ENABLE = 1;
+    }
+
+    // Valid: @check at project scope with CONFIG comparison
+    @check (CONFIG.WIDTH == 8, "width is 8");
+
+    // Valid: @check at project scope with CONFIG arithmetic
+    @check (CONFIG.WIDTH + CONFIG.DEPTH > 0, "sum positive");
+
+    // Valid: @check at project scope with logical operators
+    @check (CONFIG.ENABLE && CONFIG.WIDTH > 0, "enabled and valid width");
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST { LOCAL_W = 4; }
+
+    // Valid: @check at module scope in helper with CONST
+    @check (LOCAL_W > 0, "local width ok");
+
+    // Valid: @check with CONST arithmetic
+    @check (LOCAL_W * 2 == 8, "double width");
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST { SIZE = 16; }
+    CONST { ADDR_W = 4; }
+
+    // Valid: @check at module scope with CONST
+    @check (SIZE > 0, "size ok");
+
+    // Valid: @check with clog2 expression
+    @check (ADDR_W == clog2(SIZE), "addr width matches");
+
+    // Valid: @check with literal expression
+    @check (1, "literal true");
+
+    // Valid: @check with CONFIG in module scope
+    @check (CONFIG.WIDTH == 8, "config in module");
+
+    // Valid: @check with inequality
+    @check (SIZE != 0, "size nonzero");
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -39,7 +39,7 @@
         x <= y;
     @endtemplate
 
-    // Valid: same name as file-scoped template (different scope)
+    // Valid: same name as file-scoped template (different scope, no error)
     @template ftmpl(a, b)
         a <= b;
     @endtemplate

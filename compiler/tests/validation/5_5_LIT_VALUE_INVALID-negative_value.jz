@@ -1,5 +1,5 @@
 // LIT_VALUE_INVALID: lit() value must be a nonnegative integer constant expression.
-// Tests lit() with negative value arguments in ASYNC and SYNC blocks across modules.
+// Tests lit() with negative value in ASYNCHRONOUS and SYNCHRONOUS blocks across modules.
 // Valid lit(8, 42) included to verify no false positives.
 
 @project LIT_VALUE_INVALID_negative_value

@@ -1,6 +1,6 @@
 // CDC_DEST_ALIAS_ASSIGNED: CDC destination alias may not be assigned directly.
 // Tests writing to dest alias via alias (=) in ASYNC, receive (<=) in ASYNC,
-// and receive (<=) in SYNC across multiple modules.
+// receive (<=) in SYNC, and drive (=>) in ASYNC across multiple modules.
 // Valid reads of dest alias included to verify no false positives.
 
 @project CDC_DEST_ALIAS_ASSIGNED_dest_alias_written
@@ -51,10 +51,12 @@
 
     REGISTER {
         top_src [1] = 1'b0;
+        top_src2 [1] = 1'b0;
     }
 
     CDC {
         BIT top_src (clk_a) => top_dest (clk_b);
+        BIT top_src2 (clk_a) => top_dest2 (clk_b);
     }
 
     @new inst_h HelperMod {
@@ -71,10 +73,13 @@
 
     SYNCHRONOUS(CLK=clk_a) {
         top_src <= din;
+        top_src2 <= din;
     }
 
     SYNCHRONOUS(CLK=clk_b) {
         // Trigger 2: receive-assign to dest alias in SYNC
         top_dest <= din;
+        // Trigger 3: receive-assign to second dest alias in SYNC
+        top_dest2 <= din;
     }
 @endmod

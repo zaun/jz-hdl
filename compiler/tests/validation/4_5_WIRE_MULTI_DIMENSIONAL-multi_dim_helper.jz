@@ -1,7 +1,6 @@
 // WIRE_MULTI_DIMENSIONAL: Wire declared with multi-dimensional syntax.
 // Trigger: multi-dimensional wire in helper module.
-// NOTE: Compiler emits PARSE000 instead of WIRE_MULTI_DIMENSIONAL because
-// the parser cannot handle the second dimension bracket. See issues.md.
+// Valid single-dimensional wire included to verify no false positives.
 
 @project WIRE_MULTI_DIMENSIONAL_multi_dim_helper
     CONFIG {
@@ -15,7 +14,7 @@
     }
 @endproj
 
-// Helper module: trigger multi-dimensional wire
+// Helper module: multi-dimensional wire trigger
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -26,7 +25,7 @@
     WIRE {
         // Valid: single-dimensional wire
         w_ok [8];
-        // Trigger 1: multi-dimensional wire
+        // Trigger 1: multi-dimensional wire in helper module
         w_bad [8] [4];
     }
 

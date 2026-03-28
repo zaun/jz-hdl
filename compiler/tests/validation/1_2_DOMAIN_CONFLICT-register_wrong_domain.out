@@ -1,5 +1,5 @@
 File: 1_2_DOMAIN_CONFLICT-register_wrong_domain.jz
-      22:9    error MULTI_CLK_ASSIGN S4.11/S4.12 Same register assigned in SYNCHRONOUS blocks driven by different clocks or conflicting CDC home domains
-      39:9    error DOMAIN_CONFLICT S4.11/S4.12 Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock
-      57:9    error MULTI_CLK_ASSIGN S4.11/S4.12 Same register assigned in SYNCHRONOUS blocks driven by different clocks or conflicting CDC home domains
-      73:9    error DOMAIN_CONFLICT S4.11/S4.12 Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock
+      29:9    error MULTI_CLK_ASSIGN S4.11/S4.12 Same register assigned in SYNCHRONOUS blocks driven by different clocks or conflicting CDC home domains
+      43:9    error DOMAIN_CONFLICT S4.11/S4.12 Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock
+      58:9    error MULTI_CLK_ASSIGN S4.11/S4.12 Same register assigned in SYNCHRONOUS blocks driven by different clocks or conflicting CDC home domains
+      79:9    error DOMAIN_CONFLICT S4.11/S4.12 Register or CDC alias used in SYNCHRONOUS block whose CLK does not match its home-domain clock

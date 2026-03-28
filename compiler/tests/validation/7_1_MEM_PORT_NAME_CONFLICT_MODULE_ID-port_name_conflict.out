@@ -1,8 +1,8 @@
 File: 7_1_MEM_PORT_NAME_CONFLICT_MODULE_ID-port_name_conflict.jz
-      17:17   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused
-      28:17   error MEM_PORT_NAME_CONFLICT_MODULE_ID S7.1/S7.7.1 MEM port name conflicts with module-level identifier
-      29:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
-      61:17   error MEM_PORT_NAME_CONFLICT_MODULE_ID S7.1/S7.7.1 MEM port name conflicts with module-level identifier
-      62:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
-      69:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
-      70:17   error MEM_PORT_NAME_CONFLICT_MODULE_ID S7.1/S7.7.1 MEM port name conflicts with module-level identifier
+      19:17   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused
+      30:17   error MEM_PORT_NAME_CONFLICT_MODULE_ID S7.1/S7.7.1 MEM port name conflicts with module-level identifier
+      31:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      53:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      63:17   error MEM_PORT_NAME_CONFLICT_MODULE_ID S7.1/S7.7.1 MEM port name conflicts with module-level identifier
+      64:17   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
+      72:17   error MEM_PORT_NAME_CONFLICT_MODULE_ID S7.1/S7.7.1 MEM port name conflicts with module-level identifier

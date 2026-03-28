@@ -1,0 +1,90 @@
+// HAPPY_PATH: Valid register usage with no diagnostics.
+// Tests standard register declaration, read in ASYNC, write in SYNC,
+// GND/VCC reset, read-current/write-next, multiple registers, 1-bit,
+// and wide register across modules.
+
+@project HAPPY_PATH_register_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_cnt = _;
+        OUT [1] dout_flg = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_gnd = _;
+        OUT [8] dout_vcc = _;
+    }
+@endproj
+
+// Helper module: standard register usage with 1-bit and counter
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data_out;
+        OUT [1] flag_out;
+    }
+
+    REGISTER {
+        // Standard register with hex reset
+        counter [8] = 8'h00;
+        // 1-bit register
+        flag [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: read current value in ASYNC
+        data_out = counter;
+        flag_out = flag;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: write next state in SYNC
+        counter <= counter + 8'd1;
+        // Valid: read current, write next in same SYNC block
+        flag <= ~flag;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_cnt;
+        OUT [1] dout_flg;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_gnd;
+        OUT [8] dout_vcc;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] data_out = dout_cnt;
+        OUT [1] flag_out = dout_flg;
+    };
+
+    REGISTER {
+        // Multiple registers in one block
+        r_a [8] = 8'hFF;
+        r_b [8] = 8'h00;
+        // GND reset (all zeros)
+        r_gnd [8] = GND;
+        // VCC reset (all ones)
+        r_vcc [8] = VCC;
+    }
+
+    ASYNCHRONOUS {
+        dout_a = r_a;
+        dout_b = r_b;
+        dout_gnd = r_gnd;
+        dout_vcc = r_vcc;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_a <= din;
+        // Read-current, write-next: r_a on RHS reads current, r_b on LHS schedules next
+        r_b <= r_a;
+        r_gnd <= din;
+        r_vcc <= din;
+    }
+@endmod

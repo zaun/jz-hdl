@@ -2,7 +2,6 @@
 // Tests SR latch guarded assignment where set/reset expression widths
 // do not match the latch width across modules.
 // Valid same-width SR assignment included to verify no false positives.
-// Note: rule not implemented — compiler does not emit this diagnostic (see issues.md).
 
 @project LATCH_SR_WIDTH_MISMATCH_sr_width_mismatch
     @top TopMod {

@@ -1,2 +1,2 @@
 File: <input>
-      12:0    error TRISTATE_TRANSFORM_BLACKBOX_PORT S11.7 Tri-state signal driven by blackbox port cannot be transformed; use external pull resistor
+      10:0    error TRISTATE_TRANSFORM_BLACKBOX_PORT S11.7 Tri-state signal driven by blackbox port cannot be transformed; use external pull resistor

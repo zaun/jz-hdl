@@ -1,3 +1,3 @@
 File: 12_2_COMB_LOOP_UNCONDITIONAL-self_assignment.jz
-      25:5    error COMB_LOOP_UNCONDITIONAL S5.3/S8.2 Combinational loop: signal feeds back to itself through ASYNCHRONOUS assignments
-      51:5    error COMB_LOOP_UNCONDITIONAL S5.3/S8.2 Combinational loop: signal feeds back to itself through ASYNCHRONOUS assignments
+      29:5    error COMB_LOOP_UNCONDITIONAL S5.3/S8.2 Combinational loop: signal feeds back to itself through ASYNCHRONOUS assignments
+      55:5    error COMB_LOOP_UNCONDITIONAL S5.3/S8.2 Combinational loop: signal feeds back to itself through ASYNCHRONOUS assignments

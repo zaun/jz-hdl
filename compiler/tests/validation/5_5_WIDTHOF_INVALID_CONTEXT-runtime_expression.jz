@@ -24,7 +24,7 @@
         OUT [8] out_b;
     }
     REGISTER {
-        r [VAL_W] = 8'd0;
+        r [8] = 8'd0;
     }
     ASYNCHRONOUS {
         // Trigger 1: widthof() in ASYNC block

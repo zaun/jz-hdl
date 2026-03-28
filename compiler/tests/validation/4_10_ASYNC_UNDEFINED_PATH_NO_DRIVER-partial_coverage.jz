@@ -69,7 +69,7 @@
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: IF without ELSE on wire in top module
+        // Trigger 3: IF without ELSE on output port in top module
         IF (sel) {
             dout_c <= din;
         }

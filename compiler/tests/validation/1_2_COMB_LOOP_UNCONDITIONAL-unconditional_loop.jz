@@ -1,0 +1,76 @@
+// COMB_LOOP_UNCONDITIONAL: Combinational loop — signal feeds back to itself
+// through ASYNCHRONOUS assignments.
+// Each trigger is commented. Valid non-looping assignments for no false positives.
+
+@project COMB_LOOP_UNCONDITIONAL_unconditional_loop
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+    }
+@endproj
+
+// Trigger 1: self-assignment in helper module
+@module HelperA
+    PORT {
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        loop_w [8];
+        ok_w [8];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: self-assignment (direct feedback)
+        loop_w <= loop_w;
+        dout <= loop_w;
+
+        // Valid: no loop
+        ok_w <= din;
+    }
+@endmod
+
+// Top module with two-signal and three-signal cycles
+@module TopMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+    }
+
+    WIRE {
+        // Two-signal cycle
+        cyc_a [8];
+        cyc_b [8];
+        // Three-signal cycle
+        tri_a [8];
+        tri_b [8];
+        tri_c [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: two-signal cycle (A -> B -> A)
+        cyc_a <= cyc_b;
+        cyc_b <= cyc_a;
+        dout_b <= cyc_a;
+
+        // Trigger 3: three-signal cycle (A -> B -> C -> A)
+        tri_a <= tri_c;
+        tri_b <= tri_a;
+        tri_c <= tri_b;
+        dout_c <= tri_a;
+    }
+@endmod

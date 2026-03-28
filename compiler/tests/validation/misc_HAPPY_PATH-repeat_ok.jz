@@ -1,5 +1,5 @@
 // HAPPY_PATH: Valid @repeat usage compiles without diagnostics.
-// Tests @repeat with count > 0, nested @repeat, count=1, and IDX substitution.
+// Tests @repeat with count > 0, count=1, and normal expansion.
 // No diagnostics expected.
 
 @project HAPPY_PATH_repeat_ok

@@ -1,7 +1,7 @@
 // HAPPY_PATH: Valid CONST and CONFIG usage in MEM dimensions.
 // Exercises CONST in width, CONST in depth, CONFIG in depth,
 // CONST expressions in dimensions, power-of-2 and non-power-of-2 depths,
-// minimal depth (1), and clog2 address width derivation.
+// minimal depth (1), large CONST expression, and clog2 address width derivation.
 // No diagnostics expected.
 
 @project HAPPY_PATH_const_evaluation_in_mem_ok
@@ -78,11 +78,19 @@
         };
     }
 
-    // Valid: CONST expression in depth (4 * 2 = 8)
+    // Valid: CONST expression in depth (16 * 2 = 32)
     MEM {
         mem_expr [WIDTH] [DEPTH * MULTIPLIER] = 8'h00 {
             OUT rd_expr ASYNC;
             IN  wr_expr;
+        };
+    }
+
+    // Valid: minimal depth (1)
+    MEM {
+        mem_min [WIDTH] [1] = 8'h00 {
+            OUT rd_min ASYNC;
+            IN  wr_min;
         };
     }
 
@@ -94,12 +102,13 @@
     };
 
     ASYNCHRONOUS {
-        rdata = mem_const.rd_const[addr[3:0]] ^ mem_cfg.rd_cfg[addr] ^ mem_expr.rd_expr[addr[4:0]];
+        rdata = mem_const.rd_const[addr[3:0]] ^ mem_cfg.rd_cfg[addr] ^ mem_expr.rd_expr[addr[4:0]] ^ mem_min.rd_min[1'b0];
     }
 
     SYNCHRONOUS(CLK=clk) {
         mem_const.wr_const[addr[3:0]] <= wdata;
         mem_cfg.wr_cfg[addr] <= wdata;
         mem_expr.wr_expr[addr[4:0]] <= wdata;
+        mem_min.wr_min[1'b0] <= wdata;
     }
 @endmod

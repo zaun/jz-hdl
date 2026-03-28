@@ -1,5 +1,5 @@
-// MEM_UNDEFINED_CONST_IN_WIDTH: CONST in word_width/depth not declared triggers error.
-// Valid CONST references included for no false positives.
+// MEM_UNDEFINED_CONST_IN_WIDTH: Undefined CONST in MEM width or depth triggers error.
+// Valid CONST-based MEM included for no false positives.
 
 @project MEM_UNDEFINED_CONST_IN_WIDTH_undefined_const
     @top TopMod {
@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: undefined CONST in width in helper module
+// Trigger 1: undefined CONST in width position in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -24,7 +24,7 @@
     }
 
     MEM {
-        mem_a [UNDEF_W] [16] = 8'h00 {
+        bad_mem [UNDEF_W] [16] = 8'h00 {
             OUT rd ASYNC;
             IN  wr;
         };
@@ -55,17 +55,17 @@
         r [8] = 8'h00;
     }
 
-    // Trigger 2: undefined CONST in depth in top module
+    // Trigger 2: undefined CONST in depth position in top module
     MEM {
-        mem_b [8] [UNDEF_D] = 8'h00 {
+        bad_mem [8] [UNDEF_D] = 8'h00 {
             OUT rd ASYNC;
             IN  wr;
         };
     }
 
-    // Valid: defined CONST in width (no error expected)
+    // Valid: declared CONST used in width (no error expected)
     MEM {
-        mem_ok [VALID_WIDTH] [16] = 8'h00 {
+        ok_mem [VALID_WIDTH] [16] = 8'h00 {
             OUT rd_ok ASYNC;
             IN  wr_ok;
         };
@@ -79,11 +79,11 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_ok.rd_ok[addr];
+        data = ok_mem.rd_ok[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_ok.wr_ok[addr] <= wdata;
+        ok_mem.wr_ok[addr] <= wdata;
     }
 @endmod

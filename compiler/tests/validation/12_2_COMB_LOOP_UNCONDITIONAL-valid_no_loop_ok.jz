@@ -1,6 +1,6 @@
 // COMB_LOOP_UNCONDITIONAL: Valid programs with no combinational loops.
-// Exercises linear chains, fan-out/reconvergence, long chains, and
-// register-based path breaks to verify no false positives.
+// Exercises linear chains, fan-out/reconvergence, long chains (10+ signals),
+// and register-based path breaks to verify no false positives.
 
 @project COMB_LOOP_UNCONDITIONAL_valid_no_loop_ok
     CONFIG {
@@ -12,6 +12,7 @@
         IN  [1] din = _;
         OUT [1] out_a = _;
         OUT [1] out_b = _;
+        OUT [1] out_c = _;
     }
 @endproj
 
@@ -57,12 +58,49 @@
     }
 @endmod
 
+// Helper: long chain of 10+ signals (no cycle)
+@module HelperLong
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+
+    WIRE {
+        s1  [1];
+        s2  [1];
+        s3  [1];
+        s4  [1];
+        s5  [1];
+        s6  [1];
+        s7  [1];
+        s8  [1];
+        s9  [1];
+        s10 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: long linear chain (10 signals, no cycle)
+        s1  = din;
+        s2  = s1;
+        s3  = s2;
+        s4  = s3;
+        s5  = s4;
+        s6  = s5;
+        s7  = s6;
+        s8  = s7;
+        s9  = s8;
+        s10 = s9;
+        dout = s10;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         IN  [1] din;
         OUT [1] out_a;
         OUT [1] out_b;
+        OUT [1] out_c;
     }
 
     WIRE {
@@ -79,6 +117,11 @@
     @new inst_fanout HelperFanout {
         IN  [1] din = din;
         OUT [1] dout = _;
+    };
+
+    @new inst_long HelperLong {
+        IN  [1] din = din;
+        OUT [1] dout = out_c;
     };
 
     REGISTER {

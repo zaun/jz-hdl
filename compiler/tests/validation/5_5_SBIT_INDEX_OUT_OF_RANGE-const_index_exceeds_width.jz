@@ -23,7 +23,7 @@
         r [8] = 8'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: sbit() index 8 on 8-bit source in helper ASYNC
+        // Trigger 1: sbit() index 8 on 8-bit source (max valid = 7) in helper ASYNC
         out_a <= sbit(src, 4'd8, 1'b1);
         out_b = r;
     }

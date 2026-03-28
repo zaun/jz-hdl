@@ -1,3 +1,4 @@
 File: 4_12_CDC_BIT_WIDTH_NOT_1-bit_multibit_source.jz
       23:9    error CDC_BIT_WIDTH_NOT_1 S4.12 BIT CDC source register must have width [1]
       58:9    error CDC_BIT_WIDTH_NOT_1 S4.12 BIT CDC source register must have width [1]
+      60:9    error CDC_BIT_WIDTH_NOT_1 S4.12 BIT CDC source register must have width [1]

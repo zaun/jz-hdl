@@ -1,5 +1,7 @@
-// PATH_TRAVERSAL_FORBIDDEN: Paths with '..' traversal forbidden without --allow-traversal.
-// Tests traversal rejection in @import context.
+// PATH_TRAVERSAL_FORBIDDEN: Paths with '..' traversal in @import forbidden
+// without --allow-traversal.
+// Trigger 1: @import with .. traversal.
+// Valid relative-path constructs surround trigger to verify no false positives.
 
 @project PATH_TRAVERSAL_FORBIDDEN_traversal_import
 

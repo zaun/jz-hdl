@@ -1,6 +1,6 @@
 // CONST_UNDEFINED_IN_WIDTH_OR_SLICE: Undefined CONST name in width/slice contexts.
-// Tests undeclared CONST names used in port widths, wire widths, register widths,
-// and MEM depth across multiple modules.
+// Tests undeclared CONST names used in IN port width, OUT port width, wire width,
+// and register width across multiple modules.
 // Valid CONST-based widths included to verify no false positives.
 
 @project CONST_UNDEFINED_IN_WIDTH_OR_SLICE_undefined_const
@@ -11,7 +11,7 @@
     }
 @endproj
 
-// Helper module: undefined CONST in port width
+// Helper module: undefined CONST in port widths
 @module HelperMod
     CONST {
         VALID_W = 1;
@@ -21,6 +21,8 @@
         IN  [1] clk;
         // Trigger 1: undefined CONST in input port width
         IN  [UNDEF_W] din;
+        // Trigger 2: undefined CONST in output port width
+        OUT [NO_SUCH] dout;
         // Valid: declared CONST in output port width
         OUT [VALID_W] data;
     }
@@ -31,6 +33,7 @@
 
     ASYNCHRONOUS {
         data = r;
+        dout = r;
     }
 
     SYNCHRONOUS(CLK=clk) {
@@ -52,23 +55,23 @@
     @new inst_h HelperMod {
         IN  [1] clk = clk;
         IN  [1] din = r;
+        OUT [1] dout = _;
         OUT [1] data = out_h;
     };
 
     WIRE {
-        // Trigger 2: undefined CONST in wire width
+        // Trigger 3: undefined CONST in wire width
         w_bad [BOGUS_W];
     }
 
     REGISTER {
-        // Trigger 3: undefined CONST in register width
+        // Trigger 4: undefined CONST in register width
         r_bad [MISSING_W] = 1'b0;
         r [1] = 1'b0;
     }
 
     ASYNCHRONOUS {
         data = r;
-        // Read w_bad and r_bad to avoid unused warnings
         w_bad = r_bad;
     }
 

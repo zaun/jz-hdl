@@ -1,11 +1,11 @@
 // CLOCK_GEN_MISSING_OUTPUT: CLOCK_GEN unit must have at least one OUT clock declaration.
-// Tests PLL without any OUT declaration.
+// Tests a PLL with IN but no OUT declaration.
 // Valid PLL with OUT included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_MISSING_OUTPUT_no_output
     CLOCKS {
         ref_clk = { period=10 };
-        valid_out;
+        good_out;
     }
 
     IN_PINS {
@@ -17,7 +17,7 @@
     }
 
     CLOCK_GEN {
-        // Trigger 1: PLL without OUT declaration
+        // Trigger: PLL with IN but no OUT
         PLL {
             IN REF_CLK ref_clk;
 
@@ -28,10 +28,10 @@
             };
         };
 
-        // Valid: PLL with OUT (no trigger)
+        // Valid: PLL with proper OUT (no trigger)
         PLL {
             IN REF_CLK ref_clk;
-            OUT BASE valid_out;
+            OUT BASE good_out;
 
             CONFIG {
                 IDIV = 0;

@@ -1,6 +1,6 @@
 // HAPPY_PATH: Valid PIN block declarations covering all features.
 // Exercises IN_PINS, OUT_PINS, INOUT_PINS with valid standards, drive,
-// bus pins, differential mode, pull resistors, and termination.
+// bus pins, differential mode, pull resistors, termination, and serializer.
 // No diagnostics expected.
 
 @project HAPPY_PATH_pin_blocks_ok
@@ -39,14 +39,14 @@
         led = { standard=LVCMOS18, drive=8 };
         // Bus output
         data_out[8] = { standard=LVCMOS33, drive=4 };
-        // Differential output with all required attributes
+        // Differential output with all required serializer attributes
         lvds_out = { standard=LVDS25, drive=8, mode=DIFFERENTIAL, fclk=fast_clk, pclk=sys_clk, reset=sys_clk };
     }
 
     INOUT_PINS {
         // Bidirectional pin
         sda = { standard=LVCMOS33, drive=4 };
-        // INOUT with pull
+        // INOUT with pull-up
         io_pull = { standard=LVCMOS33, drive=4, pull=UP };
         // INOUT with pull-down
         io_down = { standard=LVCMOS33, drive=4, pull=DOWN };

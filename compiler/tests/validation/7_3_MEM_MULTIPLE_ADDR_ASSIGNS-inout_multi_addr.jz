@@ -74,7 +74,7 @@
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_b.rw.wdata <= wdata;
+        mem_b.rw.addr <= addr;
         // First .addr assignment
         mem_b.rw.addr <= addr;
         // Trigger 2: second .addr in top module

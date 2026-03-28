@@ -1,28 +1,28 @@
 // TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL: Non-mutually-exclusive enable
 // conditions on multiple tri-state drivers of the same signal.
-// This rule is dead code: the multi-driver pattern needed to trigger it is
-// blocked by NET_MULTIPLE_ACTIVE_DRIVERS during semantic analysis before the
-// tri-state transform runs. Two instances driving the same wire via INOUT with
-// the same enable (non-exclusive) triggers the earlier semantic error.
-// See issues.md for details.
+// Contexts: two instances driving the same wire through INOUT ports with
+// the same enable signal (non-exclusive enables).
+// Valid: single-driver wires with IF/ELSE are not flagged.
 
 @project TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL_non_exclusive
     @top TopMod {
         IN  [1] en = _;
-        OUT [8] data = _;
+        IN  [8] din = _;
+        OUT [8] result = _;
     }
 @endproj
 
-// Driver module with conditional tri-state output via INOUT
+// Driver module with conditional tri-state INOUT output
 @module DriverMod
     PORT {
         IN    [1] en;
+        IN    [8] din;
         INOUT [8] data;
     }
 
     ASYNCHRONOUS {
         IF (en) {
-            data <= 8'hAA;
+            data <= din;
         } ELSE {
             data <= 8'bzzzz_zzzz;
         }
@@ -30,11 +30,11 @@
 @endmod
 
 // Top module: two instances drive same wire with same enable (non-exclusive)
-// This triggers NET_MULTIPLE_ACTIVE_DRIVERS before tristate transform runs.
 @module TopMod
     PORT {
         IN  [1] en;
-        OUT [8] data;
+        IN  [8] din;
+        OUT [8] result;
     }
 
     WIRE {
@@ -44,15 +44,17 @@
     // Trigger: two instances share same INOUT wire with same enable
     @new inst_a DriverMod {
         IN    [1] en = en;
+        IN    [8] din = din;
         INOUT [8] data = bus;
     };
 
     @new inst_b DriverMod {
         IN    [1] en = en;
+        IN    [8] din = din;
         INOUT [8] data = bus;
     };
 
     ASYNCHRONOUS {
-        data <= bus;
+        result <= bus;
     }
 @endmod

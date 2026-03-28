@@ -1,9 +1,14 @@
 // HAPPY_PATH: Valid blackbox declarations and instantiations.
 // Verifies no false positives for correctly formed blackbox usage.
-// Covers: simple blackbox, multiple blackboxes, instantiation without OVERRIDE,
-// INOUT ports on blackbox.
+// Covers: simple blackbox, multiple blackboxes, instantiation via @new,
+// INOUT ports on blackbox, blackbox with only OUT ports, multi-module
+// instantiation, and blackbox instantiated from sub-module.
 
 @project HAPPY_PATH_blackbox_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
     // Valid: simple blackbox with IN and OUT
     @blackbox bb_pll {
         PORT {
@@ -24,6 +29,13 @@
         }
     }
 
+    // Valid: blackbox with only OUT ports
+    @blackbox bb_osc {
+        PORT {
+            OUT [1] clk_out;
+        }
+    }
+
     @top TopMod {
         IN  [1] clk = _;
         IN  [1] reset = _;
@@ -32,6 +44,7 @@
     }
 @endproj
 
+// Sub-module that instantiates a blackbox
 @module SubMod
     PORT {
         IN  [1] clk;
@@ -39,7 +52,7 @@
         OUT [1] locked;
     }
 
-    // Valid: blackbox instantiation without OVERRIDE
+    // Valid: blackbox instantiation without OVERRIDE in sub-module
     @new pll_inst bb_pll {
         IN  [1] clk_in = clk;
         IN  [1] reset = reset;
@@ -76,6 +89,12 @@
         OUT   [1] irq = irq;
     };
 
+    // Valid: blackbox with only OUT ports
+    @new osc_inst bb_osc {
+        OUT [1] clk_out = _;
+    };
+
+    // Valid: regular module instantiation alongside blackboxes
     @new sub_inst SubMod {
         IN  [1] clk = clk;
         IN  [1] reset = reset;

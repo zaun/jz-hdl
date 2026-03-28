@@ -1,7 +1,6 @@
 // WIDTHOF_WIDTH_NOT_RESOLVABLE: widthof() target found but width cannot be resolved.
 // Tests widthof() on a signal whose width depends on an undefined CONST.
 // Valid widthof() on a signal with known width included to verify no false positives.
-// NOTE: Compiler bug — this rule is not implemented. See issues.md.
 
 @project WIDTHOF_WIDTH_NOT_RESOLVABLE_unresolvable_width
     @top TopMod {

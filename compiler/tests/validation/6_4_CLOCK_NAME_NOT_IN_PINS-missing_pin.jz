@@ -1,14 +1,14 @@
 // CLOCK_NAME_NOT_IN_PINS: Clock name in CLOCKS has no matching IN_PINS declaration.
-// Tests clocks declared in CLOCKS that are not in IN_PINS and not CLOCK_GEN outputs.
-// Valid clocks (in IN_PINS) included to verify no false positives.
+// Tests clocks declared in CLOCKS that have no IN_PINS entry and no CLOCK_GEN output.
+// Valid clocks (with IN_PINS match) included to verify no false positives.
 
 @project CLOCK_NAME_NOT_IN_PINS_missing_pin
     CLOCKS {
-        // Valid: declared in IN_PINS (no trigger)
+        // Valid: has matching IN_PINS entry (no trigger)
         good_clk = { period=10 };
-        // Trigger 1: not in IN_PINS, not a CLOCK_GEN output
+        // Trigger 1: no IN_PINS entry, no CLOCK_GEN output
         orphan_clk = { period=20 };
-        // Trigger 2: another orphan clock
+        // Trigger 2: another orphan
         ghost_clk = { period=30 };
     }
 

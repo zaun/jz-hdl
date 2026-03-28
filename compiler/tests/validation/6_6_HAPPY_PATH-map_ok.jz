@@ -1,5 +1,7 @@
 // HAPPY_PATH: Valid MAP block with scalar, bus, differential, and INOUT pin mappings.
-// Verifies no false positives for correctly formed MAP entries.
+// Exercises numeric and alphanumeric board pin IDs, per-bit bus mapping,
+// differential {P,N} syntax, and string-style pin IDs.
+// No diagnostics expected.
 
 @project HAPPY_PATH_map_ok
     IN_PINS {

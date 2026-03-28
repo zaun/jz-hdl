@@ -1,6 +1,8 @@
 File: 5_2_SYNC_NO_ALIAS-alias_in_sync_block.jz
-      38:9    error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
       40:9    error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
       42:9    error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
-      78:13   error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
-      83:9    error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
+      44:9    error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
+      84:13   error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
+      90:13   error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
+      95:17   error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?
+      99:17   error SYNC_NO_ALIAS S5.2 Aliasing `=` is forbidden in SYNCHRONOUS blocks; did you mean `<=` (receive) or `=>` (drive)?

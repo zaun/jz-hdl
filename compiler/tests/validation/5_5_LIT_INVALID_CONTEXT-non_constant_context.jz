@@ -2,7 +2,6 @@
 // Tests lit() in CONST block where only compile-time integers are valid.
 // lit() is a runtime intrinsic and cannot appear in CONST initializers.
 // Valid lit() in ASYNC block included to verify no false positives.
-// Valid lit() in ASYNC block included to verify no false positives.
 
 @project LIT_INVALID_CONTEXT_non_constant_context
     @top TopMod {

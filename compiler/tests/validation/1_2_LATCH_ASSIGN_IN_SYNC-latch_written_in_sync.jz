@@ -1,72 +1,74 @@
 // LATCH_ASSIGN_IN_SYNC: LATCH may not be written in SYNCHRONOUS blocks.
-// Tests latch assignment in SYNCHRONOUS block across multiple modules.
-// Valid latch usage (guarded assignment in ASYNCHRONOUS) included as negative test.
+// Each trigger is commented. Valid latch usage in ASYNCHRONOUS for no false positives.
 
 @project LATCH_ASSIGN_IN_SYNC_latch_written_in_sync
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] clk = _;
         IN  [1] enable = _;
-        IN  [1] din = _;
-        OUT [1] data = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
     }
 @endproj
 
-// Helper module: latch written in sync block
+// Trigger 1: latch written in SYNCHRONOUS in helper module
 @module HelperA
     PORT {
         IN  [1] clk;
         IN  [1] enable;
-        IN  [1] din;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout;
     }
+
     LATCH {
-        lat [1] D;
+        lat [8] D;
     }
 
     ASYNCHRONOUS {
-        // Valid: guarded latch assignment in ASYNCHRONOUS (should NOT trigger)
+        // Valid: latch guarded assignment in ASYNC
         lat <= enable : din;
-        data <= lat;
+        dout <= lat;
     }
 
+    // Trigger 1: latch written in SYNCHRONOUS block
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 1: latch written in SYNCHRONOUS block
-        lat <= 1'b1;
+        lat <= din;
     }
 @endmod
 
+// Top module with its own latch-in-sync trigger
 @module TopMod
     PORT {
         IN  [1] clk;
         IN  [1] enable;
-        IN  [1] din;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    LATCH {
+        top_lat [8] D;
     }
 
     @new inst_a HelperA {
         IN  [1] clk = clk;
         IN  [1] enable = enable;
-        IN  [1] din = din;
-        OUT [1] data = _;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
     };
 
-    LATCH {
-        top_lat [1] D;
-    }
-
-    REGISTER {
-        r [1] = 1'b0;
-    }
-
     ASYNCHRONOUS {
-        // Valid: guarded latch assignment in ASYNCHRONOUS
+        // Valid: latch guarded assignment in ASYNC
         top_lat <= enable : din;
-        data <= top_lat;
+        dout_b <= top_lat;
     }
 
+    // Trigger 2: latch written in SYNCHRONOUS block in top module
     SYNCHRONOUS(CLK=clk) {
-        r <= ~r;
-        // Trigger 2: latch written in SYNCHRONOUS block in top module
-        top_lat <= 1'b0;
+        top_lat <= din;
     }
 @endmod

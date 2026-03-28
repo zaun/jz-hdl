@@ -1,8 +1,15 @@
 // BLACKBOX_OVERRIDE_UNCHECKED: OVERRIDE in blackbox instantiation is not validated.
 // Tests that info-level diagnostic fires when OVERRIDE is used in @new of a blackbox.
+// Trigger 1: OVERRIDE with single param in sub-module
+// Trigger 2: OVERRIDE with single param in top module
+// Trigger 3: OVERRIDE with multiple params in top module
 // Valid blackbox instantiation without OVERRIDE is included for negative testing.
 
 @project BLACKBOX_OVERRIDE_UNCHECKED_override_passthrough
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @blackbox bb_ip {
         PORT {
             IN  [1] din;
@@ -30,7 +37,7 @@
         OUT [1] data;
     }
 
-    // Trigger 1: OVERRIDE in blackbox @new inside non-top module
+    // Trigger 1: OVERRIDE in blackbox @new inside sub-module
     @new inst_bb2 bb_ip2 {
         OVERRIDE {
             MODE = 1;

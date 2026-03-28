@@ -1,12 +1,12 @@
-// CLOCK_EXTERNAL_NO_PERIOD: External clock (IN_PINS) must have period in CLOCKS.
-// Tests IN_PINS clocks without period declared in CLOCKS block.
-// Valid external clock with period included to verify no false positives.
+// CLOCK_EXTERNAL_NO_PERIOD: External clock (IN_PINS) must have period declared in CLOCKS block.
+// Tests IN_PINS clocks that are in CLOCKS but lack a period specification.
+// Valid clock with period included to verify no false positives.
 
 @project CLOCK_EXTERNAL_NO_PERIOD_no_period
     CLOCKS {
         // Valid: external clock with period (no trigger)
         good_clk = { period=10 };
-        // Trigger 1: external clock without period
+        // Trigger 1: external clock with no period (bare entry)
         bare_clk;
         // Trigger 2: external clock with edge but no period
         edge_clk = { edge=Falling };

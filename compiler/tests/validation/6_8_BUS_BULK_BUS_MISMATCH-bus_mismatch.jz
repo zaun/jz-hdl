@@ -86,6 +86,28 @@
     }
 @endmod
 
+// Module with BETA_BUS TARGET port
+@module BetaTarget
+    PORT {
+        IN  [1] clk;
+        BUS BETA_BUS TARGET bbus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        bbus.resp = r;
+        data = bbus.data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= bbus.data;
+    }
+@endmod
+
 // Top module with mismatched and valid bulk assignments
 @module TopMod
     PORT {
@@ -111,11 +133,23 @@
         OUT [8] data = _;
     };
 
+    @new inst_bt BetaTarget {
+        IN  [1] clk = clk;
+        BUS BETA_BUS TARGET bbus = _;
+        OUT [8] data = _;
+    };
+
     ASYNCHRONOUS {
         // Valid: matching BUS ids (ALPHA_BUS SOURCE = ALPHA_BUS TARGET)
         inst_as.abus = inst_at.abus;
 
-        // Trigger 1: mismatched BUS ids (ALPHA_BUS SOURCE = BETA_BUS SOURCE)
-        inst_as.abus = inst_bs.bbus;
+        // Valid: matching BUS ids (BETA_BUS SOURCE = BETA_BUS TARGET)
+        inst_bs.bbus = inst_bt.bbus;
+
+        // Trigger 1: mismatched BUS ids (ALPHA SOURCE = BETA TARGET)
+        inst_as.abus = inst_bt.bbus;
+
+        // Trigger 2: mismatched BUS ids (BETA SOURCE = ALPHA TARGET)
+        inst_bs.bbus = inst_at.abus;
     }
 @endmod

@@ -1,11 +1,9 @@
-// TRISTATE_TRANSFORM_PER_BIT_FAIL: Per-bit tri-state pattern with different
-// enable conditions per bit group. Verifies that the compiler detects when
-// individual bit slices of the same signal have different z-assignment patterns.
-// Contexts: helper module with per-bit tristate wire, top module with per-bit
-// tristate wire.
-// NOTE: Compiler does not emit TRISTATE_TRANSFORM_PER_BIT_FAIL — it transforms
-// the per-bit pattern without error, emitting INFO_TRISTATE_TRANSFORM instead.
-// See issues.md for details.
+// TRISTATE_TRANSFORM_PER_BIT_FAIL: Per-bit tri-state pattern detected.
+// Verifies the error fires when individual bit slices of a wire have
+// different z-assignment patterns (not full-width z).
+// Contexts: per-bit tristate wire in helper module, per-bit tristate wire
+// in top module, different slice widths.
+// Valid: full-width z assignments are not flagged (tested in happy path).
 
 @project TRISTATE_TRANSFORM_PER_BIT_FAIL_per_bit
     @top TopMod {
@@ -15,7 +13,7 @@
     }
 @endproj
 
-// Helper module with per-bit tri-state: different enables for different slices
+// Trigger 1: helper module with per-bit tri-state (4-bit slices)
 @module HelperMod
     PORT {
         IN  [1] en_a;
@@ -27,7 +25,6 @@
         w [8];
     }
 
-    // Trigger 1: per-bit tri-state in helper module
     ASYNCHRONOUS {
         IF (en_a) {
             w[7:4] <= 4'hA;
@@ -43,7 +40,7 @@
     }
 @endmod
 
-// Top module with per-bit tri-state pattern
+// Top module with per-bit tri-state pattern (different slice widths)
 @module TopMod
     PORT {
         IN  [1] en_a;
@@ -61,17 +58,17 @@
         OUT [8] data = _;
     };
 
-    // Trigger 2: per-bit tri-state in top module
+    // Trigger 2: per-bit tri-state in top module (uneven slices: 6-bit + 2-bit)
     ASYNCHRONOUS {
         IF (en_a) {
-            w_top[7:4] <= 4'hC;
+            w_top[7:2] <= 6'b10_1010;
         } ELSE {
-            w_top[7:4] <= 4'bzzzz;
+            w_top[7:2] <= 6'bzz_zzzz;
         }
         IF (en_b) {
-            w_top[3:0] <= 4'hD;
+            w_top[1:0] <= 2'b11;
         } ELSE {
-            w_top[3:0] <= 4'bzzzz;
+            w_top[1:0] <= 2'bzz;
         }
         data <= w_top;
     }

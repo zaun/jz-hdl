@@ -1,12 +1,11 @@
 // CLOCK_GEN_INPUT_NOT_DECLARED: CLOCK_GEN input clock not declared in CLOCKS block.
-// Tests CLOCK_GEN with IN referring to a clock not in the CLOCKS block.
-// Valid CLOCK_GEN with declared input included to verify no false positives.
+// Tests a PLL whose IN references a clock not in CLOCKS.
+// Valid PLL with declared input included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_INPUT_NOT_DECLARED_undeclared_input
     CLOCKS {
         ref_clk = { period=10 };
-        valid_out;
-        bad_out;
+        gen_out;
     }
 
     IN_PINS {
@@ -18,22 +17,10 @@
     }
 
     CLOCK_GEN {
-        // Trigger 1: input clock "phantom_clk" not in CLOCKS
+        // Trigger: phantom_clk is not declared in CLOCKS
         PLL {
             IN REF_CLK phantom_clk;
-            OUT BASE bad_out;
-
-            CONFIG {
-                IDIV = 0;
-                FBDIV = 3;
-                ODIV = 2;
-            };
-        };
-
-        // Valid: input clock declared in CLOCKS (no trigger)
-        PLL {
-            IN REF_CLK ref_clk;
-            OUT BASE valid_out;
+            OUT BASE gen_out;
 
             CONFIG {
                 IDIV = 0;

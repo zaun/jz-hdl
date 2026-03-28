@@ -1,8 +1,10 @@
 // HAPPY_PATH: Valid operator usage across all S3.2 operator definitions.
 // Exercises parenthesized unary arithmetic, multiply 2N width, guarded division
-// and modulus with multiple guard patterns (!=, >, >=, ==, nested), logical/arithmetic
-// shift, ternary with valid condition and matching widths, concatenation MSB ordering,
-// bitwise ops, logical ops on 1-bit, comparison operators, and edge cases.
+// and modulus with multiple guard patterns (!=, >, >=, ==, nested, ELSE, literal-
+// on-either-side), logical/arithmetic shift, shift-by-zero, ternary with valid
+// condition and matching widths, concatenation MSB ordering, single-element concat,
+// bitwise ops, logical ops on 1-bit, comparison operators, and edge cases
+// (1-bit multiply, modulus N%N, division max/1).
 
 @project HAPPY_PATH_operator_semantics_ok
     CONFIG {
@@ -27,7 +29,7 @@
     }
 @endproj
 
-// Helper module: shift operations, unary arithmetic, bitwise ops
+// Helper module: shift operations, unary arithmetic, bitwise ops, comparisons
 @module HelperOps
     PORT {
         IN  [1] clk;
@@ -45,10 +47,9 @@
     ASYNCHRONOUS {
         // Parenthesized unary minus — valid
         out_unary = (-a);
-        // Logical shift left — zero-fill from right
-        // Logical shift right — zero-fill from left
-        out_shift = (a << sh) | (a >> sh) | r_asr | r_sh0;
-        // Comparison operators: all valid with equal-width operands
+        // Logical shift left/right, bitwise NOT
+        out_shift = (a << sh) | (a >> sh) | (~a) | r_asr | r_sh0;
+        // All comparison operators: ==, !=, <, >, <=, >=
         out_cmp = (a == b) | (a != b) | (a < b) | (a > b) | (a <= b) | (a >= b);
     }
     SYNCHRONOUS(CLK=clk) {
@@ -90,6 +91,7 @@
         r_eq   [8] = 8'd0;
         r_nest [8] = 8'd0;
         r_else [8] = 8'd0;
+        r_swap [8] = 8'd0;
     }
 
     @new inst_ops HelperOps {
@@ -111,10 +113,10 @@
         out_shift = h_shift;
         // Ternary with 1-bit condition and matching 8-bit branches — valid
         out_tern = flag ? a : b;
-        // Concatenation: MSB ordering, 8+4 = 12 bits; single-element concat
+        // Concatenation: MSB ordering, 8+4 = 12 bits
         out_cat = {a, nibble};
         // Division results from registers
-        out_div = r_div | r_mod | r_gt | r_ge | r_eq | r_nest | r_else;
+        out_div = r_div | r_mod | r_gt | r_ge | r_eq | r_nest | r_else | r_swap;
         // Logical operators on 1-bit operands — valid
         out_log = (flag && bit_b) | (flag || bit_b) | (!flag);
         // Comparison from helper
@@ -147,7 +149,7 @@
         } ELSE {
             r_eq <= 8'd0;
         }
-        // Nested guard: outer IF proves nonzero, inner uses division
+        // Nested guard: outer IF proves nonzero, inner IF uses division
         IF (b != 8'd0) {
             IF (a > 8'd10) {
                 r_nest <= a / b;
@@ -162,6 +164,12 @@
             r_else <= 8'd0;
         } ELSE {
             r_else <= a / b;
+        }
+        // Edge case: literal on either side of guard (8'd0 != b)
+        IF (8'd0 != b) {
+            r_swap <= a / b;
+        } ELSE {
+            r_swap <= 8'd0;
         }
     }
 @endmod

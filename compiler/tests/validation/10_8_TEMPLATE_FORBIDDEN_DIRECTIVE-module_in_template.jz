@@ -1,6 +1,6 @@
 // TEMPLATE_FORBIDDEN_DIRECTIVE: Cross-reference test for S10.4 @module directive in template.
-// Parser does not recover after the error, producing cascading PARSE000.
-// Split from @new trigger for this reason.
+// Tests @module inside file-scoped and module-scoped templates.
+// Split from other directive triggers due to potential parser recovery issues.
 
 @project TEMPLATE_FORBIDDEN_DIRECTIVE_module_in_template
     CONFIG {
@@ -13,7 +13,7 @@
     }
 @endproj
 
-// Trigger: @module directive inside file-scoped template
+// Trigger 1: @module directive inside file-scoped template
 @template mod_tmpl(a, b)
     @module InnerMod
         PORT {
@@ -31,6 +31,19 @@
         IN  [1] clk;
         OUT [1] data;
     }
+
+    // Trigger 2: @module directive inside module-scoped template
+    @template mod_mod(a, b)
+        @module InnerMod2
+            PORT {
+                IN  [1] din;
+                OUT [1] data;
+            }
+            ASYNCHRONOUS {
+                data = din;
+            }
+        @endmod
+    @endtemplate
 
     REGISTER {
         r [1] = 1'b0;

@@ -1,0 +1,3 @@
+File: 9_7_DIRECTIVE_INVALID_CONTEXT-check_in_sync.jz
+      63:9    error DIRECTIVE_INVALID_CONTEXT S1.1/S6.2 Structural directives (@project/@module/@endproj/@endmod/@blackbox/@new/@import) used in invalid location
+      63:16   error PARSE000 parse error near token '(': expected identifier in assignment left-hand side (orig: PARSE000)

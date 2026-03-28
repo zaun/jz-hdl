@@ -1,5 +1,6 @@
 // ASYNC_ASSIGN_REGISTER: Register assigned in ASYNCHRONOUS block.
-// Tests register write in ASYNC root, IF branch, and SELECT case across modules.
+// Tests register write in ASYNC root (receive <=, alias =, drive =>),
+// IF branch, ELIF branch, ELSE branch, SELECT/CASE, and DEFAULT across modules.
 // Valid register reads in ASYNC and writes in SYNC included for no false positives.
 
 @project ASYNC_ASSIGN_REGISTER_register_in_async
@@ -7,33 +8,48 @@
         IN  [1] clk = _;
         IN  [1] ctrl = _;
         IN  [8] din = _;
-        OUT [8] dout = _;
+        OUT [8] dout_recv = _;
+        OUT [8] dout_alias = _;
+        OUT [8] dout_drive = _;
+        OUT [8] dout_root = _;
         OUT [8] dout_if = _;
         OUT [8] dout_sel = _;
     }
 @endproj
 
-// Helper module: register written in ASYNC root
+// Helper module: register written in ASYNC via three operators
 @module HelperMod
     PORT {
         IN  [1] clk;
         IN  [8] data_in;
-        OUT [8] data_out;
+        OUT [8] out_recv;
+        OUT [8] out_alias;
+        OUT [8] out_drive;
     }
 
     REGISTER {
-        r_help [8] = 8'h00;
+        r_recv [8] = 8'h00;
+        r_alias [8] = 8'h00;
+        r_drive [8] = 8'h00;
     }
 
     ASYNCHRONOUS {
-        // Valid: register read in ASYNC (current value)
-        data_out = r_help;
-        // Trigger 1: register written in ASYNC root (helper module)
-        r_help <= data_in;
+        // Valid: register reads in ASYNC (current value)
+        out_recv = r_recv;
+        out_alias = r_alias;
+        out_drive = r_drive;
+        // Trigger 1: receive-assign to register in ASYNC root (helper)
+        r_recv <= data_in;
+        // Trigger 2: alias-assign to register in ASYNC root (helper)
+        r_alias = data_in;
+        // Trigger 3: drive-assign to register in ASYNC root (helper)
+        data_in => r_drive;
     }
 
     SYNCHRONOUS(CLK=clk) {
-        r_help <= data_in;
+        r_recv <= data_in;
+        r_alias <= data_in;
+        r_drive <= data_in;
     }
 @endmod
 
@@ -42,7 +58,10 @@
         IN  [1] clk;
         IN  [1] ctrl;
         IN  [8] din;
-        OUT [8] dout;
+        OUT [8] dout_recv;
+        OUT [8] dout_alias;
+        OUT [8] dout_drive;
+        OUT [8] dout_root;
         OUT [8] dout_if;
         OUT [8] dout_sel;
     }
@@ -56,28 +75,34 @@
     @new inst_h HelperMod {
         IN  [1] clk = clk;
         IN  [8] data_in = din;
-        OUT [8] data_out = _;
+        OUT [8] out_recv = dout_recv;
+        OUT [8] out_alias = dout_alias;
+        OUT [8] out_drive = dout_drive;
     };
 
     ASYNCHRONOUS {
-        // Valid: register read in ASYNC
-        dout = r_root;
+        // Valid: register reads in ASYNC
+        dout_root = r_root;
         dout_if = r_if;
         dout_sel = r_sel;
-        // Trigger 2: register written in ASYNC root (top module)
+        // Trigger 4: receive-assign in ASYNC root (top module)
         r_root <= din;
-        // Trigger 3: register written in ASYNC IF branch
+        // Trigger 5: register written in ASYNC IF branch
         IF (ctrl) {
             r_if <= din;
+        // Trigger 6: register written in ASYNC ELIF branch
+        } ELIF (din[0:0]) {
+            r_if <= din;
+        // Trigger 7: register written in ASYNC ELSE branch
+        } ELSE {
+            r_if <= din;
         }
-        // Trigger 4: register written in ASYNC SELECT case
+        // Trigger 8: register written in ASYNC SELECT/CASE
         SELECT (ctrl) {
             CASE (1'b0) {
                 r_sel <= din;
             }
-            CASE (1'b1) {
-                r_sel <= din;
-            }
+            // Trigger 9: register written in ASYNC DEFAULT
             DEFAULT {
                 r_sel <= din;
             }

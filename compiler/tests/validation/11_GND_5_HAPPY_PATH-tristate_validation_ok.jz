@@ -1,7 +1,7 @@
-// HAPPY_PATH: Valid tristate validation rules — mutually exclusive enables
-// and full-width z assignments allow transformation to succeed.
-// Covers: IF/ELSE provably exclusive enables, full-width z in else branch,
-// complex enable expressions, multi-module tristate through helper and top.
+// HAPPY_PATH: Valid tristate validation — mutually exclusive enables via
+// IF/ELSE and full-width z assignments allow transformation to succeed.
+// Contexts: single-driver tristate in helper module, single-driver tristate
+// in top module, multi-module interaction via @new.
 
 @project HAPPY_PATH_tristate_validation_ok
     @top TopMod {
@@ -13,7 +13,7 @@
     }
 @endproj
 
-// Helper module: single-driver tristate with IF/ELSE exclusion and full-width z
+// Helper module: single-driver tristate with IF/ELSE and full-width z
 @module HelperMod
     PORT {
         IN  [1] en;
@@ -36,7 +36,7 @@
     }
 @endmod
 
-// Top module: tristate with IF/ELSE exclusion, instantiates helper
+// Top module: single-driver tristate, instantiates helper
 @module TopMod
     PORT {
         IN  [1] clk;
@@ -69,7 +69,6 @@
             w_top <= 8'bzzzz_zzzz;
         }
 
-        // Output driven by non-tristate path
         dout <= w_safe;
     }
 

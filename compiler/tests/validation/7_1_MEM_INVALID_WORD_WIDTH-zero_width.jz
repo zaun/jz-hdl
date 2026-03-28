@@ -1,5 +1,5 @@
-// MEM_INVALID_WORD_WIDTH: Word width <= 0 triggers error.
-// Valid width included for no false positives.
+// MEM_INVALID_WORD_WIDTH: Word width of zero triggers error.
+// Valid width=8 MEM included for no false positives.
 
 @project MEM_INVALID_WORD_WIDTH_zero_width
     @top TopMod {
@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: width = 0 in helper module
+// Trigger 1: zero word width in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -24,7 +24,7 @@
     }
 
     MEM {
-        mem_a [0] [16] = 8'h00 {
+        bad_mem [0] [16] = 8'h00 {
             OUT rd ASYNC;
             IN  wr;
         };
@@ -51,17 +51,17 @@
         r [8] = 8'h00;
     }
 
-    // Trigger 2: width = 0 in top module
+    // Trigger 2: zero word width in top module
     MEM {
-        mem_b [0] [16] = 8'h00 {
+        bad_mem [0] [16] = 8'h00 {
             OUT rd ASYNC;
             IN  wr;
         };
     }
 
-    // Valid: width = 8 (no error expected)
+    // Valid: width=8 (no error expected)
     MEM {
-        mem_ok [8] [16] = 8'h00 {
+        ok_mem [8] [16] = 8'h00 {
             OUT rd_ok ASYNC;
             IN  wr_ok;
         };
@@ -75,11 +75,11 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_ok.rd_ok[addr];
+        data = ok_mem.rd_ok[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_ok.wr_ok[addr] <= wdata;
+        ok_mem.wr_ok[addr] <= wdata;
     }
 @endmod

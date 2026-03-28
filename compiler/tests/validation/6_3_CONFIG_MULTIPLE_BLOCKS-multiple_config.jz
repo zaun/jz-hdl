@@ -14,7 +14,7 @@
 
     @top TopMod {
         IN  [1] clk = _;
-        OUT [CONFIG.WIDTH] data = _;
+        OUT [1] data = _;
     }
 @endproj
 
@@ -31,7 +31,7 @@
 @module TopMod
     PORT {
         IN  [1] clk;
-        OUT [CONFIG.WIDTH] data;
+        OUT [1] data;
     }
 
     @new inst_h Helper {

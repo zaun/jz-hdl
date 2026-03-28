@@ -26,7 +26,7 @@
     }
 @endmod
 
-// DriverB: concatenated z literal — confuses OE extractor
+// Trigger 1: DriverB uses concatenated z literal — confuses OE extractor
 @module DriverB
     PORT {
         IN    [1] en;

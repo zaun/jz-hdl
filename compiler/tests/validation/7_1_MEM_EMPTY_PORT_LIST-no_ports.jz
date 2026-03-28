@@ -24,7 +24,8 @@
     }
 
     MEM {
-        mem_a [8] [16] = 8'h00 {};
+        empty_mem [8] [16] = 8'h00 {
+        };
     }
 
     ASYNCHRONOUS {
@@ -50,12 +51,13 @@
 
     // Trigger 2: empty port list in top module
     MEM {
-        mem_b [8] [16] = 8'h00 {};
+        empty_mem [8] [16] = 8'h00 {
+        };
     }
 
     // Valid: MEM with ports (no error expected)
     MEM {
-        mem_ok [8] [16] = 8'h00 {
+        ok_mem [8] [16] = 8'h00 {
             OUT rd_ok ASYNC;
             IN  wr_ok;
         };
@@ -69,11 +71,11 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_ok.rd_ok[addr];
+        data = ok_mem.rd_ok[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_ok.wr_ok[addr] <= wdata;
+        ok_mem.wr_ok[addr] <= wdata;
     }
 @endmod

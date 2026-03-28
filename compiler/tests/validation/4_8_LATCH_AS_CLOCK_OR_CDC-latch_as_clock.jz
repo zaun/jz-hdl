@@ -1,6 +1,5 @@
 // LATCH_AS_CLOCK_OR_CDC: LATCH may not be used as a clock signal or in CDC.
 // Tests latch identifier used as CLK parameter in SYNCHRONOUS block.
-// CDC source context not tested here — compiler only checks CLK parameter.
 // Valid clock usage with port signal included to verify no false positives.
 
 @project LATCH_AS_CLOCK_OR_CDC_latch_as_clock

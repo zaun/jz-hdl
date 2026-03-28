@@ -1,11 +1,13 @@
 // TRISTATE_TRANSFORM_OE_EXTRACT_FAIL: Ambiguous output-enable condition.
+// Verifies the error fires when the compiler cannot extract a clean OE
+// condition from the tri-state INOUT driver pattern.
 // DriverA uses standard ternary z pattern — OE extracts fine.
 // DriverB uses concatenation in z literal — confuses OE extractor because
 // the z is not a simple literal.
-// Both share the same parent wire through INOUT ports.
-// Context: INOUT multi-driver with ambiguous OE condition.
+// Contexts: INOUT multi-driver with ambiguous OE condition (concatenated z).
+// Valid: standard ternary z pattern extracts correctly (DriverA).
 
-@project OE_EXTRACT_FAIL_ambiguous_oe
+@project TRISTATE_TRANSFORM_OE_EXTRACT_FAIL_ambiguous_oe
     @top TopMod {
         IN  [1] en = _;
         IN  [8] din = _;

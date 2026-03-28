@@ -1,0 +1,59 @@
+// CONST_CIRCULAR_DEP: Circular dependency in CONST definitions used in MEM dimensions.
+// Tests circular CONST dependency in helper module and top module.
+// Valid CONST chain included to verify no false positives.
+
+@project CONST_CIRCULAR_DEP_circular_const_in_mem
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: circular CONST dependency A -> B -> A in helper module
+@module HelperMod
+    CONST {
+        CA = CB;
+        CB = CA;
+        GOOD = 1;
+    }
+
+    PORT {
+        IN  [1] din;
+        OUT [GOOD] data;
+    }
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        // Trigger 2: circular CONST dependency X -> Y -> X in top module
+        X = Y;
+        Y = X;
+        OK = 1;
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [OK] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

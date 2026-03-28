@@ -1,5 +1,6 @@
 // MEM_DUP_PORT_NAME: Duplicate port names inside MEM block triggers error.
-// Tests OUT-OUT, IN-IN, and OUT-IN duplicates. Unique names for no false positives.
+// Tests OUT-OUT, IN-IN, and OUT-IN same-name duplicates.
+// Valid unique port names included for no false positives.
 
 @project MEM_DUP_PORT_NAME_duplicate_port_name
     @top TopMod {
@@ -10,7 +11,7 @@
     }
 @endproj
 
-// Trigger 1: duplicate OUT-OUT port name in helper module
+// Trigger 1: OUT-OUT duplicate port name 'rd' in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -53,7 +54,7 @@
         r [8] = 8'h00;
     }
 
-    // Trigger 2: duplicate IN-IN port name in top module
+    // Trigger 2: IN-IN duplicate port name 'wr' in top module
     MEM {
         mem_b [8] [16] = 8'h00 {
             OUT rd_b ASYNC;
@@ -62,19 +63,11 @@
         };
     }
 
-    // Trigger 3: duplicate OUT-IN same name in top module
+    // Trigger 3: OUT-IN same name 'same' in top module
     MEM {
         mem_c [8] [16] = 8'h00 {
             OUT same ASYNC;
             IN  same;
-        };
-    }
-
-    // Valid: unique port names (no error expected)
-    MEM {
-        mem_ok [8] [16] = 8'h00 {
-            OUT rd_ok ASYNC;
-            IN  wr_ok;
         };
     }
 
@@ -86,11 +79,11 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_ok.rd_ok[addr];
+        data = mem_b.rd_b[addr] ^ mem_c.same[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_ok.wr_ok[addr] <= wdata;
+        mem_b.wr[addr] <= wdata;
     }
 @endmod

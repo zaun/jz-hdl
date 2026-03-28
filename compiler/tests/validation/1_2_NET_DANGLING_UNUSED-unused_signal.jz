@@ -1,66 +1,62 @@
-// NET_DANGLING_UNUSED: Signal is neither driven nor read (dangling unused).
-// Tests wires declared but never connected across multiple modules.
-// Properly used wires included to verify no false positives.
+// NET_DANGLING_UNUSED: Signal declared but never driven or read.
+// Each trigger is commented. Valid used wires verify no false positives.
 
 @project NET_DANGLING_UNUSED_unused_signal
     CONFIG {
         WIDTH = 8;
     }
+
     @top TopMod {
-        IN  [1] clk = _;
-        OUT [1] data = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
     }
 @endproj
 
-// Helper module with unused wire
+// Trigger 1: unused wire in helper module
 @module HelperA
     PORT {
-        IN  [1] din;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout;
     }
+
     WIRE {
-        // Trigger 1: wire declared but never driven or read in helper module
-        dangling_a [1];
-        // Valid: wire that IS used (driven and read)
-        used_w [1];
+        // Trigger 1: wire never driven or read
+        dangling_a [8];
+        // Valid: wire driven and read
+        used_w [8];
     }
+
     ASYNCHRONOUS {
-        used_w = din;
-        data = used_w;
+        used_w <= din;
+        dout <= used_w;
     }
 @endmod
 
-// Top module with unused wires
+// Top module with its own unused wire triggers
 @module TopMod
     PORT {
-        IN  [1] clk;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
     }
 
-    REGISTER {
-        r [1] = 1'b0;
+    WIRE {
+        // Trigger 2: 1-bit unused wire
+        dangling_b [1];
+        // Trigger 3: 8-bit unused wire
+        dangling_c [8];
+        // Valid: wire driven and read
+        valid_w [8];
     }
 
     @new inst_a HelperA {
-        IN  [1] din = r;
-        OUT [1] data = _;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
     };
 
-    WIRE {
-        // Trigger 2: wire declared but never driven or read in top module
-        dangling_b [1];
-        // Trigger 3: wider wire also unused
-        dangling_c [8];
-        // Valid: wire that IS used
-        ok_wire [1];
-    }
-
     ASYNCHRONOUS {
-        ok_wire = r;
-        data = ok_wire;
-    }
-
-    SYNCHRONOUS(CLK=clk) {
-        r <= ~r;
+        valid_w <= din;
+        dout_b <= valid_w;
     }
 @endmod

@@ -1,6 +1,5 @@
 // TEMPLATE_SCRATCH_WIDTH_INVALID: Cross-reference test for S10.3 @scratch width error.
 // Tests @scratch with zero width and non-constant (parameter) width.
-// NOTE: Known compiler bug — this rule is not enforced. See issues.md.
 // Valid @scratch with literal and CONST widths included for negative testing.
 
 @project TEMPLATE_SCRATCH_WIDTH_INVALID_invalid_width_error
@@ -55,6 +54,12 @@
         IN  [1] clk;
         OUT [1] data;
     }
+
+    // Trigger 4: scratch with parameter width in module-scoped template in TopMod
+    @template top_param(a, b, w)
+        @scratch bad [w];
+        a <= b;
+    @endtemplate
 
     @new inst_a HelperMod {
         IN  [1] din = r;

@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: duplicate MEM name in helper module
+// Trigger 1: duplicate MEM name 'shared' in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -59,7 +59,7 @@
         r [8] = 8'h00;
     }
 
-    // Trigger 2: duplicate MEM name in top module
+    // Trigger 2: duplicate MEM name 'my_mem' in top module
     MEM {
         my_mem [8] [16] = 8'h00 {
             OUT rd ASYNC;

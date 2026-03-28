@@ -50,6 +50,23 @@
     }
 @endmod
 
+// EmptySync module: empty SYNC body (all registers hold)
+@module EmptySyncMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] out_a;
+    }
+    REGISTER {
+        r_hold [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        out_a = r_hold;
+    }
+    // Valid: empty SYNC body — all registers hold
+    SYNCHRONOUS(CLK=clk) {
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
@@ -80,6 +97,11 @@
         IN  [1] clk = clk;
         IN  [8] din = din;
         IN  [1] sel = sel;
+        OUT [8] out_a = _;
+    };
+
+    @new inst_e EmptySyncMod {
+        IN  [1] clk = clk;
         OUT [8] out_a = _;
     };
 

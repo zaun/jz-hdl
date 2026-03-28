@@ -1,6 +1,6 @@
-// MAP_INVALID_BOARD_PIN_ID: Board pin ID format must be alphanumeric.
+// MAP_INVALID_BOARD_PIN_ID: Board pin ID format must be valid for the target device.
 // Tests invalid pin IDs containing special characters.
-// Valid alphanumeric pin IDs included to verify no false positives.
+// Valid alphanumeric and numeric pin IDs included to verify no false positives.
 
 @project MAP_INVALID_BOARD_PIN_ID_bad_pin_format
     CHIP = "gw1nr-9-qn88-c6-i5";
@@ -23,7 +23,7 @@
         btn = P14;
         // Trigger 1: pin ID with special character
         bad1 = A#5;
-        // Trigger 2: pin ID with space-like issues via dot
+        // Trigger 2: pin ID with dot
         bad2 = X.3;
         // Valid: simple numeric
         led = 10;

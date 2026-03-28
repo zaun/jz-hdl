@@ -1,0 +1,78 @@
+// CONST_UNDEFINED_IN_WIDTH_OR_SLICE: Undefined CONST in MEM-related width/slice context.
+// This rule fires when a CONST is used in a width/slice position but is not declared.
+// Tests undefined CONST in port width (used for MEM access) and wire width across modules.
+// Valid CONST-based widths included to verify no false positives.
+
+@project CONST_UNDEFINED_IN_WIDTH_OR_SLICE_undefined_const_in_mem_width
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+        OUT [1] out_h = _;
+    }
+@endproj
+
+// Helper module: undefined CONST in port width
+@module HelperMod
+    CONST {
+        VALID_W = 1;
+    }
+
+    PORT {
+        IN  [1] clk;
+        // Trigger 1: undefined CONST in input port width
+        IN  [UNDEF_W] din;
+        // Valid: declared CONST in output port width
+        OUT [VALID_W] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        MY_W = 1;
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+        OUT [1] out_h;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] din = r;
+        OUT [1] data = out_h;
+    };
+
+    WIRE {
+        // Trigger 2: undefined CONST in wire width
+        w_bad [BOGUS_W];
+    }
+
+    REGISTER {
+        // Trigger 3: undefined CONST in register width
+        r_bad [MISSING_W] = 1'b0;
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+        w_bad = r_bad;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+        r_bad <= ~r;
+    }
+@endmod

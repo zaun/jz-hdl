@@ -3,6 +3,10 @@
 // as a combinational loop. Valid feed-forward paths included.
 
 @project COMB_LOOP_UNCONDITIONAL_self_assignment
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] in_a = _;
         OUT [1] out_a = _;

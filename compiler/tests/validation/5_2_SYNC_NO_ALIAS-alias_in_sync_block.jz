@@ -1,5 +1,5 @@
 // SYNC_NO_ALIAS: Aliasing `=` is forbidden in SYNCHRONOUS blocks.
-// Tests alias operator in multiple syntactic forms within SYNC blocks.
+// Tests alias operator in multiple syntactic contexts within SYNC blocks.
 // Valid `<=` assignments included to verify no false positives.
 
 @project SYNC_NO_ALIAS_alias_in_sync_block
@@ -7,13 +7,15 @@
         IN  [1] clk = _;
         IN  [8] data_in = _;
         IN  [4] narrow_in = _;
+        IN  [1] sel = _;
         OUT [8] out_a = _;
         OUT [8] out_b = _;
         OUT [8] out_c = _;
+        OUT [8] out_d = _;
     }
 @endproj
 
-// Helper module: alias in SYNC block
+// Helper module: alias in SYNC root with =, =z, =s
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -34,11 +36,11 @@
         out_c = r_c;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 1: simple alias at root of SYNC
+        // Trigger 1: simple alias = at root of SYNC
         r_a = data_in;
-        // Trigger 2: alias with =z modifier in SYNC
+        // Trigger 2: alias =z modifier in SYNC
         r_b =z narrow_in;
-        // Trigger 3: alias with =s modifier in SYNC
+        // Trigger 3: alias =s modifier in SYNC
         r_c =s narrow_in;
     }
 @endmod
@@ -48,14 +50,17 @@
         IN  [1] clk;
         IN  [8] data_in;
         IN  [4] narrow_in;
+        IN  [1] sel;
         OUT [8] out_a;
         OUT [8] out_b;
         OUT [8] out_c;
+        OUT [8] out_d;
     }
     REGISTER {
         r_x [8] = 8'h00;
         r_y [8] = 8'h00;
         r_z [8] = 8'h00;
+        r_w [8] = 8'h00;
     }
 
     @new inst_h HelperMod {
@@ -71,15 +76,30 @@
         out_a = r_x;
         out_b = r_y;
         out_c = r_z;
+        out_d = r_w;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: alias inside IF branch in SYNC
-        IF (clk) {
+        // Trigger 4: alias = inside IF branch in SYNC
+        IF (sel) {
             r_x = data_in;
         }
+        // Trigger 5: alias = inside ELSE branch in SYNC
+        IF (sel) {
+            r_y <= data_in;
+        } ELSE {
+            r_y = data_in;
+        }
+        // Trigger 6: alias = inside SELECT/CASE body in SYNC
+        SELECT (sel) {
+            CASE (1'b0) {
+                r_z = data_in;
+            }
+            // Trigger 7: alias = inside DEFAULT body in SYNC
+            DEFAULT {
+                r_z = data_in;
+            }
+        }
         // Valid: normal receive assignment (should NOT trigger)
-        r_y <= data_in;
-        // Trigger 5: alias at root in top module SYNC
-        r_z = data_in;
+        r_w <= data_in;
     }
 @endmod

@@ -1,12 +1,12 @@
 // CLOCK_GEN_WIRE_IN_CLOCKS: CLOCK_GEN WIRE output must not be declared in CLOCKS block.
-// Tests WIRE output that is also listed in the CLOCKS block.
-// Valid WIRE (not in CLOCKS) included to verify no false positives.
+// Tests a WIRE output whose name appears in the CLOCKS block.
+// Valid WIRE not in CLOCKS included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_WIRE_IN_CLOCKS_wire_in_clocks
     CLOCKS {
         ref_clk = { period=10 };
-        valid_out;
-        // Trigger: WIRE output listed in CLOCKS
+        gen_out;
+        // lock_clk is in CLOCKS but will be used as WIRE output
         lock_clk;
     }
 
@@ -21,9 +21,11 @@
     CLOCK_GEN {
         PLL {
             IN REF_CLK ref_clk;
-            OUT BASE valid_out;
-            // Trigger 1: WIRE output declared in CLOCKS block
+            OUT BASE gen_out;
+            // Trigger: lock_clk is declared in CLOCKS but used as WIRE
             WIRE LOCK lock_clk;
+            // Valid: lock_sig is not in CLOCKS (no trigger)
+            WIRE LOCK lock_sig;
 
             CONFIG {
                 IDIV = 0;

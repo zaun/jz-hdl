@@ -1,0 +1,56 @@
+// BLACKBOX_BODY_DISALLOWED: REGISTER block inside @blackbox.
+// The parser rejects REGISTER with PARSE000 before semantic analysis.
+// This is a parser recovery bug — see issues.md.
+
+@project BLACKBOX_BODY_DISALLOWED_register_in_blackbox
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    // Trigger: REGISTER in blackbox
+    @blackbox bb_bad {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+        REGISTER {
+            r [1] = 1'b0;
+        }
+    }
+
+    @blackbox bb_ok {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_ok bb_ok {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

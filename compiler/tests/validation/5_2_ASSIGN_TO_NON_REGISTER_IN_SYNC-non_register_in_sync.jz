@@ -1,12 +1,14 @@
 // ASSIGN_TO_NON_REGISTER_IN_SYNC: Only REGISTERs may be assigned in
 // SYNCHRONOUS blocks.
-// Tests assigning to OUT ports and IN ports in SYNC blocks.
+// Tests assigning to OUT ports and IN ports in SYNC blocks at root,
+// inside IF, and inside SELECT/CASE.
 // Valid register assignments included to verify no false positives.
 
 @project ASSIGN_TO_NON_REGISTER_IN_SYNC_non_register_in_sync
     @top TopMod {
         IN  [1] clk = _;
         IN  [8] data = _;
+        IN  [1] sel = _;
         OUT [8] out_a = _;
         OUT [8] out_b = _;
     }
@@ -26,7 +28,7 @@
         out_a = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 1: assign to OUT port in SYNC block
+        // Trigger 1: assign to OUT port in SYNC block (helper root)
         out_a <= data;
         // Valid: assign to register (should NOT trigger)
         r <= data;
@@ -37,6 +39,7 @@
     PORT {
         IN  [1] clk;
         IN  [8] data;
+        IN  [1] sel;
         OUT [8] out_a;
         OUT [8] out_b;
     }
@@ -55,10 +58,23 @@
         out_b = r_ok;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: assign to OUT port in top module SYNC
+        // Trigger 2: assign to OUT port in top module SYNC root
         out_b <= data;
         // Trigger 3: assign to IN port in SYNC (not a register)
         data <= 8'hFF;
+        // Trigger 4: assign to OUT port inside IF in SYNC
+        IF (sel) {
+            out_a <= data;
+        }
+        // Trigger 5: assign to OUT port inside SELECT/CASE in SYNC
+        SELECT (sel) {
+            CASE (1'b0) {
+                out_a <= data;
+            }
+            DEFAULT {
+                out_a <= 8'h00;
+            }
+        }
         // Valid: assign to register (should NOT trigger)
         r_ok <= data;
     }

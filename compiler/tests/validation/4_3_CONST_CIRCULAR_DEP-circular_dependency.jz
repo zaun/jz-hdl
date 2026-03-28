@@ -1,8 +1,5 @@
 // CONST_CIRCULAR_DEP: Circular dependency in CONST definitions.
 // Tests direct A=B; B=A; circular reference across modules.
-// Note: The compiler does not emit CONST_CIRCULAR_DEP for module CONSTs.
-// Instead, all CONST evaluation failures are mapped to CONST_NEGATIVE_OR_NONINT.
-// This test captures the actual compiler behavior.
 // Valid CONST chain included to verify no false positives.
 
 @project CONST_CIRCULAR_DEP_circular_dependency

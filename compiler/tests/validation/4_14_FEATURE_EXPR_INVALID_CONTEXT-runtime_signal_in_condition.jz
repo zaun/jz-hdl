@@ -1,5 +1,6 @@
 // FEATURE_EXPR_INVALID_CONTEXT: Runtime signals used in @feature conditions.
-// Tests wire, register, and port references in @feature guard expressions.
+// Tests wire, register, and port references in @feature guard expressions
+// in ASYNCHRONOUS and SYNCHRONOUS blocks across multiple modules.
 // Valid references (CONFIG, CONST, literals) are included as negative tests.
 
 @project FEATURE_EXPR_INVALID_CONTEXT_runtime_signal_in_condition

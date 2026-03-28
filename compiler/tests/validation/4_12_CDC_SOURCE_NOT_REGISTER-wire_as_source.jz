@@ -1,5 +1,5 @@
 // CDC_SOURCE_NOT_REGISTER: CDC source must be a REGISTER declared in the module.
-// Tests wire, port, and undeclared identifiers as CDC source in multiple modules.
+// Tests wire, port, and const as CDC source across multiple modules.
 // Valid register source included to verify no false positives.
 
 @project CDC_SOURCE_NOT_REGISTER_wire_as_source

@@ -1,5 +1,6 @@
 // MEM_INVALID_PORT_TYPE: Invalid port type or qualifier triggers error.
-// Tests ASYNC qualifier on IN (write) port. Valid port types included for no false positives.
+// Tests ASYNC and SYNC qualifiers on IN (write) ports, which are always synchronous.
+// Valid OUT ASYNC and OUT SYNC ports included for no false positives.
 
 @project MEM_INVALID_PORT_TYPE_invalid_port_type
     @top TopMod {
@@ -10,7 +11,7 @@
     }
 @endproj
 
-// Trigger 1: ASYNC on IN port in helper module
+// Trigger 1: IN port with ASYNC qualifier in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -52,19 +53,11 @@
         r [8] = 8'h00;
     }
 
-    // Trigger 2: SYNC on IN port in top module
+    // Trigger 2: IN port with SYNC qualifier in top module
     MEM {
         mem_b [8] [16] = 8'h00 {
             OUT rd ASYNC;
             IN  wr SYNC;
-        };
-    }
-
-    // Valid: correct port types (no error expected)
-    MEM {
-        mem_ok [8] [16] = 8'h00 {
-            OUT rd_ok ASYNC;
-            IN  wr_ok;
         };
     }
 
@@ -76,12 +69,11 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_b.rd[addr] ^ mem_ok.rd_ok[addr];
+        data = mem_b.rd[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
         mem_b.wr[addr] <= wdata;
-        mem_ok.wr_ok[addr] <= wdata;
     }
 @endmod

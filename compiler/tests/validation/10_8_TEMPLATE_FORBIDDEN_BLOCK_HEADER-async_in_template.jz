@@ -1,6 +1,6 @@
 // TEMPLATE_FORBIDDEN_BLOCK_HEADER: Cross-reference test for S10.4 ASYNCHRONOUS header in template.
-// Parser does not recover after the error, producing cascading PARSE000.
-// Split from SYNC trigger for this reason.
+// Tests ASYNCHRONOUS block header in file-scoped and module-scoped templates.
+// Split from SYNC trigger due to potential parser recovery issues.
 
 @project TEMPLATE_FORBIDDEN_BLOCK_HEADER_async_in_template
     CONFIG {
@@ -13,18 +13,41 @@
     }
 @endproj
 
-// Trigger: ASYNCHRONOUS block header inside file-scoped template
+// Trigger 1: ASYNCHRONOUS block header inside file-scoped template
 @template async_tmpl(a, b)
     ASYNCHRONOUS {
         a = b;
     }
 @endtemplate
 
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 2: ASYNCHRONOUS block header inside module-scoped template
+    @template mod_async(a, b)
+        ASYNCHRONOUS {
+            a = b;
+        }
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
 @module TopMod
     PORT {
         IN  [1] clk;
         OUT [1] data;
     }
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
 
     REGISTER {
         r [1] = 1'b0;

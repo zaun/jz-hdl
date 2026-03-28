@@ -1,0 +1,58 @@
+// SPECIAL_DRIVER_IN_INDEX: VCC may not appear in slice/index expressions.
+// Tests VCC used as the index value in a bit-select operation (sync block).
+// Split into separate files because the compiler halts after the first
+// SPECIAL_DRIVER_IN_INDEX diagnostic per compilation.
+// Valid standalone VCC use included to verify no false positive.
+
+@project SPECIAL_DRIVER_IN_INDEX_vcc_in_index
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] out_a = _;
+    }
+@endproj
+
+// Helper: VCC as bit-select index in sync block
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+        s [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        out_a = s;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: VCC as bit-select index (sync)
+        s <= r[VCC];
+        r <= r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+    }
+    WIRE {
+        ha_out [1];
+    }
+    REGISTER {
+        r [8] = VCC;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        OUT [1] out_a = ha_out;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: VCC as standalone register reset (no false positive)
+        out_a = ha_out;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+    }
+@endmod

@@ -1,63 +1,83 @@
-// OBS_X_TO_OBSERVABLE_SINK: Expression containing x bits drives observable sinks.
-// Tests x-bit literals reaching OUT ports and REGISTER next-state inputs.
-// Valid uses (no x bits) are included to verify no false positives.
+// OBS_X_TO_OBSERVABLE_SINK: Expression containing x bits drives observable sink.
+// Contexts: OUT port in ASYNC, register next-state in SYNC.
+// Valid: x-bit masked by AND before observable sink (no false positive).
 
 @project OBS_X_TO_OBSERVABLE_SINK_x_bits_to_observable
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] clk = _;
-        OUT [8] out_a = _;
-        OUT [8] out_b = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+        OUT [8] dout_d = _;
     }
 @endproj
 
-// Helper module: x bits driving output port and register
+// Trigger 1-2: x bits to OUT port and register in helper module
 @module HelperA
     PORT {
         IN  [1] clk;
-        OUT [8] out_a;
-        OUT [8] out_b;
+        OUT [8] dout;
+        OUT [8] r_out;
     }
+
     REGISTER {
         r [8] = 8'h00;
     }
+
     ASYNCHRONOUS {
-        // Trigger 1: x literal driving OUT port via <=
-        out_a <= 8'bxxxx_0000;
-        // Valid: register current value driving output (no x)
-        out_b = r;
+        // Trigger 1: x bits directly to OUT port
+        dout <= 8'bxxxx_xxxx;
+        // Read register to avoid WARN_UNSINKED_REGISTER
+        r_out <= r;
     }
+
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: x literal driving REGISTER next-state
-        r <= 8'bxxxx_xxxx;
+        // Trigger 2: x bits to register next-state
+        r <= 8'b1111_xxxx;
     }
 @endmod
 
+// Top module with its own x-bit triggers and valid masked use
 @module TopMod
     PORT {
         IN  [1] clk;
-        OUT [8] out_a;
-        OUT [8] out_b;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+        OUT [8] dout_d;
+    }
+
+    WIRE {
+        w_masked [8];
+    }
+
+    REGISTER {
+        r_top [8] = 8'h00;
     }
 
     @new inst_a HelperA {
         IN  [1] clk = clk;
-        OUT [8] out_a = _;
-        OUT [8] out_b = _;
+        OUT [8] dout = dout_a;
+        OUT [8] r_out = dout_b;
     };
 
-    REGISTER {
-        r [8] = 8'h00;
-    }
-
     ASYNCHRONOUS {
-        // Trigger 3: x literal driving OUT port in top module
-        out_a <= 8'b0000_xxxx;
-        // Valid: register current value driving output (no x)
-        out_b = r;
+        // Trigger 3: x bits directly to OUT port in top module
+        dout_c <= 8'bxxxx_0000;
+
+        // Read register to avoid WARN_UNSINKED_REGISTER
+        dout_d <= r_top;
+
+        // Valid: x bits masked by AND before use (no error expected)
+        w_masked <= 8'bxxxx_0000 & 8'h0F;
     }
 
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: x literal driving register next-state in top module
-        r <= 8'bxx00_00xx;
+        // Trigger 4: x bits to register next-state in top module
+        r_top <= 8'bxxxx_xxxx;
     }
 @endmod

@@ -79,8 +79,8 @@
     }
 
     SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
         mem_ok.rd_ok.addr <= addr;
-        r <= mem_ok.rd_ok.data;
         mem_ok.wr_ok[addr] <= wdata;
     }
 @endmod

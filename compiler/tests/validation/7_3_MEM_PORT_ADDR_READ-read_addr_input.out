@@ -1,3 +1,5 @@
 File: 7_3_MEM_PORT_ADDR_READ-read_addr_input.jz
-      38:14   error MEM_PORT_ADDR_READ S7.2.1/S7.3.2/S7.7.2 MEM read address inputs are not readable; use mem.port.data
-      72:14   error MEM_PORT_ADDR_READ S7.2.1/S7.3.2/S7.7.2 MEM read address inputs are not readable; use mem.port.data
+      40:14   error MEM_PORT_ADDR_READ S7.2.1/S7.3.2/S7.7.2 MEM read address inputs are not readable; use mem.port.data
+      85:14   error MEM_PORT_ADDR_READ S7.2.1/S7.3.2/S7.7.2 MEM read address inputs are not readable; use mem.port.data
+      87:9    error SYNC_MULTI_ASSIGN_SAME_REG_BITS S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block
+      87:14   error MEM_PORT_ADDR_READ S7.2.1/S7.3.2/S7.7.2 MEM read address inputs are not readable; use mem.port.data

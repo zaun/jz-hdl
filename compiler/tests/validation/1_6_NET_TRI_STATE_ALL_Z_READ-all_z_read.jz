@@ -1,0 +1,69 @@
+// NET_TRI_STATE_ALL_Z_READ: All drivers assign z but signal is read.
+// Tests the floating-net rule from S1.6.4: if all drivers assign z on an execution
+// path and the net is read, this is a compile-time error.
+// WARN_INTERNAL_TRISTATE co-fires as an inherent secondary diagnostic.
+// Valid: z driver where net is never read (no error).
+
+@project NET_TRI_STATE_ALL_Z_READ_all_z_read
+    @top TopMod {
+        IN  [1] en = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Trigger 1: all-z driver with read in helper module
+@module HelperA
+    PORT {
+        IN  [1] en;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        all_z [8];
+        no_read_z [8];
+    }
+
+    ASYNCHRONOUS {
+        // All branches assign z, then net is read
+        IF (en) {
+            all_z <= 8'bzzzz_zzzz;
+        } ELSE {
+            all_z <= 8'bzzzz_zzzz;
+        }
+        // Trigger 1: reading a wire where all drivers assigned z
+        dout <= all_z;
+
+        // Valid: z driver only but net is never read (permitted per S1.6.4)
+        no_read_z <= 8'bzzzz_zzzz;
+    }
+@endmod
+
+// Top module with its own all-z trigger
+@module TopMod
+    PORT {
+        IN  [1] en;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    WIRE {
+        all_z_top [8];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] en = en;
+        OUT [8] dout = dout_a;
+    };
+
+    ASYNCHRONOUS {
+        // All branches assign z in top module
+        IF (en) {
+            all_z_top <= 8'bzzzz_zzzz;
+        } ELSE {
+            all_z_top <= 8'bzzzz_zzzz;
+        }
+        // Trigger 2: reading a wire where all drivers assigned z in top module
+        dout_b <= all_z_top;
+    }
+@endmod

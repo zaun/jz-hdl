@@ -1,5 +1,5 @@
 // MEM_MISSING_INIT: MEM declared without initialization triggers error.
-// Valid initialization included for no false positives.
+// Valid MEM with initialization included for no false positives.
 
 @project MEM_MISSING_INIT_missing_init
     @top TopMod {
@@ -24,7 +24,7 @@
     }
 
     MEM {
-        mem_a [8] [16] {
+        bad_mem [8] [16] {
             OUT rd ASYNC;
             IN  wr;
         };
@@ -53,15 +53,15 @@
 
     // Trigger 2: missing init in top module
     MEM {
-        mem_b [8] [16] {
+        bad_mem [8] [16] {
             OUT rd ASYNC;
             IN  wr;
         };
     }
 
-    // Valid: with initialization (no error expected)
+    // Valid: MEM with init (no error expected)
     MEM {
-        mem_ok [8] [16] = 8'h00 {
+        ok_mem [8] [16] = 8'h00 {
             OUT rd_ok ASYNC;
             IN  wr_ok;
         };
@@ -75,11 +75,11 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_ok.rd_ok[addr];
+        data = ok_mem.rd_ok[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_ok.wr_ok[addr] <= wdata;
+        ok_mem.wr_ok[addr] <= wdata;
     }
 @endmod

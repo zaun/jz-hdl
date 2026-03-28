@@ -1,0 +1,79 @@
+// MEM_WRITE_TO_READ_PORT: Writing to a read-only OUT port.
+// Triggers on ASYNC and SYNC OUT ports. Valid reads included.
+
+@project MEM_WRITE_TO_READ_PORT_write_to_read_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: write to ASYNC OUT port
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Valid: reading from OUT port
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        // Trigger 1: write to ASYNC OUT port
+        mem_a.rd[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd_s SYNC;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_b.rd_s.addr <= addr;
+        r <= mem_b.rd_s.data;
+        // Trigger 2: write to SYNC OUT port
+        mem_b.rd_s[addr] <= wdata;
+    }
+@endmod

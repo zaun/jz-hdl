@@ -1,6 +1,6 @@
 // DIV_UNGUARDED_RUNTIME_ZERO: Runtime divisor without nonzero guard.
 // Tests unguarded division and modulus in sync blocks across modules.
-// Guarded division included to verify no false positives.
+// Guarded division with multiple guard patterns included to verify no false positives.
 // All divisions in SYNCHRONOUS blocks since ASYNC IF triggers ASYNC_ALIAS_IN_CONDITIONAL,
 // and DIV_UNGUARDED_RUNTIME_ZERO only fires when no errors exist (IR pass).
 

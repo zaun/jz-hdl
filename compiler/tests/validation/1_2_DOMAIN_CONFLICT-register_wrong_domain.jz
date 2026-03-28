@@ -1,75 +1,81 @@
-// DOMAIN_CONFLICT: Register used in SYNCHRONOUS block whose CLK does not match home domain.
-// Tests register assigned in wrong SYNCHRONOUS block across multiple modules.
-// Correct domain usage included to verify no false positives.
+// DOMAIN_CONFLICT: Register used in SYNCHRONOUS block whose CLK does not
+// match its home-domain clock.
+// Each trigger is commented. Valid same-domain assignment for no false positives.
 
 @project DOMAIN_CONFLICT_register_wrong_domain
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] clk_a = _;
         IN  [1] clk_b = _;
-        OUT [1] data = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
     }
 @endproj
 
-// Helper module: register written in wrong domain
+// Trigger 1: register assigned in wrong domain in helper module
 @module HelperA
     PORT {
         IN  [1] clk_a;
         IN  [1] clk_b;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout;
     }
+
     REGISTER {
-        // Home domain: clk_a (first SYNCHRONOUS block where it's assigned)
-        r_a [1] = 1'b0;
-        // Home domain: clk_b
-        r_b [1] = 1'b0;
+        r_a [8] = 8'h00;
     }
 
     ASYNCHRONOUS {
-        data = r_a;
+        dout <= r_a;
     }
 
-    // Valid: r_a assigned in its home domain clk_a
+    // Valid: home domain assignment
     SYNCHRONOUS(CLK=clk_a) {
-        r_a <= ~r_a;
+        r_a <= din;
     }
 
+    // Trigger 1: r_a's home domain is clk_a, but assigned in clk_b block
     SYNCHRONOUS(CLK=clk_b) {
-        r_b <= ~r_b;
-        // Trigger 1: r_a assigned in clk_b but home domain is clk_a
-        r_a <= 1'b1;
+        r_a <= din;
     }
 @endmod
 
+// Top module with its own domain conflict trigger
 @module TopMod
     PORT {
         IN  [1] clk_a;
         IN  [1] clk_b;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    REGISTER {
+        r_top [8] = 8'h00;
     }
 
     @new inst_a HelperA {
         IN  [1] clk_a = clk_a;
         IN  [1] clk_b = clk_b;
-        OUT [1] data = _;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
     };
 
-    REGISTER {
-        r_top [1] = 1'b0;
-        r_other [1] = 1'b0;
-    }
-
     ASYNCHRONOUS {
-        data = r_top;
+        dout_b <= r_top;
     }
 
-    // Valid: r_top in its home domain
+    // Valid: home domain assignment
     SYNCHRONOUS(CLK=clk_a) {
-        r_top <= ~r_top;
+        r_top <= din;
     }
 
+    // Trigger 2: r_top's home domain is clk_a, but assigned in clk_b
     SYNCHRONOUS(CLK=clk_b) {
-        r_other <= ~r_other;
-        // Trigger 2: r_top assigned in clk_b but home domain is clk_a
-        r_top <= 1'b0;
+        r_top <= din;
     }
 @endmod

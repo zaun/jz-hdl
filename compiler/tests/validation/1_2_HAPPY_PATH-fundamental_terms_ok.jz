@@ -1,6 +1,7 @@
 // HAPPY_PATH: Valid usage of all Section 1.2 fundamental concepts.
-// Exercises signals, nets, deterministic nets, drivers, active drivers, sinks,
-// observable sinks, execution paths, registers, latches, and home domains.
+// Signals, nets, deterministic nets, drivers, active drivers, sinks,
+// observable sinks, execution paths, registers, latches, home domains.
+// No diagnostics expected.
 
 @project HAPPY_PATH_fundamental_terms_ok
     CONFIG {
@@ -9,121 +10,123 @@
 
     @top TopMod {
         IN  [1] clk = _;
+        IN  [1] sel = _;
         IN  [1] enable = _;
-        IN  [1] din = _;
-        OUT [1] data = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+        OUT [1] dout_d = _;
+        OUT [8] dout_e = _;
     }
 @endproj
 
-// Helper module: single-driver net, register as driver/sink, port as observable sink
+// Helper module: register as driver, latch as driver, single-driver net
 @module HelperA
     PORT {
         IN  [1] clk;
-        IN  [1] din;
-        OUT [1] data;
+        IN  [1] enable;
+        IN  [8] din;
+        OUT [8] reg_out;
+        OUT [8] latch_out;
     }
 
-    // Register as sink (assigned in SYNCHRONOUS) and driver (read in ASYNCHRONOUS)
-    REGISTER {
-        r [1] = 1'b0;
-    }
-
-    // Single-driver deterministic net
     WIRE {
-        w [1];
+        w [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    LATCH {
+        lat [8] D;
     }
 
     ASYNCHRONOUS {
-        // Wire driven by one source — deterministic net
-        w = din;
-        // Port as observable sink driven by register (register as driver)
-        data = r;
+        // Single-driver deterministic net
+        w <= din;
+
+        // Register current value as driver (readable in ASYNC)
+        reg_out <= r;
+
+        // Latch as driver: guarded assignment then read
+        lat <= enable : din;
+        latch_out <= lat;
     }
 
+    // Register as sink (next-state assigned in home SYNCHRONOUS)
     SYNCHRONOUS(CLK=clk) {
-        // Register as sink — assigned in its home-domain SYNCHRONOUS block
         r <= w;
     }
 @endmod
 
-// Helper module: latch as driver, execution path exclusivity
+// Helper module: single-bit signal as driver
 @module HelperB
     PORT {
-        IN  [1] clk;
-        IN  [1] enable;
-        IN  [1] din;
-        OUT [1] data;
-    }
-
-    // Latch — guarded assignment in ASYNCHRONOUS, read as driver
-    LATCH {
-        lat [1] D;
-    }
-
-    REGISTER {
-        r [1] = 1'b0;
-    }
-
-    WIRE {
-        sel_out [1];
+        IN  [1] bit_in;
+        OUT [1] bit_out;
     }
 
     ASYNCHRONOUS {
-        // Latch as driver: guarded assignment then read
-        lat <= enable : din;
-        data <= lat;
-
-        // Execution path exclusivity: IF/ELSE assigns same wire (valid, mutually exclusive)
-        IF (enable) {
-            sel_out <= din;
-        } ELSE {
-            sel_out <= r;
-        }
-    }
-
-    SYNCHRONOUS(CLK=clk) {
-        r <= sel_out;
+        // 1-bit wire driving 1-bit port
+        bit_out = bit_in;
     }
 @endmod
 
-// Top module: instantiates helpers, exercises single-bit signal as driver
+// Top module: observable sinks, execution path exclusivity, x masking
 @module TopMod
     PORT {
         IN  [1] clk;
+        IN  [1] sel;
         IN  [1] enable;
-        IN  [1] din;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+        OUT [1] dout_d;
+        OUT [8] dout_e;
+    }
+
+    WIRE {
+        w_excl [8];
+        w_masked [8];
     }
 
     REGISTER {
-        r [1] = 1'b0;
+        r_top [8] = 8'h00;
     }
 
     @new inst_a HelperA {
         IN  [1] clk = clk;
-        IN  [1] din = din;
-        OUT [1] data = _;
+        IN  [1] enable = enable;
+        IN  [8] din = din;
+        OUT [8] reg_out = dout_a;
+        OUT [8] latch_out = dout_b;
     };
 
     @new inst_b HelperB {
-        IN  [1] clk = clk;
-        IN  [1] enable = enable;
-        IN  [1] din = din;
-        OUT [1] data = _;
+        IN  [1] bit_in = sel;
+        OUT [1] bit_out = dout_d;
     };
 
-    WIRE {
-        w_single [1];
-    }
-
     ASYNCHRONOUS {
-        // Single-bit signal as driver for 1-bit port
-        w_single = r;
-        data = w_single;
+        // Execution path exclusivity: IF/ELSE branches assign same wire
+        IF (sel) {
+            w_excl <= din;
+        } ELSE {
+            w_excl <= 8'hFF;
+        }
+
+        // Port as observable sink driven by expression
+        dout_c <= w_excl;
+
+        // x-bit masked before observable sink (valid: AND masks x bits)
+        w_masked <= 8'bxxxx_0000 & 8'h0F;
+        dout_e <= r_top | w_masked;
     }
 
     SYNCHRONOUS(CLK=clk) {
-        // Register driven in home domain
-        r <= din;
+        r_top <= din;
     }
 @endmod

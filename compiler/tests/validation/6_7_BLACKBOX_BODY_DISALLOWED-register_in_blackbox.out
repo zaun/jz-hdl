@@ -1,0 +1,2 @@
+File: 6_7_BLACKBOX_BODY_DISALLOWED-register_in_blackbox.jz
+      16:9    error PARSE000 parse error near token 'REGISTER': unexpected token in @blackbox body; expected CONST or PORT (orig: PARSE000)

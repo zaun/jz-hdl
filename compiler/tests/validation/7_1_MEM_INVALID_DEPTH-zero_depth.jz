@@ -1,20 +1,20 @@
-// MEM_INVALID_DEPTH: Depth <= 0 triggers error.
-// Valid depth included for no false positives.
+// MEM_INVALID_DEPTH: Depth of zero triggers error.
+// Valid depth=16 MEM included for no false positives.
 
 @project MEM_INVALID_DEPTH_zero_depth
     @top TopMod {
         IN  [1] clk = _;
-        IN  [1] addr = _;
+        IN  [4] addr = _;
         IN  [8] wdata = _;
         OUT [8] data = _;
     }
 @endproj
 
-// Trigger 1: depth = 0 in helper module
+// Trigger 1: zero depth in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
-        IN  [1] addr;
+        IN  [4] addr;
         IN  [8] wdata;
         OUT [8] data;
     }
@@ -24,7 +24,7 @@
     }
 
     MEM {
-        mem_a [8] [0] = 8'h00 {
+        bad_mem [8] [0] = 8'h00 {
             OUT rd ASYNC;
             IN  wr;
         };
@@ -42,7 +42,7 @@
 @module TopMod
     PORT {
         IN  [1] clk;
-        IN  [1] addr;
+        IN  [4] addr;
         IN  [8] wdata;
         OUT [8] data;
     }
@@ -51,17 +51,17 @@
         r [8] = 8'h00;
     }
 
-    // Trigger 2: depth = 0 in top module
+    // Trigger 2: zero depth in top module
     MEM {
-        mem_b [8] [0] = 8'h00 {
+        bad_mem [8] [0] = 8'h00 {
             OUT rd ASYNC;
             IN  wr;
         };
     }
 
-    // Valid: depth = 1 (no error expected)
+    // Valid: depth=16 (no error expected)
     MEM {
-        mem_ok [8] [1] = 8'h00 {
+        ok_mem [8] [16] = 8'h00 {
             OUT rd_ok ASYNC;
             IN  wr_ok;
         };
@@ -69,17 +69,17 @@
 
     @new inst_h HelperMod {
         IN  [1] clk = clk;
-        IN  [1] addr = addr;
+        IN  [4] addr = addr;
         IN  [8] wdata = wdata;
         OUT [8] data = _;
     };
 
     ASYNCHRONOUS {
-        data = mem_ok.rd_ok[addr];
+        data = ok_mem.rd_ok[addr];
     }
 
     SYNCHRONOUS(CLK=clk) {
         r <= r;
-        mem_ok.wr_ok[addr] <= wdata;
+        ok_mem.wr_ok[addr] <= wdata;
     }
 @endmod

@@ -1,6 +1,6 @@
 // LOGICAL_WIDTH_NOT_1: Logical &&, ||, ! require 1-bit operands.
-// Tests multi-bit operands with all three logical operators in async/sync across modules.
-// Valid 1-bit operands included to verify no false positives.
+// Tests all three logical operators with multi-bit operands in async and sync
+// blocks across two modules. Valid 1-bit operands included for no false positives.
 
 @project LOGICAL_WIDTH_NOT_1_multibit_logical_operands
     @top TopMod {
@@ -28,18 +28,22 @@
         OUT [1] out_c;
     }
     REGISTER {
-        r [1] = 1'b0;
+        r1 [1] = 1'b0;
+        r2 [1] = 1'b0;
     }
     ASYNCHRONOUS {
         // Trigger 1: logical AND with 8-bit operands in async
         out_a = wide_a && wide_b;
+        // Trigger 2: logical NOT with 8-bit operand in async
+        out_b = !wide_a;
         // Valid: logical AND with 1-bit operands (no false positive)
-        out_b = bit_a && bit_a;
-        out_c = r;
+        out_c = bit_a && r1 && r2;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: logical OR with 8-bit operands in sync
-        r <= wide_a || wide_b;
+        // Trigger 3: logical OR with 8-bit operands in sync
+        r1 <= wide_a || wide_b;
+        // Valid: 1-bit logical NOT (no false positive)
+        r2 <= !bit_a;
     }
 @endmod
 
@@ -61,8 +65,8 @@
         ha_c [1];
     }
     REGISTER {
-        r [1] = 1'b0;
-        s [1] = 1'b0;
+        r1 [1] = 1'b0;
+        r2 [1] = 1'b0;
     }
 
     @new inst_a HelperMod {
@@ -76,17 +80,18 @@
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: logical NOT with 8-bit operand in top async
-        out_a = !wide_a;
-        // Valid: logical NOT with 1-bit operand (no false positive)
-        out_b = !bit_b;
-        out_c = r;
-        out_d = s;
+        // Trigger 4: logical OR with 8-bit operands in top async
+        out_a = wide_a || wide_b;
+        // Trigger 5: logical NOT with 8-bit operand in top async
+        out_b = !wide_b;
+        // Valid: logical OR with 1-bit operands (no false positive)
+        out_c = bit_a || bit_b;
+        out_d = r1 | r2;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: logical AND with 8-bit operands in top sync
-        r <= wide_a && wide_b;
-        // Valid: logical OR with 1-bit operands (no false positive)
-        s <= bit_a || bit_b;
+        // Trigger 6: logical AND with 8-bit operands in top sync
+        r1 <= wide_a && wide_b;
+        // Trigger 7: logical NOT with 8-bit operand in top sync
+        r2 <= !wide_a;
     }
 @endmod

@@ -1,0 +1,2 @@
+File: 4_7_REG_MISSING_INIT_LITERAL-missing_init_helper.jz
+      22:21   error REG_MISSING_INIT_LITERAL S4.7 Register declared without mandatory reset/power-on literal

@@ -12,7 +12,7 @@
         ALPHA = 64;
         // Trigger 2: duplicate of BETA
         BETA = 128;
-        // Trigger 3: duplicate of GAMMA (string value, different type still duplicates)
+        // Trigger 3: duplicate of GAMMA
         GAMMA = 256;
     }
 

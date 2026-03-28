@@ -1,6 +1,5 @@
 // TEMPLATE_APPLY_OUTSIDE_BLOCK: Cross-reference test for S10.5 @apply outside block error.
 // Tests @apply at file scope and module scope.
-// NOTE: Known compiler bug — this rule is not enforced. See issues.md.
 // Valid @apply inside ASYNC included for negative testing.
 
 @project TEMPLATE_APPLY_OUTSIDE_BLOCK_apply_outside_error

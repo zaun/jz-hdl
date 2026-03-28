@@ -1,0 +1,6 @@
+File: 1_6_NET_TRI_STATE_ALL_Z_READ-all_z_read.jz
+      23:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      24:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      35:9    error NET_TRI_STATE_ALL_Z_READ S4.10 All drivers assign `z` (tri-state) but signal is read; at least one driver must provide a value
+      51:9    warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      67:9    error NET_TRI_STATE_ALL_Z_READ S4.10 All drivers assign `z` (tri-state) but signal is read; at least one driver must provide a value

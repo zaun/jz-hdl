@@ -64,7 +64,7 @@
         out_c = w;
     }
     SYNCHRONOUS(CLK=clk) {
-        // GND/VCC as ternary arm (valid per spec: signal <= en ? data : GND)
+        // GND/VCC as ternary arm (valid: polymorphic expansion)
         r <= sel ? r : GND;
     }
 @endmod

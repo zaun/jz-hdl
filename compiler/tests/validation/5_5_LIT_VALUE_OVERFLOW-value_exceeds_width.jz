@@ -1,6 +1,6 @@
 // LIT_VALUE_OVERFLOW: lit() value exceeds declared width.
-// Tests lit() where value cannot fit in the specified width.
-// Valid lit(8, 255) included to verify no false positives.
+// Tests lit(4, 20) where 20 > 2^4 - 1 = 15.
+// Valid lit(8, 42) included to verify no false positives.
 
 @project LIT_VALUE_OVERFLOW_value_exceeds_width
     @top TopMod {
@@ -10,7 +10,7 @@
     }
 @endproj
 
-// Helper module: lit() with overflow value
+// Helper module: lit() with overflowing value
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -21,13 +21,13 @@
         r [8] = 8'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: lit(4, 20) in helper ASYNC — 20 > 2^4-1 = 15
+        // Trigger 1: lit(4, 20) in helper ASYNC — 20 > 15
         out_a <=z lit(4, 20);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: lit(8, 256) in helper SYNC — 256 > 2^8-1 = 255
-        r <= lit(8, 256);
+        // Trigger 2: lit(8, 256) in helper SYNC — 256 > 255
+        r <=z lit(8, 256);
     }
 @endmod
 
@@ -58,6 +58,6 @@
     }
     SYNCHRONOUS(CLK=clk) {
         // Trigger 4: lit(8, 256) in top SYNC
-        r <= lit(8, 256);
+        r <=z lit(8, 256);
     }
 @endmod

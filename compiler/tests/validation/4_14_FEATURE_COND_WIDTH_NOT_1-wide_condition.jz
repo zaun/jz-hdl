@@ -1,5 +1,6 @@
 // FEATURE_COND_WIDTH_NOT_1: Feature guard condition with width != 1.
-// Tests that the compiler rejects @feature conditions that are not 1-bit wide.
+// Tests that the compiler rejects @feature conditions that are not 1-bit wide
+// in ASYNCHRONOUS and SYNCHRONOUS blocks across multiple modules.
 // Valid conditions (comparisons producing width 1) are included as negative tests.
 
 @project FEATURE_COND_WIDTH_NOT_1_wide_condition

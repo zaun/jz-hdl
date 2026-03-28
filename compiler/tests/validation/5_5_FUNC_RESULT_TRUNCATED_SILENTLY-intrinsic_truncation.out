@@ -1,5 +1,5 @@
 File: 5_5_FUNC_RESULT_TRUNCATED_SILENTLY-intrinsic_truncation.jz
-      30:9    error FUNC_RESULT_TRUNCATED_SILENTLY S5.5/S5.2 Function result truncated by assignment without explicit slice or width check
-      35:9    error FUNC_RESULT_TRUNCATED_SILENTLY S5.5/S5.2 Function result truncated by assignment without explicit slice or width check
-      64:9    error FUNC_RESULT_TRUNCATED_SILENTLY S5.5/S5.2 Function result truncated by assignment without explicit slice or width check
-      69:9    error FUNC_RESULT_TRUNCATED_SILENTLY S5.5/S5.2 Function result truncated by assignment without explicit slice or width check
+      28:9    error FUNC_RESULT_TRUNCATED_SILENTLY S5.5/S5.2 Function result truncated by assignment without explicit slice or width check
+      33:9    error FUNC_RESULT_TRUNCATED_SILENTLY S5.5/S5.2 Function result truncated by assignment without explicit slice or width check
+      62:9    error FUNC_RESULT_TRUNCATED_SILENTLY S5.5/S5.2 Function result truncated by assignment without explicit slice or width check
+      67:9    error FUNC_RESULT_TRUNCATED_SILENTLY S5.5/S5.2 Function result truncated by assignment without explicit slice or width check

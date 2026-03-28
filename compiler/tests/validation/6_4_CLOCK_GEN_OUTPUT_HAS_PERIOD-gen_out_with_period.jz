@@ -1,15 +1,15 @@
 // CLOCK_GEN_OUTPUT_HAS_PERIOD: CLOCK_GEN output clock must not have a period in CLOCKS.
-// Tests CLOCK_GEN OUT clocks that incorrectly specify period in CLOCKS block.
-// Valid CLOCK_GEN OUT without period included to verify no false positives.
+// Tests CLOCK_GEN outputs that have period specified in CLOCKS block.
+// Valid output without period included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_OUTPUT_HAS_PERIOD_gen_out_with_period
     CLOCKS {
         ref_clk = { period=10 };
-        // Trigger 1: CLOCK_GEN OUT with period
+        // Trigger 1: gen output with period
         gen_clk_a = { period=5 };
-        // Valid: CLOCK_GEN OUT without period (no trigger)
+        // Valid: gen output without period (no trigger)
         gen_clk_b;
-        // Trigger 2: another CLOCK_GEN OUT with period
+        // Trigger 2: another gen output with period
         gen_clk_c = { period=20 };
     }
 
@@ -32,6 +32,7 @@
                 IDIV = 0;
                 FBDIV = 3;
                 ODIV = 2;
+                CLKOUTD_DIV = 4;
             };
         };
     }

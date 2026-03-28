@@ -1,0 +1,44 @@
+// TEMPLATE_FORBIDDEN_DIRECTIVE: Cross-reference test for S10.4 @project directive in template.
+// Tests @project inside file-scoped template.
+// Split from other directive triggers due to potential parser recovery issues.
+
+@project TEMPLATE_FORBIDDEN_DIRECTIVE_project_in_template
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: @project directive inside file-scoped template
+@template proj_tmpl(a, b)
+    @project InnerProj
+        CONFIG { WIDTH = 8; }
+        @top TopMod {
+            IN  [1] clk = _;
+            OUT [1] data = _;
+        }
+    @endproj
+@endtemplate
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

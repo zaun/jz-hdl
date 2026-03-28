@@ -2,7 +2,6 @@
 // constant contexts (@check/@feature conditions).
 // Tests latch used in @check condition across modules.
 // Valid uses of CONST in @check included for no false positives.
-// Note: rule not implemented — compiler does not emit this diagnostic (see issues.md).
 
 @project LATCH_IN_CONST_CONTEXT_latch_in_const
     CONFIG {

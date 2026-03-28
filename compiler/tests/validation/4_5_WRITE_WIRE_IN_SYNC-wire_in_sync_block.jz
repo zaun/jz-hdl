@@ -1,7 +1,7 @@
 // WRITE_WIRE_IN_SYNC: Wire assigned in SYNCHRONOUS block.
-// Tests wire assignment in SYNC root, IF body, ELSE body, and SELECT/CASE body
-// across multiple modules. Valid wire usage in ASYNCHRONOUS blocks included
-// to verify no false positives.
+// Tests wire assignment in SYNC root, IF body, ELIF body, ELSE body,
+// SELECT/CASE body, and DEFAULT body across multiple modules.
+// Valid wire usage in ASYNCHRONOUS blocks included to verify no false positives.
 
 @project WRITE_WIRE_IN_SYNC_wire_in_sync_block
     @top TopMod {
@@ -79,14 +79,21 @@
         // Trigger 3: wire assigned inside IF body in SYNC
         IF (ctrl) {
             w_branch <= din;
-        // Trigger 4: wire assigned inside ELSE body in SYNC
-        } ELSE {
+        // Trigger 4: wire assigned inside ELIF body in SYNC
+        } ELIF (din[0:0]) {
             w_branch <= r;
+        // Trigger 5: wire assigned inside ELSE body in SYNC
+        } ELSE {
+            w_branch <= 8'h00;
         }
-        // Trigger 5: wire assigned inside SELECT/CASE body in SYNC
+        // Trigger 6: wire assigned inside SELECT/CASE body in SYNC
         SELECT (din[1:0]) {
             CASE (2'b00) {
                 w_top <= 8'h00;
+            }
+            // Trigger 7: wire assigned inside DEFAULT body in SYNC
+            DEFAULT {
+                w_top <= 8'hFF;
             }
         }
         r <= din;

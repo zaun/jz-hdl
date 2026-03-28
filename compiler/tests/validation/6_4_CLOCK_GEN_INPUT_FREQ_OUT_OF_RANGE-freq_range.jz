@@ -1,31 +1,31 @@
-// CLOCK_GEN_INPUT_FREQ_OUT_OF_RANGE: CLOCK_GEN input frequency outside chip range.
-// Tests PLL with input frequency outside the 3-500 MHz ref_clk range.
+// CLOCK_GEN_INPUT_FREQ_OUT_OF_RANGE: CLOCK_GEN input frequency outside chip's supported range.
+// Tests a PLL whose input clock frequency exceeds the chip's reference clock range.
 // Valid input frequency included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_INPUT_FREQ_OUT_OF_RANGE_freq_range
     CLOCKS {
-        // Trigger: period=0.5 ns = 2000 MHz, exceeds 500 MHz max
+        good_clk = { period=10 };
+        // 0.5 ns = 2000 MHz, well above typical chip max (~500 MHz)
         fast_clk = { period=0.5 };
-        valid_clk = { period=10 };
-        bad_out;
-        valid_out;
+        gen_out_a;
+        gen_out_b;
     }
 
     IN_PINS {
+        good_clk = { standard=LVCMOS33 };
         fast_clk = { standard=LVCMOS33 };
-        valid_clk = { standard=LVCMOS33 };
     }
 
     MAP {
-        fast_clk = 1;
-        valid_clk = 2;
+        good_clk = 1;
+        fast_clk = 2;
     }
 
     CLOCK_GEN {
-        // Trigger 1: input freq 2000 MHz > 500 MHz max
+        // Trigger: input frequency 2000 MHz is out of range
         PLL {
             IN REF_CLK fast_clk;
-            OUT BASE bad_out;
+            OUT BASE gen_out_a;
 
             CONFIG {
                 IDIV = 0;
@@ -34,10 +34,10 @@
             };
         };
 
-        // Valid: input freq 100 MHz in range (no trigger)
+        // Valid: ref_clk at 100 MHz is in range (no trigger)
         PLL {
-            IN REF_CLK valid_clk;
-            OUT BASE valid_out;
+            IN REF_CLK good_clk;
+            OUT BASE gen_out_b;
 
             CONFIG {
                 IDIV = 0;
@@ -48,7 +48,7 @@
     }
 
     @top TopMod {
-        IN  [1] clk = valid_clk;
+        IN  [1] clk = good_clk;
         OUT [1] data = _;
     }
 @endproj

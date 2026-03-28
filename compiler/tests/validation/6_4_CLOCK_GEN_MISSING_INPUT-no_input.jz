@@ -1,12 +1,12 @@
 // CLOCK_GEN_MISSING_INPUT: CLOCK_GEN unit must have an IN clock declaration.
-// Tests PLL without any IN declaration.
+// Tests a PLL with no IN declaration.
 // Valid PLL with IN included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_MISSING_INPUT_no_input
     CLOCKS {
         ref_clk = { period=10 };
-        valid_out;
         bad_out;
+        good_out;
     }
 
     IN_PINS {
@@ -18,7 +18,7 @@
     }
 
     CLOCK_GEN {
-        // Trigger 1: PLL without IN declaration
+        // Trigger: PLL with no IN declaration
         PLL {
             OUT BASE bad_out;
 
@@ -29,10 +29,10 @@
             };
         };
 
-        // Valid: PLL with IN (no trigger)
+        // Valid: PLL with proper IN (no trigger)
         PLL {
             IN REF_CLK ref_clk;
-            OUT BASE valid_out;
+            OUT BASE good_out;
 
             CONFIG {
                 IDIV = 0;

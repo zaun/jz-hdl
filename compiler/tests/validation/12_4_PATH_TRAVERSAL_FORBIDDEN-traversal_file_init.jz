@@ -1,6 +1,7 @@
 // PATH_TRAVERSAL_FORBIDDEN: Paths with '..' traversal in @file() MEM init
 // forbidden without --allow-traversal.
-// Tests traversal rejection in @file() context.
+// Trigger 1: @file() with .. traversal in MEM init.
+// Valid relative-path constructs surround trigger to verify no false positives.
 
 @project PATH_TRAVERSAL_FORBIDDEN_traversal_file_init
     @top TopMod {

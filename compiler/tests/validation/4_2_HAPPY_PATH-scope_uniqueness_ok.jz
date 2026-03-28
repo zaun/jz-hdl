@@ -1,9 +1,16 @@
 // HAPPY_PATH: Valid scope and uniqueness constructs.
 // Two modules with different names, same signal name in different modules,
 // unique identifiers within each module, CONST module-local only,
-// unique instance names. No diagnostics expected.
+// unique instance names, blackbox with unique name. No diagnostics expected.
 
 @project HAPPY_PATH_scope_uniqueness_ok
+    @blackbox ExtIP {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+    }
+
     @top TopMod {
         IN  [1] clk = _;
         OUT [1] data = _;
@@ -39,7 +46,7 @@
 @endmod
 
 // Top module: unique identifiers (port, wire, register, const all different names)
-// Unique instance names, references to both modules
+// Unique instance names, references to both modules and blackbox
 @module TopMod
     CONST {
         MY_C = 1;
@@ -66,6 +73,11 @@
     @new inst_b ModB {
         IN  [8] din = 8'h00;
         OUT [8] data = _;
+    };
+
+    @new inst_bb ExtIP {
+        IN  [1] din = r;
+        OUT [1] dout = _;
     };
 
     ASYNCHRONOUS {

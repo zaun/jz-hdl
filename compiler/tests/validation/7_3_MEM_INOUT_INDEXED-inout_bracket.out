@@ -1,0 +1,5 @@
+File: 7_3_MEM_INOUT_INDEXED-inout_bracket.jz
+      42:9    error SYNC_MULTI_ASSIGN_SAME_REG_BITS S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block
+      42:14   error MEM_INOUT_INDEXED S7.2.3 INOUT port may not be indexed; use .addr/.data/.wdata pseudo-fields
+      80:9    error SYNC_MULTI_ASSIGN_SAME_REG_BITS S5.2/S8.1 Same register bits assigned more than once along any execution path in SYNCHRONOUS block
+      80:14   error MEM_INOUT_INDEXED S7.2.3 INOUT port may not be indexed; use .addr/.data/.wdata pseudo-fields

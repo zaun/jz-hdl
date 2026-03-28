@@ -1,4 +1,4 @@
 File: 4_14_FEATURE_EXPR_INVALID_CONTEXT-runtime_signal_in_condition.jz
-      44:18   error FEATURE_EXPR_INVALID_CONTEXT S4.14 Feature guard condition may only reference CONFIG.<name>, module CONST, and literals
-      84:18   error FEATURE_EXPR_INVALID_CONTEXT S4.14 Feature guard condition may only reference CONFIG.<name>, module CONST, and literals
-      89:18   error FEATURE_EXPR_INVALID_CONTEXT S4.14 Feature guard condition may only reference CONFIG.<name>, module CONST, and literals
+      45:18   error FEATURE_EXPR_INVALID_CONTEXT S4.14 Feature guard condition may only reference CONFIG.<name>, module CONST, and literals
+      85:18   error FEATURE_EXPR_INVALID_CONTEXT S4.14 Feature guard condition may only reference CONFIG.<name>, module CONST, and literals
+      90:18   error FEATURE_EXPR_INVALID_CONTEXT S4.14 Feature guard condition may only reference CONFIG.<name>, module CONST, and literals

@@ -1,10 +1,7 @@
 // TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL: Non-mutually-exclusive enable
 // conditions on multiple tri-state drivers of the same signal.
-// This scenario cannot be directly tested because the multi-driver pattern is
-// blocked by NET_MULTIPLE_ACTIVE_DRIVERS at semantic analysis before the
-// tri-state transform runs. Two instances driving the same wire via INOUT with
-// the same enable (non-exclusive) triggers the earlier semantic error.
-// See issues.md for details.
+// Context: two instances drive the same INOUT wire with the same enable,
+// so their enables are non-exclusive → compiler cannot build priority chain.
 
 @project TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL_non_exclusive
     @top TopMod {
@@ -13,7 +10,7 @@
     }
 @endproj
 
-// Driver module with conditional tri-state output via INOUT
+// Driver module: conditional tri-state output via INOUT
 @module DriverMod
     PORT {
         IN    [1] en;
@@ -29,7 +26,7 @@
     }
 @endmod
 
-// Top module: two instances drive same wire with same enable (non-exclusive)
+// Trigger 1: two instances with same enable (non-exclusive) driving same wire
 @module TopMod
     PORT {
         IN  [1] en;

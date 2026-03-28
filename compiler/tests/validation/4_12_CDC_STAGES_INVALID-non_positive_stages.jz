@@ -1,5 +1,5 @@
 // CDC_STAGES_INVALID: CDC stages parameter must be a positive integer.
-// Tests invalid stages values (zero, negative, non-integer) in multiple modules.
+// Tests invalid stages values (zero, non-integer) in multiple modules.
 // Valid stages included to verify no false positives.
 
 @project CDC_STAGES_INVALID_non_positive_stages

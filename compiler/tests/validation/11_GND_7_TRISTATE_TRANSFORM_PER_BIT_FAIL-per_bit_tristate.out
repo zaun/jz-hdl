@@ -1,5 +1,5 @@
 File: 11_GND_7_TRISTATE_TRANSFORM_PER_BIT_FAIL-per_bit_tristate.jz
-      19:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
-      27:0    error TRISTATE_TRANSFORM_PER_BIT_FAIL S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed
-      47:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
-      55:0    error TRISTATE_TRANSFORM_PER_BIT_FAIL S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed
+      17:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+      25:0    error TRISTATE_TRANSFORM_PER_BIT_FAIL S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed
+      44:0    info  INFO_TRISTATE_TRANSFORM S11 Tri-state net transformed by --tristate-default
+      52:0    error TRISTATE_TRANSFORM_PER_BIT_FAIL S11.7 Per-bit tri-state pattern detected; only full-width z assignments can be transformed

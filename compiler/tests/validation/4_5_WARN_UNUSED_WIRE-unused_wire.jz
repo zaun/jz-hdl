@@ -1,0 +1,80 @@
+// WARN_UNUSED_WIRE: Wire declared but never driven or read.
+// Tests unused wire warning in helper module and top module.
+// Used wires included alongside unused ones to verify no false positives.
+
+@project WARN_UNUSED_WIRE_unused_wire
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: unused wire
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data_in;
+        OUT [8] data_out;
+    }
+
+    WIRE {
+        // Valid: used wire
+        w_used [8];
+        // Trigger 1: unused wire in helper module
+        w_unused [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        w_used <= data_in;
+        data_out <= w_used | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= w_used;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    WIRE {
+        // Valid: used wire
+        w_active [8];
+        // Trigger 2: unused wire in top module
+        w_dead [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data_in = din;
+        OUT [8] data_out = dout_b;
+    };
+
+    ASYNCHRONOUS {
+        w_active <= din;
+        dout_a <= w_active | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= w_active;
+    }
+@endmod

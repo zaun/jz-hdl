@@ -64,7 +64,7 @@
     }
 @endmod
 
-// Empty ASYNC block module
+// Empty ASYNC block module (passthrough only)
 @module EmptyMod
     PORT {
         IN  [8] din;
@@ -72,7 +72,6 @@
     }
 
     ASYNCHRONOUS {
-        // Valid: empty block with only a passthrough
         dout = din;
     }
 @endmod

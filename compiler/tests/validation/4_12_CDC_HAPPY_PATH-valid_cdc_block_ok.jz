@@ -1,7 +1,9 @@
 // CDC_HAPPY_PATH: Valid CDC block constructs across all 7 types.
 // Exercises BIT, BUS, FIFO, HANDSHAKE, PULSE, MCP, RAW types,
-// default and explicit n_stages, bidirectional crossing,
-// source in SYNC(src_clk), and dest alias read in SYNC(dest_clk).
+// default and explicit n_stages (including edge cases 1 and 8),
+// bidirectional crossing, source in SYNC(src_clk), dest alias
+// read in SYNC(dest_clk), source reg read in ASYNC, and multiple
+// CDC entries between same domains.
 
 @project CDC_HAPPY_PATH_valid_cdc_block_ok
     @top TopMod {
@@ -12,7 +14,7 @@
     }
 @endproj
 
-// Helper module: exercises BIT, PULSE, RAW types with dest alias reading
+// Helper module: exercises BIT, PULSE, RAW, edge-case n_stages
 @module HelperMod
     PORT {
         IN  [1] clk_a;
@@ -24,6 +26,7 @@
         flag_a [1] = 1'b0;
         pulse_a [1] = 1'b0;
         status_a [8] = 8'h00;
+        edge_reg [1] = 1'b0;
     }
 
     CDC {
@@ -33,26 +36,33 @@
         PULSE[3] pulse_a (clk_a) => pulse_sync (clk_b);
         // Valid: RAW without n_stages
         RAW status_a (clk_a) => status_raw (clk_b);
+        // Valid: n_stages=1 edge case
+        BIT[1] edge_reg (clk_a) => edge_sync (clk_b);
     }
 
+    // Valid: source register readable in ASYNC (home domain)
     ASYNCHRONOUS {
-        data = flag_sync;
+        data = flag_a | flag_sync;
     }
 
-    // Valid: source register written in home domain
+    // Valid: source registers written in home domain
     SYNCHRONOUS(CLK=clk_a) {
         flag_a <= ~flag_a;
         pulse_a <= ~pulse_a;
         status_a <= 8'hAB;
+        edge_reg <= ~edge_reg;
     }
 
-    // Valid: dest alias read in destination domain
+    // Valid: dest aliases read in destination domain
     SYNCHRONOUS(CLK=clk_b) {
         IF (pulse_sync) {
             // reading pulse in dest domain
         }
         IF (status_raw[0:0]) {
             // reading raw alias in dest domain
+        }
+        IF (edge_sync) {
+            // reading edge-case alias
         }
     }
 @endmod
@@ -71,6 +81,7 @@
         hs_reg [8] = 8'h00;
         mcp_reg [8] = 8'h00;
         bit_b [1] = 1'b0;
+        big_reg [1] = 1'b0;
     }
 
     CDC {
@@ -84,6 +95,8 @@
         MCP[2] mcp_reg (clk_a) => mcp_sync (clk_b);
         // Valid: bidirectional — clk_b to clk_a
         BIT bit_b (clk_b) => bit_b_sync (clk_a);
+        // Valid: n_stages=8 edge case
+        BIT[8] big_reg (clk_a) => big_sync (clk_b);
     }
 
     @new inst_h HelperMod {
@@ -103,6 +116,7 @@
         fifo_reg <= 16'hBEEF;
         hs_reg <= 8'h42;
         mcp_reg <= 8'hAA;
+        big_reg <= ~big_reg;
         // Valid: reading bidirectional dest alias in clk_a domain
         IF (bit_b_sync) {
             // reading alias
@@ -123,6 +137,9 @@
         }
         IF (mcp_sync[0:0]) {
             // reading mcp alias
+        }
+        IF (big_sync) {
+            // reading n_stages=8 alias
         }
     }
 @endmod

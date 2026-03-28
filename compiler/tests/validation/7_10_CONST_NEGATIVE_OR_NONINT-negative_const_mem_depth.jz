@@ -1,5 +1,5 @@
 // CONST_NEGATIVE_OR_NONINT: Negative CONST value used for MEM dimension.
-// Tests negative CONST in helper module (depth) and top module (width).
+// Tests negative CONST in helper module (depth) and top module (width and depth).
 // Valid positive CONST values in MEM included to verify no false positives.
 
 @project CONST_NEGATIVE_OR_NONINT_negative_const_mem_depth

@@ -1,9 +1,7 @@
 // SYNC_SLICE_WIDTH_MISMATCH: Register slice assignment expression width not
 // equal to slice width.
-// Tests slice width mismatch in SYNC block in multiple contexts.
+// Tests slice width mismatch in SYNC block at root, inside IF, inside SELECT.
 // Valid sliced assignments included to verify no false positives.
-// Note: SYNC_SLICE_WIDTH_MISMATCH is suppressed by ASSIGN_SLICE_WIDTH_MISMATCH
-// (higher priority on same line), so only ASSIGN_SLICE_WIDTH_MISMATCH appears.
 
 @project SYNC_SLICE_WIDTH_MISMATCH_slice_width_mismatch
     @top TopMod {
@@ -67,6 +65,15 @@
         // Trigger 3: slice width mismatch inside IF
         IF (sel) {
             r_y[3:0] <= data[2:0];
+        }
+        // Trigger 4: slice width mismatch inside SELECT/CASE
+        SELECT (sel) {
+            CASE (1'b0) {
+                r_y[7:4] <= data[0:0];
+            }
+            DEFAULT {
+                r_y[7:4] <= data[3:0];
+            }
         }
     }
 @endmod

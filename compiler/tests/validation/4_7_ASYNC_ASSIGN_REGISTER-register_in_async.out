@@ -1,7 +1,10 @@
 File: 4_7_ASYNC_ASSIGN_REGISTER-register_in_async.jz
-      32:9    error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
-      68:9    error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
-      71:13   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
-      76:17   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
-      79:17   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
-      82:17   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+      42:9    error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+      44:9    error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+      46:20   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+      89:9    error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+      92:13   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+      95:13   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+      98:13   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+     103:17   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block
+     107:17   error ASYNC_ASSIGN_REGISTER S4.7/S5.1 Cannot write REGISTER in ASYNCHRONOUS block; move assignment to a SYNCHRONOUS block

@@ -1,9 +1,9 @@
 // INFO_TRISTATE_TRANSFORM: Tri-state nets transformed with --tristate-default=GND.
-// Verifies that INFO_TRISTATE_TRANSFORM is emitted for each module containing
-// internal tri-state wires when --tristate-default=GND is active.
-// Contexts: helper module with tri-state wire, top module with tri-state wire.
-// Valid: INOUT port with z is not transformed (preserved for I/O pads).
-// Valid: Non-tri-state wires do not trigger the info.
+// Verifies INFO_TRISTATE_TRANSFORM fires once per module containing internal
+// tri-state wires when --tristate-default=GND is active.
+// Contexts: helper module with tri-state wire, top module with tri-state wire,
+// top module with multiple tri-state wires (INFO still fires once).
+// Valid: INOUT port z preserved (not transformed). Non-tri-state wire no trigger.
 
 @project INFO_TRISTATE_TRANSFORM_gnd_transform
     @top TopMod {
@@ -14,7 +14,7 @@
     }
 @endproj
 
-// Helper module with internal tri-state wire (single-driver conditional z)
+// Trigger 1: helper module with single-driver tri-state wire
 @module HelperMod
     PORT {
         IN  [1] en;
@@ -36,7 +36,7 @@
     }
 @endmod
 
-// Top module with internal tri-state wire, INOUT z preserved, non-tri-state wire
+// Trigger 2: top module with tri-state wires (INFO fires once for module)
 @module TopMod
     PORT {
         IN    [1] clk;
@@ -61,7 +61,7 @@
     }
 
     ASYNCHRONOUS {
-        // Trigger: tri-state wire in top module, should be transformed
+        // Trigger: tri-state wire in top module
         IF (en) {
             w_top <= r;
         } ELSE {

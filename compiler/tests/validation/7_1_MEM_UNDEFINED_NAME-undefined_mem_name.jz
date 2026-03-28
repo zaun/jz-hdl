@@ -1,4 +1,5 @@
 // MEM_UNDEFINED_NAME: Access to MEM name not declared in module triggers error.
+// Valid declared MEM access included for no false positives.
 
 @project MEM_UNDEFINED_NAME_undefined_mem_name
     @top TopMod {
@@ -9,7 +10,7 @@
     }
 @endproj
 
-// Trigger 1: undefined MEM access in helper async block
+// Trigger 1: undefined MEM read access in helper async block
 @module HelperMod
     PORT {
         IN  [1] clk;

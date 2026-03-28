@@ -1,5 +1,5 @@
 // CDC_BIT_WIDTH_NOT_1: BIT CDC source register must have width [1].
-// Tests BIT type with multi-bit registers in multiple modules.
+// Tests BIT type with multi-bit registers of various widths in multiple modules.
 // Valid width-1 BIT CDC included to verify no false positives.
 
 @project CDC_BIT_WIDTH_NOT_1_bit_multibit_source
@@ -56,11 +56,14 @@
     REGISTER {
         // Trigger 2: 4-bit register used as BIT CDC source in top module
         top_wide [4] = 4'h0;
+        // Trigger 3: 16-bit register used as BIT CDC source
+        top_big [16] = 16'h0000;
         top_ok [1] = 1'b0;
     }
 
     CDC {
         BIT top_wide (clk_a) => top_wide_sync (clk_b);
+        BIT top_big (clk_a) => top_big_sync (clk_b);
         // Valid: width-1 register
         BIT top_ok (clk_a) => top_ok_sync (clk_b);
     }
@@ -77,11 +80,15 @@
 
     SYNCHRONOUS(CLK=clk_a) {
         top_wide <= 4'hF;
+        top_big <= 16'hFFFF;
         top_ok <= ~top_ok;
     }
 
     SYNCHRONOUS(CLK=clk_b) {
         IF (top_wide_sync[0:0]) {
+            // reading sync alias
+        }
+        IF (top_big_sync[0:0]) {
             // reading sync alias
         }
     }

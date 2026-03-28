@@ -1,0 +1,50 @@
+// SPECIAL_DRIVER_IN_INDEX: VCC may not appear in slice/index expressions.
+// Tests VCC used as an index expression in SYNCHRONOUS block.
+// Single trigger per file because compiler halts after first diagnostic.
+
+@project SPECIAL_DRIVER_IN_INDEX_vcc_as_index
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        OUT [1] out_a = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [1] out_a;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: VCC as index expression in sync
+        r <= data[VCC];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [1] out_a;
+    }
+    WIRE {
+        ha_a [1];
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data = data;
+        OUT [1] out_a = ha_a;
+    };
+
+    ASYNCHRONOUS {
+        out_a = ha_a;
+    }
+@endmod

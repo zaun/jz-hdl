@@ -1,12 +1,13 @@
-// CLOCK_GEN_DERIVED_OUT_OF_RANGE: CLOCK_GEN derived value outside valid chip-defined range.
-// Tests PLL configuration that produces FVCO outside 500-1250 MHz range.
-// Valid configuration (FVCO in range) included to verify no false positives.
+// CLOCK_GEN_DERIVED_OUT_OF_RANGE: CLOCK_GEN derived value (frequency/VCO) outside valid range.
+// Tests PLL configuration that produces an out-of-range VCO frequency.
+// FVCO = (1000/10) * (1+1) * 2 / (0+1) = 400 MHz < 500 MHz minimum.
+// Valid PLL configuration included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_DERIVED_OUT_OF_RANGE_derived_range
     CLOCKS {
         ref_clk = { period=10 };
         bad_out;
-        valid_out;
+        good_out;
     }
 
     IN_PINS {
@@ -18,7 +19,7 @@
     }
 
     CLOCK_GEN {
-        // Trigger: FVCO = (1000/10) * (1+1) * 2 / (0+1) = 400 MHz < 500 MHz minimum
+        // Trigger: derived VCO frequency out of range
         PLL {
             IN REF_CLK ref_clk;
             OUT BASE bad_out;
@@ -30,10 +31,10 @@
             };
         };
 
-        // Valid: FVCO = (1000/10) * (3+1) * 2 / (0+1) = 800 MHz (in range)
+        // Valid: derived values in range (no trigger)
         PLL {
             IN REF_CLK ref_clk;
-            OUT BASE valid_out;
+            OUT BASE good_out;
 
             CONFIG {
                 IDIV = 0;

@@ -1,0 +1,59 @@
+// LATCH_AS_CLOCK_OR_CDC: LATCH may not be used as CDC source or destination clock.
+// Tests latch identifier used as source clock and destination clock in CDC block.
+// Valid CDC with port clocks included to verify no false positives.
+
+@project LATCH_AS_CLOCK_OR_CDC_latch_as_cdc
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        IN  [1] enable = _;
+        IN  [1] din = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    LATCH {
+        lat_clk [1] D;
+    }
+
+    REGISTER {
+        reg_a [1] = 1'b0;
+        reg_b [1] = 1'b0;
+        reg_c [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 1: latch used as source clock
+        BIT reg_a (lat_clk) => sync_a (clk_b);
+        // Trigger 2: latch used as destination clock
+        BIT reg_b (clk_a) => sync_b (lat_clk);
+        // Valid: normal port clocks (no error)
+        BIT reg_c (clk_a) => sync_c (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        lat_clk <= enable : din;
+        data <= sync_a | sync_b | sync_c;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        reg_a <= din;
+        reg_b <= din;
+        reg_c <= din;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (sync_c) {
+            // reading alias
+        }
+    }
+@endmod

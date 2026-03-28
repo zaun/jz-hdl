@@ -1,60 +1,58 @@
-// NET_FLOATING_WITH_SINK: Signal is read but never driven (floating net).
-// Tests undriven wires read in expressions across multiple modules.
-// Properly driven signals are included to verify no false positives.
+// NET_FLOATING_WITH_SINK: Wire declared but never driven, then read.
+// Each trigger is commented. Valid driven wires verify no false positives.
 
 @project NET_FLOATING_WITH_SINK_floating_net_read
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
-        IN  [1] clk = _;
-        OUT [1] data = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
     }
 @endproj
 
-// Helper module with undriven wire read in async
+// Trigger 1: floating wire read in helper module
 @module HelperA
     PORT {
-        IN  [1] din;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout;
     }
+
     WIRE {
-        // Trigger 1: wire declared but never assigned, read in async
-        undriven [1];
-        // Valid: wire that IS driven (should NOT trigger)
-        driven [1];
+        undriven [8];
+        driven [8];
     }
+
     ASYNCHRONOUS {
-        driven = din;
-        data = undriven;
+        driven <= din;
+        // Trigger 1: undriven wire read in expression
+        dout <= undriven;
     }
 @endmod
 
+// Top module with its own floating wire trigger
 @module TopMod
     PORT {
-        IN  [1] clk;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
     }
 
-    REGISTER {
-        r [1] = 1'b0;
+    WIRE {
+        floating [8];
+        valid_w [8];
     }
 
     @new inst_a HelperA {
-        IN  [1] din = r;
-        OUT [1] data = _;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
     };
 
-    WIRE {
-        // Trigger 2: wire declared but never assigned, read in top module
-        floating [1];
-        // Valid: wire that IS driven
-        driven [1];
-    }
-
     ASYNCHRONOUS {
-        driven = r;
-        data = floating;
-    }
-
-    SYNCHRONOUS(CLK=clk) {
-        r <= ~r;
+        valid_w <= din;
+        // Trigger 2: floating wire read in top module
+        dout_b <= floating;
     }
 @endmod

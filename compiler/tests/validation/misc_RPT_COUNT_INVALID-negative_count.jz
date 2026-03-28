@@ -1,0 +1,29 @@
+// RPT_COUNT_INVALID: @repeat with negative count is invalid.
+// Triggers RPT-001 because @repeat requires a positive integer count.
+// The error is fatal — the repeat expander stops processing the file.
+
+@project RPT_COUNT_INVALID_negative_count
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: @repeat -1 — negative is not a positive integer
+        @repeat -1
+            r <= ~r;
+        @end
+    }
+@endmod

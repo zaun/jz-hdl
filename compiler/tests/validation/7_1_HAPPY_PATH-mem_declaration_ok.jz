@@ -1,6 +1,7 @@
 // HAPPY_PATH: Valid MEM declarations produce no diagnostics.
 // Tests BLOCK, DISTRIBUTED, CONST width/depth, multiple ports,
-// multiple MEM blocks, INOUT ports, edge-case depths/widths.
+// multiple MEM blocks, INOUT ports, edge-case depths/widths,
+// and auto type inference.
 
 @project HAPPY_PATH_mem_declaration_ok
     CONFIG {
@@ -138,7 +139,7 @@
         };
     }
 
-    // Valid: multiple OUT ports (ASYNC + SYNC mix)
+    // Valid: BLOCK with SYNC OUT (multiple ports)
     MEM(type=BLOCK) {
         mem_multi [8] [16] = 8'h00 {
             OUT rd_sync SYNC;

@@ -1,5 +1,5 @@
-// MEM_CHIP_CONFIG_UNSUPPORTED: MEM config not supported by selected chip triggers error.
-// Tests DISTRIBUTED type exceeding chip configs (gw1nr-9 max distributed width=16).
+// MEM_CHIP_CONFIG_UNSUPPORTED: MEM configuration not supported by selected chip triggers error.
+// Tests DISTRIBUTED type with width=32 exceeding chip max (gw1nr-9 max distributed width=16).
 
 @project(CHIP="gw1nr-9-qn88-c6-i5") MEM_CHIP_CONFIG_UNSUPPORTED_unsupported_chip
     @top TopMod {

@@ -1,17 +1,17 @@
-// CLOCK_EDGE_INVALID: Invalid edge specifier in CLOCKS block.
-// Tests edge values that are not Rising or Falling.
-// Valid edge specifiers are included to verify no false positives.
+// CLOCK_EDGE_INVALID: Invalid edge specifier (not Rising or Falling).
+// Tests invalid edge values like Both and Positive.
+// Valid Rising and Falling edges included to verify no false positives.
 
 @project CLOCK_EDGE_INVALID_invalid_edge
     CLOCKS {
         // Valid: Rising edge (no trigger)
         clk_a = { period=10, edge=Rising };
         // Valid: Falling edge (no trigger)
-        clk_b = { period=10, edge=Falling };
-        // Trigger 1: invalid edge "Both"
-        clk_c = { period=10, edge=Both };
-        // Trigger 2: invalid edge "Positive"
-        clk_d = { period=10, edge=Positive };
+        clk_b = { period=20, edge=Falling };
+        // Trigger 1: "Both" is not a valid edge
+        clk_c = { period=30, edge=Both };
+        // Trigger 2: "Positive" is not a valid edge
+        clk_d = { period=40, edge=Positive };
     }
 
     IN_PINS {

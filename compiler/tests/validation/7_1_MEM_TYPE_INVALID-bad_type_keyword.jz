@@ -1,5 +1,6 @@
-// MEM_TYPE_INVALID: Invalid MEM type keyword triggers error.
-// Valid types (BLOCK, DISTRIBUTED, omitted) included for no false positives.
+// MEM_TYPE_INVALID: Invalid MEM TYPE keyword triggers error.
+// Tests type=INVALID and type=REGISTER.
+// Valid omitted type included for no false positives.
 
 @project MEM_TYPE_INVALID_bad_type_keyword
     @top TopMod {
@@ -10,7 +11,7 @@
     }
 @endproj
 
-// Trigger 1: invalid type in helper module
+// Trigger 1: type=INVALID in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -52,7 +53,7 @@
         r [8] = 8'h00;
     }
 
-    // Trigger 2: invalid type in top module
+    // Trigger 2: type=REGISTER in top module
     MEM(type=REGISTER) {
         mem_b [8] [16] = 8'h00 {
             OUT rd ASYNC;

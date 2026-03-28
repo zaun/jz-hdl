@@ -1,0 +1,57 @@
+// SPECIAL_DRIVER_IN_INDEX: GND may not appear in slice/index expressions.
+// Tests GND used as the index value in a bit-select operation (async block).
+// Split into separate files because the compiler halts after the first
+// SPECIAL_DRIVER_IN_INDEX diagnostic per compilation.
+// Valid standalone GND use included to verify no false positive.
+
+@project SPECIAL_DRIVER_IN_INDEX_gnd_in_index
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: GND as bit-select index in async block
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [1] out_a;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: GND as bit-select index (async)
+        out_a = data[GND];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [8] data = r;
+        OUT [1] out_a = out_a;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: GND as standalone register reset (no false positive)
+        out_b = r[0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= GND;
+    }
+@endmod

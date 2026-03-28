@@ -1,5 +1,5 @@
 // SSLICE_VALUE_WIDTH_MISMATCH: sslice() value argument width does not match width parameter.
-// Tests sslice() where value width != width parameter in ASYNC and SYNC blocks.
+// Tests sslice() with 8-bit value but width parameter of 4.
 // Valid sslice() with matching widths included to verify no false positives.
 
 @project SSLICE_VALUE_WIDTH_MISMATCH_value_width_mismatch
@@ -25,12 +25,12 @@
         r [16] = 16'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: sslice(src, idx, 4, 8-bit) — value is 8 bits, width param is 4
+        // Trigger 1: sslice() value width (8) != width param (4) in helper ASYNC
         out_a <= sslice(src, idx, 4, src[7:0]);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: sslice(src, idx, 4, 8-bit) in helper SYNC
+        // Trigger 2: sslice() value width mismatch in helper SYNC
         r <= sslice(src, idx, 4, src[7:0]);
     }
 @endmod
@@ -60,12 +60,12 @@
     };
 
     ASYNCHRONOUS {
-        // Trigger 3: sslice(data, idx, 4, 8-bit) in top ASYNC
+        // Trigger 3: sslice() value width mismatch in top ASYNC
         out_a <= sslice(data, idx, 4, data[7:0]);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 4: sslice(data, idx, 4, 8-bit) in top SYNC
+        // Trigger 4: sslice() value width mismatch in top SYNC
         r <= sslice(data, idx, 4, data[7:0]);
     }
 @endmod

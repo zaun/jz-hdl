@@ -1,3 +1,3 @@
 File: 7_1_MEM_INVALID_PORT_TYPE-invalid_port_type.jz
-      29:20   error MEM_INVALID_PORT_TYPE S7.1/S7.7.1 Invalid port type or qualifier (e.g. OUT ASYNC, unknown keyword)
-      59:20   error MEM_INVALID_PORT_TYPE S7.1/S7.7.1 Invalid port type or qualifier (e.g. OUT ASYNC, unknown keyword)
+      30:20   error MEM_INVALID_PORT_TYPE S7.1/S7.7.1 Invalid port type or qualifier (e.g. OUT ASYNC, unknown keyword)
+      60:20   error MEM_INVALID_PORT_TYPE S7.1/S7.7.1 Invalid port type or qualifier (e.g. OUT ASYNC, unknown keyword)

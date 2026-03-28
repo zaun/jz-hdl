@@ -1,4 +1,4 @@
 File: 1_2_NET_DANGLING_UNUSED-unused_signal.jz
-      23:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused
-      51:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused
-      53:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused
+      25:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused
+      46:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused
+      48:9    warn  WARN_UNUSED_WIRE S12.3 WIRE declared but never driven or read; remove it if unused

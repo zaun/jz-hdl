@@ -1,8 +1,8 @@
-// TRISTATE_TRANSFORM_UNUSED_DEFAULT: --tristate-default=GND with no internal
-// tri-state nets. Verifies warning when the flag is specified but there are no
-// tri-state nets to transform. All nets are single-driver with no z assignments.
-// Contexts: helper module with conditional output, top module with register + wire.
-// Valid: no z values anywhere, so no tristate identification occurs.
+// TRISTATE_TRANSFORM_UNUSED_DEFAULT: --tristate-default=GND specified but no
+// internal tri-state nets exist in the design. All nets are single-driver
+// with no z assignments.
+// Contexts: project-level warning (emitted once for the whole design).
+// Valid: conditional outputs with determinate values are not tri-state.
 
 @project TRISTATE_TRANSFORM_UNUSED_DEFAULT_no_tristate_nets
     CONFIG {
@@ -12,31 +12,34 @@
     @top TopMod {
         IN  [1] clk = _;
         IN  [1] sel = _;
+        IN  [8] din = _;
         OUT [8] data = _;
     }
 @endproj
 
-// Helper module: single driver on output, conditional values — no tri-state
+// Helper module: conditional output with determinate values — no z
 @module HelperMod
     PORT {
         IN  [1] en;
+        IN  [8] din;
         OUT [8] data;
     }
 
     ASYNCHRONOUS {
         IF (en) {
-            data <= 8'b1010_1010;
+            data <= din;
         } ELSE {
-            data <= 8'b0101_0101;
+            data <= 8'b0000_0000;
         }
     }
 @endmod
 
-// Top module: no tri-state nets, all single-driver
+// Top module: register + wire, no z values anywhere
 @module TopMod
     PORT {
         IN  [1] clk;
         IN  [1] sel;
+        IN  [8] din;
         OUT [8] data;
     }
 
@@ -50,6 +53,7 @@
 
     @new inst_h HelperMod {
         IN  [1] en = sel;
+        IN  [8] din = din;
         OUT [8] data = w;
     };
 
@@ -62,6 +66,6 @@
     }
 
     SYNCHRONOUS(CLK=clk) {
-        r <= ~r;
+        r <= din;
     }
 @endmod

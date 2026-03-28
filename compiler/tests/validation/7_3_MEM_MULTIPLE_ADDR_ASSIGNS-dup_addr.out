@@ -1,2 +1,0 @@
-File: 7_3_MEM_MULTIPLE_ADDR_ASSIGNS-dup_addr.jz
-      43:9    error MEM_MULTIPLE_ADDR_ASSIGNS S7.2.3 Multiple assignments to INOUT .addr within same execution path

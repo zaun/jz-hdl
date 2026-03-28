@@ -1,7 +1,6 @@
 // WIDTHOF_INVALID_SYNTAX: widthof() argument must be a plain identifier.
 // Tests widthof() with slice and concat arguments in CONST blocks.
 // Valid widthof() with plain identifier included to verify no false positives.
-// NOTE: Compiler bug — this rule is not implemented. See issues.md.
 
 @project WIDTHOF_INVALID_SYNTAX_slice_argument
     @top TopMod {

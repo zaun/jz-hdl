@@ -1,5 +1,6 @@
 // SIM_WRONG_TOOL: File contains @simulation blocks but is run with --lint.
-// The compiler should detect @simulation and direct the user to use --simulate.
+// The compiler detects @simulation and directs the user to use --simulate instead.
+// The @module definition alone does NOT trigger this rule (implicit negative test).
 
 @module sim_dut
     PORT {
@@ -21,7 +22,7 @@
     }
 @endmod
 
-// Trigger 1: @simulation block present when run with --lint
+// Trigger 1: @simulation block present when file is run with --lint
 @simulation sim_dut
     CLOCK {
         clk = { period=10.0 };

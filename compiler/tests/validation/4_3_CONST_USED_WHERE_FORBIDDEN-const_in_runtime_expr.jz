@@ -6,7 +6,7 @@
     @top TopMod {
         IN  [1] clk = _;
         OUT [8] data = _;
-        OUT [8] out_b = _;
+        OUT [8] out_h = _;
     }
 @endproj
 
@@ -46,7 +46,7 @@
     PORT {
         IN  [1] clk;
         OUT [W] data;
-        OUT [W] out_b;
+        OUT [W] out_h;
     }
 
     @new inst_h HelperMod {
@@ -61,7 +61,7 @@
     ASYNCHRONOUS {
         data = r;
         // Trigger 2: CONST in ASYNC expression in top module
-        out_b = MY_C;
+        out_h = MY_C;
     }
 
     SYNCHRONOUS(CLK=clk) {

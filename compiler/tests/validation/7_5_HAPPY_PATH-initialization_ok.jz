@@ -1,9 +1,14 @@
 // HAPPY_PATH: Valid MEM initialization — literal and @file, multi-module.
 // Covers: sized literal, zero init, narrower literal (zero-extended),
-// @file with string path, @file with exact depth match.
+// @file with string path, @file with CONST string path,
+// single-entry memory.
 // No diagnostics expected.
 
 @project HAPPY_PATH_initialization_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] clk = _;
         IN  [2] addr = _;
@@ -11,7 +16,7 @@
     }
 @endproj
 
-// Helper module with valid literal init (exact width match)
+// Helper module: literal init with exact width match
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -23,7 +28,7 @@
         r [8] = 8'h00;
     }
 
-    // Valid: literal init matching word width
+    // Valid: sized literal matching word width
     MEM {
         mem_lit [8] [4] = 8'hAA {
             OUT rd ASYNC;
@@ -42,6 +47,10 @@
 @endmod
 
 @module TopMod
+    CONST {
+        LUT_FILE = "mem_exact_4bytes.bin";
+    }
+
     PORT {
         IN  [1] clk;
         IN  [2] addr;
@@ -52,7 +61,7 @@
         r [8] = 8'h00;
     }
 
-    // Valid: literal zero init
+    // Valid: zero literal init
     MEM {
         mem_zero [8] [4] = 8'h00 {
             OUT rd_z ASYNC;
@@ -68,11 +77,26 @@
         };
     }
 
-    // Valid: @file init with file exactly matching depth
+    // Valid: @file with string literal path
     MEM {
         mem_file [8] [4] = @file("mem_exact_4bytes.bin") {
             OUT rd_f ASYNC;
             IN  wr_f;
+        };
+    }
+
+    // Valid: @file with CONST string path
+    MEM {
+        mem_const [8] [4] = @file(LUT_FILE) {
+            OUT rd_c ASYNC;
+            IN  wr_c;
+        };
+    }
+
+    // Valid: single-entry memory with literal
+    MEM {
+        mem_single [8] [1] = 8'hFF {
+            OUT rd_s ASYNC;
         };
     }
 
@@ -83,7 +107,9 @@
     };
 
     ASYNCHRONOUS {
-        data = mem_zero.rd_z[addr] ^ mem_file.rd_f[addr] ^ mem_narrow.rd_n[addr];
+        data = mem_zero.rd_z[addr] ^ mem_narrow.rd_n[addr]
+             ^ mem_file.rd_f[addr] ^ mem_const.rd_c[addr]
+             ^ mem_single.rd_s[1'b0];
     }
 
     SYNCHRONOUS(CLK=clk) {
@@ -91,5 +117,6 @@
         mem_zero.wr_z[addr] <= 8'h00;
         mem_narrow.wr_n[addr] <= 8'h00;
         mem_file.wr_f[addr] <= 8'h00;
+        mem_const.wr_c[addr] <= 8'h00;
     }
 @endmod

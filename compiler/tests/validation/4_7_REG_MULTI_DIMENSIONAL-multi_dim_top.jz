@@ -1,0 +1,33 @@
+// REG_MULTI_DIMENSIONAL: Register declared with multi-dimensional syntax.
+// Trigger in top module — compiler halts after first diagnostic so
+// helper and top module triggers are split into separate files.
+// Valid single-dimensional register included for no false positives.
+
+@project REG_MULTI_DIMENSIONAL_multi_dim_top
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        // Trigger 1: multi-dimensional register in top module
+        r_bad [16] [2];
+        // Valid: single-dimensional register
+        r_ok [8] = 8'hAA;
+    }
+
+    ASYNCHRONOUS {
+        dout = r_ok;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_ok <= ~r_ok;
+    }
+@endmod

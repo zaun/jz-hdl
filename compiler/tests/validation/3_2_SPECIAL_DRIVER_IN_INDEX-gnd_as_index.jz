@@ -1,0 +1,50 @@
+// SPECIAL_DRIVER_IN_INDEX: GND may not appear in slice/index expressions.
+// Tests GND used as an index expression in ASYNCHRONOUS block.
+// Single trigger per file because compiler halts after first diagnostic.
+
+@project SPECIAL_DRIVER_IN_INDEX_gnd_as_index
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        OUT [1] out_a = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [1] out_a;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: GND as index expression in async
+        out_a = data[GND];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [1] out_a;
+    }
+    WIRE {
+        ha_a [1];
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data = data;
+        OUT [1] out_a = ha_a;
+    };
+
+    ASYNCHRONOUS {
+        out_a = ha_a;
+    }
+@endmod

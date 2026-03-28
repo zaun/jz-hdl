@@ -1,5 +1,5 @@
 // TEMPLATE_FORBIDDEN_DECL: Cross-reference test for S10.4 declaration blocks in template error.
-// Tests WIRE, REGISTER, and PORT declarations inside templates at file scope
+// Tests WIRE, REGISTER, PORT, CONST, and MEM declarations inside templates at file scope
 // and module scope. Valid template with only @scratch included for negative testing.
 
 @project TEMPLATE_FORBIDDEN_DECL_forbidden_decl_error
@@ -44,13 +44,29 @@
     a <= b;
 @endtemplate
 
+// Trigger 4: CONST inside file-scoped template
+@template const_tmpl(a, b)
+    CONST {
+        C = 1;
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 5: MEM inside file-scoped template
+@template mem_tmpl(a, b)
+    MEM {
+        m [8][4] = 32'h00000000;
+    }
+    a <= b;
+@endtemplate
+
 @module HelperMod
     PORT {
         IN  [1] din;
         OUT [1] data;
     }
 
-    // Trigger 4: WIRE in module-scoped template
+    // Trigger 6: WIRE in module-scoped template
     @template mod_wire(a, b)
         WIRE {
             mw [1];
@@ -69,7 +85,7 @@
         OUT [1] data;
     }
 
-    // Trigger 5: REGISTER in module-scoped template in TopMod
+    // Trigger 7: REGISTER in module-scoped template in TopMod
     @template mod_reg(a, b)
         REGISTER {
             mr [1] = 1'b0;

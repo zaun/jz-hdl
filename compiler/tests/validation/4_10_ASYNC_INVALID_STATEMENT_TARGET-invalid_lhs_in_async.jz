@@ -1,6 +1,7 @@
 // ASYNC_INVALID_STATEMENT_TARGET: LHS in ASYNCHRONOUS assignment is not assignable.
-// Tests CONST assignment in ASYNC blocks across multiple modules.
-// Valid assignments (WIRE, PORT OUT) verify no false positives.
+// Tests CONST assigned via receive (<=), alias (=), and drive (=>) in ASYNC
+// blocks across multiple modules. Valid assignments (WIRE, PORT OUT) verify
+// no false positives.
 
 @project ASYNC_INVALID_STATEMENT_TARGET_invalid_lhs_in_async
     @top TopMod {
@@ -10,7 +11,7 @@
     }
 @endproj
 
-// Helper module: CONST assigned in ASYNC
+// Helper module: CONST receive-assigned in ASYNC
 @module HelperMod
     PORT {
         IN  [8] din;
@@ -26,11 +27,29 @@
     }
 
     ASYNCHRONOUS {
-        // Trigger 1: assign to CONST in ASYNC (helper module)
+        // Trigger 1: receive-assign to CONST in ASYNC (helper module)
         MY_CONST <= din;
         // Valid: wire assignment (no error)
         w <= din;
         dout = w;
+    }
+@endmod
+
+// Second helper: CONST alias-assigned in ASYNC
+@module HelperMod2
+    PORT {
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    CONST {
+        H_CONST = 42;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: alias-assign to CONST in ASYNC (second helper)
+        H_CONST = din;
+        dout <= din;
     }
 @endmod
 
@@ -50,9 +69,14 @@
         OUT [8] dout = dout_a;
     };
 
+    @new inst_h2 HelperMod2 {
+        IN  [8] din = din;
+        OUT [8] dout = _;
+    };
+
     ASYNCHRONOUS {
-        // Trigger 2: assign to CONST in ASYNC (top module)
-        TOP_CONST <= din;
+        // Trigger 3: drive-assign to CONST in ASYNC (top module)
+        din => TOP_CONST;
         // Valid: PORT OUT assignment (no error)
         dout_b <= din;
     }

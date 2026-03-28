@@ -1,5 +1,6 @@
 // SIM_PROJECT_MIXED: A file contains both @project and @simulation directives.
-// These cannot coexist in the same file.
+// These cannot coexist in the same file. The @project must appear before
+// @simulation for this rule to fire (reverse order triggers TB_PROJECT_MIXED).
 
 @module mix_mod
     PORT {
@@ -20,7 +21,7 @@
     }
 @endmod
 
-// Valid @project block
+// Valid @project block (does not trigger any rule on its own)
 @project MixedProject
     @top mix_mod {
         IN  [1] clk = _;

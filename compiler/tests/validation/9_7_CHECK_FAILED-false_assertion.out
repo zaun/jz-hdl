@@ -1,0 +1,7 @@
+File: 9_7_CHECK_FAILED-false_assertion.jz
+      15:5    error CHECK_FAILED S9.2 @check compile-time assertion failed
+      18:5    error CHECK_FAILED S9.2 @check compile-time assertion failed
+      39:5    error CHECK_FAILED S9.2 @check compile-time assertion failed
+      42:5    error CHECK_FAILED S9.2 @check compile-time assertion failed
+      62:5    error CHECK_FAILED S9.2 @check compile-time assertion failed
+      65:5    error CHECK_FAILED S9.2 @check compile-time assertion failed

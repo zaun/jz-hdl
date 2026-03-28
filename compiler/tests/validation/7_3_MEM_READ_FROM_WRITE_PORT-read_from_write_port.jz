@@ -1,0 +1,80 @@
+// MEM_READ_FROM_WRITE_PORT: Reading from a write-only IN port.
+// Triggers in SYNC block. Valid write included.
+
+@project MEM_READ_FROM_WRITE_PORT_read_from_write_port
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: read from IN (write) port
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: write to IN port
+        mem_a.wr[addr] <= wdata;
+        // Trigger 1: read from IN (write-only) port
+        r <= mem_a.wr[addr];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_b.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_b.wr[addr] <= wdata;
+        // Trigger 2: read from IN port in top module
+        r <= mem_b.wr[addr];
+    }
+@endmod

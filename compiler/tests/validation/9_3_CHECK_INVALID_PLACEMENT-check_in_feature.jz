@@ -1,7 +1,8 @@
 // CHECK_INVALID_PLACEMENT: @check inside @feature body is not allowed.
-// Tests that @check nested in @feature THEN and ELSE bodies triggers
-// CHECK_INVALID_PLACEMENT. Valid @check at module scope is included
-// to verify no false positives.
+// S9.3 says @check may not appear inside conditional or @feature bodies.
+// Tests @check in @feature THEN body, @feature ELSE body, and in a
+// helper module's @feature body. Valid @check at module scope included
+// for negative testing.
 
 @project CHECK_INVALID_PLACEMENT_check_in_feature
     CONFIG {
@@ -13,6 +14,30 @@
         OUT [1] data = _;
     }
 @endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST {
+        HELPER_FLAG = 1;
+        HELPER_SIZE = 4;
+    }
+
+    // Valid: @check at module scope in helper (no error)
+    @check (HELPER_SIZE > 0, "helper size ok");
+
+    // Trigger 1: @check inside @feature THEN body in helper module
+    @feature HELPER_FLAG == 1
+        @check (HELPER_SIZE == 4, "helper size must be 4");
+    @endfeat
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
 
 @module TopMod
     PORT {
@@ -28,17 +53,22 @@
     // Valid: @check at module scope (no error)
     @check (SIZE > 0, "size positive");
 
-    // Trigger 1: @check in @feature THEN body
+    // Trigger 2: @check in @feature THEN body in top module
     @feature FLAG == 1
         @check (SIZE == 8, "size must be 8");
     @endfeat
 
-    // Trigger 2: @check in @feature ELSE body
+    // Trigger 3: @check in @feature ELSE body
     @feature FLAG == 0
         data = din;
     @else
         @check (SIZE > 4, "size must exceed 4");
     @endfeat
+
+    @new inst_a HelperMod {
+        IN  [1] din = din;
+        OUT [1] data = _;
+    };
 
     ASYNCHRONOUS {
         data = din;

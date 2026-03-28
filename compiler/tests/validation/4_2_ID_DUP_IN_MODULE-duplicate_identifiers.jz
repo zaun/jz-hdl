@@ -30,7 +30,7 @@
         IN  [1] pclk;
         IN  [1] din;
         OUT [1] out_a;
-        // Trigger 1: port duplicates another port
+        // Trigger 1: port duplicates another port name
         IN  [1] din;
     }
 
@@ -80,7 +80,7 @@
     }
 @endmod
 
-// Top module — tests wire-wire and register-register duplicates
+// Top module — tests wire-wire, register-register, and wire-register duplicates
 @module TopMod
     PORT {
         IN  [1] clk;

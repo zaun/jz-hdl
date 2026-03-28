@@ -16,7 +16,7 @@
         r [8] = 8'h00;
     }
     ASYNCHRONOUS {
-        // Trigger 1: GND as bit-select index — parser rejects as PARSE000
+        // Trigger 1: GND as bit-select index
         out_a = r[GND];
     }
     SYNCHRONOUS(CLK=clk) {

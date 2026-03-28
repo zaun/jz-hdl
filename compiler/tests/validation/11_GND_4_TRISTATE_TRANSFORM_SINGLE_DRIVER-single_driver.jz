@@ -1,10 +1,8 @@
 // TRISTATE_TRANSFORM_SINGLE_DRIVER: Single-driver tri-state net transformed.
-// Verifies that a single-driver tri-state wire (one IF/ELSE with z in else)
-// triggers TRISTATE_TRANSFORM_SINGLE_DRIVER warning when transformed.
+// Verifies TRISTATE_TRANSFORM_SINGLE_DRIVER warning fires for each wire that
+// has only one driver with conditional z when --tristate-default is active.
 // Contexts: helper module with single-driver tristate wire, top module with
-// single-driver tristate wire.
-// NOTE: Compiler currently emits INFO_TRISTATE_TRANSFORM but not the
-// TRISTATE_TRANSFORM_SINGLE_DRIVER warning — see issues.md.
+// single-driver tristate wire, top module with two tristate wires.
 
 @project TRISTATE_TRANSFORM_SINGLE_DRIVER_single_driver
     @top TopMod {
@@ -13,7 +11,7 @@
     }
 @endproj
 
-// Helper module with single-driver tri-state wire
+// Trigger 1: helper module with single-driver tri-state wire
 @module HelperMod
     PORT {
         IN  [1] en;
@@ -35,7 +33,7 @@
     }
 @endmod
 
-// Top module with single-driver tri-state wire
+// Trigger 2-3: top module with two single-driver tri-state wires
 @module TopMod
     PORT {
         IN  [1] en;
@@ -44,6 +42,7 @@
 
     WIRE {
         w_top [8];
+        w_extra [8];
     }
 
     @new inst_h HelperMod {
@@ -58,6 +57,11 @@
         } ELSE {
             w_top <= 8'bzzzz_zzzz;
         }
-        data <= w_top;
+        IF (en) {
+            w_extra <= 8'hDD;
+        } ELSE {
+            w_extra <= 8'bzzzz_zzzz;
+        }
+        data <= w_top | w_extra;
     }
 @endmod

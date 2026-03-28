@@ -1,9 +1,13 @@
 // BLACKBOX_UNDEFINED_IN_NEW: @new references undefined blackbox name.
-// NOTE: The compiler emits INSTANCE_UNDEFINED_MODULE instead of
-// BLACKBOX_UNDEFINED_IN_NEW because the rule is defined in rules.c but
-// never emitted by any semantic pass. See issues.md.
+// Trigger 1: @new references non-existent blackbox in sub-module
+// Trigger 2: @new references non-existent blackbox in top module
+// Valid: @new references existing blackbox (no error, negative test)
 
 @project BLACKBOX_UNDEFINED_IN_NEW_undefined_blackbox
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @blackbox bb_real {
         PORT {
             IN  [1] din;
@@ -23,7 +27,7 @@
         OUT [1] data;
     }
 
-    // Trigger 1: @new references non-existent blackbox in sub module
+    // Trigger 1: @new references non-existent blackbox in sub-module
     @new inst_bad bb_nonexistent {
         IN  [1] din = r;
         OUT [1] dout = _;

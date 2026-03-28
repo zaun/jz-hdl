@@ -1,3 +1,4 @@
 File: 9_3_CHECK_INVALID_PLACEMENT-check_in_feature.jz
-      33:9    error CHECK_INVALID_PLACEMENT S9.3 @check may not appear inside conditional or @feature bodies
-      40:9    error CHECK_INVALID_PLACEMENT S9.3 @check may not appear inside conditional or @feature bodies
+      34:9    error CHECK_INVALID_PLACEMENT S9.3 @check may not appear inside conditional or @feature bodies
+      58:9    error CHECK_INVALID_PLACEMENT S9.3 @check may not appear inside conditional or @feature bodies
+      65:9    error CHECK_INVALID_PLACEMENT S9.3 @check may not appear inside conditional or @feature bodies

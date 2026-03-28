@@ -4,6 +4,10 @@
 // Valid unique blackbox included as negative test.
 
 @project BLACKBOX_DUP_bb_name_conflicts
+    CONFIG {
+        WIDTH = 8;
+    }
+
     // Valid: unique blackbox — no trigger
     @blackbox bb_ok {
         PORT {
@@ -48,6 +52,7 @@
         IN  [1] din;
         OUT [1] dout;
     }
+
     ASYNCHRONOUS {
         dout = din;
     }

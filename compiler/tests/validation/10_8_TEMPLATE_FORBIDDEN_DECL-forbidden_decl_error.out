@@ -2,5 +2,7 @@ File: 10_8_TEMPLATE_FORBIDDEN_DECL-forbidden_decl_error.jz
       25:5    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals
       33:5    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals
       41:5    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals
-      55:9    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals
-      74:9    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals
+      49:5    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals
+      57:5    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals
+      71:9    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals
+      90:9    error TEMPLATE_FORBIDDEN_DECL S10.4 Declaration blocks (WIRE, REGISTER, etc.) are not allowed inside template body; use @scratch for temporary signals

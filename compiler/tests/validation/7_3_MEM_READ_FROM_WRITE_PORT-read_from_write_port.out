@@ -1,0 +1,5 @@
+File: 7_3_MEM_READ_FROM_WRITE_PORT-read_from_write_port.jz
+      23:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      41:14   error MEM_READ_FROM_WRITE_PORT S7.2.2/S7.3.3 Reading from MEM write port (OUT); did you mean to use an IN port?
+      54:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      78:14   error MEM_READ_FROM_WRITE_PORT S7.2.2/S7.3.3 Reading from MEM write port (OUT); did you mean to use an IN port?

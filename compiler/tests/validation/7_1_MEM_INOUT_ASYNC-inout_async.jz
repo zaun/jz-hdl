@@ -1,5 +1,6 @@
-// MEM_INOUT_ASYNC: INOUT ports with ASYNC/SYNC keyword triggers error.
-// Tests INOUT with ASYNC and INOUT with SYNC. Bare INOUT for no false positives.
+// MEM_INOUT_ASYNC: ASYNC or SYNC keyword on INOUT port triggers error.
+// INOUT ports are always synchronous; no qualifier is permitted.
+// Valid bare INOUT port included for no false positives.
 
 @project MEM_INOUT_ASYNC_inout_async
     @top TopMod {
@@ -10,7 +11,7 @@
     }
 @endproj
 
-// Trigger 1: INOUT with ASYNC in helper module
+// Trigger 1: INOUT with ASYNC keyword in helper module
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -50,14 +51,14 @@
         r [8] = 8'h00;
     }
 
-    // Trigger 2: INOUT with SYNC in top module
+    // Trigger 2: INOUT with SYNC keyword in top module
     MEM(type=BLOCK) {
         mem_b [8] [16] = 8'h00 {
             INOUT rw SYNC;
         };
     }
 
-    // Valid: bare INOUT without keyword (no error expected)
+    // Valid: bare INOUT without qualifier (no error expected)
     MEM(type=BLOCK) {
         mem_ok [8] [16] = 8'h00 {
             INOUT rw_ok;
@@ -76,8 +77,7 @@
     }
 
     SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
         mem_ok.rw_ok.addr <= addr;
-        r <= mem_ok.rw_ok.data;
-        mem_ok.rw_ok.wdata <= wdata;
     }
 @endmod

@@ -1,10 +1,12 @@
 // COMB_LOOP_UNCONDITIONAL: Direct two-signal cycle and cycle through expression.
-// Tests the simplest form of combinational loop (a=b; b=a), loops where
-// the feedback path goes through an expression (a=b&c; c=a), and
-// self-assignment through expression (a=a+0).
+// Tests simplest combinational loop forms: a=b; b=a and a=b&c; c=a.
 // Valid feed-forward paths included to verify no false positives.
 
 @project COMB_LOOP_UNCONDITIONAL_two_signal_cycle
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] in_a = _;
         OUT [1] out_a = _;
@@ -13,7 +15,7 @@
     }
 @endproj
 
-// Helper: direct two-signal cycle
+// Trigger 1: direct two-signal cycle in helper module
 @module HelperDirect
     PORT {
         IN  [1] in_a;
@@ -36,7 +38,7 @@
     }
 @endmod
 
-// Helper: cycle through expression
+// Trigger 2: cycle through expression in helper module
 @module HelperExpr
     PORT {
         IN  [1] in_a;
@@ -51,16 +53,17 @@
     }
 
     ASYNCHRONOUS {
-        // Trigger 2: cycle through expression a -> (b & c) -> c -> a
+        // Trigger 2: cycle through expression a = b & c; c = a
         a <= b & c;
         c <= a;
-        // Valid: b is driven by input (no loop through b)
+        // Valid: b driven by input (no loop through b)
         b <= in_a;
         out_a = a;
         out_b = c;
     }
 @endmod
 
+// Top module with direct two-signal cycle
 @module TopMod
     PORT {
         IN  [1] in_a;

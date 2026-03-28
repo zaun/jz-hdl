@@ -1,6 +1,7 @@
 // WRITE_WIRE_IN_SYNC: Cannot assign to WIRE in SYNCHRONOUS block.
-// Tests wire assignment in SYNC in multiple contexts.
-// Valid register assignments included to verify no false positives.
+// Tests wire assignment in SYNC root, IF body, ELIF body, ELSE body,
+// SELECT/CASE body, and DEFAULT body across multiple modules.
+// Valid wire usage in ASYNCHRONOUS blocks included to verify no false positives.
 // Note: WRITE_WIRE_IN_SYNC fires alongside ASSIGN_TO_NON_REGISTER_IN_SYNC
 // but suppresses it due to higher priority (2 vs 1).
 
@@ -14,7 +15,7 @@
     }
 @endproj
 
-// Helper module: wire assigned in SYNC
+// Helper module: trigger wire write in SYNC root
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -22,19 +23,19 @@
         OUT [8] out_a;
     }
     WIRE {
-        w [8];
+        w_helper [8];
     }
     REGISTER {
         r [8] = 8'h00;
     }
     ASYNCHRONOUS {
-        w = data;
-        out_a = r;
+        // Valid: wire driven in ASYNC
+        w_helper <= data;
+        out_a <= w_helper;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 1: wire assigned at root of SYNC in helper
-        w <= data;
-        // Valid: register assignment (should NOT trigger)
+        // Trigger 1: wire assigned at SYNC root (helper module)
+        w_helper <= r;
         r <= data;
     }
 @endmod
@@ -49,9 +50,10 @@
     }
     WIRE {
         w_top [8];
+        w_branch [8];
     }
     REGISTER {
-        r_ok [8] = 8'h00;
+        r [8] = 8'h00;
     }
 
     @new inst_h HelperMod {
@@ -61,18 +63,35 @@
     };
 
     ASYNCHRONOUS {
-        w_top = data;
-        out_a = r_ok;
-        out_b = r_ok;
+        // Valid: wire driven in ASYNC
+        w_top <= data;
+        w_branch <= data;
+        out_a <= w_top | w_branch;
+        out_b <= r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: wire assigned at root of SYNC in top module
-        w_top <= data;
-        // Trigger 3: wire assigned inside IF in SYNC
+        // Trigger 2: wire assigned at SYNC root (top module)
+        w_top <= r;
+        // Trigger 3: wire assigned inside IF body in SYNC
         IF (sel) {
-            w_top <= 8'hFF;
+            w_branch <= data;
+        // Trigger 4: wire assigned inside ELIF body in SYNC
+        } ELIF (data[0:0]) {
+            w_branch <= r;
+        // Trigger 5: wire assigned inside ELSE body in SYNC
+        } ELSE {
+            w_branch <= 8'h00;
         }
-        // Valid: register assignment (should NOT trigger)
-        r_ok <= data;
+        // Trigger 6: wire assigned inside SELECT/CASE body in SYNC
+        SELECT (data[1:0]) {
+            CASE (2'b00) {
+                w_top <= 8'h00;
+            }
+            // Trigger 7: wire assigned inside DEFAULT body in SYNC
+            DEFAULT {
+                w_top <= 8'hFF;
+            }
+        }
+        r <= data;
     }
 @endmod

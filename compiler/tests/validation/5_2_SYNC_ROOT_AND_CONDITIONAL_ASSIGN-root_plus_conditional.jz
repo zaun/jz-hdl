@@ -1,17 +1,19 @@
 // SYNC_ROOT_AND_CONDITIONAL_ASSIGN: Root-level register assignment combined
 // with nested conditional assignment to same bits.
-// Tests root + IF, root + SELECT with DEFAULT.
+// Tests root + IF, root + SELECT, root + ELIF, root + nested IF.
 // Valid conditional-only assignments included to verify no false positives.
 
 @project SYNC_ROOT_AND_CONDITIONAL_ASSIGN_root_plus_conditional
     @top TopMod {
         IN  [1] clk = _;
         IN  [1] sel = _;
+        IN  [2] state = _;
         IN  [8] a = _;
         IN  [8] b = _;
         OUT [8] out_a = _;
         OUT [8] out_b = _;
         OUT [8] out_c = _;
+        OUT [8] out_d = _;
     }
 @endproj
 
@@ -43,15 +45,18 @@
     PORT {
         IN  [1] clk;
         IN  [1] sel;
+        IN  [2] state;
         IN  [8] a;
         IN  [8] b;
         OUT [8] out_a;
         OUT [8] out_b;
         OUT [8] out_c;
+        OUT [8] out_d;
     }
     REGISTER {
         r_x [8] = 8'h00;
         r_y [8] = 8'h00;
+        r_z [8] = 8'h00;
         r_ok [8] = 8'h00;
     }
 
@@ -66,7 +71,8 @@
     ASYNCHRONOUS {
         out_a = r_x;
         out_b = r_y;
-        out_c = r_ok;
+        out_c = r_z;
+        out_d = r_ok;
     }
     SYNCHRONOUS(CLK=clk) {
         // Trigger 2: root + IF in top module
@@ -76,15 +82,22 @@
         }
         // Trigger 3: root + SELECT case
         r_y <= a;
-        SELECT (sel) {
-            CASE (1'b0) {
+        SELECT (state) {
+            CASE (2'b00) {
                 r_y <= b;
             }
-            CASE (1'b1) {
+            CASE (2'b01) {
                 r_y <= b;
             }
             DEFAULT {
                 r_y <= b;
+            }
+        }
+        // Trigger 4: root + nested IF
+        r_z <= a;
+        IF (sel) {
+            IF (state[0]) {
+                r_z <= b;
             }
         }
         // Valid: conditional-only assignments, no root conflict (should NOT trigger)

@@ -1,16 +1,19 @@
 // ASYNC_ALIAS_IN_CONDITIONAL: Alias = inside IF/SELECT is forbidden in ASYNC.
 // Tests alias (=), zero-extend alias (=z), sign-extend alias (=s) inside
-// IF, ELSE, and SELECT/CASE blocks across multiple modules. Valid directional
-// assignments (<=, =>) in conditionals verify no false positives.
+// IF, ELSE, ELIF, SELECT/CASE, DEFAULT, and nested IF blocks across
+// multiple modules. Valid directional assignments (<=, =>) in conditionals
+// verify no false positives.
 
 @project ASYNC_ALIAS_IN_CONDITIONAL_alias_in_conditional
     @top TopMod {
         IN  [1] sel = _;
+        IN  [1] sel2 = _;
         IN  [8] din_a = _;
         IN  [8] din_b = _;
         OUT [8] dout_a = _;
         OUT [8] dout_b = _;
         OUT [8] dout_c = _;
+        OUT [8] dout_d = _;
     }
 @endproj
 
@@ -34,21 +37,45 @@
     }
 @endmod
 
-// Second helper: alias in ELSE body
+// Second helper: alias =z in ELSE body
 @module HelperMod2
     PORT {
         IN  [1] sel;
+        IN  [1] narrow;
         IN  [8] din_a;
+        OUT [8] dout;
+    }
+
+    ASYNCHRONOUS {
+        IF (sel) {
+            // Valid: receive-assign in IF (no error)
+            dout <= din_a;
+        } ELSE {
+            // Trigger 2: alias =z in ELSE body (second helper)
+            dout =z narrow;
+        }
+    }
+@endmod
+
+// Third helper: alias =s in ELIF body
+@module HelperMod3
+    PORT {
+        IN  [1] sel;
+        IN  [1] sel2;
+        IN  [1] narrow;
         IN  [8] din_b;
         OUT [8] dout;
     }
 
     ASYNCHRONOUS {
-        // Trigger 2: alias = in ELSE body (second helper)
         IF (sel) {
-            dout <= din_a;
+            // Valid: drive-assign in IF (no error)
+            din_b => dout;
+        } ELIF (sel2) {
+            // Trigger 3: alias =s in ELIF body (third helper)
+            dout =s narrow;
         } ELSE {
-            dout = din_b;
+            dout <= din_b;
         }
     }
 @endmod
@@ -56,11 +83,13 @@
 @module TopMod
     PORT {
         IN  [1] sel;
+        IN  [1] sel2;
         IN  [8] din_a;
         IN  [8] din_b;
         OUT [8] dout_a;
         OUT [8] dout_b;
         OUT [8] dout_c;
+        OUT [8] dout_d;
     }
 
     @new inst_h HelperMod {
@@ -72,20 +101,28 @@
 
     @new inst_h2 HelperMod2 {
         IN  [1] sel = sel;
+        IN  [1] narrow = sel2;
         IN  [8] din_a = din_a;
-        IN  [8] din_b = din_b;
         OUT [8] dout = dout_b;
     };
 
+    @new inst_h3 HelperMod3 {
+        IN  [1] sel = sel;
+        IN  [1] sel2 = sel2;
+        IN  [1] narrow = sel;
+        IN  [8] din_b = din_b;
+        OUT [8] dout = dout_c;
+    };
+
     ASYNCHRONOUS {
-        // Trigger 3: alias = in SELECT/CASE body (top module)
+        // Trigger 4: alias = in SELECT/CASE body (top module)
         SELECT (sel) {
             CASE (1'b0) {
-                dout_c = din_a;
+                dout_d = din_a;
             }
             DEFAULT {
-                // Valid: receive-assign in DEFAULT (no error)
-                dout_c <= din_b;
+                // Trigger 5: alias = in DEFAULT body (top module)
+                dout_d = din_b;
             }
         }
     }

@@ -1,5 +1,6 @@
 // HAPPY_PATH: Valid CLOCKS block with IN_PIN clocks, CLOCK_GEN (PLL, CLKDIV, OSC),
-// falling edge, and minimal clock declaration. No diagnostics expected.
+// falling edge, minimal clock declaration, and indexed clock pins.
+// No diagnostics expected.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") HAPPY_PATH_clocks_ok
     CLOCKS {

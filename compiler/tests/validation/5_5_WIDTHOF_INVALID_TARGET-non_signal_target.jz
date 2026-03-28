@@ -1,7 +1,6 @@
 // WIDTHOF_INVALID_TARGET: widthof() argument does not resolve to WIRE, REGISTER, PORT, or BUS.
 // Tests widthof() on non-signal targets such as CONST names.
 // Valid widthof() on a port included to verify no false positives.
-// NOTE: Compiler bug — this rule is not implemented. See issues.md.
 
 @project WIDTHOF_INVALID_TARGET_non_signal_target
     @top TopMod {

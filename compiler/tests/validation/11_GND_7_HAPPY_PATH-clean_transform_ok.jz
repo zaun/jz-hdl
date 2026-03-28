@@ -1,0 +1,69 @@
+// HAPPY_PATH: Valid tri-state design with --tristate-default=GND flag.
+// Verifies that a clean tri-state design with proper IF/ELSE guards and
+// full-width z assignments transforms successfully, emitting only INFO
+// diagnostics per transformed net with no errors or warnings.
+// Contexts: single-driver tristate wire in helper module, single-driver
+// tristate wire in top module, multi-module interaction via @new.
+
+@project HAPPY_PATH_clean_transform_ok
+    @top TopMod {
+        IN  [1] en_a = _;
+        IN  [1] en_b = _;
+        IN  [8] din = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Helper module: single-driver tristate wire with IF/ELSE guard
+@module HelperMod
+    PORT {
+        IN  [1] en;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    // Valid: IF/ELSE ensures mutual exclusion; z is full-width
+    ASYNCHRONOUS {
+        IF (en) {
+            w <= din;
+        } ELSE {
+            w <= 8'bzzzz_zzzz;
+        }
+        data <= w;
+    }
+@endmod
+
+// Top module: single-driver tristate wire, instantiates helper
+@module TopMod
+    PORT {
+        IN  [1] en_a;
+        IN  [1] en_b;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        w_top [8];
+        w_helper [8];
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] en = en_a;
+        IN  [8] din = din;
+        OUT [8] data = w_helper;
+    };
+
+    // Valid: IF/ELSE ensures mutual exclusion; z is full-width
+    ASYNCHRONOUS {
+        IF (en_b) {
+            w_top <= din;
+        } ELSE {
+            w_top <= 8'bzzzz_zzzz;
+        }
+        dout <= w_helper | w_top;
+    }
+@endmod

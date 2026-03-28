@@ -1,8 +1,6 @@
 // FUNC_RESULT_TRUNCATED_SILENTLY: Function result truncated by assignment without
 // explicit slice or width check. Tests intrinsic results assigned to narrower targets.
 // Valid same-width assignments included to verify no false positives.
-// NOTE: Compiler bug — FUNC_RESULT_TRUNCATED_SILENTLY is not emitted;
-// compiler fires ASSIGN_WIDTH_NO_MODIFIER instead. See issues.md.
 
 @project FUNC_RESULT_TRUNCATED_SILENTLY_intrinsic_truncation
     @top TopMod {

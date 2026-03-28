@@ -1,4 +1,7 @@
 File: 5_2_ASSIGN_TO_NON_REGISTER_IN_SYNC-non_register_in_sync.jz
-      30:9    error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS
-      59:9    error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS
-      61:9    error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS
+      32:9    error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS
+      62:9    error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS
+      64:9    error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS
+      67:13   error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS
+      72:17   error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS
+      75:17   error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS

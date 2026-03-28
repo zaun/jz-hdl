@@ -1,0 +1,43 @@
+// FEATURE_NESTED: Nested @feature guard at module level.
+// Parser stops at first nested @feature; split by context for coverage.
+
+@project FEATURE_NESTED_nested_feature_at_module_level
+    CONFIG {
+        MODE = 1;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST {
+        FLAG = 1;
+        LEVEL = 0;
+    }
+
+    // Trigger 1: nested @feature at module level
+    @feature FLAG == 1
+        @feature LEVEL == 0
+        @endfeat
+    @endfeat
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

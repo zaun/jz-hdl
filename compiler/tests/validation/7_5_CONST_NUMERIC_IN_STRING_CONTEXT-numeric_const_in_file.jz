@@ -1,0 +1,98 @@
+// CONST_NUMERIC_IN_STRING_CONTEXT: Numeric CONST/CONFIG used in @file path triggers error.
+// Trigger 1: numeric module CONST used in @file (helper module).
+// Trigger 2: numeric CONFIG value used in @file (top module).
+// Valid: string CONST used in @file (no error expected).
+
+@project CONST_NUMERIC_IN_STRING_CONTEXT_numeric_const_in_file
+    CONFIG {
+        WIDTH = 8;
+        NUM_CFG = 42;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [2] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: numeric module CONST used in @file path
+@module HelperMod
+    CONST {
+        DEPTH = 16;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [4] = @file(DEPTH) {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.wr[addr] <= 8'h00;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        ROM_FILE = "mem_exact_4bytes.bin";
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [2] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: numeric CONFIG value used in @file path
+    MEM {
+        mem_b [8] [4] = @file(CONFIG.NUM_CFG) {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // Valid: string CONST in @file (no error)
+    MEM {
+        mem_ok [8] [4] = @file(ROM_FILE) {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [2] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_b.rd[addr] ^ mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.wr[addr] <= 8'h00;
+        mem_ok.wr_ok[addr] <= 8'h00;
+    }
+@endmod

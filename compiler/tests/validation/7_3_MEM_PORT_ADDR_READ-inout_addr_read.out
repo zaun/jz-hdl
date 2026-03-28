@@ -1,2 +1,0 @@
-File: 7_3_MEM_PORT_ADDR_READ-inout_addr_read.jz
-      44:14   error MEM_PORT_ADDR_READ S7.2.1/S7.3.2/S7.7.2 MEM read address inputs are not readable; use mem.port.data

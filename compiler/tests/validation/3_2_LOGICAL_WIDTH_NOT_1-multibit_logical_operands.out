@@ -1,5 +1,8 @@
 File: 3_2_LOGICAL_WIDTH_NOT_1-multibit_logical_operands.jz
-      35:24   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
-      42:21   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
-      80:17   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
-      88:21   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
+      36:24   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
+      38:17   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
+      44:22   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
+      84:24   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
+      86:17   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
+      93:22   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?
+      95:15   error LOGICAL_WIDTH_NOT_1 S3.2/S8.1 Logical `&&`, `||`, `!` require 1-bit operands; did you mean bitwise `&`, `|`, `~`?

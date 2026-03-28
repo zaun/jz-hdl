@@ -54,14 +54,12 @@
         r_sync [8] = 8'h00;
     }
 
-    // Async read memory
     MEM {
         mem_async [8] [16] = 8'h00 {
             OUT rd_a ASYNC;
         };
     }
 
-    // Sync read/write memory with multiple IN ports for edge-case addresses
     MEM {
         mem_sync [8] [16] = 8'h00 {
             OUT rd_s SYNC;
@@ -71,7 +69,6 @@
         };
     }
 
-    // INOUT memory
     MEM(type=BLOCK) {
         mem_inout [8] [16] = 8'h00 {
             INOUT rw;
@@ -86,25 +83,18 @@
     };
 
     ASYNCHRONOUS {
-        // Valid: async read with bracket indexing
         rdata_async = mem_async.rd_a[addr];
-        // Valid: INOUT .data readable in ASYNC block
         rdata_inout = mem_inout.rw.data;
         rdata_sync = r_sync;
     }
 
     SYNCHRONOUS(CLK=clk) {
-        // Valid: sync read .addr and .data
         mem_sync.rd_s.addr <= addr;
         r_sync <= mem_sync.rd_s.data;
-        // Valid: sync write with bracket
         mem_sync.wr_s[addr] <= wdata;
-        // Valid: INOUT .addr and .wdata in SYNC
         mem_inout.rw.addr <= addr;
         mem_inout.rw.wdata <= wdata;
-        // Valid edge: constant addr 0 (first entry)
         mem_sync.wr_zero[0] <= 8'hAA;
-        // Valid edge: constant addr 15 (depth-1 = last entry)
         mem_sync.wr_last[15] <= 8'hBB;
     }
 @endmod

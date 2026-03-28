@@ -1,11 +1,17 @@
 // BLACKBOX_BODY_DISALLOWED: Blackbox with CONST block triggers forbidden body error.
-// NOTE: The parser rejects ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM with PARSE000
-// before semantic analysis runs. CONST is the only block the parser allows but
-// semantics rejects. See issues.md for the parser inconsistency.
+// CONST is the only block the parser allows inside @blackbox but semantics rejects.
+// ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM are rejected by the parser (PARSE000)
+// before semantic analysis runs. See issues.md for parser inconsistency.
+// Tests: CONST before PORT, CONST after PORT, multiple CONST entries.
+// Valid blackbox (PORT only) included as negative test.
 
 @project BLACKBOX_BODY_DISALLOWED_const_in_blackbox
-    // Trigger 1: CONST block with single entry in blackbox
-    @blackbox bb_with_const {
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    // Trigger 1: CONST block before PORT
+    @blackbox bb_const_before {
         CONST { VAL = 42; }
         PORT {
             IN  [1] din;
@@ -13,7 +19,16 @@
         }
     }
 
-    // Trigger 2: CONST block with multiple entries in blackbox
+    // Trigger 2: CONST block after PORT
+    @blackbox bb_const_after {
+        PORT {
+            IN  [1] din;
+            OUT [1] dout;
+        }
+        CONST { MODE = 1; }
+    }
+
+    // Trigger 3: CONST block with multiple entries
     @blackbox bb_multi_const {
         CONST {
             WIDTH = 8;
@@ -22,18 +37,6 @@
         PORT {
             IN  [1] din;
             OUT [1] dout;
-        }
-    }
-
-    // Trigger 3: CONST before PORT in different blackbox
-    @blackbox bb_const_first {
-        CONST {
-            MODE = 1;
-        }
-        PORT {
-            IN  [1] a;
-            IN  [1] b;
-            OUT [1] q;
         }
     }
 
@@ -57,7 +60,7 @@
         OUT [1] data;
     }
 
-    @new inst_a bb_valid {
+    @new inst_ok bb_valid {
         IN  [1] din = r;
         OUT [1] dout = _;
     };

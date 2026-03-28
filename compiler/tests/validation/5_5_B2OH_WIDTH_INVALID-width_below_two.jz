@@ -1,5 +1,5 @@
 // B2OH_WIDTH_INVALID: b2oh() width must be a positive constant >= 2.
-// Tests b2oh() with width < 2 in ASYNC and SYNC blocks across modules.
+// Tests b2oh() with width=1 and width=0 in ASYNC and SYNC blocks across modules.
 // Valid b2oh() with width=8 included to verify no false positives.
 
 @project B2OH_WIDTH_INVALID_width_below_two
@@ -11,7 +11,7 @@
     }
 @endproj
 
-// Helper module: b2oh() with width < 2
+// Helper module: b2oh() with invalid width
 @module HelperMod
     PORT {
         IN  [1] clk;
@@ -23,12 +23,12 @@
         r [8] = 8'd0;
     }
     ASYNCHRONOUS {
-        // Trigger 1: b2oh(idx, 1) in helper ASYNC — width 1 < 2
+        // Trigger 1: b2oh(idx, 1) in helper ASYNC — width < 2
         out_a <=z b2oh(idx, 1);
         out_b = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        // Trigger 2: b2oh(idx, 0) in helper SYNC — width 0 < 2
+        // Trigger 2: b2oh(idx, 0) in helper SYNC — width < 2
         r <=z b2oh(idx, 0);
     }
 @endmod

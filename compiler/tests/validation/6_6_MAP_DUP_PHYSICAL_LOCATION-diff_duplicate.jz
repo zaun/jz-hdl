@@ -1,6 +1,7 @@
 // MAP_DUP_PHYSICAL_LOCATION: Differential P/N pins duplicate physical locations.
 // Trigger 1: Two differential pairs sharing the same P pin.
 // Trigger 2: Differential N pin conflicts with a single-ended pin.
+// Trigger 3: Differential N pin conflicts with another differential N pin.
 // Valid unique differential and single-ended mappings for no false positives.
 
 @project MAP_DUP_PHYSICAL_LOCATION_diff_duplicate
@@ -19,7 +20,7 @@
         diff_b = { P=A1, N=A3 };
         // Trigger 2: single-ended pin duplicates diff_a N pin
         single_c = A2;
-        // Trigger 3: diff_d N pin duplicates single_c / diff_a N pin
+        // Trigger 3: diff_d N pin duplicates diff_a N pin
         diff_d = { P=B5, N=A2 };
         // Valid: unique pins (no error)
         diff_ok = { P=C1, N=C2 };

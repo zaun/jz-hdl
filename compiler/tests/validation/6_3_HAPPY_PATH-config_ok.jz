@@ -1,5 +1,6 @@
 // HAPPY_PATH: Valid CONFIG block with numeric, string, chained, and zero-value entries.
-// Tests CONFIG in port widths, register widths, CONST initializers, and cross-module refs.
+// Tests CONFIG in port widths, wire widths, register widths, CONST initializers,
+// MEM depth, string CONFIG in @file path, and cross-module references.
 // Edge cases: CONFIG value = 0, CONFIG and CONST with same name (disjoint namespaces).
 // No diagnostics expected.
 
@@ -19,6 +20,7 @@
     }
 @endproj
 
+// Helper: uses CONFIG in port widths, register widths, wire widths
 @module Helper
     CONST {
         // Edge case: CONST named same as CONFIG entry (disjoint namespaces)
@@ -29,17 +31,22 @@
         IN  [CONFIG.XLEN] din;
         OUT [CONFIG.XLEN] dout;
     }
+    WIRE {
+        w [CONFIG.XLEN];
+    }
     REGISTER {
         r [CONFIG.XLEN] = 32'h0000;
     }
     ASYNCHRONOUS {
+        w = din;
         dout = r;
     }
     SYNCHRONOUS(CLK=clk) {
-        r <= din;
+        r <= w;
     }
 @endmod
 
+// Top module: CONFIG in CONST initializer, @new bindings, register widths
 @module TopMod
     CONST {
         // Valid: CONFIG in CONST initializer

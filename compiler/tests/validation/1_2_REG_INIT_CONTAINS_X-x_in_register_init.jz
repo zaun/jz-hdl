@@ -1,65 +1,90 @@
-// REG_INIT_CONTAINS_X: Register initialization literal contains x bits.
-// Tests x bits in register init across multiple modules and widths.
-// Valid register inits (no x) are included to verify no false positives.
+// REG_INIT_CONTAINS_X: Register initialization literal must not contain x bits.
+// Each trigger is commented. Valid register inits included for no false positives.
 
 @project REG_INIT_CONTAINS_X_x_in_register_init
+    CONFIG {
+        WIDTH = 8;
+    }
+
     @top TopMod {
         IN  [1] clk = _;
-        OUT [1] data = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+        OUT [4] dout_d = _;
+        OUT [8] dout_e = _;
     }
 @endproj
 
-// Helper module with x in register init
+// Trigger 1: x in register init in helper module
 @module HelperA
     PORT {
         IN  [1] clk;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout;
+        OUT [8] dout_ok;
     }
+
     REGISTER {
-        // Trigger 1: x bits in binary register init (single bit)
-        r_bad [1] = 1'bx;
+        // Trigger 1: x bit in 8-bit register init
+        r_bad [8] = 8'bxxxx_xxxx;
         // Valid: no x bits
-        r_ok [1] = 1'b0;
+        r_ok [8] = 8'h00;
     }
+
     ASYNCHRONOUS {
-        data = r_ok;
+        dout <= r_bad;
+        dout_ok <= r_ok;
     }
+
     SYNCHRONOUS(CLK=clk) {
-        r_bad <= ~r_bad;
-        r_ok <= ~r_ok;
+        r_bad <= din;
+        r_ok <= din;
     }
 @endmod
 
+// Top module with multiple x-bit init patterns
 @module TopMod
     PORT {
         IN  [1] clk;
-        OUT [1] data;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+        OUT [4] dout_d;
+        OUT [8] dout_e;
+    }
+
+    REGISTER {
+        // Trigger 2: all x bits in 8-bit register init
+        r_all_x [8] = 8'bxxxx_xxxx;
+        // Trigger 3: mixed x and valid bits
+        r_mixed [8] = 8'bxxxx_0000;
+        // Trigger 4: x in 4-bit register
+        r_4bit [4] = 4'b1x0x;
+        // Valid: no x bits
+        r_valid [8] = 8'hFF;
     }
 
     @new inst_a HelperA {
         IN  [1] clk = clk;
-        OUT [1] data = _;
+        IN  [8] din = din;
+        OUT [8] dout = dout_a;
+        OUT [8] dout_ok = _;
     };
 
-    REGISTER {
-        // Trigger 2: x bits in 8-bit binary register init
-        r_xbits [8] = 8'bxxxx_xxxx;
-        // Trigger 3: partial x bits in binary register init
-        r_xpartial [8] = 8'bxxxx_0000;
-        // Trigger 4: mixed x bits (some x, some valid)
-        r_mixed [4] = 4'b1x0x;
-        // Valid: all-zero init
-        r_valid [8] = 8'b0000_0000;
-    }
-
     ASYNCHRONOUS {
-        data = r_valid[0:0];
+        dout_b <= r_all_x;
+        dout_c <= r_mixed;
+        dout_d <= r_4bit;
+        dout_e <= r_valid;
     }
 
     SYNCHRONOUS(CLK=clk) {
-        r_xbits <= ~r_xbits;
-        r_xpartial <= ~r_xpartial;
-        r_mixed <= ~r_mixed;
-        r_valid <= ~r_valid;
+        r_all_x <= din;
+        r_mixed <= din;
+        r_4bit <= din[3:0];
+        r_valid <= din;
     }
 @endmod

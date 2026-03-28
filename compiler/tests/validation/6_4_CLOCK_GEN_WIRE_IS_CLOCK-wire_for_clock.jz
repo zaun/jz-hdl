@@ -1,11 +1,11 @@
 // CLOCK_GEN_WIRE_IS_CLOCK: CLOCK_GEN WIRE used for clock output; use OUT instead.
-// Tests using WIRE keyword for a PLL BASE output (is_clock=true).
-// Valid WIRE for non-clock output included to verify no false positives.
+// Tests using WIRE keyword for a clock output like PHASE.
+// Valid WIRE for non-clock output (LOCK) included to verify no false positives.
 
 @project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_WIRE_IS_CLOCK_wire_for_clock
     CLOCKS {
         ref_clk = { period=10 };
-        valid_out;
+        gen_out;
     }
 
     IN_PINS {
@@ -19,11 +19,10 @@
     CLOCK_GEN {
         PLL {
             IN REF_CLK ref_clk;
-            // Valid: OUT for clock output (no trigger)
-            OUT BASE valid_out;
-            // Trigger 1: WIRE for a clock output (PHASE is_clock=true)
+            OUT BASE gen_out;
+            // Trigger: PHASE is a clock output, should use OUT not WIRE
             WIRE PHASE phase_sig;
-            // Valid: WIRE for non-clock output (no trigger)
+            // Valid: LOCK is not a clock, WIRE is correct (no trigger)
             WIRE LOCK lock_sig;
 
             CONFIG {
