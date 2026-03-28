@@ -1,5 +1,5 @@
 File: 7_9_UNDECLARED_IDENTIFIER-child_mem_access_from_parent.jz
-      82:9    error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
-     121:18   error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
-     129:9    error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
-     132:9    error UNDECLARED_IDENTIFIER S4.2/S8.1 Use of undeclared identifier in expression or statement
+      82:9    error MEM_UNDEFINED_NAME S7.7.1 Access to MEM name not declared in module
+     121:18   error MEM_UNDEFINED_NAME S7.7.1 Access to MEM name not declared in module
+     129:9    error MEM_UNDEFINED_NAME S7.7.1 Access to MEM name not declared in module
+     132:9    error MEM_UNDEFINED_NAME S7.7.1 Access to MEM name not declared in module

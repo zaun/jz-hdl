@@ -1,0 +1,6 @@
+File: 10_3_TEMPLATE_SCRATCH_WIDTH_INVALID-scratch_width_not_constant.jz
+      25:5    error TEMPLATE_SCRATCH_WIDTH_INVALID S10.3 @scratch width must be a positive integer constant expression
+      31:5    error TEMPLATE_SCRATCH_WIDTH_INVALID S10.3 @scratch width must be a positive integer constant expression
+      50:9    error TEMPLATE_SCRATCH_WIDTH_INVALID S10.3 @scratch width must be a positive integer constant expression
+      56:9    error TEMPLATE_SCRATCH_WIDTH_INVALID S10.3 @scratch width must be a positive integer constant expression
+      73:9    error TEMPLATE_SCRATCH_WIDTH_INVALID S10.3 @scratch width must be a positive integer constant expression

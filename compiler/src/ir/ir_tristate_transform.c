@@ -1826,14 +1826,26 @@ static int transform_shared_nets(IR_Design *design,
                     memset(&loc, 0, sizeof(loc));
                     if (child_port) loc.line = child_port->source_line;
                     char msg[512];
-                    snprintf(msg, sizeof(msg),
-                             "could not extract output-enable condition from port '%s' "
-                             "in module '%s'; _oe driven high as fallback "
-                             "(port will always drive the bus)",
-                             child_port && child_port->name ? child_port->name : "?",
-                             child->name ? child->name : "?");
-                    jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_ERROR,
-                                         "TRISTATE_TRANSFORM_OE_EXTRACT_FAIL", msg);
+
+                    if (child->is_blackbox) {
+                        snprintf(msg, sizeof(msg),
+                                 "tri-state signal driven by blackbox port '%s' "
+                                 "in module '%s' cannot be transformed; "
+                                 "use external pull resistor",
+                                 child_port && child_port->name ? child_port->name : "?",
+                                 child->name ? child->name : "?");
+                        jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_ERROR,
+                                             "TRISTATE_TRANSFORM_BLACKBOX_PORT", msg);
+                    } else {
+                        snprintf(msg, sizeof(msg),
+                                 "could not extract output-enable condition from port '%s' "
+                                 "in module '%s'; _oe driven high as fallback "
+                                 "(port will always drive the bus)",
+                                 child_port && child_port->name ? child_port->name : "?",
+                                 child->name ? child->name : "?");
+                        jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_ERROR,
+                                             "TRISTATE_TRANSFORM_OE_EXTRACT_FAIL", msg);
+                    }
                 }
 
                 /* Emit: port_oe <= oe_cond; */
@@ -2344,6 +2356,109 @@ static bool stmt_signal_still_has_z(const IR_Stmt *stmt, int signal_id)
     }
 }
 
+/* ======================================================================== */
+/*  Per-bit tri-state detection                                              */
+/* ======================================================================== */
+
+typedef struct {
+    int signal_id;
+    int msb;
+    int lsb;
+    int source_line;
+} ZSliceRecord;
+
+static void collect_z_slices(const IR_Stmt *stmt, ZSliceRecord **out,
+                              int *count, int *cap)
+{
+    if (!stmt) return;
+    switch (stmt->kind) {
+    case STMT_ASSIGNMENT:
+        if (stmt->u.assign.is_sliced && expr_has_z(stmt->u.assign.rhs)) {
+            if (*count >= *cap) {
+                *cap = (*cap == 0) ? 16 : (*cap * 2);
+                ZSliceRecord *tmp = (ZSliceRecord *)realloc(*out, (size_t)*cap * sizeof(ZSliceRecord));
+                if (!tmp) return;
+                *out = tmp;
+            }
+            ZSliceRecord *r = &(*out)[(*count)++];
+            r->signal_id = stmt->u.assign.lhs_signal_id;
+            r->msb = stmt->u.assign.lhs_msb;
+            r->lsb = stmt->u.assign.lhs_lsb;
+            r->source_line = stmt->source_line;
+        }
+        break;
+    case STMT_BLOCK:
+        for (int i = 0; i < stmt->u.block.count; i++)
+            collect_z_slices(&stmt->u.block.stmts[i], out, count, cap);
+        break;
+    case STMT_IF:
+        collect_z_slices(stmt->u.if_stmt.then_block, out, count, cap);
+        collect_z_slices(stmt->u.if_stmt.elif_chain, out, count, cap);
+        collect_z_slices(stmt->u.if_stmt.else_block, out, count, cap);
+        break;
+    case STMT_SELECT:
+        for (int i = 0; i < stmt->u.select_stmt.num_cases; i++)
+            collect_z_slices(stmt->u.select_stmt.cases[i].body, out, count, cap);
+        break;
+    default:
+        break;
+    }
+}
+
+/**
+ * Detect per-bit tri-state patterns: same signal has z-containing assignments
+ * on different bit slices. This means the signal can't be transformed as a
+ * whole — different bits have different driver sets.
+ */
+static int detect_per_bit_tristate(const IR_Module *mod,
+                                    const IR_Design *design,
+                                    JZDiagnosticList *diagnostics)
+{
+    if (!mod->async_block) return 0;
+
+    ZSliceRecord *slices = NULL;
+    int count = 0, cap = 0;
+    collect_z_slices(mod->async_block, &slices, &count, &cap);
+
+    int errors = 0;
+    /* Check for same signal with different slice bounds. */
+    for (int i = 0; i < count; i++) {
+        for (int j = i + 1; j < count; j++) {
+            if (slices[i].signal_id == slices[j].signal_id &&
+                (slices[i].msb != slices[j].msb ||
+                 slices[i].lsb != slices[j].lsb)) {
+                const IR_Signal *sig = find_signal_const(mod, slices[i].signal_id);
+                JZLocation loc;
+                memset(&loc, 0, sizeof(loc));
+                loc.filename = module_source_file(design, mod);
+                loc.line = sig ? sig->source_line : slices[i].source_line;
+                char msg[512];
+                snprintf(msg, sizeof(msg),
+                         "per-bit tri-state pattern on signal '%s' "
+                         "(slices [%d:%d] and [%d:%d] have different z patterns); "
+                         "only full-width z assignments can be transformed",
+                         sig && sig->name ? sig->name : "?",
+                         slices[i].msb, slices[i].lsb,
+                         slices[j].msb, slices[j].lsb);
+                jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_ERROR,
+                                     "TRISTATE_TRANSFORM_PER_BIT_FAIL", msg);
+                errors++;
+                /* Only report once per signal — mark remaining entries. */
+                int reported_sig = slices[i].signal_id;
+                /* Skip further pairs for this signal. */
+                for (int k = j + 1; k < count; k++) {
+                    if (slices[k].signal_id == reported_sig)
+                        slices[k].signal_id = -1; /* invalidate */
+                }
+                break; /* move to next i */
+            }
+        }
+    }
+
+    free(slices);
+    return errors;
+}
+
 static void update_can_be_z(IR_Module *mod)
 {
     for (int i = 0; i < mod->num_signals; i++) {
@@ -2516,6 +2631,13 @@ int jz_ir_tristate_transform(IR_Design *design,
         }
     }
 
+    /* Phase 1.9: Detect per-bit tri-state patterns before z-replacement.
+     * If different bit slices of the same signal have different z patterns,
+     * the signal cannot be transformed as a whole. */
+    for (int m = 0; m < design->num_modules; m++) {
+        detect_per_bit_tristate(&design->modules[m], design, diagnostics);
+    }
+
     /* Phase 2: Simple z-replacement for remaining non-shared signals.
      * After phase 1, shared ports are already split and redirected.
      * Any remaining z literals are on single-driver internal signals. */
@@ -2545,6 +2667,34 @@ int jz_ir_tristate_transform(IR_Design *design,
                     mod->signals[s].u.port.direction == PORT_INOUT) {
                     excluded[idx++] = mod->signals[s].id;
                 }
+            }
+        }
+
+        /* Emit TRISTATE_TRANSFORM_SINGLE_DRIVER for each non-excluded
+         * signal that still has z (single-driver tri-state). */
+        for (int s = 0; s < mod->num_signals; s++) {
+            const IR_Signal *sig = &mod->signals[s];
+            if (!sig->can_be_z) continue;
+            /* Skip excluded (INOUT) signals. */
+            int is_excluded = 0;
+            for (int e = 0; e < num_excluded; e++) {
+                if (excluded[e] == sig->id) { is_excluded = 1; break; }
+            }
+            if (is_excluded) continue;
+            if (stmt_signal_still_has_z(mod->async_block, sig->id)) {
+                JZLocation loc;
+                memset(&loc, 0, sizeof(loc));
+                loc.filename = module_source_file(design, mod);
+                loc.line = sig->source_line;
+                char msg[512];
+                snprintf(msg, sizeof(msg),
+                         "single-driver tri-state signal '%s' in module '%s' "
+                         "transformed; z replaced with %s",
+                         sig->name ? sig->name : "?",
+                         mod->name ? mod->name : "?",
+                         design->tristate_default == TRISTATE_DEFAULT_GND ? "GND" : "VCC");
+                jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_WARNING,
+                                     "TRISTATE_TRANSFORM_SINGLE_DRIVER", msg);
             }
         }
 

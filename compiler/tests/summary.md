@@ -64,35 +64,6 @@
 
 | Rule                                          | Severity    | Description                                                                              |
 |-----------------------------------------------|-------------|------------------------------------------------------------------------------------------|
-| LATCH_SR_WIDTH_MISMATCH                       | Bug         | ASSIGN_WIDTH_NO_MODIFIER fires instead of latch-specific rule                            |
-| LIT_INVALID_CONTEXT                           | Bug         | Cascading LIT_WIDTH_INVALID on subsequent valid lit() calls in module                    |
-| MAP_INVALID_BOARD_PIN_ID                      | Bug         | Rule defined in rules.c but not implemented in any semantic pass                         |
-| MEM_INIT_FILE_CONTAINS_X                      | Bug         | Rule defined in rules.c but not implemented in any semantic pass                         |
-| MEM_INOUT_WDATA_WRONG_OP                      | Bug         | SYNC_NO_ALIAS fires instead of MEM-specific rule                                        |
-| MEM_MULTIPLE_ADDR_ASSIGNS                     | Bug         | Rule defined in rules.c but not implemented; no diagnostic emitted                       |
-| MEM_MULTIPLE_WDATA_ASSIGNS                    | Bug         | Rule defined in rules.c but not implemented; no diagnostic emitted                       |
-| MEM_PORT_ADDR_READ                            | Bug         | Not detected for INOUT .addr reads, only for SYNC OUT                                   |
-| MEM_PORT_USED_AS_SIGNAL                       | Bug         | Not detected for bare INOUT port references                                              |
-| MEM_READ_SYNC_WITH_EQUALS                     | Bug         | SYNC_NO_ALIAS fires instead of MEM-specific rule                                        |
-| MEM_SYNC_ADDR_IN_ASYNC_BLOCK                  | Bug         | ASYNC_INVALID_STATEMENT_TARGET fires instead of MEM-specific rule                        |
-| MEM_SYNC_ADDR_WITHOUT_RECEIVE                 | Bug         | SYNC_NO_ALIAS fires instead of MEM-specific rule                                        |
-| MEM_UNDEFINED_NAME                            | Bug         | UNDECLARED_IDENTIFIER fires first; MEM-specific rule unreachable                         |
-| MUX_SELECTOR_OUT_OF_RANGE_CONST               | Bug         | Sized literals not parsed by parse_simple_nonnegative_int()                              |
-| PORT_MISSING_WIDTH                            | Bug         | Parser emits PARSE000 instead of semantic rule ID                                        |
-| REG_MISSING_INIT_LITERAL                      | Bug         | Parser emits PARSE000; semantic rule unreachable                                         |
-| REG_MULTI_DIMENSIONAL                         | Bug         | Parser emits PARSE000; semantic rule unreachable                                         |
-| RPT_COUNT_INVALID                             | Bug         | repeat_expand.c uses raw RPT-001/RPT-002 codes, not rules.c IDs                         |
-| SBIT_INDEX_OUT_OF_RANGE                       | Bug         | parse_simple_nonnegative_int() cannot parse sized literal text                           |
-| SPECIAL_DRIVER_IN_INDEX                       | Bug         | Parser emits PARSE000; semantic rule is dead code                                        |
-| SSLICE_INDEX_OUT_OF_RANGE                     | Bug         | parse_simple_nonnegative_int() cannot parse sized literal text                           |
-| SYNC_SLICE_WIDTH_MISMATCH                     | Bug         | Suppressed by higher-priority ASSIGN_SLICE_WIDTH_MISMATCH at same location               |
-| TEMPLATE_APPLY_OUTSIDE_BLOCK                  | Bug         | @apply at file/module scope silently ignored, no error emitted                           |
-| TEMPLATE_FORBIDDEN_BLOCK_HEADER               | Bug         | Parser fails to recover after error; cascading PARSE000                                  |
-| TEMPLATE_FORBIDDEN_DIRECTIVE                  | Bug         | Parser fails to recover after error; cascading PARSE000                                  |
-| TEMPLATE_SCRATCH_WIDTH_INVALID                | Bug         | Rule defined but never enforced; zero/param width accepted                               |
-| TRISTATE_TRANSFORM_BLACKBOX_PORT              | Bug         | Rule defined but never emitted; no blackbox handling code exists                         |
-| TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL      | Bug         | NET_MULTIPLE_ACTIVE_DRIVERS fires first; rule unreachable                                |
-| TRISTATE_TRANSFORM_PER_BIT_FAIL               | Bug         | Rule defined but never emitted; per-bit patterns transform without error                 |
 | TRISTATE_TRANSFORM_SINGLE_DRIVER              | Bug         | Rule defined but never emitted; only INFO_TRISTATE_TRANSFORM fires                      |
 | WIDTHOF_INVALID_SYNTAX                        | Bug         | Rule defined but never emitted for slice arguments                                       |
 | WIDTHOF_INVALID_TARGET                        | Bug         | Rule defined but never emitted for CONST names                                           |

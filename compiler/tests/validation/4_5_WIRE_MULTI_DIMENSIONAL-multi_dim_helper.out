@@ -1,2 +1,2 @@
 File: 4_5_WIRE_MULTI_DIMENSIONAL-multi_dim_helper.jz
-      30:19   error PARSE000 parse error near token '[': expected ';' after WIRE declaration (orig: PARSE000)
+      30:19   error WIRE_MULTI_DIMENSIONAL S4.5 WIRE declared with multi-dimensional syntax

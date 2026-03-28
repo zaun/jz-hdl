@@ -678,6 +678,55 @@ static void register_template(ExpandContext *ctx, JZASTNode *def, JZASTNode *sco
         }
     }
 
+    /* Collect parameter names for scratch width validation */
+    const char *reg_param_names[64];
+    size_t reg_param_count = 0;
+    for (size_t i = 0; i < def->child_count; i++) {
+        if (def->children[i]->type == JZ_AST_TEMPLATE_PARAM &&
+            def->children[i]->name && reg_param_count < 64) {
+            reg_param_names[reg_param_count++] = def->children[i]->name;
+        }
+    }
+
+    /* TEMPLATE_SCRATCH_WIDTH_INVALID: validate scratch wire widths */
+    for (size_t i = 0; i < def->child_count; i++) {
+        if (def->children[i]->type != JZ_AST_SCRATCH_DECL) continue;
+        JZASTNode *sd = def->children[i];
+        if (!sd->width) continue;
+
+        /* Check if width is a template parameter name (not constant) */
+        int is_param = 0;
+        for (size_t pi = 0; pi < reg_param_count; pi++) {
+            if (strcmp(sd->width, reg_param_names[pi]) == 0) {
+                is_param = 1;
+                break;
+            }
+        }
+        if (is_param) {
+            char sw_msg[512];
+            snprintf(sw_msg, sizeof(sw_msg),
+                     "@scratch `%s` width `%s` is a template parameter, not a constant;\n"
+                     "use a literal integer or CONST/CONFIG value",
+                     sd->name, sd->width);
+            report_rule(ctx, sd->loc, "TEMPLATE_SCRATCH_WIDTH_INVALID", sw_msg);
+        } else {
+            long w = 0;
+            if (!eval_count_expr(ctx, sd->width, &w)) {
+                char sw_msg[512];
+                snprintf(sw_msg, sizeof(sw_msg),
+                         "@scratch `%s` width `%s` could not be evaluated to a positive integer",
+                         sd->name, sd->width);
+                report_rule(ctx, sd->loc, "TEMPLATE_SCRATCH_WIDTH_INVALID", sw_msg);
+            } else if (w <= 0) {
+                char sw_msg[512];
+                snprintf(sw_msg, sizeof(sw_msg),
+                         "@scratch `%s` width evaluated to %ld; must be a positive integer",
+                         sd->name, w);
+                report_rule(ctx, sd->loc, "TEMPLATE_SCRATCH_WIDTH_INVALID", sw_msg);
+            }
+        }
+    }
+
     ctx->templates[ctx->template_count].name = def->name;
     ctx->templates[ctx->template_count].def_node = def;
     ctx->templates[ctx->template_count].scope_module = scope_module;

@@ -132,6 +132,19 @@ JZASTNode *parse_module(Parser *p) {
                 jz_ast_free(mod);
                 return NULL;
             }
+        } else if (t->type == JZ_TOK_KW_APPLY) {
+            /* @apply outside ASYNCHRONOUS/SYNCHRONOUS block. */
+            parser_report_rule(p, t, "TEMPLATE_APPLY_OUTSIDE_BLOCK",
+                               "@apply found at module scope; @apply may only appear\n"
+                               "inside ASYNCHRONOUS or SYNCHRONOUS blocks");
+            /* Skip past the semicolon to recover */
+            advance(p);
+            while (peek(p)->type != JZ_TOK_EOF &&
+                   peek(p)->type != JZ_TOK_SEMICOLON &&
+                   peek(p)->type != JZ_TOK_KW_ENDMOD) {
+                advance(p);
+            }
+            if (peek(p)->type == JZ_TOK_SEMICOLON) advance(p);
         } else if (t->type == JZ_TOK_KW_SCRATCH) {
             /* @scratch outside template body. */
             parser_report_rule(p, t, "TEMPLATE_SCRATCH_OUTSIDE",

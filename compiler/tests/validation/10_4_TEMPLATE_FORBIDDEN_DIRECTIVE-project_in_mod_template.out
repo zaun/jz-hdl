@@ -1,3 +1,2 @@
 File: 10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-project_in_mod_template.jz
       24:9    error TEMPLATE_FORBIDDEN_DIRECTIVE S10.4 Structural directives (@new, @module, @feature, etc.) are not allowed inside template body
-      25:13   error PARSE000 parse error near token 'CONFIG': expected assignment operator (=, =>, <= and variants) (orig: PARSE000)

@@ -1835,10 +1835,17 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                             instance_driver_count);
                     }
                     if (!bus_ok) {
-                        sem_report_rule(diagnostics,
-                                        atoms[0]->loc,
-                                        "NET_MULTIPLE_ACTIVE_DRIVERS",
-                                        "net has multiple active (non-z) drivers; tri-state requires all but one driver to assign z");
+                        if (g_tristate_default_active) {
+                            sem_report_rule(diagnostics,
+                                            atoms[0]->loc,
+                                            "TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL",
+                                            "tri-state drivers have non-mutually-exclusive enable conditions; cannot build safe priority chain");
+                        } else {
+                            sem_report_rule(diagnostics,
+                                            atoms[0]->loc,
+                                            "NET_MULTIPLE_ACTIVE_DRIVERS",
+                                            "net has multiple active (non-z) drivers; tri-state requires all but one driver to assign z");
+                        }
                     }
                 }
             }

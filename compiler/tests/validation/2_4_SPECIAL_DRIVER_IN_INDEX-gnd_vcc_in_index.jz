@@ -1,7 +1,4 @@
 // SPECIAL_DRIVER_IN_INDEX: GND/VCC may not appear in slice/index expressions.
-// The parser currently rejects GND/VCC in index position with PARSE000 before
-// the semantic rule SPECIAL_DRIVER_IN_INDEX can fire. This test documents
-// the parser behavior. See issues.md for details.
 
 @project SPECIAL_DRIVER_IN_INDEX_gnd_vcc_in_index
     @top TopMod {

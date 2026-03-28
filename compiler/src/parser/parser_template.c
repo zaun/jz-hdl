@@ -206,6 +206,27 @@ JZASTNode *parse_template_def(Parser *p) {
                                "templates contain only statements, not block headers\n"
                                "@apply the template from inside a SYNCHRONOUS or ASYNCHRONOUS block");
             advance(p);
+            /* Skip optional (CLK=...) parameter list */
+            if (peek(p)->type == JZ_TOK_LPAREN) {
+                advance(p);
+                while (peek(p)->type != JZ_TOK_EOF &&
+                       peek(p)->type != JZ_TOK_RPAREN &&
+                       peek(p)->type != JZ_TOK_KW_ENDTEMPLATE) {
+                    advance(p);
+                }
+                if (peek(p)->type == JZ_TOK_RPAREN) advance(p);
+            }
+            /* Skip block body { ... } if present */
+            if (peek(p)->type == JZ_TOK_LBRACE) {
+                int depth = 1;
+                advance(p);
+                while (peek(p)->type != JZ_TOK_EOF &&
+                       peek(p)->type != JZ_TOK_KW_ENDTEMPLATE && depth > 0) {
+                    if (peek(p)->type == JZ_TOK_LBRACE) depth++;
+                    else if (peek(p)->type == JZ_TOK_RBRACE) depth--;
+                    advance(p);
+                }
+            }
             continue;
         }
 
@@ -221,6 +242,22 @@ JZASTNode *parse_template_def(Parser *p) {
                                "structural directives (@new, @module, @feature, etc.) cannot appear\n"
                                "inside a template body; templates may only contain assignment statements");
             advance(p);
+            /* Skip until semicolon or @endtemplate, handling balanced braces */
+            {
+                int depth = 0;
+                while (peek(p)->type != JZ_TOK_EOF &&
+                       peek(p)->type != JZ_TOK_KW_ENDTEMPLATE) {
+                    if (peek(p)->type == JZ_TOK_LBRACE) depth++;
+                    else if (peek(p)->type == JZ_TOK_RBRACE) {
+                        if (depth > 0) depth--;
+                    }
+                    if (peek(p)->type == JZ_TOK_SEMICOLON && depth == 0) {
+                        advance(p);
+                        break;
+                    }
+                    advance(p);
+                }
+            }
             continue;
         }
 

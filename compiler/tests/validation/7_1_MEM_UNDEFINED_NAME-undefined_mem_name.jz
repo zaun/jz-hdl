@@ -1,6 +1,4 @@
 // MEM_UNDEFINED_NAME: Access to MEM name not declared in module triggers error.
-// NOTE: Compiler currently emits UNDECLARED_IDENTIFIER instead of MEM_UNDEFINED_NAME
-// for undeclared MEM names. See issues.md.
 
 @project MEM_UNDEFINED_NAME_undefined_mem_name
     @top TopMod {

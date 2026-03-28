@@ -1,3 +1,2 @@
 File: 10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_mod_scoped.jz
       24:9    error TEMPLATE_FORBIDDEN_BLOCK_HEADER S10.4 SYNCHRONOUS/ASYNCHRONOUS block headers are not allowed inside template body
-      24:26   error PARSE000 parse error near token ')': expected ';' after assignment (orig: PARSE000)

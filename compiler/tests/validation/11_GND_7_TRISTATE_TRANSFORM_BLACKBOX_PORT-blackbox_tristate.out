@@ -1,2 +1,2 @@
 File: <input>
-      13:0    error TRISTATE_TRANSFORM_OE_EXTRACT_FAIL S11.7 Could not extract output-enable condition from tri-state port; _oe driven high as fallback
+      13:0    error TRISTATE_TRANSFORM_BLACKBOX_PORT S11.7 Tri-state signal driven by blackbox port cannot be transformed; use external pull resistor

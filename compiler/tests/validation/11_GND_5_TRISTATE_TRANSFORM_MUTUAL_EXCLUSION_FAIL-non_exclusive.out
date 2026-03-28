@@ -1,2 +1,2 @@
 File: 11_GND_5_TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL-non_exclusive.jz
-      40:9    error NET_MULTIPLE_ACTIVE_DRIVERS S1.2/S1.5/S4.10 Multiple active drivers on same signal; for tri-state, all but one must assign `z`
+      40:9    error TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL S11.7 Tri-state drivers for same signal have non-mutually-exclusive enable conditions; cannot build safe priority chain

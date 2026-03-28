@@ -101,6 +101,17 @@ const JZToken *advance(Parser *p);
 void parser_error(const Parser *p, const char *msg);
 
 /**
+ * @brief Report a parser error with a specific semantic rule ID.
+ *
+ * Like parser_error(), but uses the given rule_id instead of "PARSE000"
+ * and looks up the description from rules.c.
+ *
+ * @param p       Active parser
+ * @param rule_id Rule ID string (e.g. "PORT_MISSING_WIDTH")
+ */
+void parser_error_rule(const Parser *p, const char *rule_id);
+
+/**
  * @brief Construct a RAW_TEXT AST node from a token range.
  *
  * Tokens in the half-open range [start, end) are concatenated (by lexeme)

@@ -1,3 +1,2 @@
 File: 10_8_TEMPLATE_FORBIDDEN_DIRECTIVE-new_in_template.jz
       18:5    error TEMPLATE_FORBIDDEN_DIRECTIVE S10.4 Structural directives (@new, @module, @feature, etc.) are not allowed inside template body
-      18:21   error PARSE000 parse error near token 'HelperMod': expected assignment operator (=, =>, <= and variants) (orig: PARSE000)

@@ -969,6 +969,18 @@ JZASTNode *jz_parse_file(const char *filename,
                                "@scratch found at file top level; @scratch declares temporary wires\n"
                                "and may only be used inside a @template body");
             advance(&p);
+        } else if (t->type == JZ_TOK_KW_APPLY) {
+            /* @apply outside ASYNCHRONOUS/SYNCHRONOUS block. */
+            parser_report_rule(&p, t, "TEMPLATE_APPLY_OUTSIDE_BLOCK",
+                               "@apply found at file scope; @apply may only appear\n"
+                               "inside ASYNCHRONOUS or SYNCHRONOUS blocks");
+            /* Skip past the semicolon to recover */
+            advance(&p);
+            while (peek(&p)->type != JZ_TOK_EOF &&
+                   peek(&p)->type != JZ_TOK_SEMICOLON) {
+                advance(&p);
+            }
+            if (peek(&p)->type == JZ_TOK_SEMICOLON) advance(&p);
         } else if (t->type == JZ_TOK_KW_ENDMOD ||
                    t->type == JZ_TOK_KW_ENDPROJ ||
                    t->type == JZ_TOK_KW_ENDGLOB ||
