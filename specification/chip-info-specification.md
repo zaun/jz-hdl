@@ -2,7 +2,7 @@
 mainfont: "Helvetica Neue"
 monofont: "Menlo"
 title: "JZ-HDL CHIP INFO SPECIFICATION"
-subtitle: "State: Beta — Version: 0.1.5"
+subtitle: "State: Beta — Version: 0.1.6"
 toc: true
 header-includes:
   - \usepackage{titling}
