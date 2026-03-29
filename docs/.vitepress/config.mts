@@ -9,6 +9,7 @@ export default defineConfig({
   vite: {
     plugins: [llmstxt()]
   },
+  appearance: false,
   title: "JZ-HDL Reference",
   description: "JZ-HDL is a hardware description language designed for clear, analyzable, and synthesis‑friendly RTL.",
   themeConfig: {
@@ -27,6 +28,7 @@ export default defineConfig({
           { text: 'JZW File Format Specification', link: '/jz-hdl/pdf/jzw-specification.pdf', target: '_blank' },
         ]
       },
+      { text: 'GitHub', link: 'https://github.com/jz-hdl/jz-hdl' },
     ],
 
     sidebar: [
