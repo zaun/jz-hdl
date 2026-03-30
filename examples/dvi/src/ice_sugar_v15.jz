@@ -38,36 +38,28 @@
         LED[1] = 41;
         LED[2] = 39;
 
-        // PMOD 1  (top)     -----\
-        // P9  P4 P2 P47 GND 3V3  | Edge of (N row)
-        // P10 P6 P3 P48 GND 3V3  | Board   (P row)
+        //               Top of Board
+        // PMOD 1 (top)   --------\
+        // P9  P4 P2 P47 GND 3V3  | Right Edge
+        // P10 P6 P3 P48 GND 3V3  | of Board
+
+        // PMOD 2 (top/right)
+        // 3V3 GND P37 P42 P44 P46  | Top of
+        // 3V3 GND P36 P38 P43 P45  | Board
+        //                  --------/
+        //                Edge of Board
+
+        // PMOD 3 (bottom/right)
+        // 3V3 GND P25 P27 P31 P34  | Top of
+        // 3V3 GND P23 P26 P28 P32  | Board
+        //                  --------/
+        //                Edge of Board
+
 
         TMDS_DATA[2] = { P=10, N=9  };
         TMDS_DATA[1] = { P=6,  N=4  };
         TMDS_DATA[0] = { P=3,  N=2  };
         TMDS_CLK     = { P=48, N=47 };
-
-
-        // PMOD2
-        // PMOD2_PIN1  = 46; // PMOD2_PIN1
-        // PMOD2_PIN2  = 44; // PMOD2_PIN2
-        // PMOD2_PIN3  = 42; // PMOD2_PIN3
-        // PMOD2_PIN4  = 37; // PMOD2_PIN4
-        // PMOD2_PIN9  = 36; // PMOD2_PIN9
-        // PMOD2_PIN10 = 38; // PMOD2_PIN10
-        // PMOD2_PIN11 = 43; // PMOD2_PIN11
-        // PMOD2_PIN12 = 45; // PMOD2_PIN12
-
-        // PMOD3
-        // PMOD3_PIN1  = 34; // PMOD3_PIN1
-        // PMOD3_PIN2  = 31; // PMOD3_PIN2
-        // PMOD3_PIN3  = 27; // PMOD3_PIN3
-        // PMOD3_PIN4  = 25; // PMOD3_PIN4
-        // PMOD3_PIN9  = 23; // PMOD3_PIN9
-        // PMOD3_PIN10 = 26; // PMOD3_PIN10
-        // PMOD3_PIN11 = 28; // PMOD3_PIN11
-        // PMOD3_PIN12 = 32; // PMOD3_PIN12
-
     }
 
     CLOCK_GEN {
