@@ -185,8 +185,15 @@ JZASTNode *parse_module(Parser *p) {
                                "DIRECTIVE_INVALID_CONTEXT",
                                "structural directive used in invalid location inside module");
             advance(p);
+        } else if (t->type == JZ_TOK_SEMICOLON) {
+            /* Tolerate stray semicolons (e.g. after @new blocks). */
+            advance(p);
+        } else if (t->type == JZ_TOK_IDENTIFIER && t->lexeme && t->lexeme[0] == '@') {
+            /* Unrecognized @directive — likely a typo like @feature_else. */
+            parser_error(p, "unrecognized directive in module body");
+            advance(p);
         } else {
-            /* For now, just advance to avoid infinite loop. */
+            /* Skip unknown tokens silently for error recovery. */
             advance(p);
         }
     }
@@ -284,8 +291,14 @@ static int parse_module_scope_feature_body(Parser *p, JZASTNode *parent)
             JZASTNode *chk = parse_check(p);
             if (!chk) return -1;
             jz_ast_add_child(parent, chk);
+        } else if (t->type == JZ_TOK_SEMICOLON) {
+            advance(p);
+        } else if (t->type == JZ_TOK_IDENTIFIER && t->lexeme && t->lexeme[0] == '@') {
+            /* Unrecognized @directive — likely a typo like @feature_else. */
+            parser_error(p, "unrecognized directive in @feature block");
+            advance(p);
         } else {
-            /* Skip unrecognized tokens to avoid infinite loop. */
+            /* Skip unknown tokens silently for error recovery. */
             advance(p);
         }
     }

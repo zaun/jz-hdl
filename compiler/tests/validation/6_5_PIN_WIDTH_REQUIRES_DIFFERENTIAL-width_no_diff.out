@@ -1,0 +1,4 @@
+File: 6_5_PIN_WIDTH_REQUIRES_DIFFERENTIAL-width_no_diff.jz
+      17:9    error PIN_WIDTH_REQUIRES_DIFFERENTIAL S6.5.4 width attribute is only valid when mode=DIFFERENTIAL
+      22:9    error PIN_WIDTH_REQUIRES_DIFFERENTIAL S6.5.4 width attribute is only valid when mode=DIFFERENTIAL
+      24:9    error PIN_WIDTH_REQUIRES_DIFFERENTIAL S6.5.4 width attribute is only valid when mode=DIFFERENTIAL

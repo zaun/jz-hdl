@@ -718,6 +718,7 @@ typedef struct IR_Pin {
     char      *fclk_name; /**< Fast (serializer) clock name; NULL if none. */
     char      *pclk_name; /**< Parallel data clock name; NULL if none. */
     char      *reset_name; /**< Reset signal name for serializer; NULL if none. */
+    int        ser_width;  /**< Serialization width from width= attribute; 0 if unset. */
 } IR_Pin;
 
 /**

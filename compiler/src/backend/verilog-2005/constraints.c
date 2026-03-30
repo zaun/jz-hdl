@@ -402,11 +402,28 @@ int jz_emit_pcf_constraints(const IR_Design *design,
         if (!m->logical_pin_name || !m->board_pin_id) {
             continue;
         }
-        fprintf(out, "set_io %s", m->logical_pin_name);
-        if (m->bit_index >= 0) {
-            fprintf(out, "[%d]", m->bit_index);
+        int is_diff = (m->board_pin_n_id && m->board_pin_n_id[0] != '\0');
+        if (is_diff) {
+            /* Differential pins: emit separate P/N entries matching
+             * the Verilog port names (<name><bit>_p, <name><bit>_n). */
+            if (m->bit_index >= 0) {
+                fprintf(out, "set_io %s%d_p %s\n",
+                        m->logical_pin_name, m->bit_index, m->board_pin_id);
+                fprintf(out, "set_io %s%d_n %s\n",
+                        m->logical_pin_name, m->bit_index, m->board_pin_n_id);
+            } else {
+                fprintf(out, "set_io %s_p %s\n",
+                        m->logical_pin_name, m->board_pin_id);
+                fprintf(out, "set_io %s_n %s\n",
+                        m->logical_pin_name, m->board_pin_n_id);
+            }
+        } else {
+            fprintf(out, "set_io %s", m->logical_pin_name);
+            if (m->bit_index >= 0) {
+                fprintf(out, "[%d]", m->bit_index);
+            }
+            fprintf(out, " %s\n", m->board_pin_id);
         }
-        fprintf(out, " %s\n", m->board_pin_id);
     }
 
     if (close_backend_output(out, close_out,

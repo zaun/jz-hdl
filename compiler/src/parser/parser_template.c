@@ -172,9 +172,12 @@ JZASTNode *parse_template_def(Parser *p) {
                                "found @template inside another @template body\n"
                                "move the inner template to module scope alongside the outer one");
             advance(p);
-            /* Skip to @endtemplate to recover */
-            while (peek(p)->type != JZ_TOK_EOF && peek(p)->type != JZ_TOK_KW_ENDTEMPLATE) {
-                advance(p);
+            /* Skip to matching @endtemplate, respecting nesting depth. */
+            int nest = 1;
+            while (peek(p)->type != JZ_TOK_EOF && nest > 0) {
+                if (peek(p)->type == JZ_TOK_KW_TEMPLATE) nest++;
+                else if (peek(p)->type == JZ_TOK_KW_ENDTEMPLATE) nest--;
+                if (nest > 0) advance(p);
             }
             if (peek(p)->type == JZ_TOK_KW_ENDTEMPLATE) advance(p);
             continue;

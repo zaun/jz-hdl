@@ -1833,6 +1833,38 @@ int jz_ir_build_design(JZASTNode *root,
                         }
                     }
 
+                    /* ser_width (serialization width from width= attribute) */
+                    p->ser_width = 0;
+                    {
+                        const char *sw_attr = strstr(attrs, "width");
+                        if (sw_attr) {
+                            /* whole-word check */
+                            if (sw_attr != attrs) {
+                                char before = sw_attr[-1];
+                                if (isalnum((unsigned char)before) || before == '_')
+                                    sw_attr = NULL;
+                            }
+                        }
+                        if (sw_attr) {
+                            sw_attr = strchr(sw_attr, '=');
+                            if (sw_attr) {
+                                ++sw_attr;
+                                while (*sw_attr && isspace((unsigned char)*sw_attr)) ++sw_attr;
+                                char val[64];
+                                size_t len2 = 0;
+                                while (sw_attr[len2] && !isspace((unsigned char)sw_attr[len2]) &&
+                                       sw_attr[len2] != ',' && sw_attr[len2] != ';' && sw_attr[len2] != '}') {
+                                    ++len2;
+                                }
+                                if (len2 > 0 && len2 < sizeof(val)) {
+                                    memcpy(val, sw_attr, len2);
+                                    val[len2] = '\0';
+                                    p->ser_width = atoi(val);
+                                }
+                            }
+                        }
+                    }
+
                     ++pi;
                 }
 
