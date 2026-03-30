@@ -36,7 +36,7 @@
           "id": 2,
           "name": "tclk",
           "kind": "port",
-          "width": 10,
+          "width": 1,
           "owner_module_id": 0,
           "source_line": 71,
           "can_be_z": false,
@@ -47,7 +47,7 @@
           "id": 3,
           "name": "td0",
           "kind": "port",
-          "width": 10,
+          "width": 1,
           "owner_module_id": 0,
           "source_line": 72,
           "can_be_z": false,
@@ -58,7 +58,7 @@
           "id": 4,
           "name": "td1",
           "kind": "port",
-          "width": 10,
+          "width": 1,
           "owner_module_id": 0,
           "source_line": 73,
           "can_be_z": false,
@@ -97,7 +97,7 @@
         ],
         "cdc_crossings": [
         ],
-        "async_block": { "kind": "block", "source_line": 80, "statements": [{ "kind": "assignment", "id": 0, "source_line": 81, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 1, "is_sliced": false, "rhs": { "kind": "slice", "width": 1, "source_line": 81, "signal_id": 5, "msb": 23, "lsb": 23 } }, { "kind": "assignment", "id": 1, "source_line": 82, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 2, "is_sliced": false, "rhs": { "kind": "literal", "width": 10, "source_line": 82, "literal": { "value": 992, "width": 10 } } }, { "kind": "assignment", "id": 2, "source_line": 83, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "literal", "width": 10, "source_line": 83, "literal": { "value": 0, "width": 10 } } }, { "kind": "assignment", "id": 3, "source_line": 84, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "literal", "width": 10, "source_line": 84, "literal": { "value": 0, "width": 10 } } }] }
+        "async_block": { "kind": "block", "source_line": 80, "statements": [{ "kind": "assignment", "id": 0, "source_line": 81, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 1, "is_sliced": false, "rhs": { "kind": "slice", "width": 1, "source_line": 81, "signal_id": 5, "msb": 23, "lsb": 23 } }, { "kind": "assignment", "id": 1, "source_line": 82, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 2, "is_sliced": false, "rhs": { "kind": "literal", "width": 1, "source_line": 82, "literal": { "value": 1, "width": 1 } } }, { "kind": "assignment", "id": 2, "source_line": 83, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 3, "is_sliced": false, "rhs": { "kind": "literal", "width": 1, "source_line": 83, "literal": { "value": 0, "width": 1 } } }, { "kind": "assignment", "id": 3, "source_line": 84, "assignment_kind": "ASSIGN_RECEIVE", "lhs_signal_id": 4, "is_sliced": false, "rhs": { "kind": "literal", "width": 1, "source_line": 84, "literal": { "value": 0, "width": 1 } } }] }
       }
     ],
     "project": {

@@ -1,5 +1,5 @@
 // This Verilog was transpiled from JZ-HDL.
-// jz-hdl version: Version 0.1.3 (c47d4f4)
+// jz-hdl version: Version 0.1.5 (2b1ca2d)
 // Intended for use with yosys.
 
 `default_nettype none
@@ -14,9 +14,9 @@ module ser_top (
     // Ports
     input clk;
     output reg status;
-    output reg [9:0] tclk;
-    output reg [9:0] td0;
-    output reg [9:0] td1;
+    output reg tclk;
+    output reg td0;
+    output reg td1;
 
     // Signals
     reg [23:0] cnt;
@@ -25,9 +25,9 @@ module ser_top (
 
     always @* begin
         status = cnt[23];
-        tclk = 10'b1111100000;
-        td0 = 10'b0000000000;
-        td1 = 10'b0000000000;
+        tclk = 1'b1;
+        td0 = 1'b0;
+        td1 = 1'b0;
     end
 
     always @(posedge clk) begin
@@ -57,10 +57,10 @@ module top (
     // Top-level logical→physical pin mapping
     //   ser_top.clk -> pixel_clk (clock gen)
     //   ser_top.status -> led (board 10)
+    //   ser_top.tclk -> TMDS_CLK (board 69)
+    //   ser_top.td0 -> TMDS_D[0] (board 71)
+    //   ser_top.td1 -> TMDS_D[1] (board 73)
 
-    wire [9:0] jz_top_tclk_nc;
-    wire [9:0] jz_top_td0_nc;
-    wire [9:0] jz_top_td1_nc;
 
     wire serial_clk;
     wire pll_lock;
@@ -116,26 +116,25 @@ module top (
     .CLKOUT(pixel_clk)
 );
 
-    wire [9:0] jz_diff_TMDS_CLK;
+    wire [3:0] jz_diff_TMDS_CLK;
     wire jz_ser_TMDS_CLK;
-    OSER10 #(
+    OSER4 #(
     .GSREN("FALSE"),
-    .LSREN("TRUE")
+    .LSREN("TRUE"),
+    .HWL("false"),
+    .TXCLK_POL(1'b0)
 ) u_oser_TMDS_CLK (
     .D0(jz_diff_TMDS_CLK[0]),
     .D1(jz_diff_TMDS_CLK[1]),
     .D2(jz_diff_TMDS_CLK[2]),
     .D3(jz_diff_TMDS_CLK[3]),
-    .D4(jz_diff_TMDS_CLK[4]),
-    .D5(jz_diff_TMDS_CLK[5]),
-    .D6(jz_diff_TMDS_CLK[6]),
-    .D7(jz_diff_TMDS_CLK[7]),
-    .D8(jz_diff_TMDS_CLK[8]),
-    .D9(jz_diff_TMDS_CLK[9]),
+    .TX0(1'b0),
+    .TX1(1'b0),
     .FCLK(serial_clk),
     .PCLK(pixel_clk),
     .RESET(~pll_lock),
-    .Q(jz_ser_TMDS_CLK)
+    .Q0(jz_ser_TMDS_CLK),
+    .Q1()
 );
     ELVDS_OBUF u_obuf_TMDS_CLK (
     .I(jz_ser_TMDS_CLK),
@@ -143,52 +142,50 @@ module top (
     .OB(TMDS_CLK_n)
 );
 
-    wire [9:0] jz_diff_TMDS_D0;
+    wire [3:0] jz_diff_TMDS_D0;
     wire jz_ser_TMDS_D0;
-    OSER10 #(
+    OSER4 #(
     .GSREN("FALSE"),
-    .LSREN("TRUE")
+    .LSREN("TRUE"),
+    .HWL("false"),
+    .TXCLK_POL(1'b0)
 ) u_oser_TMDS_D0 (
     .D0(jz_diff_TMDS_D0[0]),
     .D1(jz_diff_TMDS_D0[1]),
     .D2(jz_diff_TMDS_D0[2]),
     .D3(jz_diff_TMDS_D0[3]),
-    .D4(jz_diff_TMDS_D0[4]),
-    .D5(jz_diff_TMDS_D0[5]),
-    .D6(jz_diff_TMDS_D0[6]),
-    .D7(jz_diff_TMDS_D0[7]),
-    .D8(jz_diff_TMDS_D0[8]),
-    .D9(jz_diff_TMDS_D0[9]),
+    .TX0(1'b0),
+    .TX1(1'b0),
     .FCLK(serial_clk),
     .PCLK(pixel_clk),
     .RESET(~pll_lock),
-    .Q(jz_ser_TMDS_D0)
+    .Q0(jz_ser_TMDS_D0),
+    .Q1()
 );
     ELVDS_OBUF u_obuf_TMDS_D0 (
     .I(jz_ser_TMDS_D0),
     .O(TMDS_D0_p),
     .OB(TMDS_D0_n)
 );
-    wire [9:0] jz_diff_TMDS_D1;
+    wire [3:0] jz_diff_TMDS_D1;
     wire jz_ser_TMDS_D1;
-    OSER10 #(
+    OSER4 #(
     .GSREN("FALSE"),
-    .LSREN("TRUE")
+    .LSREN("TRUE"),
+    .HWL("false"),
+    .TXCLK_POL(1'b0)
 ) u_oser_TMDS_D1 (
     .D0(jz_diff_TMDS_D1[0]),
     .D1(jz_diff_TMDS_D1[1]),
     .D2(jz_diff_TMDS_D1[2]),
     .D3(jz_diff_TMDS_D1[3]),
-    .D4(jz_diff_TMDS_D1[4]),
-    .D5(jz_diff_TMDS_D1[5]),
-    .D6(jz_diff_TMDS_D1[6]),
-    .D7(jz_diff_TMDS_D1[7]),
-    .D8(jz_diff_TMDS_D1[8]),
-    .D9(jz_diff_TMDS_D1[9]),
+    .TX0(1'b0),
+    .TX1(1'b0),
     .FCLK(serial_clk),
     .PCLK(pixel_clk),
     .RESET(~pll_lock),
-    .Q(jz_ser_TMDS_D1)
+    .Q0(jz_ser_TMDS_D1),
+    .Q1()
 );
     ELVDS_OBUF u_obuf_TMDS_D1 (
     .I(jz_ser_TMDS_D1),

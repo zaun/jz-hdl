@@ -41,17 +41,17 @@
   {"type": "ProjectTopInstance", "name": "ser_top", "loc": {"line": 57, "column": 5, "file": "test.jz"}, "children": [
     {"type": "PortDecl", "name": "clk", "block_kind": "IN", "text": "pixel_clk", "width": "1", "loc": {"line": 58, "column": 18, "file": "test.jz"}},
     {"type": "PortDecl", "name": "status", "block_kind": "OUT", "text": "led", "width": "1", "loc": {"line": 59, "column": 18, "file": "test.jz"}},
-    {"type": "PortDecl", "name": "tclk", "block_kind": "OUT", "text": "TMDS_CLK", "width": "10", "loc": {"line": 60, "column": 18, "file": "test.jz"}},
-    {"type": "PortDecl", "name": "td0", "block_kind": "OUT", "text": "TMDS_D [ 0 ]", "width": "10", "loc": {"line": 61, "column": 18, "file": "test.jz"}},
-    {"type": "PortDecl", "name": "td1", "block_kind": "OUT", "text": "TMDS_D [ 1 ]", "width": "10", "loc": {"line": 62, "column": 18, "file": "test.jz"}}
+    {"type": "PortDecl", "name": "tclk", "block_kind": "OUT", "text": "TMDS_CLK", "width": "1", "loc": {"line": 60, "column": 18, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "td0", "block_kind": "OUT", "text": "TMDS_D [ 0 ]", "width": "1", "loc": {"line": 61, "column": 18, "file": "test.jz"}},
+    {"type": "PortDecl", "name": "td1", "block_kind": "OUT", "text": "TMDS_D [ 1 ]", "width": "1", "loc": {"line": 62, "column": 18, "file": "test.jz"}}
   ]},
   {"type": "Module", "name": "ser_top", "loc": {"line": 67, "column": 1, "file": "test.jz"}, "children": [
     {"type": "PortBlock", "block_kind": "PORT", "loc": {"line": 68, "column": 5, "file": "test.jz"}, "children": [
       {"type": "PortDecl", "name": "clk", "block_kind": "IN", "width": "1", "loc": {"line": 69, "column": 18, "file": "test.jz"}},
       {"type": "PortDecl", "name": "status", "block_kind": "OUT", "width": "1", "loc": {"line": 70, "column": 18, "file": "test.jz"}},
-      {"type": "PortDecl", "name": "tclk", "block_kind": "OUT", "width": "10", "loc": {"line": 71, "column": 18, "file": "test.jz"}},
-      {"type": "PortDecl", "name": "td0", "block_kind": "OUT", "width": "10", "loc": {"line": 72, "column": 18, "file": "test.jz"}},
-      {"type": "PortDecl", "name": "td1", "block_kind": "OUT", "width": "10", "loc": {"line": 73, "column": 18, "file": "test.jz"}}
+      {"type": "PortDecl", "name": "tclk", "block_kind": "OUT", "width": "1", "loc": {"line": 71, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "td0", "block_kind": "OUT", "width": "1", "loc": {"line": 72, "column": 18, "file": "test.jz"}},
+      {"type": "PortDecl", "name": "td1", "block_kind": "OUT", "width": "1", "loc": {"line": 73, "column": 18, "file": "test.jz"}}
     ]},
     {"type": "RegisterBlock", "block_kind": "REGISTER", "loc": {"line": 76, "column": 5, "file": "test.jz"}, "children": [
       {"type": "RegisterDecl", "name": "cnt", "width": "24", "loc": {"line": 77, "column": 9, "file": "test.jz"}, "children": [
@@ -69,15 +69,15 @@
       ]},
       {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 82, "column": 9, "file": "test.jz"}, "children": [
         {"type": "Identifier", "name": "tclk", "loc": {"line": 82, "column": 9, "file": "test.jz"}},
-        {"type": "Literal", "text": "10'b1111100000", "loc": {"line": 82, "column": 19, "file": "test.jz"}}
+        {"type": "Literal", "text": "1'b1", "loc": {"line": 82, "column": 19, "file": "test.jz"}}
       ]},
       {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 83, "column": 9, "file": "test.jz"}, "children": [
         {"type": "Identifier", "name": "td0", "loc": {"line": 83, "column": 9, "file": "test.jz"}},
-        {"type": "Literal", "text": "10'b0000000000", "loc": {"line": 83, "column": 19, "file": "test.jz"}}
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 83, "column": 19, "file": "test.jz"}}
       ]},
       {"type": "Assign", "block_kind": "RECEIVE", "loc": {"line": 84, "column": 9, "file": "test.jz"}, "children": [
         {"type": "Identifier", "name": "td1", "loc": {"line": 84, "column": 9, "file": "test.jz"}},
-        {"type": "Literal", "text": "10'b0000000000", "loc": {"line": 84, "column": 19, "file": "test.jz"}}
+        {"type": "Literal", "text": "1'b0", "loc": {"line": 84, "column": 19, "file": "test.jz"}}
       ]}
     ]},
     {"type": "Block", "block_kind": "SYNCHRONOUS", "loc": {"line": 87, "column": 5, "file": "test.jz"}, "children": [
