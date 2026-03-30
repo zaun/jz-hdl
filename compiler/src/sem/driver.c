@@ -2635,7 +2635,7 @@ int jz_sem_run(JZASTNode *root,
     sem_check_project_config(root, diagnostics);
     sem_check_project_clocks(root, &module_scopes, &project_symbols, diagnostics);
     sem_check_project_clock_gen(root, &project_symbols, chip_ptr, diagnostics);
-    sem_check_project_pins(root, &project_symbols, diagnostics);
+    sem_check_project_pins(root, &project_symbols, chip_ptr, diagnostics);
     sem_check_project_map(root, &project_symbols, diagnostics);
     sem_check_project_buses(root, &project_symbols, diagnostics);
     sem_check_project_blackboxes(root, diagnostics);

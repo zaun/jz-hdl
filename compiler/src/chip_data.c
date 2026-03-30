@@ -1222,6 +1222,9 @@ static void jz_chip_parse_diff_primitive(const char *json,
 
     prim->ratio = 0;
     memset(&prim->maps, 0, sizeof(prim->maps));
+    prim->requires_fclk = 0;
+    prim->requires_pclk = 0;
+    prim->requires_reset = 0;
 
     int cur = obj_idx + 1;
     while (cur < count && toks[cur].start < obj->end) {
@@ -1231,6 +1234,18 @@ static void jz_chip_parse_diff_primitive(const char *json,
             unsigned r = 0;
             if (jz_json_token_to_uint(json, val, &r)) {
                 prim->ratio = (int)r;
+            }
+        } else if (jz_json_token_eq(json, key, "required_clocks") &&
+                   val->type == JSMN_ARRAY) {
+            int arr_cur = cur + 1;
+            for (int i = 0; i < val->size && arr_cur < count; ++i) {
+                if (jz_json_token_eq(json, &toks[arr_cur], "fclk"))
+                    prim->requires_fclk = 1;
+                else if (jz_json_token_eq(json, &toks[arr_cur], "pclk"))
+                    prim->requires_pclk = 1;
+                else if (jz_json_token_eq(json, &toks[arr_cur], "reset"))
+                    prim->requires_reset = 1;
+                arr_cur = jz_json_skip(toks, count, arr_cur);
             }
         } else if (jz_json_token_eq(json, key, "map")) {
             jz_chip_parse_diff_map(json, toks, count, cur, prim);
@@ -2166,6 +2181,54 @@ int jz_chip_diff_max_deserializer_ratio(const JZChipData *data)
         if (desers[i].ratio > max_r) max_r = desers[i].ratio;
     }
     return max_r;
+}
+
+int jz_chip_diff_serializer_required_clocks(const JZChipData *data,
+                                             int needed_width,
+                                             int *out_fclk,
+                                             int *out_pclk,
+                                             int *out_reset)
+{
+    if (!data || !data->differential.has_output_serializer || needed_width <= 0)
+        return 0;
+    size_t n = data->differential.output_serializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *sers =
+        (const JZChipDiffPrimitive *)data->differential.output_serializers.data;
+    const JZChipDiffPrimitive *best = NULL;
+    for (size_t i = 0; i < n; ++i) {
+        if (sers[i].ratio >= needed_width) {
+            if (!best || sers[i].ratio < best->ratio) best = &sers[i];
+        }
+    }
+    if (!best) return 0;
+    if (out_fclk)  *out_fclk  = best->requires_fclk;
+    if (out_pclk)  *out_pclk  = best->requires_pclk;
+    if (out_reset) *out_reset = best->requires_reset;
+    return 1;
+}
+
+int jz_chip_diff_deserializer_required_clocks(const JZChipData *data,
+                                               int needed_width,
+                                               int *out_fclk,
+                                               int *out_pclk,
+                                               int *out_reset)
+{
+    if (!data || !data->differential.has_input_deserializer || needed_width <= 0)
+        return 0;
+    size_t n = data->differential.input_deserializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *desers =
+        (const JZChipDiffPrimitive *)data->differential.input_deserializers.data;
+    const JZChipDiffPrimitive *best = NULL;
+    for (size_t i = 0; i < n; ++i) {
+        if (desers[i].ratio >= needed_width) {
+            if (!best || desers[i].ratio < best->ratio) best = &desers[i];
+        }
+    }
+    if (!best) return 0;
+    if (out_fclk)  *out_fclk  = best->requires_fclk;
+    if (out_pclk)  *out_pclk  = best->requires_pclk;
+    if (out_reset) *out_reset = best->requires_reset;
+    return 1;
 }
 
 const char *jz_chip_diff_io_type(const JZChipData *data)

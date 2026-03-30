@@ -139,8 +139,11 @@ typedef struct JZChipDiffMap {
  * @brief A differential I/O primitive (buffer or serializer).
  */
 typedef struct JZChipDiffPrimitive {
-    int       ratio;     /**< Serializer ratio (e.g., 10 for OSER10); 0 for buffers. */
-    JZBuffer  maps;      /**< Array of JZChipDiffMap entries. */
+    int       ratio;          /**< Serializer ratio (e.g., 10 for OSER10); 0 for buffers. */
+    JZBuffer  maps;           /**< Array of JZChipDiffMap entries. */
+    int       requires_fclk;  /**< Non-zero if fclk is required by this primitive. */
+    int       requires_pclk;  /**< Non-zero if pclk is required by this primitive. */
+    int       requires_reset; /**< Non-zero if reset is required by this primitive. */
 } JZChipDiffPrimitive;
 
 /**
@@ -558,6 +561,36 @@ const char *jz_chip_diff_best_deserializer_map(const JZChipData *data,
  * @return Largest deserializer ratio, or 0 if no deserializer defined.
  */
 int jz_chip_diff_max_deserializer_ratio(const JZChipData *data);
+
+/**
+ * @brief Get the required clock/reset flags for the best-fit output serializer.
+ * @param data         Loaded chip data.
+ * @param needed_width Required parallel data width.
+ * @param out_fclk     Receives 1 if fclk required, 0 otherwise.
+ * @param out_pclk     Receives 1 if pclk required, 0 otherwise.
+ * @param out_reset    Receives 1 if reset required, 0 otherwise.
+ * @return 1 if a matching serializer was found, 0 otherwise.
+ */
+int jz_chip_diff_serializer_required_clocks(const JZChipData *data,
+                                             int needed_width,
+                                             int *out_fclk,
+                                             int *out_pclk,
+                                             int *out_reset);
+
+/**
+ * @brief Get the required clock/reset flags for the best-fit input deserializer.
+ * @param data         Loaded chip data.
+ * @param needed_width Required parallel data width.
+ * @param out_fclk     Receives 1 if fclk required, 0 otherwise.
+ * @param out_pclk     Receives 1 if pclk required, 0 otherwise.
+ * @param out_reset    Receives 1 if reset required, 0 otherwise.
+ * @return 1 if a matching deserializer was found, 0 otherwise.
+ */
+int jz_chip_diff_deserializer_required_clocks(const JZChipData *data,
+                                               int needed_width,
+                                               int *out_fclk,
+                                               int *out_pclk,
+                                               int *out_reset);
 
 /**
  * @brief Get the CST IO_TYPE override for differential pins.

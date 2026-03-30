@@ -1,0 +1,70 @@
+// HAPPY_PATH: CONST and CONFIG references inside template bodies.
+// Tests: CONST values derived from CONFIG expressions (e.g. CONFIG.h_active / 2)
+// used in template lit() calls, plain CONST integer values in templates, and
+// CONFIG values used in @scratch widths.  All should pass without diagnostics.
+
+@project HAPPY_PATH_template_const_config_refs_ok
+    CONFIG {
+        h_active = 1280;
+        v_active = 720;
+        num_items = 4;
+    }
+
+    @top TopMod {
+        IN  [11] xpos = _;
+        IN  [10] ypos = _;
+        OUT [8]  red  = _;
+        OUT [8]  grn  = _;
+        OUT [8]  blu  = _;
+        OUT [10] dout = _;
+    }
+@endproj
+
+// Template referencing a CONST derived from a CONFIG expression
+@template const_derived(x, y, out)
+    IF (x >= lit(11, CX) && y >= lit(10, CY)) {
+        out <= 8'hFF;
+    } ELSE {
+        out <= 8'h00;
+    }
+@endtemplate
+
+// Template referencing a plain integer CONST
+@template const_plain(a, b)
+    IF (a > lit(10, OFFSET)) {
+        b <= 8'hAA;
+    } ELSE {
+        b <= 8'h55;
+    }
+@endtemplate
+
+// Template using CONFIG value in @scratch width
+@template scratch_config_width(a, b)
+    @scratch tmp [num_items];
+    tmp <= a[3:0];
+    b <= {6'b000000, tmp};
+@endtemplate
+
+@module TopMod
+    CONST {
+        CX = CONFIG.h_active / 2;
+        CY = CONFIG.v_active / 2;
+        OFFSET = 100;
+    }
+
+    PORT {
+        IN  [11] xpos;
+        IN  [10] ypos;
+        OUT [8]  red;
+        OUT [8]  grn;
+        OUT [8]  blu;
+        OUT [10] dout;
+    }
+
+    ASYNCHRONOUS {
+        @apply const_derived(xpos, ypos, red);
+        @apply const_plain(ypos, grn);
+        @apply scratch_config_width(xpos, dout);
+        blu <= 8'h00;
+    }
+@endmod

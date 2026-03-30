@@ -1042,6 +1042,7 @@ static int sem_extract_attr(const char *attrs, const char *key,
 
 void sem_check_project_pins(JZASTNode *project,
                             const JZBuffer *project_symbols,
+                            const JZChipData *chip,
                             JZDiagnosticList *diagnostics)
 {
     (void)project_symbols;
@@ -1219,23 +1220,50 @@ void sem_check_project_pins(JZASTNode *project,
                 }
             }
 
-            /* --- fclk / pclk / reset required for differential output pins --- */
+            /* --- width (serialization width, differential only) --- */
+            char width_val[32];
+            int has_width = sem_extract_attr(attrs, "width", width_val, sizeof(width_val));
+            if (has_width && !is_diff) {
+                sem_report_rule(diagnostics,
+                                decl->loc,
+                                "PIN_WIDTH_REQUIRES_DIFFERENTIAL",
+                                "width attribute is only valid when mode=DIFFERENTIAL");
+            }
+
+            /* --- fclk / pclk / reset: required set depends on chip serializer --- */
             if (is_diff && is_out_block) {
                 char fclk_val[64], pclk_val[64], reset_val[64];
                 int has_fclk  = sem_extract_attr(attrs, "fclk",  fclk_val,  sizeof(fclk_val));
                 int has_pclk  = sem_extract_attr(attrs, "pclk",  pclk_val,  sizeof(pclk_val));
                 int has_reset = sem_extract_attr(attrs, "reset", reset_val, sizeof(reset_val));
-                if (!has_fclk) {
+
+                /* Determine which clocks this serializer actually needs */
+                int need_fclk = 1, need_pclk = 1, need_reset = 1;
+                if (chip && has_width) {
+                    char *endp = NULL;
+                    long wn = strtol(width_val, &endp, 10);
+                    if (endp && endp != width_val && *endp == '\0' && wn > 0) {
+                        int rf = 1, rp = 1, rr = 1;
+                        if (jz_chip_diff_serializer_required_clocks(
+                                chip, (int)wn, &rf, &rp, &rr)) {
+                            need_fclk = rf;
+                            need_pclk = rp;
+                            need_reset = rr;
+                        }
+                    }
+                }
+
+                if (need_fclk && !has_fclk) {
                     sem_report_rule(diagnostics, decl->loc,
                                     "PIN_DIFF_OUT_MISSING_FCLK",
                                     "differential output pin requires fclk attribute");
                 }
-                if (!has_pclk) {
+                if (need_pclk && !has_pclk) {
                     sem_report_rule(diagnostics, decl->loc,
                                     "PIN_DIFF_OUT_MISSING_PCLK",
                                     "differential output pin requires pclk attribute");
                 }
-                if (!has_reset) {
+                if (need_reset && !has_reset) {
                     sem_report_rule(diagnostics, decl->loc,
                                     "PIN_DIFF_OUT_MISSING_RESET",
                                     "differential output pin requires reset attribute");
@@ -2018,6 +2046,8 @@ void sem_check_project_top_new(JZASTNode *project,
         /* Check that the binding width matches the connected pin/signal width.
          * For simple (non-complex) targets bound to a declared pin, compare
          * the @top binding width against the pin declaration width.
+         * If the pin has a `width=N` attribute (differential serialization),
+         * use N as the effective width instead of the array/scalar width.
          */
         if (!complex_target && pin_sym && pin_sym->node && b->width) {
             unsigned bind_w = 0;
@@ -2027,7 +2057,18 @@ void sem_check_project_top_new(JZASTNode *project,
             if (pin_sym->node->width) {
                 pin_rc = eval_simple_positive_decl_int(pin_sym->node->width, &pin_w);
             }
-            if (bind_rc == 1 && pin_rc == 1 && bind_w != pin_w) {
+            /* Check for width= attribute on differential pins */
+            unsigned effective_w = pin_w;
+            if (pin_sym->node->text) {
+                char pw_val[32];
+                if (sem_extract_attr(pin_sym->node->text, "width", pw_val, sizeof(pw_val))) {
+                    unsigned dw = 0;
+                    if (eval_simple_positive_decl_int(pw_val, &dw) && dw > 0) {
+                        effective_w = dw;
+                    }
+                }
+            }
+            if (bind_rc == 1 && pin_rc == 1 && bind_w != effective_w) {
                 sem_report_rule(diagnostics,
                                 b->loc,
                                 "TOP_PORT_SIGNAL_WIDTH_MISMATCH",

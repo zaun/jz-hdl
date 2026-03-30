@@ -579,11 +579,15 @@ static int pin_has_diff_mapping(const IR_Project *proj, const IR_Pin *pin)
     return 0;
 }
 
-/* Check if a differential pin has fclk/pclk (needs serializer). */
+/* Check if a differential pin needs a serializer.
+ * A serializer is needed when at least one serialization clock is present.
+ * Which clocks are required is chip-specific (validated by the semantic pass). */
 static int pin_needs_serializer(const IR_Pin *pin)
 {
-    return pin && pin->fclk_name && pin->fclk_name[0] != '\0' &&
-           pin->pclk_name && pin->pclk_name[0] != '\0';
+    if (!pin) return 0;
+    int has_fclk = pin->fclk_name && pin->fclk_name[0] != '\0';
+    int has_pclk = pin->pclk_name && pin->pclk_name[0] != '\0';
+    return has_fclk || has_pclk;
 }
 
 /* Find the data width of the top module signal bound to a pin/bit. */
@@ -904,8 +908,14 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
         "    connect \\\\Q \\\\%%output%%\\n"
         "  end\\n";
 
-    if (!obuf_template) obuf_template = fallback_obuf;
-    if (!ibuf_template) ibuf_template = fallback_ibuf;
+    int chip_has_diff_out = have_chip_data &&
+        (chip_data.differential.has_output_buffer ||
+         chip_data.differential.has_output_serializer);
+    int chip_has_diff_in = have_chip_data &&
+        (chip_data.differential.has_input_buffer ||
+         chip_data.differential.has_input_deserializer);
+    if (!obuf_template && !chip_has_diff_out) obuf_template = fallback_obuf;
+    if (!ibuf_template && !chip_has_diff_in) ibuf_template = fallback_ibuf;
 
     for (int i = 0; i < num_pins; ++i) {
         const IR_Pin *pin = &proj->pins[i];
@@ -934,8 +944,10 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
                 }
 
                 if (needs_ser) {
-                    /* Determine actual data width from the top module signal */
-                    int data_width = find_signal_width_for_pin(design, proj, i, bit);
+                    /* Determine actual data width: prefer pin's width= attribute,
+                     * then top module signal width, then chip default. */
+                    int data_width = pin->ser_width > 0 ? pin->ser_width
+                                   : find_signal_width_for_pin(design, proj, i, bit);
                     if (data_width <= 0) data_width = jz_chip_diff_serializer_ratio(&chip_data);
 
                     /* Find best serializer with ratio >= data_width */
@@ -979,8 +991,8 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
                         .instance  = oser_inst,
                         .input     = NULL,
                         .output    = ser_wire,
-                        .pin_p     = NULL,
-                        .pin_n     = NULL,
+                        .pin_p     = pin_p,
+                        .pin_n     = pin_n,
                         .diff_wire = diff_wire,
                         .ser_ratio = wire_width,
                         .fclk      = pin->fclk_name,

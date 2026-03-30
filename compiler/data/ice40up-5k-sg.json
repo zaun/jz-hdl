@@ -1,8 +1,6 @@
-
 {
   "chipid": "ICE40UP-5K-SG48",
   "description": "Primitives available on the Lattice iCE40 UltraPlus UP5K in SG48 (48-pin QFN) package.",
-
   "boards": [
     {
       "name": "UPduino v3.1",
@@ -13,7 +11,6 @@
       "url": "https://www.muselab-tech.com/zai-icesugarshang-yun-xing-muraxsoc/"
     }
   ],
-
   "resources": {
     "LUT4": 5280,
     "DFF": 5280,
@@ -21,7 +18,6 @@
     "DIFF_PAIRS": 13,
     "GSR": 1
   },
-
   "latches": {
     "source": "DS-ICE40-UltraPlus, Section: Logic Cells (PLBs)",
     "FAB": {
@@ -34,11 +30,12 @@
       "description": "I/O Blocks (Input/Output Pins)",
       "D": true,
       "SR": false,
-      "modes": ["Transparent"],
+      "modes": [
+        "Transparent"
+      ],
       "note": "iCEGate latch via LATCH_INPUT_VALUE in SB_IO."
     }
   },
-
   "dsp": {
     "source": "DS-ICE40-UltraPlus, Table: Device Resources (SB_MAC16)",
     "description": "Hardware multiply-accumulate blocks",
@@ -47,7 +44,6 @@
       "description": "SB_MAC16: 16x16 multiply or 2x 8x8 multiply, max 50 MHz"
     }
   },
-
   "memory": [
     {
       "type": "BLOCK",
@@ -58,46 +54,100 @@
       "total_bits": 122880,
       "max_freq_mhz": 150,
       "note": "30 blocks x 4,096 bits = 122,880 bits (120 Kbit).",
-      "modes": [{
-        "name": "Single Port",
-        "description": "Single port read/write",
-        "ports": [
-            { "id": "A", "read": true, "write": true }
-        ],
-        "configurations": [
-          { "width": 16, "depth": 256 },
-          { "width": 8,  "depth": 512 },
-          { "width": 4,  "depth": 1024 },
-          { "width": 2,  "depth": 2048 }
-        ]
-      },
-      {
-        "name": "Pseudo-Dual Port",
-        "description": "Write on Port A, read on Port B simultaneously",
-        "ports": [
-            { "id": "A", "read": false, "write": true },
-            { "id": "B", "read": true,  "write": false }
-        ],
-        "configurations": [
-          { "width": 16, "depth": 256 },
-          { "width": 8,  "depth": 512 },
-          { "width": 4,  "depth": 1024 },
-          { "width": 2,  "depth": 2048 }
-        ]
-      },
-      {
-        "name": "Read Only Memory",
-        "description": "Read-only with initialization during power-on",
-        "ports": [
-            { "id": "A", "read": true, "write": false }
-        ],
-        "configurations": [
-          { "width": 16, "depth": 256 },
-          { "width": 8,  "depth": 512 },
-          { "width": 4,  "depth": 1024 },
-          { "width": 2,  "depth": 2048 }
-        ]
-      }]
+      "modes": [
+        {
+          "name": "Single Port",
+          "description": "Single port read/write",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 16,
+              "depth": 256
+            },
+            {
+              "width": 8,
+              "depth": 512
+            },
+            {
+              "width": 4,
+              "depth": 1024
+            },
+            {
+              "width": 2,
+              "depth": 2048
+            }
+          ]
+        },
+        {
+          "name": "Pseudo-Dual Port",
+          "description": "Write on Port A, read on Port B simultaneously",
+          "ports": [
+            {
+              "id": "A",
+              "read": false,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 16,
+              "depth": 256
+            },
+            {
+              "width": 8,
+              "depth": 512
+            },
+            {
+              "width": 4,
+              "depth": 1024
+            },
+            {
+              "width": 2,
+              "depth": 2048
+            }
+          ]
+        },
+        {
+          "name": "Read Only Memory",
+          "description": "Read-only with initialization during power-on",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 16,
+              "depth": 256
+            },
+            {
+              "width": 8,
+              "depth": 512
+            },
+            {
+              "width": 4,
+              "depth": 1024
+            },
+            {
+              "width": 2,
+              "depth": 2048
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "SPRAM",
@@ -108,19 +158,27 @@
       "total_bits": 1048576,
       "max_freq_mhz": 70,
       "note": "4 blocks x 262,144 bits = 1,048,576 bits (1 Mbit). Fixed 16384x16 configuration, single port only.",
-      "modes": [{
-        "name": "Single Port",
-        "description": "Single port read/write, fixed 16384x16",
-        "ports": [
-            { "id": "A", "read": true, "write": true }
-        ],
-        "configurations": [
-          { "width": 16, "depth": 16384 }
-        ]
-      }]
+      "modes": [
+        {
+          "name": "Single Port",
+          "description": "Single port read/write, fixed 16384x16",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 16,
+              "depth": 16384
+            }
+          ]
+        }
+      ]
     }
   ],
-
   "clock_gen": [
     {
       "type": "osc",
@@ -152,13 +210,17 @@
           "description": "OSC has no external clock input"
         }
       },
-
       "parameters": {
         "CLKHF_DIV": {
           "description": "Clock divider: 0b00=48MHz, 0b01=24MHz, 0b10=12MHz, 0b11=6MHz",
           "type": "string",
           "default": "0b00",
-          "valid": ["0b00", "0b01", "0b10", "0b11"]
+          "valid": [
+            "0b00",
+            "0b01",
+            "0b10",
+            "0b11"
+          ]
         }
       },
       "outputs": {
@@ -166,7 +228,9 @@
           "description": "High-frequency oscillator output",
           "port": "CLKHF",
           "is_clock": true,
-          "frequency_mhz": { "expr": "48.0 / (1 << CLKHF_DIV)" }
+          "frequency_mhz": {
+            "expr": "48.0 / (1 << CLKHF_DIV)"
+          }
         }
       }
     },
@@ -197,14 +261,15 @@
           "description": "OSC has no external clock input"
         }
       },
-
       "parameters": {},
       "outputs": {
         "BASE": {
           "description": "Low-frequency oscillator output (10 kHz)",
           "port": "CLKLF",
           "is_clock": true,
-          "frequency_mhz": { "expr": "0.01" }
+          "frequency_mhz": {
+            "expr": "0.01"
+          }
         }
       }
     },
@@ -212,10 +277,8 @@
       "type": "pll",
       "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_CORE); Lattice TN1251 iCE40 sysCLOCK PLL Design and Usage Guide",
       "description": "Phase-Locked Loop (SB_PLL40_CORE). SIMPLE mode with internal feedback.",
-
       "count": 1,
       "chaining": false,
-
       "map": {
         "verilog-2005": [
           "SB_PLL40_CORE #(\n",
@@ -249,7 +312,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the PLL",
@@ -260,7 +322,6 @@
           "max_mhz": 133
         }
       },
-
       "parameters": {
         "DIVR": {
           "description": "Reference clock divider (actual divider = DIVR + 1)",
@@ -269,7 +330,6 @@
           "min": 0,
           "max": 15
         },
-
         "DIVF": {
           "description": "Feedback divider (actual multiplier = DIVF + 1)",
           "type": "int",
@@ -277,7 +337,6 @@
           "min": 0,
           "max": 127
         },
-
         "DIVQ": {
           "description": "Output divider (divides VCO by 2^DIVQ)",
           "type": "int",
@@ -285,7 +344,6 @@
           "min": 0,
           "max": 7
         },
-
         "FILTER_RANGE": {
           "description": "PLL filter range for loop stability",
           "type": "int",
@@ -293,15 +351,18 @@
           "min": 0,
           "max": 7
         },
-
         "PLLOUT_SELECT_A": {
           "description": "Output A mux: GENCLK, GENCLK_HALF, SHIFTREG_0deg, or SHIFTREG_90deg",
           "type": "string",
           "default": "GENCLK",
-          "valid": ["GENCLK", "GENCLK_HALF", "SHIFTREG_0deg", "SHIFTREG_90deg"]
+          "valid": [
+            "GENCLK",
+            "GENCLK_HALF",
+            "SHIFTREG_0deg",
+            "SHIFTREG_90deg"
+          ]
         }
       },
-
       "derived": {
         "FVCO": {
           "description": "Internal VCO frequency",
@@ -310,7 +371,6 @@
           "max": 1066
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Primary PLL output (PLLOUTGLOBAL)",
@@ -321,14 +381,423 @@
             "expr": "FVCO / (1 << DIVQ)"
           }
         },
-
         "LOCK": {
           "description": "PLL lock indicator, high when PLL is locked",
           "port": "LOCK",
           "is_clock": false
         }
       },
-
+      "constraints": [
+        {
+          "description": "VCO frequency must be within 533-1066 MHz range.",
+          "rule": "FVCO range check"
+        }
+      ]
+    },
+    {
+      "type": "pll2",
+      "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_2F_CORE); Lattice TN02052 iCE40 sysCLOCK PLL Design and Usage Guide, Table 3.1, Table 4.1",
+      "description": "Dual-output Phase-Locked Loop (SB_PLL40_2F_CORE). SIMPLE mode with internal feedback. Provides two independent global clock outputs (Port A and Port B) with separate PLLOUT_SELECT muxes, sharing the same VCO.",
+      "count": 1,
+      "chaining": false,
+      "map": {
+        "verilog-2005": [
+          "SB_PLL40_2F_CORE #(\n",
+          "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
+          "    .DIVR(%%DIVR%%),\n",
+          "    .DIVF(%%DIVF%%),\n",
+          "    .DIVQ(%%DIVQ%%),\n",
+          "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
+          "    .PLLOUT_SELECT_PORTA(\"%%PLLOUT_SELECT_A%%\"),\n",
+          "    .PLLOUT_SELECT_PORTB(\"%%PLLOUT_SELECT_B%%\")\n",
+          ") u_pll2_%%instance_idx%% (\n",
+          "    .REFERENCECLK(%%REF_CLK%%),\n",
+          "    .PLLOUTGLOBALA(%%BASE_A%%),\n",
+          "    .PLLOUTGLOBALB(%%BASE_B%%),\n",
+          "    .LOCK(%%LOCK%%),\n",
+          "    .BYPASS(1'b0),\n",
+          "    .RESETB(1'b1)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\SB_PLL40_2F_CORE $auto$%%instance_idx%%\n",
+          "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
+          "  parameter \\DIVR %%DIVR%%\n",
+          "  parameter \\DIVF %%DIVF%%\n",
+          "  parameter \\DIVQ %%DIVQ%%\n",
+          "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
+          "  parameter \\PLLOUT_SELECT_PORTA \"%%PLLOUT_SELECT_A%%\"\n",
+          "  parameter \\PLLOUT_SELECT_PORTB \"%%PLLOUT_SELECT_B%%\"\n",
+          "  connect \\REFERENCECLK \\%%REF_CLK%%\n",
+          "  connect \\PLLOUTGLOBALA \\%%BASE_A%%\n",
+          "  connect \\PLLOUTGLOBALB \\%%BASE_B%%\n",
+          "  connect \\LOCK \\%%LOCK%%\n",
+          "  connect \\BYPASS 1'0\n",
+          "  connect \\RESETB 1'1\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the PLL",
+          "required": true,
+          "width": 1,
+          "requires_period": true,
+          "min_mhz": 10,
+          "max_mhz": 133
+        }
+      },
+      "parameters": {
+        "DIVR": {
+          "description": "Reference clock divider (actual divider = DIVR + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 15
+        },
+        "DIVF": {
+          "description": "Feedback divider (actual multiplier = DIVF + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 127
+        },
+        "DIVQ": {
+          "description": "Output divider (divides VCO by 2^DIVQ)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 7
+        },
+        "FILTER_RANGE": {
+          "description": "PLL filter range for loop stability",
+          "type": "int",
+          "default": 1,
+          "min": 0,
+          "max": 7
+        },
+        "PLLOUT_SELECT_A": {
+          "description": "Port A output mux: GENCLK (full VCO/2^DIVQ), GENCLK_HALF (half), SHIFTREG_0deg, or SHIFTREG_90deg",
+          "type": "string",
+          "default": "GENCLK",
+          "valid": [
+            "GENCLK",
+            "GENCLK_HALF",
+            "SHIFTREG_0deg",
+            "SHIFTREG_90deg"
+          ]
+        },
+        "PLLOUT_SELECT_B": {
+          "description": "Port B output mux: GENCLK (full VCO/2^DIVQ), GENCLK_HALF (half), SHIFTREG_0deg, or SHIFTREG_90deg",
+          "type": "string",
+          "default": "GENCLK",
+          "valid": [
+            "GENCLK",
+            "GENCLK_HALF",
+            "SHIFTREG_0deg",
+            "SHIFTREG_90deg"
+          ]
+        }
+      },
+      "derived": {
+        "FVCO": {
+          "description": "Internal VCO frequency",
+          "expr": "(1000.0 / REF_CLK_period_ns) * (DIVF + 1) / (DIVR + 1)",
+          "min": 533,
+          "max": 1066
+        }
+      },
+      "outputs": {
+        "BASE_A": {
+          "description": "Port A PLL output (PLLOUTGLOBALA). Frequency depends on PLLOUT_SELECT_A: GENCLK = FVCO/2^DIVQ, GENCLK_HALF = FVCO/2^(DIVQ+1).",
+          "port": "PLLOUTGLOBALA",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Port A output frequency assuming PLLOUT_SELECT_A=GENCLK: F_VCO / 2^DIVQ",
+            "expr": "FVCO / (1 << DIVQ)"
+          }
+        },
+        "BASE_B": {
+          "description": "Port B PLL output (PLLOUTGLOBALB). Frequency depends on PLLOUT_SELECT_B: GENCLK = FVCO/2^DIVQ, GENCLK_HALF = FVCO/2^(DIVQ+1).",
+          "port": "PLLOUTGLOBALB",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Port B output frequency assuming PLLOUT_SELECT_B=GENCLK_HALF: F_VCO / 2^(DIVQ+1)",
+            "expr": "FVCO / (2 * (1 << DIVQ))"
+          }
+        },
+        "LOCK": {
+          "description": "PLL lock indicator, high when PLL is locked",
+          "port": "LOCK",
+          "is_clock": false
+        }
+      },
+      "constraints": [
+        {
+          "description": "VCO frequency must be within 533-1066 MHz range.",
+          "rule": "FVCO range check"
+        }
+      ]
+    },
+    {
+      "type": "pll3",
+      "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_PAD); Lattice TN1251 iCE40 sysCLOCK PLL Design and Usage Guide",
+      "description": "Phase-Locked Loop with pad input (SB_PLL40_PAD). SIMPLE mode with internal feedback. Reference clock connects directly to the I/O pad.",
+      "count": 1,
+      "chaining": false,
+      "map": {
+        "verilog-2005": [
+          "SB_PLL40_PAD #(\n",
+          "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
+          "    .DIVR(%%DIVR%%),\n",
+          "    .DIVF(%%DIVF%%),\n",
+          "    .DIVQ(%%DIVQ%%),\n",
+          "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
+          "    .PLLOUT_SELECT(\"%%PLLOUT_SELECT_A%%\")\n",
+          ") u_pll3_%%instance_idx%% (\n",
+          "    .PACKAGEPIN(%%REF_CLK%%),\n",
+          "    .PLLOUTGLOBAL(%%BASE%%),\n",
+          "    .LOCK(%%LOCK%%),\n",
+          "    .BYPASS(1'b0),\n",
+          "    .RESETB(1'b1)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\SB_PLL40_PAD $auto$%%instance_idx%%\n",
+          "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
+          "  parameter \\DIVR %%DIVR%%\n",
+          "  parameter \\DIVF %%DIVF%%\n",
+          "  parameter \\DIVQ %%DIVQ%%\n",
+          "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
+          "  parameter \\PLLOUT_SELECT \"%%PLLOUT_SELECT_A%%\"\n",
+          "  connect \\PACKAGEPIN \\%%REF_CLK%%\n",
+          "  connect \\PLLOUTGLOBAL \\%%BASE%%\n",
+          "  connect \\LOCK \\%%LOCK%%\n",
+          "  connect \\BYPASS 1'0\n",
+          "  connect \\RESETB 1'1\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input from I/O pad",
+          "required": true,
+          "width": 1,
+          "requires_period": true,
+          "min_mhz": 10,
+          "max_mhz": 133
+        }
+      },
+      "parameters": {
+        "DIVR": {
+          "description": "Reference clock divider (actual divider = DIVR + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 15
+        },
+        "DIVF": {
+          "description": "Feedback divider (actual multiplier = DIVF + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 127
+        },
+        "DIVQ": {
+          "description": "Output divider (divides VCO by 2^DIVQ)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 7
+        },
+        "FILTER_RANGE": {
+          "description": "PLL filter range for loop stability",
+          "type": "int",
+          "default": 1,
+          "min": 0,
+          "max": 7
+        },
+        "PLLOUT_SELECT_A": {
+          "description": "Output A mux: GENCLK, GENCLK_HALF, SHIFTREG_0deg, or SHIFTREG_90deg",
+          "type": "string",
+          "default": "GENCLK",
+          "valid": [
+            "GENCLK",
+            "GENCLK_HALF",
+            "SHIFTREG_0deg",
+            "SHIFTREG_90deg"
+          ]
+        }
+      },
+      "derived": {
+        "FVCO": {
+          "description": "Internal VCO frequency",
+          "expr": "(1000.0 / REF_CLK_period_ns) * (DIVF + 1) / (DIVR + 1)",
+          "min": 533,
+          "max": 1066
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "Primary PLL output (PLLOUTGLOBAL)",
+          "port": "PLLOUTGLOBAL",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Output frequency: F_VCO / 2^DIVQ",
+            "expr": "FVCO / (1 << DIVQ)"
+          }
+        },
+        "LOCK": {
+          "description": "PLL lock indicator, high when PLL is locked",
+          "port": "LOCK",
+          "is_clock": false
+        }
+      },
+      "constraints": [
+        {
+          "description": "VCO frequency must be within 533-1066 MHz range.",
+          "rule": "FVCO range check"
+        }
+      ]
+    },
+    {
+      "type": "pll4",
+      "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_2F_PAD); Lattice TN02052 iCE40 sysCLOCK PLL Design and Usage Guide, Table 3.1, Table 4.1",
+      "description": "Dual-output Phase-Locked Loop with pad input (SB_PLL40_2F_PAD). SIMPLE mode with internal feedback. Reference clock connects directly to the I/O pad. Provides two independent global clock outputs (Port A and Port B).",
+      "count": 1,
+      "chaining": false,
+      "map": {
+        "verilog-2005": [
+          "SB_PLL40_2F_PAD #(\n",
+          "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
+          "    .DIVR(%%DIVR%%),\n",
+          "    .DIVF(%%DIVF%%),\n",
+          "    .DIVQ(%%DIVQ%%),\n",
+          "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
+          "    .PLLOUT_SELECT_PORTA(\"%%PLLOUT_SELECT_A%%\"),\n",
+          "    .PLLOUT_SELECT_PORTB(\"%%PLLOUT_SELECT_B%%\")\n",
+          ") u_pll4_%%instance_idx%% (\n",
+          "    .PACKAGEPIN(%%REF_CLK%%),\n",
+          "    .PLLOUTGLOBALA(%%BASE_A%%),\n",
+          "    .PLLOUTGLOBALB(%%BASE_B%%),\n",
+          "    .LOCK(%%LOCK%%),\n",
+          "    .BYPASS(1'b0),\n",
+          "    .RESETB(1'b1)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\SB_PLL40_2F_PAD $auto$%%instance_idx%%\n",
+          "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
+          "  parameter \\DIVR %%DIVR%%\n",
+          "  parameter \\DIVF %%DIVF%%\n",
+          "  parameter \\DIVQ %%DIVQ%%\n",
+          "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
+          "  parameter \\PLLOUT_SELECT_PORTA \"%%PLLOUT_SELECT_A%%\"\n",
+          "  parameter \\PLLOUT_SELECT_PORTB \"%%PLLOUT_SELECT_B%%\"\n",
+          "  connect \\PACKAGEPIN \\%%REF_CLK%%\n",
+          "  connect \\PLLOUTGLOBALA \\%%BASE_A%%\n",
+          "  connect \\PLLOUTGLOBALB \\%%BASE_B%%\n",
+          "  connect \\LOCK \\%%LOCK%%\n",
+          "  connect \\BYPASS 1'0\n",
+          "  connect \\RESETB 1'1\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input from I/O pad",
+          "required": true,
+          "width": 1,
+          "requires_period": true,
+          "min_mhz": 10,
+          "max_mhz": 133
+        }
+      },
+      "parameters": {
+        "DIVR": {
+          "description": "Reference clock divider (actual divider = DIVR + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 15
+        },
+        "DIVF": {
+          "description": "Feedback divider (actual multiplier = DIVF + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 127
+        },
+        "DIVQ": {
+          "description": "Output divider (divides VCO by 2^DIVQ)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 7
+        },
+        "FILTER_RANGE": {
+          "description": "PLL filter range for loop stability",
+          "type": "int",
+          "default": 1,
+          "min": 0,
+          "max": 7
+        },
+        "PLLOUT_SELECT_A": {
+          "description": "Port A output mux: GENCLK (full VCO/2^DIVQ), GENCLK_HALF (half), SHIFTREG_0deg, or SHIFTREG_90deg",
+          "type": "string",
+          "default": "GENCLK",
+          "valid": [
+            "GENCLK",
+            "GENCLK_HALF",
+            "SHIFTREG_0deg",
+            "SHIFTREG_90deg"
+          ]
+        },
+        "PLLOUT_SELECT_B": {
+          "description": "Port B output mux: GENCLK (full VCO/2^DIVQ), GENCLK_HALF (half), SHIFTREG_0deg, or SHIFTREG_90deg",
+          "type": "string",
+          "default": "GENCLK",
+          "valid": [
+            "GENCLK",
+            "GENCLK_HALF",
+            "SHIFTREG_0deg",
+            "SHIFTREG_90deg"
+          ]
+        }
+      },
+      "derived": {
+        "FVCO": {
+          "description": "Internal VCO frequency",
+          "expr": "(1000.0 / REF_CLK_period_ns) * (DIVF + 1) / (DIVR + 1)",
+          "min": 533,
+          "max": 1066
+        }
+      },
+      "outputs": {
+        "BASE_A": {
+          "description": "Port A PLL output (PLLOUTGLOBALA). Frequency depends on PLLOUT_SELECT_A: GENCLK = FVCO/2^DIVQ, GENCLK_HALF = FVCO/2^(DIVQ+1).",
+          "port": "PLLOUTGLOBALA",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Port A output frequency assuming PLLOUT_SELECT_A=GENCLK: F_VCO / 2^DIVQ",
+            "expr": "FVCO / (1 << DIVQ)"
+          }
+        },
+        "BASE_B": {
+          "description": "Port B PLL output (PLLOUTGLOBALB). Frequency depends on PLLOUT_SELECT_B: GENCLK = FVCO/2^DIVQ, GENCLK_HALF = FVCO/2^(DIVQ+1).",
+          "port": "PLLOUTGLOBALB",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Port B output frequency assuming PLLOUT_SELECT_B=GENCLK_HALF: F_VCO / 2^(DIVQ+1)",
+            "expr": "FVCO / (2 * (1 << DIVQ))"
+          }
+        },
+        "LOCK": {
+          "description": "PLL lock indicator, high when PLL is locked",
+          "port": "LOCK",
+          "is_clock": false
+        }
+      },
       "constraints": [
         {
           "description": "VCO frequency must be within 533-1066 MHz range.",
@@ -342,7 +811,6 @@
       "mode": "global",
       "description": "Global clock buffer (SB_GB). Promotes an internal signal onto the global clock network.",
       "count": 8,
-
       "map": {
         "verilog-2005": [
           "SB_GB u_gb_%%instance_idx%% (\n",
@@ -357,7 +825,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the buffer",
@@ -366,7 +833,6 @@
           "requires_period": true
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Buffered clock output on global network",
@@ -380,16 +846,128 @@
       }
     }
   ],
-
+  "differential": {
+    "source": "iCE40 Technology Library, SB_IO; DS-ICE40-UltraPlus Section 4 (I/O)",
+    "type": "pseudo",
+    "io_type": "SB_LVCMOS",
+    "output": {
+      "serializer": [
+        {
+          "description": "2:1 DDR output using dual SB_IO (pseudo-differential LVDS)",
+          "ratio": 2,
+          "required_clocks": [
+            "fclk"
+          ],
+          "map": {
+            "verilog-2005": [
+              "SB_IO #(\n",
+              "    .PIN_TYPE(6'b010000)\n",
+              ") u_%%instance%%_p (\n",
+              "    .PACKAGE_PIN(%%pin_p%%),\n",
+              "    .OUTPUT_CLK(%%fclk%%),\n",
+              "    .D_OUT_0(%%D0%%),\n",
+              "    .D_OUT_1(%%D1%%)\n",
+              ");\n",
+              "SB_IO #(\n",
+              "    .PIN_TYPE(6'b010000)\n",
+              ") u_%%instance%%_n (\n",
+              "    .PACKAGE_PIN(%%pin_n%%),\n",
+              "    .OUTPUT_CLK(%%fclk%%),\n",
+              "    .D_OUT_0(~%%D0%%),\n",
+              "    .D_OUT_1(~%%D1%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\SB_IO $auto$%%instance%%_p\n",
+              "  parameter \\PIN_TYPE 6'010000\n",
+              "  connect \\PACKAGE_PIN \\%%pin_p%%\n",
+              "  connect \\OUTPUT_CLK \\%%fclk%%\n",
+              "  connect \\D_OUT_0 \\%%D0%%\n",
+              "  connect \\D_OUT_1 \\%%D1%%\n",
+              "end\n",
+              "wire width 1 \\jz_inv_d0_%%instance%%\n",
+              "wire width 1 \\jz_inv_d1_%%instance%%\n",
+              "cell $not $auto$inv_d0_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%D0%%\n",
+              "  connect \\Y \\jz_inv_d0_%%instance%%\n",
+              "end\n",
+              "cell $not $auto$inv_d1_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%D1%%\n",
+              "  connect \\Y \\jz_inv_d1_%%instance%%\n",
+              "end\n",
+              "cell \\SB_IO $auto$%%instance%%_n\n",
+              "  parameter \\PIN_TYPE 6'010000\n",
+              "  connect \\PACKAGE_PIN \\%%pin_n%%\n",
+              "  connect \\OUTPUT_CLK \\%%fclk%%\n",
+              "  connect \\D_OUT_0 \\jz_inv_d0_%%instance%%\n",
+              "  connect \\D_OUT_1 \\jz_inv_d1_%%instance%%\n",
+              "end\n"
+            ]
+          }
+        }
+      ]
+    }
+  },
   "fixed_pins": [
-    { "pad": "RGB0",          "name": "RGB0",    "pin": 39, "note": "LED driver output" },
-    { "pad": "RGB1",          "name": "RGB1",    "pin": 40, "note": "LED driver output" },
-    { "pad": "RGB2",          "name": "RGB2",    "pin": 41, "note": "LED driver output" },
-    { "pad": "IOB_32a_SPI_SO", "name": "SPI_SO",  "pin": 14, "note": "SPI configuration flash" },
-    { "pad": "IOB_33b_SPI_SI", "name": "SPI_SI",  "pin": 17, "note": "SPI configuration flash" },
-    { "pad": "IOB_34a_SPI_SCK","name": "SPI_SCK", "pin": 15, "note": "SPI configuration flash" },
-    { "pad": "IOB_35b_SPI_SS", "name": "SPI_SS",  "pin": 16, "note": "SPI configuration flash" },
-    { "pad": "creset_b",       "name": "CRESET",  "pin": 8,  "note": "Configuration reset" },
-    { "pad": "CDONE",          "name": "CDONE",   "pin": 7,  "note": "Configuration done" }
+    {
+      "pad": "RGB0",
+      "name": "RGB0",
+      "pin": 39,
+      "note": "LED driver output"
+    },
+    {
+      "pad": "RGB1",
+      "name": "RGB1",
+      "pin": 40,
+      "note": "LED driver output"
+    },
+    {
+      "pad": "RGB2",
+      "name": "RGB2",
+      "pin": 41,
+      "note": "LED driver output"
+    },
+    {
+      "pad": "IOB_32a_SPI_SO",
+      "name": "SPI_SO",
+      "pin": 14,
+      "note": "SPI configuration flash"
+    },
+    {
+      "pad": "IOB_33b_SPI_SI",
+      "name": "SPI_SI",
+      "pin": 17,
+      "note": "SPI configuration flash"
+    },
+    {
+      "pad": "IOB_34a_SPI_SCK",
+      "name": "SPI_SCK",
+      "pin": 15,
+      "note": "SPI configuration flash"
+    },
+    {
+      "pad": "IOB_35b_SPI_SS",
+      "name": "SPI_SS",
+      "pin": 16,
+      "note": "SPI configuration flash"
+    },
+    {
+      "pad": "creset_b",
+      "name": "CRESET",
+      "pin": 8,
+      "note": "Configuration reset"
+    },
+    {
+      "pad": "CDONE",
+      "name": "CDONE",
+      "pin": 7,
+      "note": "Configuration done"
+    }
   ]
 }

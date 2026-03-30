@@ -627,11 +627,14 @@ An array of serializer (or deserializer) option objects, ordered by ascending ra
 
 Each element:
 
-| Key           | Type    | Required | Description                           |
-|---------------|---------|----------|---------------------------------------|
-| `description` | string  | Yes      | What this primitive does              |
-| `ratio`       | integer | Yes      | Serialization/deserialization ratio   |
-| `map`         | object  | Yes      | Backend templates                     |
+| Key               | Type    | Required | Description                                                        |
+|-------------------|---------|----------|--------------------------------------------------------------------|
+| `description`     | string  | Yes      | What this primitive does                                           |
+| `ratio`           | integer | Yes      | Serialization/deserialization ratio                                |
+| `required_clocks` | array   | Yes      | Clock/reset signals the primitive needs; subset of `["fclk", "pclk", "reset"]` |
+| `map`             | object  | Yes      | Backend templates                                                  |
+
+The `required_clocks` array tells the compiler which pin attributes (`fclk`, `pclk`, `reset`) are mandatory for pins that use this serializer or deserializer. For example, a simple DDR primitive (ratio 2) may only require `["fclk"]`, while a 10:1 serializer typically requires `["fclk", "pclk", "reset"]`. The compiler uses this field to validate differential pin declarations in the project file, rather than hardcoding which attributes are required.
 
 ### 10.3 `clock` Object
 
