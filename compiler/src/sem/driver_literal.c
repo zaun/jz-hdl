@@ -252,9 +252,37 @@ static void sem_check_literal_width(JZASTNode *lit,
     }
 
     /* If not purely decimal digits, treat as a potential CONST/CONFIG name
-     * when it looks like a single identifier. More complex expressions are
-     * left to future constant-eval integration.
+     * when it looks like a single identifier (or CONFIG.name). More complex
+     * expressions are left to future constant-eval integration.
      */
+
+    /* Check for CONFIG.name pattern first. */
+    if (strncmp(start, "CONFIG.", 7) == 0 && start[7] != '\0') {
+        const char *config_name = start + 7;
+        /* Validate the name portion is a simple identifier. */
+        const char *cp = config_name;
+        if (!((*cp >= 'A' && *cp <= 'Z') || (*cp >= 'a' && *cp <= 'z') || *cp == '_')) {
+            goto not_found;
+        }
+        for (; *cp; ++cp) {
+            if (!((*cp >= 'A' && *cp <= 'Z') || (*cp >= 'a' && *cp <= 'z') ||
+                  (*cp >= '0' && *cp <= '9') || *cp == '_')) {
+                goto not_found;
+            }
+        }
+        if (project_symbols && project_symbols->data) {
+            const JZSymbol *syms = (const JZSymbol *)project_symbols->data;
+            size_t count = project_symbols->len / sizeof(JZSymbol);
+            for (size_t i = 0; i < count; ++i) {
+                if (syms[i].kind == JZ_SYM_CONFIG && syms[i].name &&
+                    strcmp(syms[i].name, config_name) == 0) {
+                    return;
+                }
+            }
+        }
+        goto not_found;
+    }
+
     const char *p = start;
     if (!((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || *p == '_')) {
         return; /* not an identifier-like width */
@@ -286,6 +314,7 @@ static void sem_check_literal_width(JZASTNode *lit,
         }
     }
 
+not_found:
     /* No matching CONST/CONFIG name found. */
     sem_report_rule(diagnostics,
                     lit->loc,

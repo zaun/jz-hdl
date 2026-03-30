@@ -12,7 +12,7 @@ outline: deep
 
 **Syntax:** `width'base_value`
 
-- **width**: positive integer or `CONST` name
+- **width**: positive integer, `CONST` name, or `CONFIG.<name>`
 - **base**: `b`, `d`, or `h`
 - Binary allows `0`, `1`, `x`, `z` (underscore `_` for readability)
 - Decimal/hex do not allow `x` or `z`
@@ -39,6 +39,8 @@ Overflow (intrinsic width > declared width) is a compile error.
 12'd4095        // decimal, 12 bits
 4'bx            // intrinsic 1, extends to 4'bxxxx
 8'hF            // intrinsic 4, zero-extended to 8'h0F
+WIDTH'hAB       // CONST-based width
+CONFIG.W'hAB    // CONFIG-based width
 ```
 
 **Extension table:**
@@ -55,7 +57,7 @@ Overflow (intrinsic width > declared width) is a compile error.
 - Bare integer in runtime expression (`data <= data << 1`) → error; use `1'b1`
 - Decimal with `x`/`z` (`8'd10x`) → error
 - Hex with `x`/`z` (`8'hFx`, `8'hz0`) → error
-- Undefined CONST in width → error
+- Undefined CONST or CONFIG in width → error
 - Overflow (intrinsic width > declared width) → error
 
 ## Signedness model

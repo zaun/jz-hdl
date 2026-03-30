@@ -21,7 +21,7 @@ A sized literal has form:
 ```
 <width>'<base><value>
 ```
-- **width**: positive integer or `CONST` name (compile‑time constant)
+- **width**: positive integer, `CONST` name, or `CONFIG.<name>` (compile‑time constant)
 - **base**: one of `b`, `d`, `h`
 - **value**: digits (underscores `_` allowed for readability, not leading/trailing)
 

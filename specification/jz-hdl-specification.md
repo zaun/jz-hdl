@@ -297,7 +297,7 @@ All drivers assign z to inout_port:
 
 **Syntax:** `<width>'<base><value>`
 
-- `<width>`: Positive integer or `CONST` name specifying the number of bits
+- `<width>`: Positive integer, `CONST` name, or `CONFIG.<name>` specifying the number of bits
 - `<base>`: Single character (`b`, `d`, or `h`)
   - `b`: Binary (digits: 0, 1, `x`, `z`, `_`)
   - `d`: Decimal (digits: 0–9, `_` only; `x` and `z` not supported)
@@ -341,6 +341,7 @@ When a literal's **intrinsic bit-width** is less than the declared width, it is 
 8'hFF             // 8-bit hex, exactly 8 bits
 32'h00            // 32-bit hex, all zeros
 WIDTH'hAB         // WIDTH bits (using CONST WIDTH)
+CONFIG.W'hAB      // CONFIG.W bits (using CONFIG W)
 25'h1FFFFFF       // 25-bit hex; intrinsic width = 25 bits -> fits exactly
 25'h3FFFFFF       // 25-bit hex; intrinsic width = 26 bits -> overflow
 ```
