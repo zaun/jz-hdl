@@ -1,0 +1,4 @@
+File: 4_13_INSTANCE_PORT_DIRECTION_MISMATCH-direction_incompatible.jz
+      35:17   error INSTANCE_PORT_DIRECTION_MISMATCH S4.13/S6.9 Child port direction incompatible with connection/pin category
+      45:17   error INSTANCE_PORT_DIRECTION_MISMATCH S4.13/S6.9 Child port direction incompatible with connection/pin category
+      63:17   error INSTANCE_PORT_DIRECTION_MISMATCH S4.13/S6.9 Child port direction incompatible with connection/pin category

@@ -1,0 +1,85 @@
+// MEM_INVALID_DEPTH: Depth <= 0 triggers error.
+// Valid depth included for no false positives.
+
+@project MEM_INVALID_DEPTH_zero_depth
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: depth = 0 in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [0] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: depth = 0 in top module
+    MEM {
+        mem_b [8] [0] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // Valid: depth = 1 (no error expected)
+    MEM {
+        mem_ok [8] [1] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_ok.wr_ok[addr] <= wdata;
+    }
+@endmod

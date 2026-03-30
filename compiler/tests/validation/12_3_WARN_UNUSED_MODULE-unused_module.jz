@@ -1,0 +1,87 @@
+// WARN_UNUSED_MODULE: Module declared but never instantiated or used as @top.
+// Tests unused module detection with multiple unused modules.
+// Valid: module used as @top and modules instantiated via @new are not flagged.
+
+@project WARN_UNUSED_MODULE_unused_module
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: module declared but never instantiated
+@module UnusedModA
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Trigger 2: another unused module
+@module UnusedModB
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    ASYNCHRONOUS {
+        data <= din;
+    }
+@endmod
+
+// Valid: module that is instantiated by TopMod (no warning)
+@module UsedMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Valid: this is the @top module (no warning)
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_u UsedMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

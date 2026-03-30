@@ -1,0 +1,68 @@
+// INSTANCE_ARRAY_PARENT_BIT_OVERLAP: Array OUT mappings drive overlapping parent bits.
+// Tests overlapping bit ranges when multiple array instances map OUT to same parent bits.
+// Valid non-overlapping mappings are included for negative testing.
+
+@project INSTANCE_ARRAY_PARENT_BIT_OVERLAP_overlapping_out_bits
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with OUT port
+@module ChildMod
+    PORT {
+        IN  [1] din;
+        OUT [4] data;
+    }
+    ASYNCHRONOUS {
+        data = {din, din, din, din};
+    }
+@endmod
+
+// Child with 1-bit output
+@module SmallChild
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    WIRE {
+        result [8];
+        bus [4];
+    }
+
+    // Trigger 1: overlapping OUT bit ranges — both instances drive result[3:0]
+    @new inst_a[2] ChildMod {
+        IN  [1] din = r;
+        OUT [4] data = result[3:0];
+    };
+
+    // Valid: non-overlapping OUT mapping (no trigger)
+    @new inst_b[4] SmallChild {
+        IN  [1] din = r;
+        OUT [1] data = bus[IDX];
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

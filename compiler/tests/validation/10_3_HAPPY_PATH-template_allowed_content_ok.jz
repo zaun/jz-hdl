@@ -1,0 +1,197 @@
+// HAPPY_PATH: All valid content within templates — no diagnostics expected.
+// Tests: directional assignments (<=, =>), alias assignments (=), IF/ELIF/ELSE,
+// SELECT/CASE, @scratch wire declaration and use, CONST/CONFIG references,
+// multiple @scratch declarations, @scratch with width of 1, widthof() in scratch width,
+// expressions with params, zero/sign-extended assignments.
+
+@project HAPPY_PATH_template_allowed_content_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+        OUT [8] dout2 = _;
+        OUT [8] dout3 = _;
+        OUT [8] dout4 = _;
+        OUT [8] dout5 = _;
+        OUT [1] dout6 = _;
+        OUT [8] dout7 = _;
+        OUT [8] dout8 = _;
+    }
+@endproj
+
+// Happy path 1: directional assignment using parameters (<=)
+@template dir_assign(dst, src)
+    dst <= src;
+@endtemplate
+
+// Happy path 2: alias assignment using parameters (=)
+@template alias_assign(dst, src)
+    dst = src;
+@endtemplate
+
+// Happy path 3: reverse directional assignment (=>)
+@template rev_assign(src, dst)
+    src => dst;
+@endtemplate
+
+// Happy path 4: @scratch wire declaration and use
+@template scratch_use(a, b)
+    @scratch tmp [8];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Happy path 5: CONST/CONFIG reference without passing as param
+@template const_ref(a, b)
+    @scratch tmp [WIDTH];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Happy path 6: IF/ELSE inside template
+@template if_else(cond, dst, src_a, src_b)
+    IF (cond) {
+        dst <= src_a;
+    } ELSE {
+        dst <= src_b;
+    }
+@endtemplate
+
+// Happy path 7: IF/ELIF/ELSE inside template
+@template if_elif(cond_a, cond_b, dst, src_a, src_b, src_c)
+    IF (cond_a) {
+        dst <= src_a;
+    } ELIF (cond_b) {
+        dst <= src_b;
+    } ELSE {
+        dst <= src_c;
+    }
+@endtemplate
+
+// Happy path 8: SELECT/CASE inside template
+@template select_case(sel, dst)
+    SELECT (sel) {
+        CASE 8'h00 {
+            dst <= 8'hFF;
+        }
+        CASE 8'h01 {
+            dst <= 8'h0F;
+        }
+        DEFAULT {
+            dst <= 8'h00;
+        }
+    }
+@endtemplate
+
+// Happy path 9: @scratch with width of 1 (minimal valid width)
+@template scratch_min(a, b)
+    @scratch t [1];
+    t <= a;
+    b <= t;
+@endtemplate
+
+// Happy path 10: multiple @scratch declarations in same template
+@template multi_scratch(a, b, c)
+    @scratch x [8];
+    @scratch y [8];
+    x <= a;
+    y <= b;
+    c <= x;
+@endtemplate
+
+// Happy path 11: expression with params in template
+@template expr_tmpl(a, b, c)
+    c <= a + b;
+@endtemplate
+
+// Happy path 12: zero-extended directional
+@template zext_assign(dst, src)
+    dst <=z src;
+@endtemplate
+
+// Happy path 13: sign-extended directional
+@template sext_assign(dst, src)
+    dst <=s src;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    // Module-scoped template with scratch
+    @template mod_tmpl(a, b)
+        @scratch tmp [8];
+        tmp <= a;
+        b <= tmp;
+    @endtemplate
+
+    WIRE {
+        w1 [8];
+    }
+
+    ASYNCHRONOUS {
+        @apply mod_tmpl(din, w1);
+        @apply alias_assign(data, w1);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] data;
+        OUT [8] dout2;
+        OUT [8] dout3;
+        OUT [8] dout4;
+        OUT [8] dout5;
+        OUT [1] dout6;
+        OUT [8] dout7;
+        OUT [8] dout8;
+    }
+
+    // Module-scoped template with IF/ELSE
+    @template top_if(cond, dst, a, b)
+        IF (cond) {
+            dst <= a;
+        } ELSE {
+            dst <= b;
+        }
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [8] din = r;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    WIRE {
+        w1 [8];
+        w2 [8];
+    }
+
+    ASYNCHRONOUS {
+        @apply dir_assign(w1, din);
+        @apply scratch_use(w1, data);
+        @apply const_ref(din, dout2);
+        @apply rev_assign(din, dout3);
+        @apply select_case(din, dout4);
+        @apply scratch_min(din[0], dout6);
+        @apply multi_scratch(din, w1, dout7);
+        @apply expr_tmpl(din, w1, dout5);
+        @apply zext_assign(w2, din[3:0]);
+        @apply alias_assign(dout8, w2);
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        @apply dir_assign(r, din);
+    }
+@endmod

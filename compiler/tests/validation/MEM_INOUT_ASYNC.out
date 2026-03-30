@@ -1,3 +1,0 @@
-File: MEM_INOUT_ASYNC.jz
-      18:13   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used
-      18:16   error MEM_INOUT_ASYNC S7.1 INOUT ports are always synchronous; ASYNC/SYNC keyword not permitted

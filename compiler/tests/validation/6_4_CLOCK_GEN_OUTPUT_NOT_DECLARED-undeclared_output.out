@@ -1,0 +1,2 @@
+File: 6_4_CLOCK_GEN_OUTPUT_NOT_DECLARED-undeclared_output.jz
+      23:13   error CLOCK_GEN_OUTPUT_NOT_DECLARED S6.4.1 CLOCK_GEN output clock not declared in CLOCKS block

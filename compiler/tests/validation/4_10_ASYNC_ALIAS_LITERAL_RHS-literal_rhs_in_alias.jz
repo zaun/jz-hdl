@@ -1,0 +1,84 @@
+// ASYNC_ALIAS_LITERAL_RHS: Literal on RHS of alias = in ASYNCHRONOUS block.
+// Tests bare alias (=), zero-extend alias (=z), sign-extend alias (=s) with
+// literal RHS across multiple modules. Valid uses (non-literal alias RHS,
+// receive-assign with literal) verify no false positives.
+
+@project ASYNC_ALIAS_LITERAL_RHS_literal_rhs_in_alias
+    @top TopMod {
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [1] dout_c = _;
+        OUT [8] dout_d = _;
+        OUT [8] dout_e = _;
+    }
+@endproj
+
+// Helper module: alias OUT port to literal
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] trg_out;
+        OUT [8] val_out;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: alias OUT port to sized binary literal (helper module)
+        trg_out = 8'b0000_0000;
+        // Valid: alias with non-literal RHS (signal reference)
+        val_out = din;
+    }
+@endmod
+
+// Module with zero-extend alias to literal
+@module ExtMod
+    PORT {
+        IN  [8] din;
+        OUT [8] trg_out;
+        OUT [8] val_out;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: alias-zero-extend OUT port to literal (helper module)
+        trg_out =z 1'b0;
+        // Valid: alias with non-literal RHS
+        val_out = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [1] dout_c;
+        OUT [8] dout_d;
+        OUT [8] dout_e;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] din = din;
+        OUT [8] trg_out = _;
+        OUT [8] val_out = _;
+    };
+
+    @new inst_e ExtMod {
+        IN  [8] din = din;
+        OUT [8] trg_out = _;
+        OUT [8] val_out = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: alias OUT port to sized hex literal (top module)
+        dout_a = 8'hFF;
+        // Trigger 4: alias-sign-extend OUT port to literal
+        dout_b =s 1'b1;
+        // Trigger 5: alias OUT port to single-bit literal
+        dout_c = 1'b0;
+
+        // Valid: receive-assign with literal (not alias — should NOT trigger)
+        dout_d <= 8'hAA;
+        // Valid: alias with non-literal RHS
+        dout_e = din;
+    }
+@endmod

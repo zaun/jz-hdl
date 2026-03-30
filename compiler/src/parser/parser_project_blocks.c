@@ -15,29 +15,6 @@
 #include "parser_internal.h"
 
 /**
- * @brief Check if a name is a valid CLOCK_GEN generator type.
- *
- * Valid types are PLL, DLL, CLKDIV, OSC, or BUF, optionally followed by
- * digits (e.g., PLL2, CLKDIV2, BUF3).
- */
-static int is_valid_clock_gen_type(const char *name) {
-    if (!name) return 0;
-    const char *rest = NULL;
-    if (strncmp(name, "CLKDIV", 6) == 0) rest = name + 6;
-    else if (strncmp(name, "PLL", 3) == 0) rest = name + 3;
-    else if (strncmp(name, "DLL", 3) == 0) rest = name + 3;
-    else if (strncmp(name, "OSC", 3) == 0) rest = name + 3;
-    else if (strncmp(name, "BUF", 3) == 0) rest = name + 3;
-    else return 0;
-    /* Optional trailing digits only */
-    while (*rest) {
-        if (!isdigit((unsigned char)*rest)) return 0;
-        rest++;
-    }
-    return 1;
-}
-
-/**
  * @brief Parse the body of a CLOCKS block.
  *
  * CLOCKS blocks associate clock names with attribute dictionaries.
@@ -493,11 +470,8 @@ JZASTNode *parse_clock_gen_block(Parser *p, const JZToken *block_kw) {
             return NULL;
         }
         const char *gen_type = t->lexeme;
-        if (!is_valid_clock_gen_type(gen_type)) {
-            parser_error(p, "CLOCK_GEN generator must be PLL, DLL, CLKDIV, OSC, or BUF (with optional numeric suffix)");
-            jz_ast_free(cgen);
-            return NULL;
-        }
+        /* Accept any identifier here; semantic analysis (CLOCK_GEN_INVALID_TYPE)
+         * validates the generator type name. */
         advance(p);
 
         JZASTNode *unit = jz_ast_new(JZ_AST_CLOCK_GEN_UNIT, t->loc);

@@ -1,0 +1,39 @@
+// IMPORT_FILE_MULTIPLE_TIMES: Same source file imported more than once.
+// Tests that importing the same file twice produces an error on the second @import.
+// The first import succeeds; the second triggers the duplicate detection.
+
+@project IMPORT_FILE_MULTIPLE_TIMES_duplicate_import
+
+    // Valid: first import of this file
+    @import "6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import_lib.jz";
+
+    // Trigger 1: same file imported again
+    @import "6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import_lib.jz";
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a ImportedMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

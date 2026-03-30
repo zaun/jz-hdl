@@ -1,0 +1,4 @@
+File: 6_5_PIN_TERM_INVALID-bad_termination.jz
+      17:9    error PIN_TERM_INVALID S6.5/S6.9 Invalid termination value (must be ON or OFF)
+      22:9    error PIN_TERM_INVALID S6.5/S6.9 Invalid termination value (must be ON or OFF)
+      29:9    error PIN_TERM_INVALID S6.5/S6.9 Invalid termination value (must be ON or OFF)

@@ -1,0 +1,6 @@
+File: 1_6_LIT_INVALID_DIGIT_FOR_BASE-z_in_hex_literal.jz
+      19:17   error LIT_INVALID_DIGIT_FOR_BASE S2.1 Literal contains digit not allowed for its base (b/d/h)
+      30:21   error LIT_INVALID_DIGIT_FOR_BASE S2.1 Literal contains digit not allowed for its base (b/d/h)
+      34:21   error LIT_INVALID_DIGIT_FOR_BASE S2.1 Literal contains digit not allowed for its base (b/d/h)
+      40:23   error LIT_INVALID_DIGIT_FOR_BASE S2.1 Literal contains digit not allowed for its base (b/d/h)
+      49:18   error LIT_INVALID_DIGIT_FOR_BASE S2.1 Literal contains digit not allowed for its base (b/d/h)

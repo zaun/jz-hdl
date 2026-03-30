@@ -1,0 +1,3 @@
+File: 6_9_TOP_NO_CONNECT_WITHOUT_WIDTH-missing_width.jz
+      10:16   error TOP_NO_CONNECT_WITHOUT_WIDTH S6.9 Port bound to `_` but missing explicit width in top-level @top list
+      12:16   error TOP_NO_CONNECT_WITHOUT_WIDTH S6.9 Port bound to `_` but missing explicit width in top-level @top list

@@ -556,6 +556,19 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
                             msg);
         }
 
+        /* CONST identifiers are compile-time constants and cannot be assigned. */
+        if (sym->kind == JZ_SYM_CONST) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "'%s' is a CONST and cannot be assigned to\n"
+                     "CONST values are read-only compile-time constants",
+                     node->name);
+            sem_report_rule(diagnostics,
+                            node->loc,
+                            "ASYNC_INVALID_STATEMENT_TARGET",
+                            msg);
+        }
+
         /* Disallow driving IN ports (directional mismatch). Legal tri-state
          * driving is expressed via INOUT ports, not IN ports.
          */
@@ -667,11 +680,12 @@ static void sem_check_lvalue_targets_recursive(JZASTNode *node,
             if (!is_sync) {
                 char msg[512];
                 snprintf(msg, sizeof(msg),
-                         "'%s' is not a valid assignment target in ASYNCHRONOUS blocks",
-                         node->name ? node->name : "(expression)");
+                         "%s.%s.addr may only be assigned in SYNCHRONOUS blocks",
+                         mem_ref.mem_decl && mem_ref.mem_decl->name ? mem_ref.mem_decl->name : "mem",
+                         mem_ref.port->name ? mem_ref.port->name : "port");
                 sem_report_rule(diagnostics,
                                 node->loc,
-                                "ASYNC_INVALID_STATEMENT_TARGET",
+                                "MEM_SYNC_ADDR_IN_ASYNC_BLOCK",
                                 msg);
             }
             break;
@@ -1043,7 +1057,9 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                       JZDiagnosticList *diagnostics,
                                       int is_sync,
                                       JZBuffer *mem_out_writes,
-                                      JZBuffer *mem_sync_reads)
+                                      JZBuffer *mem_sync_reads,
+                                      JZBuffer *mem_inout_addrs,
+                                      JZBuffer *mem_inout_wdatas)
 {
     if (!stmt || stmt->type != JZ_AST_STMT_ASSIGN || stmt->child_count < 2) return;
     JZASTNode *lhs = stmt->children[0];
@@ -1171,13 +1187,54 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                         }
                     }
 
-                    /* SR latches are allowed syntactically; semantic width
-                     * rules (set/reset width == latch width) are enforced via
-                     * general type/assignment checks.
-                     * Additional SR-specific validation can be added here if
-                     * needed.
+                    /* For SR latches, enforce that both set and reset
+                     * expression widths match the latch width (S4.8).
+                     * Guard form: latch <= set_expr : reset_expr
+                     * children[1] = set_expr, children[2] = reset_expr.
                      */
-                    (void)is_sr_latch;
+                    if (is_latch_guard && is_sr_latch && stmt->child_count >= 3) {
+                        JZBitvecType latch_t;
+                        latch_t.width = 0;
+                        latch_t.is_signed = 0;
+                        infer_expr_type(lhs_base, mod_scope, project_symbols,
+                                        diagnostics, &latch_t);
+
+                        JZASTNode *set_ast = stmt->children[1];
+                        JZASTNode *reset_ast = stmt->children[2];
+
+                        if (set_ast && latch_t.width > 0) {
+                            JZBitvecType set_t;
+                            set_t.width = 0;
+                            set_t.is_signed = 0;
+                            infer_expr_type(set_ast, mod_scope, project_symbols,
+                                            diagnostics, &set_t);
+                            if (set_t.width > 0 && set_t.width != latch_t.width) {
+                                char msg[512];
+                                snprintf(msg, sizeof(msg),
+                                         "SR-latch '%s' set expression has width %u, "
+                                         "but latch width is %u",
+                                         lhs_base->name, set_t.width, latch_t.width);
+                                sem_report_rule(diagnostics, set_ast->loc,
+                                                "LATCH_SR_WIDTH_MISMATCH", msg);
+                            }
+                        }
+                        if (reset_ast && latch_t.width > 0) {
+                            JZBitvecType reset_t;
+                            reset_t.width = 0;
+                            reset_t.is_signed = 0;
+                            infer_expr_type(reset_ast, mod_scope, project_symbols,
+                                            diagnostics, &reset_t);
+                            if (reset_t.width > 0 && reset_t.width != latch_t.width) {
+                                char msg[512];
+                                snprintf(msg, sizeof(msg),
+                                         "SR-latch '%s' reset expression has width %u, "
+                                         "but latch width is %u",
+                                         lhs_base->name, reset_t.width, latch_t.width);
+                                sem_report_rule(diagnostics, reset_ast->loc,
+                                                "LATCH_SR_WIDTH_MISMATCH", msg);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1348,14 +1405,26 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
      * forbidden. Registers and other nets must be driven via directional
      * operators (<=, => and their z/s variants) so that next-state semantics
      * remain well-defined.
+     *
+     * Skip this generic rule when the LHS or RHS is a MEM port qualified
+     * identifier, so that MEM-specific rules (MEM_SYNC_ADDR_WITHOUT_RECEIVE,
+     * MEM_READ_SYNC_WITH_EQUALS, MEM_INOUT_WDATA_WRONG_OP) can fire instead.
      */
-    if (is_sync && is_alias) {
-        sem_report_rule(diagnostics,
-                        stmt->loc,
-                        "SYNC_NO_ALIAS",
-                        "SYNCHRONOUS blocks do not allow '=' (alias); did you mean '<='?\n"
-                        "use '<=' (receive) or '=>' (drive) for register assignments");
-        return;
+    {
+        JZMemPortRef pre_lhs_ref;
+        memset(&pre_lhs_ref, 0, sizeof(pre_lhs_ref));
+        int lhs_is_mem = sem_match_mem_port_qualified_ident(lhs, mod_scope, NULL, &pre_lhs_ref);
+        JZMemPortRef pre_rhs_ref;
+        memset(&pre_rhs_ref, 0, sizeof(pre_rhs_ref));
+        int rhs_is_mem = sem_match_mem_port_qualified_ident(rhs, mod_scope, NULL, &pre_rhs_ref);
+        if (is_sync && is_alias && !lhs_is_mem && !rhs_is_mem) {
+            sem_report_rule(diagnostics,
+                            stmt->loc,
+                            "SYNC_NO_ALIAS",
+                            "SYNCHRONOUS blocks do not allow '=' (alias); did you mean '<='?\n"
+                            "use '<=' (receive) or '=>' (drive) for register assignments");
+            return;
+        }
     }
 
     if (!skip_width_checks && lhs_w > 0 && rhs_w > 0) {
@@ -1483,6 +1552,7 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
             rhs_t.width > 0 && lhs_w > 0 && lhs_w < rhs_t.width &&
             rhs->name &&
             (!strcmp(rhs->name, "uadd") || !strcmp(rhs->name, "sadd") ||
+             !strcmp(rhs->name, "usub") || !strcmp(rhs->name, "ssub") ||
              !strcmp(rhs->name, "umul") || !strcmp(rhs->name, "smul"))) {
             char msg[512];
             snprintf(msg, sizeof(msg),
@@ -1690,6 +1760,33 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 msg);
             } else {
                 sem_check_mem_addr_assign(&lhs_qref, rhs, mod_scope, project_symbols, diagnostics);
+                /* MEM_MULTIPLE_ADDR_ASSIGNS: track INOUT .addr assignments. */
+                if (mem_inout_addrs && lhs_qref.mem_decl && lhs_qref.port) {
+                    size_t count = mem_inout_addrs->len / sizeof(JZMemWriteKey);
+                    JZMemWriteKey *arr = (JZMemWriteKey *)mem_inout_addrs->data;
+                    int dup = 0;
+                    for (size_t ki = 0; ki < count; ++ki) {
+                        if (arr[ki].mem_decl == lhs_qref.mem_decl &&
+                            arr[ki].port == lhs_qref.port) {
+                            dup = 1;
+                            break;
+                        }
+                    }
+                    if (dup) {
+                        char msg[512];
+                        snprintf(msg, sizeof(msg),
+                                 "multiple assignments to %s.%s.addr within same execution path",
+                                 lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
+                                 lhs_qref.port->name ? lhs_qref.port->name : "port");
+                        sem_report_rule(diagnostics, lhs->loc,
+                                        "MEM_MULTIPLE_ADDR_ASSIGNS", msg);
+                    } else {
+                        JZMemWriteKey key;
+                        key.mem_decl = lhs_qref.mem_decl;
+                        key.port = lhs_qref.port;
+                        (void)jz_buf_append(mem_inout_addrs, &key, sizeof(key));
+                    }
+                }
             }
         } else if (lhs_qref.field == MEM_PORT_FIELD_WDATA) {
             if (!is_sync) {
@@ -1712,6 +1809,34 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
                                 stmt->loc,
                                 "MEM_INOUT_WDATA_WRONG_OP",
                                 msg);
+            } else {
+                /* MEM_MULTIPLE_WDATA_ASSIGNS: track INOUT .wdata assignments. */
+                if (mem_inout_wdatas && lhs_qref.mem_decl && lhs_qref.port) {
+                    size_t count = mem_inout_wdatas->len / sizeof(JZMemWriteKey);
+                    JZMemWriteKey *arr = (JZMemWriteKey *)mem_inout_wdatas->data;
+                    int dup = 0;
+                    for (size_t ki = 0; ki < count; ++ki) {
+                        if (arr[ki].mem_decl == lhs_qref.mem_decl &&
+                            arr[ki].port == lhs_qref.port) {
+                            dup = 1;
+                            break;
+                        }
+                    }
+                    if (dup) {
+                        char msg[512];
+                        snprintf(msg, sizeof(msg),
+                                 "multiple assignments to %s.%s.wdata within same execution path",
+                                 lhs_qref.mem_decl->name ? lhs_qref.mem_decl->name : "mem",
+                                 lhs_qref.port->name ? lhs_qref.port->name : "port");
+                        sem_report_rule(diagnostics, lhs->loc,
+                                        "MEM_MULTIPLE_WDATA_ASSIGNS", msg);
+                    } else {
+                        JZMemWriteKey key;
+                        key.mem_decl = lhs_qref.mem_decl;
+                        key.port = lhs_qref.port;
+                        (void)jz_buf_append(mem_inout_wdatas, &key, sizeof(key));
+                    }
+                }
             }
         } else if (lhs_qref.field == MEM_PORT_FIELD_NONE) {
             char msg[512];
@@ -1892,6 +2017,53 @@ static void sem_check_assignment_stmt(JZASTNode *stmt,
         }
     }
 
+    /* INOUT port RHS checks: bare port ref and .addr/.wdata are invalid reads. */
+    if (rhs_is_mem_q && rhs_qref.port && rhs_qref.port->block_kind &&
+        strcmp(rhs_qref.port->block_kind, "INOUT") == 0) {
+        if (rhs_qref.field == MEM_PORT_FIELD_NONE) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "%s.%s cannot be used directly as a signal\n"
+                     "use %s.%s.data to read or %s.%s.addr/.wdata to write",
+                     rhs_qref.mem_decl && rhs_qref.mem_decl->name ? rhs_qref.mem_decl->name : "mem",
+                     rhs_qref.port->name ? rhs_qref.port->name : "port",
+                     rhs_qref.mem_decl && rhs_qref.mem_decl->name ? rhs_qref.mem_decl->name : "mem",
+                     rhs_qref.port->name ? rhs_qref.port->name : "port",
+                     rhs_qref.mem_decl && rhs_qref.mem_decl->name ? rhs_qref.mem_decl->name : "mem",
+                     rhs_qref.port->name ? rhs_qref.port->name : "port");
+            sem_report_rule(diagnostics,
+                            rhs->loc,
+                            "MEM_PORT_USED_AS_SIGNAL",
+                            msg);
+        } else if (rhs_qref.field == MEM_PORT_FIELD_ADDR) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "%s.%s.addr is a write-only input and cannot be read\n"
+                     "use %s.%s.data to read memory output",
+                     rhs_qref.mem_decl && rhs_qref.mem_decl->name ? rhs_qref.mem_decl->name : "mem",
+                     rhs_qref.port->name ? rhs_qref.port->name : "port",
+                     rhs_qref.mem_decl && rhs_qref.mem_decl->name ? rhs_qref.mem_decl->name : "mem",
+                     rhs_qref.port->name ? rhs_qref.port->name : "port");
+            sem_report_rule(diagnostics,
+                            rhs->loc,
+                            "MEM_PORT_ADDR_READ",
+                            msg);
+        } else if (rhs_qref.field == MEM_PORT_FIELD_WDATA) {
+            char msg[512];
+            snprintf(msg, sizeof(msg),
+                     "%s.%s.wdata is a write-only input and cannot be read\n"
+                     "use %s.%s.data to read memory output",
+                     rhs_qref.mem_decl && rhs_qref.mem_decl->name ? rhs_qref.mem_decl->name : "mem",
+                     rhs_qref.port->name ? rhs_qref.port->name : "port",
+                     rhs_qref.mem_decl && rhs_qref.mem_decl->name ? rhs_qref.mem_decl->name : "mem",
+                     rhs_qref.port->name ? rhs_qref.port->name : "port");
+            sem_report_rule(diagnostics,
+                            rhs->loc,
+                            "MEM_PORT_ADDR_READ",
+                            msg);
+        }
+    }
+
     memset(&mem_ref, 0, sizeof(mem_ref));
     if (is_sync && rhs_is_mem_q && rhs_qref.port && rhs_qref.port->block_kind &&
         strcmp(rhs_qref.port->block_kind, "OUT") == 0 &&
@@ -1944,7 +2116,9 @@ void sem_check_block_assignments(JZASTNode *block,
                                         JZDiagnosticList *diagnostics,
                                         int is_sync,
                                         JZBuffer *mem_out_writes,
-                                        JZBuffer *mem_sync_reads)
+                                        JZBuffer *mem_sync_reads,
+                                        JZBuffer *mem_inout_addrs,
+                                        JZBuffer *mem_inout_wdatas)
 {
     if (!block || !mod_scope) return;
 
@@ -1953,7 +2127,7 @@ void sem_check_block_assignments(JZASTNode *block,
      * the statement directly rather than iterating its expression children.
      */
     if (block->type == JZ_AST_STMT_ASSIGN) {
-        sem_check_assignment_stmt(block, mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads);
+        sem_check_assignment_stmt(block, mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads, mem_inout_addrs, mem_inout_wdatas);
         return;
     }
 
@@ -1972,20 +2146,20 @@ void sem_check_block_assignments(JZASTNode *block,
 
         switch (stmt->type) {
         case JZ_AST_STMT_ASSIGN:
-            sem_check_assignment_stmt(stmt, mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads);
+            sem_check_assignment_stmt(stmt, mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads, mem_inout_addrs, mem_inout_wdatas);
             break;
 
         case JZ_AST_STMT_IF:
         case JZ_AST_STMT_ELIF:
             /* child[0] is the condition; remaining children form the body. */
             for (size_t j = 1; j < stmt->child_count; ++j) {
-                sem_check_block_assignments(stmt->children[j], mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads);
+                sem_check_block_assignments(stmt->children[j], mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads, mem_inout_addrs, mem_inout_wdatas);
             }
             break;
 
         case JZ_AST_STMT_ELSE:
             for (size_t j = 0; j < stmt->child_count; ++j) {
-                sem_check_block_assignments(stmt->children[j], mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads);
+                sem_check_block_assignments(stmt->children[j], mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads, mem_inout_addrs, mem_inout_wdatas);
             }
             break;
 
@@ -2009,7 +2183,9 @@ void sem_check_block_assignments(JZASTNode *block,
                                             diagnostics,
                                             is_sync,
                                             mem_out_writes,
-                                            &branch_reads);
+                                            &branch_reads,
+                                            mem_inout_addrs,
+                                            mem_inout_wdatas);
                 jz_buf_free(&branch_reads);
             }
             break;
@@ -2017,13 +2193,13 @@ void sem_check_block_assignments(JZASTNode *block,
         case JZ_AST_STMT_CASE:
             /* child[0] is case value; remaining children are body statements. */
             for (size_t j = 1; j < stmt->child_count; ++j) {
-                sem_check_block_assignments(stmt->children[j], mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads);
+                sem_check_block_assignments(stmt->children[j], mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads, mem_inout_addrs, mem_inout_wdatas);
             }
             break;
 
         case JZ_AST_STMT_DEFAULT:
             for (size_t j = 0; j < stmt->child_count; ++j) {
-                sem_check_block_assignments(stmt->children[j], mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads);
+                sem_check_block_assignments(stmt->children[j], mod_scope, project_symbols, diagnostics, is_sync, mem_out_writes, mem_sync_reads, mem_inout_addrs, mem_inout_wdatas);
             }
             break;
 

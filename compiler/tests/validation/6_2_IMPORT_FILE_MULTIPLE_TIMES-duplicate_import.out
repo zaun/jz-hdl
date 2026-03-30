@@ -1,0 +1,2 @@
+File: 6_2_IMPORT_FILE_MULTIPLE_TIMES-duplicate_import.jz
+      11:5    error IMPORT_FILE_MULTIPLE_TIMES S6.2.1 Same source file imported more than once into a single project (duplicate @import or nested re-import)

@@ -1,0 +1,77 @@
+// GLOBAL_CONST_NAME_DUPLICATE: Duplicate constant identifier within a single @global block.
+// Tests that the compiler rejects duplicate const_ids in the same block.
+// Valid uses: same const_id in different blocks (no collision), unique names.
+
+// Trigger 1: duplicate "OP_ADD" in same block
+@global OPCODES
+    OP_ADD = 4'b0001;
+    OP_SUB = 4'b0010;
+    OP_ADD = 4'b0011;
+@endglob
+
+// Valid: same const_id as OPCODES.OP_ADD, but in a different block (should NOT trigger)
+@global ALU
+    OP_ADD = 4'b0100;
+    OP_MUL = 4'b0101;
+@endglob
+
+// Trigger 2: multiple duplicates in same block — two pairs
+@global STATUS
+    IDLE    = 3'b000;
+    ACTIVE  = 3'b001;
+    IDLE    = 3'b010;
+    DONE    = 3'b011;
+    ACTIVE  = 3'b100;
+@endglob
+
+// Valid: all unique const_ids
+@global REGS
+    ADDR_A = 5'b00001;
+    ADDR_B = 5'b00010;
+    ADDR_C = 5'b00011;
+@endglob
+
+@project GLOBAL_CONST_NAME_DUPLICATE_dup_const_in_block
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [4] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [4] dout;
+    }
+    REGISTER {
+        r [4] = 4'b0000;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= OPCODES.OP_SUB;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [4] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [4] dout = _;
+    };
+
+    REGISTER {
+        r [4] = 4'b0000;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ALU.OP_ADD;
+    }
+@endmod

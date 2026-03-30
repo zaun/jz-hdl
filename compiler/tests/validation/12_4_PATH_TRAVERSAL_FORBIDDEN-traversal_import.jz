@@ -1,0 +1,47 @@
+// PATH_TRAVERSAL_FORBIDDEN: Paths with '..' traversal forbidden without --allow-traversal.
+// Tests traversal rejection in @import context.
+
+@project PATH_TRAVERSAL_FORBIDDEN_traversal_import
+
+    // Trigger 1: @import with .. traversal
+    @import "../escape/lib.jz";
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

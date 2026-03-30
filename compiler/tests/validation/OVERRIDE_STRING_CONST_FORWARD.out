@@ -1,3 +1,0 @@
-File: OVERRIDE_STRING_CONST_FORWARD.jz
-      23:21   error MEM_INIT_FILE_NOT_FOUND S7.5.2/S7.7.1 @file path does not resolve to readable file
-      45:7    error MEM_INIT_FILE_NOT_FOUND S7.5.2/S7.7.1 @file path does not resolve to readable file

@@ -1,0 +1,75 @@
+// TRISTATE_TRANSFORM_PER_BIT_FAIL: Per-bit tri-state pattern with different
+// enable conditions per bit group. Verifies that the compiler detects when
+// individual bit slices of the same signal have different driver sets.
+// Contexts: helper module with per-bit tristate wire, top module with per-bit
+// tristate wire.
+// NOTE: Compiler does not emit TRISTATE_TRANSFORM_PER_BIT_FAIL — it transforms
+// the per-bit pattern without error. See issues.md.
+
+@project TRISTATE_TRANSFORM_PER_BIT_FAIL_per_bit
+    @top TopMod {
+        IN  [1] en_a = _;
+        IN  [1] en_b = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module with per-bit tri-state: different enables for different slices
+@module HelperMod
+    PORT {
+        IN  [1] en_a;
+        IN  [1] en_b;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    ASYNCHRONOUS {
+        IF (en_a) {
+            w[7:4] <= 4'hA;
+        } ELSE {
+            w[7:4] <= 4'bzzzz;
+        }
+        IF (en_b) {
+            w[3:0] <= 4'hB;
+        } ELSE {
+            w[3:0] <= 4'bzzzz;
+        }
+        data <= w;
+    }
+@endmod
+
+// Top module with per-bit tri-state pattern
+@module TopMod
+    PORT {
+        IN  [1] en_a;
+        IN  [1] en_b;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w_top [8];
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] en_a = en_a;
+        IN  [1] en_b = en_b;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        IF (en_a) {
+            w_top[7:4] <= 4'hC;
+        } ELSE {
+            w_top[7:4] <= 4'bzzzz;
+        }
+        IF (en_b) {
+            w_top[3:0] <= 4'hD;
+        } ELSE {
+            w_top[3:0] <= 4'bzzzz;
+        }
+        data <= w_top;
+    }
+@endmod

@@ -1,0 +1,77 @@
+// SYNC_CONCAT_DUP_REG: Concatenation LHS includes same register more than once.
+// Tests duplicate registers in concat decomposition in SYNC blocks.
+// Valid concat with unique registers included to verify no false positives.
+
+@project SYNC_CONCAT_DUP_REG_duplicate_reg_in_concat
+    @top TopMod {
+        IN  [1]  clk = _;
+        IN  [8]  data = _;
+        IN  [12] wide = _;
+        OUT [8]  out_a = _;
+        OUT [8]  out_b = _;
+        OUT [4]  out_c = _;
+    }
+@endproj
+
+// Helper module: duplicate register in concat
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [8] out_a;
+    }
+    REGISTER {
+        r_a [4] = 4'h0;
+        r_b [4] = 4'h0;
+    }
+    ASYNCHRONOUS {
+        out_a[7:4] <= r_a;
+        out_a[3:0] <= r_b;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: same register appears twice in concat LHS
+        {r_a, r_a} <= data;
+        // Ensure r_b is also written to avoid WARN_UNDRIVEN_REGISTER
+        r_b <= data[3:0];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1]  clk;
+        IN  [8]  data;
+        IN  [12] wide;
+        OUT [8]  out_a;
+        OUT [8]  out_b;
+        OUT [4]  out_c;
+    }
+    REGISTER {
+        r_x [4] = 4'h0;
+        r_y [4] = 4'h0;
+        r_z [4] = 4'h0;
+        r_ok1 [4] = 4'h0;
+        r_ok2 [4] = 4'h0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data = data;
+        OUT [8] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        out_a[7:4] <= r_x;
+        out_a[3:0] <= r_y;
+        out_b[7:4] <= r_z;
+        out_b[3:0] <= r_ok1;
+        out_c = r_ok2;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: duplicate register in concat (top module)
+        {r_x, r_x} <= data;
+        // Trigger 3: non-adjacent duplicate in concat
+        {r_y, r_z, r_y} <= wide;
+        // Valid: unique registers in concat (should NOT trigger)
+        {r_ok1, r_ok2} <= data;
+    }
+@endmod

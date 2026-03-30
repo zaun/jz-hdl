@@ -1,0 +1,5 @@
+File: 2_1_LIT_UNDERSCORE_AT_EDGES-underscore_position.jz
+      23:16   error LIT_UNDERSCORE_AT_EDGES S2.1 Literal has underscore as first or last character of value
+      27:14   error LIT_UNDERSCORE_AT_EDGES S2.1 Literal has underscore as first or last character of value
+      47:17   error LIT_UNDERSCORE_AT_EDGES S2.1 Literal has underscore as first or last character of value
+      55:14   error LIT_UNDERSCORE_AT_EDGES S2.1 Literal has underscore as first or last character of value

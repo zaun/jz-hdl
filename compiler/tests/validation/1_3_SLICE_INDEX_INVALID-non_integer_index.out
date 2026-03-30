@@ -1,0 +1,4 @@
+File: 1_3_SLICE_INDEX_INVALID-non_integer_index.jz
+      31:21   error SLICE_INDEX_INVALID S1.3/S8.1 Slice index is not an integer/CONST or CONST is undefined/negative
+      37:20   error SLICE_INDEX_INVALID S1.3/S8.1 Slice index is not an integer/CONST or CONST is undefined/negative
+      73:13   error SLICE_INDEX_INVALID S1.3/S8.1 Slice index is not an integer/CONST or CONST is undefined/negative

@@ -1,0 +1,67 @@
+// B2OH_WIDTH_INVALID: b2oh() width must be a positive constant >= 2.
+// Tests b2oh() with width < 2 in ASYNC and SYNC blocks across modules.
+// Valid b2oh() with width=8 included to verify no false positives.
+
+@project B2OH_WIDTH_INVALID_width_below_two
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [3] idx = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: b2oh() with width < 2
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [3] idx;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: b2oh(idx, 1) in helper ASYNC — width 1 < 2
+        out_a <=z b2oh(idx, 1);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: b2oh(idx, 0) in helper SYNC — width 0 < 2
+        r <=z b2oh(idx, 0);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [3] idx;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [3] idx = idx;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: b2oh(idx, 1) in top ASYNC
+        out_a <=z b2oh(idx, 1);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: b2oh(idx, 0) in top SYNC
+        r <=z b2oh(idx, 0);
+    }
+@endmod

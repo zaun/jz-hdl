@@ -1,0 +1,25 @@
+// Library file for IMPORT_FILE_HAS_PROJECT test.
+// This file contains a @project block which is forbidden in imported files.
+
+@project ForbiddenProject
+    @top ForbiddenMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module ForbiddenMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

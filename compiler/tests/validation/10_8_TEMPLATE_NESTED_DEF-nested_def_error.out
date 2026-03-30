@@ -1,0 +1,4 @@
+File: 10_8_TEMPLATE_NESTED_DEF-nested_def_error.jz
+      23:5    error TEMPLATE_NESTED_DEF S10.4 Nested @template definitions are not allowed
+      37:9    error TEMPLATE_NESTED_DEF S10.4 Nested @template definitions are not allowed
+      56:9    error TEMPLATE_NESTED_DEF S10.4 Nested @template definitions are not allowed

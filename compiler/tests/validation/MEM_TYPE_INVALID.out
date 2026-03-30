@@ -1,2 +1,0 @@
-File: MEM_TYPE_INVALID.jz
-      17:3    error MEM_TYPE_INVALID S7.1 MEM TYPE value is not recognized; expected BLOCK or DISTRIBUTED

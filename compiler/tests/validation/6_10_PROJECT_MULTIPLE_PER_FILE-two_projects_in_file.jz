@@ -1,0 +1,33 @@
+// PROJECT_MULTIPLE_PER_FILE: Two @project blocks in the same file.
+// Only one context: file-level @project duplication.
+
+@project PROJECT_MULTIPLE_PER_FILE_first
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: second @project block in same file
+@project PROJECT_MULTIPLE_PER_FILE_second
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

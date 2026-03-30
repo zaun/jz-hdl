@@ -1,0 +1,133 @@
+// MUX_HAPPY_PATH: Valid MUX usage with aggregation and auto-slicing forms.
+// Exercises aggregation, auto-slicing, dynamic selection, constant indices,
+// MUX reads in ASYNCHRONOUS and SYNCHRONOUS blocks, and many-source aggregation.
+// No diagnostics expected.
+
+@project MUX_HAPPY_PATH_mux_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: aggregation MUX with dynamic and constant selection
+@module HelperAgg
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    // Valid aggregation: two same-width sources
+    MUX {
+        agg_mux = a, b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: dynamic selection in ASYNC
+        data = agg_mux[sel] | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: constant index in SYNC (index 1 is in range for 2-element MUX)
+        r <= agg_mux[1];
+    }
+@endmod
+
+// Helper module: auto-slicing MUX
+@module HelperSlice
+    PORT {
+        IN  [1] clk;
+        IN  [16] wide;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    // Valid auto-slice: 16-bit source sliced into 8-bit elements (2 elements)
+    MUX {
+        slice_mux [8] = wide;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: dynamic selection on auto-slice MUX
+        data = slice_mux[sel] | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: constant index 0 in SYNC
+        r <= slice_mux[0];
+    }
+@endmod
+
+// Top module: combines both forms and many-source aggregation
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    WIRE {
+        agg_out [8];
+        slice_out [8];
+        w16 [16];
+        c [8];
+        d [8];
+    }
+
+    // Valid: 4-source aggregation
+    MUX {
+        many_mux = a, b, c, d;
+    }
+
+    @new inst_agg HelperAgg {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        IN  [1] sel = sel;
+        OUT [8] data = agg_out;
+    };
+
+    @new inst_slice HelperSlice {
+        IN  [1] clk = clk;
+        IN  [16] wide = w16;
+        IN  [1] sel = sel;
+        OUT [8] data = slice_out;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        c = a;
+        d = b;
+        w16 = {a, b};
+        // Valid: dynamic selection on 4-element MUX
+        data = many_mux[sel] | agg_out | slice_out | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: constant index 3 on 4-element MUX
+        r <= many_mux[3];
+    }
+@endmod

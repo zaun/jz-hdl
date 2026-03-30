@@ -1,0 +1,65 @@
+// LATCH_ALIAS_FORBIDDEN: LATCH may not be aliased using '='.
+// Tests latch on RHS of alias operator across multiple modules.
+// Valid guarded assignment and valid receive-assign reads included for no false positives.
+// Note: latch on LHS of '=' co-fires LATCH_ASSIGN_NON_GUARDED, so only RHS tested here.
+
+@project LATCH_ALIAS_FORBIDDEN_latch_aliased
+    @top TopMod {
+        IN  [1] enable = _;
+        IN  [1] din = _;
+        OUT [1] data = _;
+        OUT [1] data2 = _;
+    }
+@endproj
+
+// Helper module: latch on RHS of alias to output port
+@module HelperMod
+    PORT {
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+        OUT [1] data2;
+    }
+
+    LATCH {
+        lat_h [1] D;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: guarded latch assignment (should NOT trigger)
+        lat_h <= enable : din;
+        // Valid: latch read via receive-assign (should NOT trigger)
+        data <= lat_h;
+        // Trigger 1: latch on RHS of alias to OUT port in helper module
+        data2 = lat_h;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] enable;
+        IN  [1] din;
+        OUT [1] data;
+        OUT [1] data2;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] enable = enable;
+        IN  [1] din = din;
+        OUT [1] data = _;
+        OUT [1] data2 = _;
+    };
+
+    LATCH {
+        lat_top [1] D;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: guarded latch assignment
+        lat_top <= enable : din;
+        // Valid: latch read via receive-assign
+        data <= lat_top;
+        // Trigger 2: latch on RHS of alias to OUT port in top module
+        data2 = lat_top;
+    }
+@endmod

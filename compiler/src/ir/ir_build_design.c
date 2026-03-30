@@ -699,6 +699,7 @@ int jz_ir_build_design(JZASTNode *root,
             if (jz_verbose) fprintf(stderr, "[verbose]     ir: building module '%s' ...\n",
                                      mod->name ? mod->name : "?");
             mod->base_module_id = -1; /* generic/base module */
+            mod->is_blackbox = (scope->node && scope->node->type == JZ_AST_BLACKBOX);
             mod->source_line = scope->node ? scope->node->loc.line : 0;
             /* Map module to its source file index. */
             mod->source_file_id = -1;

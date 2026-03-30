@@ -1,0 +1,58 @@
+// CLOCK_PERIOD_NONPOSITIVE: Clock period <= 0 in CLOCKS block.
+// Tests zero, negative integer, and negative float periods.
+// Valid positive periods are included to verify no false positives.
+
+@project CLOCK_PERIOD_NONPOSITIVE_invalid_period
+    CLOCKS {
+        // Valid: positive period (no trigger)
+        good_clk = { period=10 };
+        // Trigger 1: period = 0
+        zero_clk = { period=0 };
+        // Trigger 2: negative integer period
+        neg_clk = { period=-5 };
+        // Trigger 3: negative float period
+        neg_float_clk = { period=-0.5 };
+        // Valid: small positive period (no trigger)
+        fast_clk = { period=0.5 };
+    }
+
+    IN_PINS {
+        good_clk = { standard=LVCMOS33 };
+        zero_clk = { standard=LVCMOS33 };
+        neg_clk = { standard=LVCMOS33 };
+        neg_float_clk = { standard=LVCMOS33 };
+        fast_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        good_clk = 1;
+        zero_clk = 2;
+        neg_clk = 3;
+        neg_float_clk = 4;
+        fast_clk = 5;
+    }
+
+    @top TopMod {
+        IN  [1] clk = good_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

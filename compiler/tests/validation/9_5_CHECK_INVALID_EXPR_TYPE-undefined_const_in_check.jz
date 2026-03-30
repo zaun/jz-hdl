@@ -1,0 +1,88 @@
+// CHECK_INVALID_EXPR_TYPE: @check references undefined identifiers at project scope.
+// S9.5 evaluation order: @check evaluates after CONST/CONFIG resolution,
+// so undefined references at project scope fire CHECK_INVALID_EXPR_TYPE.
+// At module scope, undefined identifiers produce UNDECLARED_IDENTIFIER instead,
+// so module-scope triggers are not included for this rule.
+// Valid CONST and CONFIG references included to verify no false positives.
+
+@project CHECK_INVALID_EXPR_TYPE_undefined_const_in_check
+    CONFIG {
+        WIDTH = 8;
+        DEPTH = 16;
+    }
+
+    // Valid: CONFIG reference at project scope (no error)
+    @check (CONFIG.WIDTH >= 8, "width ok");
+
+    // Trigger 1: bare undefined identifier at project scope
+    @check (UNDEF_A > 0, "undefined A");
+
+    // Valid: CONFIG arithmetic (no error)
+    @check (CONFIG.WIDTH + CONFIG.DEPTH > 0, "config arith ok");
+
+    // Trigger 2: undefined identifier in arithmetic at project scope
+    @check (UNDEF_B + CONFIG.WIDTH > 0, "undefined B in arith");
+
+    // Trigger 3: undefined identifier in comparison at project scope
+    @check (UNDEF_C == CONFIG.DEPTH, "undefined C in compare");
+
+    // Trigger 4: undefined identifier inside clog2 at project scope
+    @check (clog2(UNDEF_D) > 0, "undefined D in clog2");
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module — valid @check only (negative testing)
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST { SIZE = 4; }
+
+    // Valid: defined CONST in @check (no error)
+    @check (SIZE > 0, "size ok");
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST { DEPTH = 16; }
+
+    // Valid: defined CONST in @check (no error)
+    @check (DEPTH > 0, "depth ok");
+
+    // Valid: CONFIG in @check (no error)
+    @check (CONFIG.WIDTH == 8, "config ok");
+
+    // Valid: clog2 of defined CONST (no error)
+    @check (clog2(DEPTH) == 4, "clog2 ok");
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

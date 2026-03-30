@@ -1,2 +1,0 @@
-File: PIN_MODE_INVALID.jz
-       6:5    error PIN_MODE_INVALID S6.5/S6.9 Invalid pin mode value (must be SINGLE or DIFFERENTIAL)

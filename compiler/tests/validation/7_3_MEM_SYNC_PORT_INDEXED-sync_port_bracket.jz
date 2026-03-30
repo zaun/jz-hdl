@@ -1,0 +1,76 @@
+// MEM_SYNC_PORT_INDEXED: Bracket indexing on SYNC OUT port.
+// SYNC ports must use .addr/.data fields, not bracket indexing.
+// Valid .addr/.data access included for no false positives.
+
+@project MEM_SYNC_PORT_INDEXED_sync_port_bracket
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: bracket index on SYNC port
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_a.rd.addr <= addr;
+        r <= mem_a.rd.data;
+        // Trigger 1: bracket index on SYNC read port in helper
+        r <= mem_a.rd[addr];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem_b.rd.addr <= addr;
+        r <= mem_b.rd.data;
+        // Trigger 2: bracket index on SYNC read port in top
+        r <= mem_b.rd[addr];
+    }
+@endmod

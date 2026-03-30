@@ -1,0 +1,49 @@
+// TOP_PORT_PIN_DIRECTION_MISMATCH: Module port direction incompatible with pin category.
+// Tests IN port bound to OUT_PINS, OUT port bound to IN_PINS.
+// Valid direction matches included for no false positives (IN→IN_PINS, OUT→OUT_PINS).
+
+@project TOP_PORT_PIN_DIRECTION_MISMATCH_wrong_direction
+    IN_PINS {
+        in_a = { standard=LVCMOS33 };
+        in_b = { standard=LVCMOS33 };
+    }
+    OUT_PINS {
+        out_a = { standard=LVCMOS33, drive=8 };
+        out_b = { standard=LVCMOS33, drive=8 };
+    }
+    MAP {
+        in_a = 1;
+        in_b = 2;
+        out_a = 3;
+        out_b = 4;
+    }
+    @top TopMod {
+        // Valid: IN port bound to IN_PINS
+        IN  [1] valid_in = in_a;
+        // Trigger 1: IN port bound to OUT_PINS
+        IN  [1] bad_in = out_a;
+        // Valid: OUT port bound to OUT_PINS
+        OUT [1] valid_out = out_b;
+        // Trigger 2: OUT port bound to IN_PINS
+        OUT [1] bad_out = in_b;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] valid_in;
+        IN  [1] bad_in;
+        OUT [1] valid_out;
+        OUT [1] bad_out;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        valid_out = r;
+        bad_out = bad_in;
+    }
+    SYNCHRONOUS(CLK=valid_in) {
+        r <= ~r;
+    }
+@endmod

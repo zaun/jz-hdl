@@ -1,4 +1,0 @@
-File: BUS_DEF_SIGNAL_DUP_NAME.jz
-       8:13   error BUS_DEF_SIGNAL_DUP_NAME S6.8 Duplicate signal name inside BUS definition
-      16:1    warn  MODULE_PORT_IN_ONLY S4.2/S4.4/S8.3 Module declares only IN ports (no OUT/INOUT; likely dead code)
-      18:12   warn  NET_DANGLING_UNUSED S5.1/S8.3 Signal is neither driven nor read; remove it or connect it

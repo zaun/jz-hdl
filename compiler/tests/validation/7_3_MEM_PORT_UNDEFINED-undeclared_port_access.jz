@@ -1,0 +1,84 @@
+// MEM_PORT_UNDEFINED: Access a port name not declared in the MEM block.
+// Triggers in async read, sync write, and sync read contexts.
+// Valid port accesses included for no false positives.
+
+@project MEM_PORT_UNDEFINED_undeclared_port_access
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper: triggers in async read and sync write contexts
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: async read from undefined port
+        data = mem_a.fake[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.wr[addr] <= wdata;
+        // Trigger 2: sync write to undefined port
+        mem_a.bogus[addr] <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT rd SYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.wr[addr] <= wdata;
+        mem_b.rd.addr <= addr;
+        // Trigger 3: sync field access on undefined port
+        mem_b.missing.addr <= addr;
+    }
+@endmod

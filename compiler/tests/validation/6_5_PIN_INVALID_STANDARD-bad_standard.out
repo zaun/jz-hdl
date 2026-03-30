@@ -1,0 +1,4 @@
+File: 6_5_PIN_INVALID_STANDARD-bad_standard.jz
+      15:9    error PIN_INVALID_STANDARD S6.5/S6.9 Invalid electrical standard in PIN declaration
+      22:9    error PIN_INVALID_STANDARD S6.5/S6.9 Invalid electrical standard in PIN declaration
+      29:9    error PIN_INVALID_STANDARD S6.5/S6.9 Invalid electrical standard in PIN declaration

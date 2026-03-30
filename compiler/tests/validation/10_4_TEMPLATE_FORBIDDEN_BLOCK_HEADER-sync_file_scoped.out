@@ -1,0 +1,2 @@
+File: 10_4_TEMPLATE_FORBIDDEN_BLOCK_HEADER-sync_file_scoped.jz
+      18:5    error TEMPLATE_FORBIDDEN_BLOCK_HEADER S10.4 SYNCHRONOUS/ASYNCHRONOUS block headers are not allowed inside template body

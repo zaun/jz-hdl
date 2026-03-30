@@ -1,0 +1,42 @@
+// SIM_WRONG_TOOL: File contains @simulation blocks but is run with --lint.
+// The compiler should detect @simulation and direct the user to use --simulate.
+
+@module sim_dut
+    PORT {
+        IN  [1] clk;
+        IN  [1] data;
+        OUT [1] out;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        out = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= data;
+    }
+@endmod
+
+// Trigger 1: @simulation block present when run with --lint
+@simulation sim_dut
+    CLOCK {
+        clk = { period=10.0 };
+    }
+    WIRE {
+        data [1];
+        out  [1];
+    }
+    @new dut sim_dut {
+        clk  [1] = clk;
+        data [1] = data;
+        out  [1] = out;
+    }
+    @setup {
+        data <= 1'b0;
+    }
+    @run(ns=100)
+@endsim

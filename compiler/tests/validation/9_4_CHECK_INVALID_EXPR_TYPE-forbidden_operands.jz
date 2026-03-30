@@ -1,0 +1,115 @@
+// CHECK_INVALID_EXPR_TYPE: @check with forbidden runtime operands.
+// S9.4 forbids ports, wires, registers, slices, and memory port fields in @check.
+// Valid uses of CONST, CONFIG, clog2, and literals included to verify no false positives.
+
+@project CHECK_INVALID_EXPR_TYPE_forbidden_operands
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    CONST { DEPTH = 16; }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Valid: CONST in @check (no error)
+    @check (DEPTH > 0, "depth ok");
+
+    // Trigger 1: bare port reference in @check (helper module)
+    @check (din == 8'h00, "bare port in helper");
+
+    // Trigger 2: bare register reference in @check (helper module)
+    @check (r == 8'h00, "bare reg in helper");
+
+    // Trigger 3: port bit-slice in @check (helper module)
+    @check (din[3:0] == 4'h0, "port slice in helper");
+
+    // Trigger 4: register bit-slice in @check (helper module)
+    @check (r[7:4] == 4'h0, "reg slice in helper");
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    CONST { SIZE = 8; }
+
+    WIRE {
+        w [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Valid: CONST in @check (no error)
+    @check (SIZE == 8, "size ok");
+
+    // Valid: CONFIG in @check (no error)
+    @check (CONFIG.WIDTH == 8, "config ok");
+
+    // Valid: clog2 of CONST (no error)
+    @check (clog2(SIZE) == 3, "clog2 ok");
+
+    // Valid: literal (no error)
+    @check (1, "literal ok");
+
+    // Trigger 5: bare port reference in @check (top module)
+    @check (din == 8'hFF, "bare port in top");
+
+    // Trigger 6: bare register reference in @check (top module)
+    @check (r == 8'h00, "bare reg in top");
+
+    // Trigger 7: bare wire reference in @check (top module)
+    @check (w == 8'h00, "bare wire in top");
+
+    // Trigger 8: port bit-slice in @check (top module)
+    @check (din[7:4] == 4'hF, "port slice in top");
+
+    // Trigger 9: register bit-slice in @check (top module)
+    @check (r[0] == 1'b0, "reg bit in check");
+
+    // Trigger 10: wire bit-slice in @check (top module)
+    @check (w[3:0] == 4'h0, "wire slice in check");
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        w = din;
+        data = w | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

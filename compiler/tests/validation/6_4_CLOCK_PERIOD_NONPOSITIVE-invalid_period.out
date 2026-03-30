@@ -1,0 +1,4 @@
+File: 6_4_CLOCK_PERIOD_NONPOSITIVE-invalid_period.jz
+      10:9    error CLOCK_PERIOD_NONPOSITIVE S6.4/S6.9 Clock period <= 0
+      12:9    error CLOCK_PERIOD_NONPOSITIVE S6.4/S6.9 Clock period <= 0
+      14:9    error CLOCK_PERIOD_NONPOSITIVE S6.4/S6.9 Clock period <= 0

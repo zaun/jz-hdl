@@ -1,0 +1,68 @@
+// TEMPLATE_ARG_COUNT_MISMATCH: Cross-reference test for S10.5 arg count mismatch error.
+// Tests too few args, too many args, and zero args in ASYNC and SYNC blocks.
+// Valid @apply with correct arg count included for negative testing.
+
+@project TEMPLATE_ARG_COUNT_MISMATCH_arg_count_error
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Template with 2 params
+@template two_param(a, b)
+    a <= b;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w1 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: correct arg count (no error)
+        @apply two_param(w1, din);
+        // Trigger 1: too few args (1 instead of 2) in ASYNC
+        @apply two_param(w1);
+        // Trigger 2: too many args (3 instead of 2) in ASYNC
+        @apply two_param(w1, din, din);
+        data = w1;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 3: zero args when 2 expected
+        @apply two_param();
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: too many args in SYNC
+        @apply two_param(r, clk, clk);
+        r <= ~r;
+    }
+@endmod

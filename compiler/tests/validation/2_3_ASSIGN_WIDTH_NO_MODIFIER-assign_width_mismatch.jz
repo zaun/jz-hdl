@@ -1,0 +1,86 @@
+// ASSIGN_WIDTH_NO_MODIFIER: Width mismatch in assignment without extension modifier.
+// Tests width mismatches in alias (=), receive (<=), and drive (=>) assignments
+// in ASYNCHRONOUS and SYNCHRONOUS blocks across two modules.
+// Both wider-to-narrower and narrower-to-wider directions tested.
+// Valid same-width assignments included to verify no false positives.
+
+@project ASSIGN_WIDTH_NO_MODIFIER_assign_width_mismatch
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [4] b = _;
+        OUT [8] out_w = _;
+        OUT [4] out_n = _;
+    }
+@endproj
+
+// Helper module: alias, receive, and drive mismatches
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] out_w;
+        OUT [4] out_n;
+        OUT [4] out_d;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: alias narrower to wider (4-bit to 8-bit)
+        out_w = b;
+        // Trigger 2: receive wider to narrower (8-bit to 4-bit)
+        out_n <= a;
+        // Trigger 3: drive wider to narrower (8-bit drives 4-bit)
+        a => out_d;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: receive slice to wider register (4-bit to 8-bit)
+        r <= r[3:0];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] out_w;
+        OUT [4] out_n;
+    }
+    WIRE {
+        w8 [8];
+        w4 [4];
+        h_w [8];
+        h_n [4];
+        h_d [4];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [4] b = b;
+        OUT [8] out_w = h_w;
+        OUT [4] out_n = h_n;
+        OUT [4] out_d = h_d;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 5: alias narrower to wider in top module (4-bit to 8-bit)
+        w8 = b;
+        // Trigger 6: alias wider to narrower in top module (8-bit to 4-bit)
+        w4 = a;
+        // Trigger 7: receive wider to narrower in top module (8-bit to 4-bit)
+        out_n <= a;
+        // Valid: same-width alias (no false positive)
+        out_w = {w4, h_n} ^ {h_d, h_d} ^ w8 ^ h_w;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 8: receive slice to wider register in top module
+        r <= r[3:0];
+    }
+@endmod

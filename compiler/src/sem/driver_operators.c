@@ -268,11 +268,13 @@ static int sem_lit_eval_const_expr(const JZASTNode *expr,
     }
 
     char *expanded = NULL;
-    if (sem_expand_widthof_in_width_expr(expr_text,
-                                         mod_scope,
-                                         project_symbols,
-                                         &expanded,
-                                         0) != 0) {
+    if (sem_expand_widthof_in_width_expr_diag(expr_text,
+                                              mod_scope,
+                                              project_symbols,
+                                              &expanded,
+                                              0,
+                                              diagnostics,
+                                              expr->loc) != 0) {
         free(expr_text);
         if (expanded) free(expanded);
         return -1;
@@ -848,7 +850,7 @@ void infer_expr_type(JZASTNode *expr,
                 expr->children[1]->type == JZ_AST_EXPR_LITERAL &&
                 expr->children[1]->text) {
                 unsigned idx_val = 0;
-                if (parse_simple_nonnegative_int(expr->children[1]->text, &idx_val) &&
+                if (parse_literal_unsigned_value(expr->children[1]->text, &idx_val) &&
                     idx_val >= src_t.width) {
                     sem_report_rule(diagnostics,
                                     expr->children[1]->loc,
@@ -876,7 +878,7 @@ void infer_expr_type(JZASTNode *expr,
                 expr->children[1]->type == JZ_AST_EXPR_LITERAL &&
                 expr->children[1]->text) {
                 unsigned idx_val = 0;
-                if (parse_simple_nonnegative_int(expr->children[1]->text, &idx_val) &&
+                if (parse_literal_unsigned_value(expr->children[1]->text, &idx_val) &&
                     idx_val >= src_t.width) {
                     sem_report_rule(diagnostics,
                                     expr->children[1]->loc,
@@ -910,7 +912,7 @@ void infer_expr_type(JZASTNode *expr,
                     expr->children[2]->type == JZ_AST_EXPR_LITERAL &&
                     expr->children[2]->text) {
                     unsigned w_val = 0;
-                    if (!parse_simple_nonnegative_int(expr->children[2]->text, &w_val) ||
+                    if (!parse_literal_unsigned_value(expr->children[2]->text, &w_val) ||
                         w_val == 0) {
                         sem_report_rule(diagnostics,
                                         expr->children[2]->loc,
@@ -925,7 +927,7 @@ void infer_expr_type(JZASTNode *expr,
                     expr->children[1]->type == JZ_AST_EXPR_LITERAL &&
                     expr->children[1]->text) {
                     unsigned idx_val = 0;
-                    if (parse_simple_nonnegative_int(expr->children[1]->text, &idx_val) &&
+                    if (parse_literal_unsigned_value(expr->children[1]->text, &idx_val) &&
                         idx_val >= src_t.width) {
                         sem_report_rule(diagnostics,
                                         expr->children[1]->loc,
@@ -955,7 +957,7 @@ void infer_expr_type(JZASTNode *expr,
                 if (expr->children[2] &&
                     expr->children[2]->type == JZ_AST_EXPR_LITERAL &&
                     expr->children[2]->text) {
-                    if (!parse_simple_nonnegative_int(expr->children[2]->text, &w_val) ||
+                    if (!parse_literal_unsigned_value(expr->children[2]->text, &w_val) ||
                         w_val == 0) {
                         sem_report_rule(diagnostics,
                                         expr->children[2]->loc,
@@ -971,7 +973,7 @@ void infer_expr_type(JZASTNode *expr,
                     expr->children[1]->type == JZ_AST_EXPR_LITERAL &&
                     expr->children[1]->text) {
                     unsigned idx_val = 0;
-                    if (parse_simple_nonnegative_int(expr->children[1]->text, &idx_val) &&
+                    if (parse_literal_unsigned_value(expr->children[1]->text, &idx_val) &&
                         idx_val >= src_t.width) {
                         sem_report_rule(diagnostics,
                                         expr->children[1]->loc,

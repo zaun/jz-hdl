@@ -1,0 +1,101 @@
+// INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH: Bound parent signal width does not match
+// instantiation port width. Tests width mismatches between parent signals (PORT,
+// WIRE, REGISTER) and the declared port width in @new bindings.
+// Valid width-matching bindings are included for negative testing.
+
+@project INSTANCE_PARENT_SIGNAL_WIDTH_MISMATCH_parent_width_mismatch
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with fixed-width ports
+@module ChildMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module with parent signal width mismatches
+@module MidMod
+    PORT {
+        IN  [4] narrow_in;
+        IN  [8] match_in;
+        OUT [1] data;
+    }
+
+    WIRE {
+        narrow_wire [4];
+        wide_wire [16];
+    }
+
+    // Trigger 1: IN port — parent PORT too narrow (4 != 8)
+    @new inst_a ChildMod {
+        IN  [8] din = narrow_in;
+        OUT [8] data = _;
+    };
+
+    // Trigger 2: OUT port — parent WIRE too narrow (4 != 8)
+    @new inst_b ChildMod {
+        IN  [8] din = _;
+        OUT [8] data = narrow_wire;
+    };
+
+    // Trigger 3: OUT port — parent WIRE too wide (16 != 8)
+    @new inst_c ChildMod {
+        IN  [8] din = _;
+        OUT [8] data = wide_wire;
+    };
+
+    // Valid: parent PORT width matches (no trigger)
+    @new inst_d ChildMod {
+        IN  [8] din = match_in;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        wide_wire = {narrow_in, narrow_in, narrow_in, narrow_in};
+        data = narrow_wire[0] ^ wide_wire[0];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    WIRE {
+        small [4];
+    }
+
+    // Trigger 4: OUT port — parent WIRE too narrow (4 != 8) in top module
+    @new inst_e ChildMod {
+        IN  [8] din = _;
+        OUT [8] data = small;
+    };
+
+    @new inst_f MidMod {
+        IN  [4] narrow_in = small;
+        IN  [8] match_in = _;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        small = {r, r, r, r};
+        data = small[0];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

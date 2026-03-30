@@ -1,0 +1,7 @@
+File: 8_4_ASSIGN_WIDTH_NO_MODIFIER-global_width_mismatch.jz
+      33:9    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly
+      39:9    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly
+      55:9    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly
+      60:9    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly
+      91:9    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly
+      98:9    error ASSIGN_WIDTH_NO_MODIFIER S4.10/S5.0 Width mismatch: use `<=z`/`<=s` (zero/sign-extend), `<=t` (truncate), or match widths explicitly

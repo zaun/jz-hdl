@@ -1,0 +1,60 @@
+// CLOCK_GEN_OUT_NOT_CLOCK: CLOCK_GEN OUT used for non-clock output; use WIRE instead.
+// Tests using OUT keyword for a PLL LOCK signal (is_clock=false).
+// Valid OUT for clock output included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_OUT_NOT_CLOCK_out_for_nonclock
+    CLOCKS {
+        ref_clk = { period=10 };
+        valid_out;
+        // Trigger: LOCK is not a clock but declared in CLOCKS via OUT
+        lock_sig;
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK ref_clk;
+            // Valid: BASE is a clock output (no trigger)
+            OUT BASE valid_out;
+            // Trigger 1: LOCK is not a clock, should use WIRE
+            OUT LOCK lock_sig;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

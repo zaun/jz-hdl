@@ -1,0 +1,4 @@
+File: 6_5_PIN_DECLARED_MULTIPLE_BLOCKS-cross_block_duplicate.jz
+      23:9    error PIN_DECLARED_MULTIPLE_BLOCKS S6.5/S6.9 Same pin name appears in more than one of IN_PINS/OUT_PINS/INOUT_PINS
+      32:9    error PIN_DECLARED_MULTIPLE_BLOCKS S6.5/S6.9 Same pin name appears in more than one of IN_PINS/OUT_PINS/INOUT_PINS
+      34:9    error PIN_DECLARED_MULTIPLE_BLOCKS S6.5/S6.9 Same pin name appears in more than one of IN_PINS/OUT_PINS/INOUT_PINS

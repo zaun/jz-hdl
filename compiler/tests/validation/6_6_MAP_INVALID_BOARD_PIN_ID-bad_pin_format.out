@@ -1,0 +1,3 @@
+File: 6_6_MAP_INVALID_BOARD_PIN_ID-bad_pin_format.jz
+      25:9    error MAP_INVALID_BOARD_PIN_ID S6.6/S6.9 Board pin ID format invalid for target device
+      27:9    error MAP_INVALID_BOARD_PIN_ID S6.6/S6.9 Board pin ID format invalid for target device

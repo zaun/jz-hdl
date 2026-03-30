@@ -1,0 +1,4 @@
+File: 4_3_CONST_UNDEFINED_IN_WIDTH_OR_SLICE-undefined_const.jz
+      23:23   error CONST_UNDEFINED_IN_WIDTH_OR_SLICE S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly
+      60:9    error CONST_UNDEFINED_IN_WIDTH_OR_SLICE S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly
+      65:9    error CONST_UNDEFINED_IN_WIDTH_OR_SLICE S1.3/S2.1/S7.10 CONST used in width/slice not declared or evaluates invalidly

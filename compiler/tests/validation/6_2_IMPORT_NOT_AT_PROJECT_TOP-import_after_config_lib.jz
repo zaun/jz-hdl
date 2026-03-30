@@ -1,0 +1,18 @@
+// Library file for IMPORT_NOT_AT_PROJECT_TOP test.
+// Contains a valid module to be imported.
+
+@module LibMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

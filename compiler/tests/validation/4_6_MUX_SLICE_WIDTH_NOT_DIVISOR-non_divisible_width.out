@@ -1,0 +1,3 @@
+File: 4_6_MUX_SLICE_WIDTH_NOT_DIVISOR-non_divisible_width.jz
+      29:9    error MUX_SLICE_WIDTH_NOT_DIVISOR S4.6 Auto-slicing form requires wide_source width to be exact multiple of element_width
+      63:9    error MUX_SLICE_WIDTH_NOT_DIVISOR S4.6 Auto-slicing form requires wide_source width to be exact multiple of element_width

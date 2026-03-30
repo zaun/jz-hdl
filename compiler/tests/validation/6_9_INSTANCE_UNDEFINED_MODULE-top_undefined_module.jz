@@ -1,0 +1,26 @@
+// INSTANCE_UNDEFINED_MODULE: @top references a module not defined in the project.
+// Single trigger: only one @top directive per project, so only one context.
+// A valid module is defined but not referenced by @top.
+
+@project INSTANCE_UNDEFINED_MODULE_top_undefined_module
+    @top NonExistentModule {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module ActualModule
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

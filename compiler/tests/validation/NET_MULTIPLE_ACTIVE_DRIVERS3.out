@@ -1,3 +1,0 @@
-File: NET_MULTIPLE_ACTIVE_DRIVERS3.jz
-      32:13   warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
-      43:13   warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC

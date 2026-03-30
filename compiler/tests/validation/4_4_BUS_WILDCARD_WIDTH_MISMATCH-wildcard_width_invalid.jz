@@ -1,0 +1,122 @@
+// BUS_WILDCARD_WIDTH_MISMATCH: BUS wildcard assignment requires RHS width 1 or count.
+// Tests wildcard fanout with invalid RHS widths across separate modules.
+// Each module uses only one wildcard to avoid double-assignment conflicts.
+
+@project BUS_WILDCARD_WIDTH_MISMATCH_wildcard_width_invalid
+    BUS MY_BUS {
+        OUT [1] tx;
+        IN  [1] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [1] dout_a = _;
+        OUT [1] dout_b = _;
+        OUT [1] dout_c = _;
+    }
+@endproj
+
+// Trigger 1: width 3 != 1 and != 4 (count)
+@module Width3Mod
+    PORT {
+        IN  [1] clk;
+        IN  [3] din3;
+        BUS MY_BUS SOURCE [4] abus;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        abus[*].tx <= din3;
+        data <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Trigger 2: width 2 != 1 and != 4 (count)
+@module Width2Mod
+    PORT {
+        IN  [1] clk;
+        IN  [2] din2;
+        BUS MY_BUS SOURCE [4] abus;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        abus[*].tx <= din2;
+        data <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Trigger 3: width 8 != 1 and != 4 (count)
+@module Width8Mod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din8;
+        BUS MY_BUS SOURCE [4] abus;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        abus[*].tx <= din8;
+        data <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [1] dout_a;
+        OUT [1] dout_b;
+        OUT [1] dout_c;
+    }
+
+    @new inst_3 Width3Mod {
+        IN  [1] clk = clk;
+        IN  [3] din3 = din[2:0];
+        BUS MY_BUS SOURCE [4] abus = _;
+        OUT [1] data = dout_a;
+    };
+
+    @new inst_2 Width2Mod {
+        IN  [1] clk = clk;
+        IN  [2] din2 = din[1:0];
+        BUS MY_BUS SOURCE [4] abus = _;
+        OUT [1] data = dout_b;
+    };
+
+    @new inst_8 Width8Mod {
+        IN  [1] clk = clk;
+        IN  [8] din8 = din;
+        BUS MY_BUS SOURCE [4] abus = _;
+        OUT [1] data = dout_c;
+    };
+
+    ASYNCHRONOUS {
+        // TopMod passes through instance outputs
+    }
+@endmod

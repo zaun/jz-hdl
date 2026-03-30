@@ -1,0 +1,67 @@
+// SSLICE_INDEX_OUT_OF_RANGE: sslice() index is out of range for source width.
+// Tests sslice() with constant index >= source width in ASYNC and SYNC blocks.
+// Valid sslice() with in-range index included to verify no false positives.
+
+@project SSLICE_INDEX_OUT_OF_RANGE_const_index_exceeds_width
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: sslice() with out-of-range constant index
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] src;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: sslice() index 8 on 8-bit source in helper ASYNC
+        out_a <= sslice(src, 4'd8, 4, 4'd5);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: sslice() index 8 in helper SYNC
+        r <= sslice(src, 4'd8, 4, 4'd5);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+    }
+    REGISTER {
+        r [8] = 8'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] src = data;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: sslice() index 8 in top ASYNC
+        out_a <= sslice(data, 4'd8, 4, 4'd5);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: sslice() index 8 in top SYNC
+        r <= sslice(data, 4'd8, 4, 4'd5);
+    }
+@endmod

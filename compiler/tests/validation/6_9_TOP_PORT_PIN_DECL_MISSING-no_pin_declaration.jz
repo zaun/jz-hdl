@@ -1,0 +1,73 @@
+// TOP_PORT_PIN_DECL_MISSING: Port connected to name not declared in PIN blocks.
+// Tests IN and OUT ports referencing undeclared pin names.
+// Valid pin bindings and no-connect bindings included for no false positives.
+
+@project TOP_PORT_PIN_DECL_MISSING_no_pin_declaration
+    IN_PINS {
+        real_in = { standard=LVCMOS33 };
+    }
+    OUT_PINS {
+        real_out = { standard=LVCMOS33, drive=8 };
+    }
+    MAP {
+        real_in = 1;
+        real_out = 2;
+    }
+    @top TopMod {
+        // Valid: bound to declared IN pin
+        IN  [1] clk = real_in;
+        // Trigger 1: IN port bound to undeclared name
+        IN  [1] extra_in = ghost_pin;
+        // Valid: bound to declared OUT pin
+        OUT [1] data = real_out;
+        // Trigger 2: OUT port bound to undeclared name
+        OUT [1] extra_out = phantom_pin;
+        // Valid: no-connect (no pin declaration needed)
+        OUT [1] debug = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [1] result;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        result = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] extra_in;
+        OUT [1] data;
+        OUT [1] extra_out;
+        OUT [1] debug;
+    }
+
+    @new helper_inst Helper {
+        IN  [1] clk = clk;
+        OUT [1] result = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+        extra_out = extra_in;
+        debug = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

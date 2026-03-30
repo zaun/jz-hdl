@@ -1,0 +1,3 @@
+File: 6_4_CLOCK_GEN_INPUT_FREQ_OUT_OF_RANGE-freq_range.jz
+      26:9    error CLOCK_GEN_DERIVED_OUT_OF_RANGE S6.4.1 CLOCK_GEN derived value (frequency/VCO) outside valid chip-defined range
+      27:13   error CLOCK_GEN_INPUT_FREQ_OUT_OF_RANGE S6.4.1 CLOCK_GEN input frequency outside chip's supported reference clock range

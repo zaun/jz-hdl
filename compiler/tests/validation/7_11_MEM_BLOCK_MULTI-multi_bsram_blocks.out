@@ -1,0 +1,3 @@
+File: 7_11_MEM_BLOCK_MULTI-multi_bsram_blocks.jz
+      29:9    info  MEM_BLOCK_MULTI S7.1 BLOCK memory requires multiple BSRAM blocks
+      61:9    info  MEM_BLOCK_MULTI S7.1 BLOCK memory requires multiple BSRAM blocks

@@ -1,0 +1,111 @@
+// TYPE_BINOP_WIDTH_MISMATCH: Binary operators require equal operand widths.
+// Tests all 14 binary operators (+, -, *, /, %, &, |, ^, ==, !=, <, >, <=, >=)
+// with mismatched widths (8-bit vs 4-bit) across ASYNCHRONOUS and SYNCHRONOUS
+// blocks in two modules. Valid same-width operations verify no false positives.
+
+@project TYPE_BINOP_WIDTH_MISMATCH_mismatched_operand_widths
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [4] b = _;
+        OUT [8] res = _;
+        OUT [1] cmp = _;
+    }
+@endproj
+
+// Helper: arithmetic and comparison mismatches in ASYNC and SYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] res;
+        OUT [1] cmp;
+    }
+    WIRE {
+        w1 [8];
+        w2 [8];
+        w3 [8];
+    }
+    REGISTER {
+        r1 [8] = 8'h00;
+        r2 [8] = 8'h00;
+        r3 [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: ADD mismatch (8 + 4)
+        w1 = a + b;
+        // Trigger 2: DIV mismatch (8 / 4)
+        w2 = a / b;
+        // Trigger 3: AND mismatch (8 & 4)
+        w3 = a & b;
+        // Trigger 4: EQ mismatch (8 == 4)
+        cmp = a == b;
+        // Valid: same-width combine (no false positive)
+        res = w1 ^ w2 ^ w3 ^ r1 ^ r2 ^ r3;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: SUB mismatch (8 - 4)
+        r1 <= a - b;
+        // Trigger 6: MUL mismatch (8 * 4)
+        r2 <= a * b;
+        // Trigger 7: MOD mismatch (8 % 4)
+        r3 <= a % b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] res;
+        OUT [1] cmp;
+    }
+    WIRE {
+        w1 [8];
+        w2 [8];
+        c1 [1];
+        c2 [1];
+        c3 [1];
+        c4 [1];
+        c5 [1];
+        h_res [8];
+        h_cmp [1];
+    }
+    REGISTER {
+        r1 [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [4] b = b;
+        OUT [8] res = h_res;
+        OUT [1] cmp = h_cmp;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 8: OR mismatch (8 | 4)
+        w1 = a | b;
+        // Trigger 9: XOR mismatch (8 ^ 4)
+        w2 = a ^ b;
+        // Trigger 10: NEQ mismatch (8 != 4)
+        c1 = a != b;
+        // Trigger 11: LT mismatch (8 < 4)
+        c2 = a < b;
+        // Trigger 12: GT mismatch (8 > 4)
+        c3 = a > b;
+        // Trigger 13: LE comparison mismatch (8 <= 4)
+        c4 = a <= b;
+        // Trigger 14: GE mismatch (8 >= 4)
+        c5 = a >= b;
+        // Valid: same-width operations (no false positive)
+        res = w1 ^ w2 ^ h_res ^ r1;
+        cmp = c1 & c2 & c3 & c4 & c5 & h_cmp;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: same-width receive (no false positive)
+        r1 <= a + 8'h01;
+    }
+@endmod

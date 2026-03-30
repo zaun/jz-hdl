@@ -1,0 +1,4 @@
+File: 7_1_MEM_UNDEFINED_NAME-undefined_mem_name.jz
+      22:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
+      26:16   error MEM_UNDEFINED_NAME S7.7.1 Access to MEM name not declared in module
+      69:9    error MEM_UNDEFINED_NAME S7.7.1 Access to MEM name not declared in module

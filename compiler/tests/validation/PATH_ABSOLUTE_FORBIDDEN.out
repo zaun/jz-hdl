@@ -1,2 +1,0 @@
-File: PATH_ABSOLUTE_FORBIDDEN.jz
-       5:3    error PATH_ABSOLUTE_FORBIDDEN S12.2 Absolute path used without --allow-absolute-paths

@@ -1,0 +1,2 @@
+File: 6_4_CLOCK_GEN_INVALID_TYPE-bad_type.jz
+      22:9    error CLOCK_GEN_INVALID_TYPE S6.4.1 CLOCK_GEN generator must be PLL, DLL, CLKDIV, OSC, or BUF (with optional numeric suffix)

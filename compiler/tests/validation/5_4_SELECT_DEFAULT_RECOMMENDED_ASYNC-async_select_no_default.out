@@ -1,0 +1,5 @@
+File: 5_4_SELECT_DEFAULT_RECOMMENDED_ASYNC-async_select_no_default.jz
+      16:17   error ASYNC_UNDEFINED_PATH_NO_DRIVER S1.5/S4.10/S5.1 Signal undriven on some ASYNCHRONOUS paths; add an ELSE branch or DEFAULT case
+      20:9    warn  WARN_INCOMPLETE_SELECT_ASYNC S5.4/S8.3 Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block
+      34:17   error ASYNC_UNDEFINED_PATH_NO_DRIVER S1.5/S4.10/S5.1 Signal undriven on some ASYNCHRONOUS paths; add an ELSE branch or DEFAULT case
+      45:9    warn  WARN_INCOMPLETE_SELECT_ASYNC S5.4/S8.3 Incomplete SELECT coverage without DEFAULT in ASYNCHRONOUS block

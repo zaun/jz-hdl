@@ -1,0 +1,109 @@
+// HAPPY_PATH: All operator categories compile without errors.
+// Exercises unary arithmetic (+/-), binary arithmetic (add/sub),
+// multiply, divide, modulus, bitwise (&, |, ^, ~), logical (&&, ||, !),
+// comparison (==, !=, <, >, <=, >=), shift (<<, >>, >>>), ternary (?:),
+// and concatenation ({,}) with correct widths across multiple modules.
+
+@project HAPPY_PATH_operator_categories_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+    @top TopMod {
+        IN  [1]  clk = _;
+        IN  [8]  a = _;
+        IN  [8]  b = _;
+        IN  [3]  sh = _;
+        IN  [1]  flag_a = _;
+        IN  [1]  flag_b = _;
+        IN  [4]  narrow = _;
+        OUT [8]  out_arith = _;
+        OUT [8]  out_bits = _;
+        OUT [1]  out_logic = _;
+        OUT [16] out_mul = _;
+        OUT [12] out_cat = _;
+    }
+@endproj
+
+// Helper: unary operators, shifts, and comparisons
+@module HelperOps
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        IN  [3] sh;
+        OUT [8] out_unary;
+        OUT [8] out_shift;
+        OUT [1] out_cmp;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Unary minus (parenthesized) -- width 8
+        out_unary = (-a) | r;
+        // Left shift -- result width = LHS (8)
+        out_shift = a << sh;
+        // Comparison == -- result width = 1
+        out_cmp = (a == b);
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Unary plus (parenthesized) + binary subtract -- width 8
+        r <= (+a) - b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1]  clk;
+        IN  [8]  a;
+        IN  [8]  b;
+        IN  [3]  sh;
+        IN  [1]  flag_a;
+        IN  [1]  flag_b;
+        IN  [4]  narrow;
+        OUT [8]  out_arith;
+        OUT [8]  out_bits;
+        OUT [1]  out_logic;
+        OUT [16] out_mul;
+        OUT [12] out_cat;
+    }
+    WIRE {
+        h_unary [8];
+        h_shift [8];
+        h_cmp   [1];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_ops HelperOps {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        IN  [3] sh = sh;
+        OUT [8] out_unary = h_unary;
+        OUT [8] out_shift = h_shift;
+        OUT [1] out_cmp = h_cmp;
+    };
+
+    ASYNCHRONOUS {
+        // Binary add, sub, right shift, arith right shift, ternary
+        out_arith = (a + b) | (a - b) | h_unary | (a >> sh) | (a >>> sh) | (flag_a ? a : b) | h_shift | r;
+        // Bitwise AND, OR, XOR, NOT
+        out_bits = (a & b) | (a ^ b) | (~a);
+        // Multiply -- result width = 2N (16)
+        out_mul = a * b;
+        // Concatenation -- 8 + 4 = 12
+        out_cat = {a, narrow};
+        // Logical AND, OR, NOT + comparisons -- all 1-bit
+        out_logic = (flag_a && flag_b) || (!flag_a) || (a == b) || (a != b) || (a < b) || (a > b) || (a <= b) || (a >= b) || h_cmp;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Divide and modulus with runtime zero guard
+        IF (b != 8'h00) {
+            r <= (a / b) + (a % b);
+        } ELSE {
+            r <= 8'h00;
+        }
+    }
+@endmod

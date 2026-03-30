@@ -1,0 +1,4 @@
+File: 4_13_INSTANCE_OVERRIDE_CONST_UNDEFINED-bad_override.jz
+      38:13   error INSTANCE_OVERRIDE_CONST_UNDEFINED S4.13 Override LHS not a CONST declared in child module
+      67:13   error INSTANCE_OVERRIDE_CONST_UNDEFINED S4.13 Override LHS not a CONST declared in child module
+      76:13   error INSTANCE_OVERRIDE_CONST_UNDEFINED S4.13 Override LHS not a CONST declared in child module

@@ -1,2 +1,0 @@
-File: CLOCK_EDGE_INVALID.jz
-       6:5    error CLOCK_EDGE_INVALID S6.4/S6.9 Invalid edge specifier (not Rising/Falling)

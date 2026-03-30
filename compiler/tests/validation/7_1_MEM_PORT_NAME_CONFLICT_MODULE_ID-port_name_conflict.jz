@@ -1,0 +1,98 @@
+// MEM_PORT_NAME_CONFLICT_MODULE_ID: MEM port name conflicts with module-level identifier.
+// Tests conflict with port, register, wire, and const names.
+
+@project MEM_PORT_NAME_CONFLICT_MODULE_ID_port_name_conflict
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: MEM port name conflicts with module PORT name in helper
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 8'h00 {
+            OUT data ASYNC;
+            IN  wr_a;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    WIRE {
+        w [8];
+    }
+
+    // Trigger 2: MEM port name conflicts with REGISTER name
+    MEM {
+        mem_b [8] [16] = 8'h00 {
+            OUT r ASYNC;
+            IN  wr_b;
+        };
+    }
+
+    // Trigger 3: MEM port name conflicts with WIRE name
+    MEM {
+        mem_c [8] [16] = 8'h00 {
+            OUT rd_c ASYNC;
+            IN  w;
+        };
+    }
+
+    // Valid: unique port names (no error expected)
+    MEM {
+        mem_ok [8] [16] = 8'h00 {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        w = mem_ok.rd_ok[addr];
+        data = w;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_ok.wr_ok[addr] <= wdata;
+    }
+@endmod

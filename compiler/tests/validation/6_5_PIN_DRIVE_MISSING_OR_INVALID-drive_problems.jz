@@ -1,0 +1,74 @@
+// PIN_DRIVE_MISSING_OR_INVALID: Missing or nonpositive drive for OUT/INOUT pins.
+// Tests missing drive, zero drive, and negative drive in OUT_PINS and INOUT_PINS.
+// IN_PINS do not require drive. Valid drive values verify no false positives.
+
+@project PIN_DRIVE_MISSING_OR_INVALID_drive_problems
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Valid: IN_PINS never need drive (no trigger)
+        valid_in = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        // Valid: positive drive (no trigger)
+        valid_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 1: missing drive in OUT_PINS
+        no_drive = { standard=LVCMOS33 };
+        // Trigger 2: zero drive in OUT_PINS
+        zero_drive = { standard=LVCMOS33, drive=0 };
+        // Trigger 3: negative drive in OUT_PINS
+        neg_drive = { standard=LVCMOS33, drive=-4 };
+    }
+
+    INOUT_PINS {
+        // Valid: positive drive (no trigger)
+        valid_io = { standard=LVCMOS33, drive=4 };
+        // Trigger 4: missing drive in INOUT_PINS
+        no_drive_io = { standard=LVCMOS33 };
+        // Trigger 5: zero drive in INOUT_PINS
+        zero_drive_io = { standard=LVCMOS33, drive=0 };
+        // Trigger 6: negative drive in INOUT_PINS
+        neg_drive_io = { standard=LVCMOS33, drive=-2 };
+    }
+
+    MAP {
+        sys_clk = 1;
+        valid_in = 2;
+        valid_out = 3;
+        no_drive = 4;
+        zero_drive = 5;
+        neg_drive = 6;
+        valid_io = 7;
+        no_drive_io = 8;
+        zero_drive_io = 9;
+        neg_drive_io = 10;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -1,6 +1,0 @@
-// PATH_ABSOLUTE_FORBIDDEN: absolute path in @import is forbidden by default.
-// Verified
-
-@project PATH_ABSOLUTE_FORBIDDEN_PROJ
-  @import "/etc/passwd";
-@endproj

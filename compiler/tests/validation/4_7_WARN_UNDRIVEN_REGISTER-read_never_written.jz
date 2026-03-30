@@ -1,0 +1,60 @@
+// WARN_UNDRIVEN_REGISTER: Register read but never written in SYNCHRONOUS.
+// Tests undriven register detection in multiple modules.
+// Valid registers (both read and written) included for no false positives.
+
+@project WARN_UNDRIVEN_REGISTER_read_never_written
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Helper module with undriven register
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        // Trigger 1: read but never written in helper module
+        r_undriven [8] = 8'hFF;
+        // Valid: register that is both read and written
+        r_ok [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data_out <= r_undriven;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_ok <= ~r_ok;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [8] data_out = _;
+    };
+
+    REGISTER {
+        // Trigger 2: read but never written in top module
+        r_undriven_top [8] = 8'hAA;
+        // Valid: register that is both read and written
+        r_ok [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        dout <= r_undriven_top;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_ok <= ~r_ok;
+    }
+@endmod

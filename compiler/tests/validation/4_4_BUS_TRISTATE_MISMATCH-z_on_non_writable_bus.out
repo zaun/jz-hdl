@@ -1,0 +1,4 @@
+File: 4_4_BUS_TRISTATE_MISMATCH-z_on_non_writable_bus.jz
+      27:27   warn  WARN_INTERNAL_TRISTATE S11 Internal tri-state logic is not FPGA-compatible; use --tristate-default=GND or --tristate-default=VCC
+      41:13   error BUS_TRISTATE_MISMATCH S4.4.1 Only writable BUS signals (INOUT or OUT from this role) may be assigned 'z' for tri-state
+      41:13   error BUS_SIGNAL_WRITE_TO_READABLE S4.4.1 Write access to readable BUS signal is not allowed

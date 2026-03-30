@@ -210,8 +210,8 @@ static int expand_region(const char *start, const char *src_end,
             if (!isdigit((unsigned char)*p)) {
                 JZLocation loc = { filename, count_line(full_src, repeat_at), 1 };
                 jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_ERROR,
-                                     "RPT-001",
-                                     "@repeat requires a positive integer count");
+                                     "RPT_COUNT_INVALID",
+                                     "RPT-001 @repeat requires a positive integer count");
                 return 1;
             }
 
@@ -224,8 +224,8 @@ static int expand_region(const char *start, const char *src_end,
             if (count <= 0) {
                 JZLocation loc = { filename, count_line(full_src, repeat_at), 1 };
                 jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_ERROR,
-                                     "RPT-001",
-                                     "@repeat count must be a positive integer");
+                                     "RPT_COUNT_INVALID",
+                                     "RPT-001 @repeat count must be a positive integer");
                 return 1;
             }
 
@@ -238,8 +238,8 @@ static int expand_region(const char *start, const char *src_end,
             if (!end_at) {
                 JZLocation loc = { filename, count_line(full_src, repeat_at), 1 };
                 jz_diagnostic_report(diagnostics, loc, JZ_SEVERITY_ERROR,
-                                     "RPT-002",
-                                     "@repeat without matching @end");
+                                     "RPT_NO_MATCHING_END",
+                                     "RPT-002 @repeat without matching @end");
                 return 1;
             }
 

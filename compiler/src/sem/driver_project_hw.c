@@ -1378,7 +1378,6 @@ void sem_check_project_map(JZASTNode *project,
 
     typedef struct JZPhysLoc {
         char  id[64];
-        int   seen;
     } JZPhysLoc;
     JZPhysLoc phys[128];
     size_t phys_count = 0;
@@ -1502,6 +1501,44 @@ void sem_check_project_map(JZASTNode *project,
                     }
                 }
 
+                /* MAP_INVALID_BOARD_PIN_ID: validate pin ID format.
+                 * A valid board pin ID is a non-empty alphanumeric string
+                 * (letters, digits, underscores).
+                 */
+                {
+                    const char *ids_to_check[3] = {NULL, NULL, NULL};
+                    int id_count = 0;
+                    if (rhs_is_pair) {
+                        if (p_pin[0]) ids_to_check[id_count++] = p_pin;
+                        if (n_pin[0]) ids_to_check[id_count++] = n_pin;
+                    } else {
+                        ids_to_check[id_count++] = rhs;
+                    }
+                    for (int ci = 0; ci < id_count; ++ci) {
+                        const char *pid = ids_to_check[ci];
+                        if (!pid || !*pid) continue;
+                        int valid = 1;
+                        for (const char *ch = pid; *ch; ++ch) {
+                            if (!((*ch >= 'A' && *ch <= 'Z') ||
+                                  (*ch >= 'a' && *ch <= 'z') ||
+                                  (*ch >= '0' && *ch <= '9') ||
+                                  *ch == '_')) {
+                                valid = 0;
+                                break;
+                            }
+                        }
+                        if (!valid) {
+                            char msg[256];
+                            snprintf(msg, sizeof(msg),
+                                     "'%s' is not a valid board pin ID\n"
+                                     "pin IDs must be alphanumeric (letters, digits, underscores)",
+                                     pid);
+                            sem_report_rule(diagnostics, entry->loc,
+                                            "MAP_INVALID_BOARD_PIN_ID", msg);
+                        }
+                    }
+                }
+
                 /* Physical location duplicate tracking */
                 if (rhs_is_pair) {
                     /* Track both P and N pins */
@@ -1511,20 +1548,16 @@ void sem_check_project_map(JZASTNode *project,
                         size_t k;
                         for (k = 0; k < phys_count; ++k) {
                             if (strcmp(phys[k].id, pair_pins[pp_idx]) == 0) {
-                                if (!phys[k].seen) {
-                                    sem_report_rule(diagnostics,
-                                                    entry->loc,
-                                                    "MAP_DUP_PHYSICAL_LOCATION",
-                                                    "two logical pins mapped to same physical board pin");
-                                    phys[k].seen = 1;
-                                }
+                                sem_report_rule(diagnostics,
+                                                entry->loc,
+                                                "MAP_DUP_PHYSICAL_LOCATION",
+                                                "two logical pins mapped to same physical board pin");
                                 break;
                             }
                         }
                         if (k == phys_count && phys_count < sizeof(phys) / sizeof(phys[0])) {
                             strncpy(phys[phys_count].id, pair_pins[pp_idx], sizeof(phys[phys_count].id) - 1);
                             phys[phys_count].id[sizeof(phys[phys_count].id) - 1] = '\0';
-                            phys[phys_count].seen = 0;
                             ++phys_count;
                         }
                     }
@@ -1535,20 +1568,16 @@ void sem_check_project_map(JZASTNode *project,
                         size_t k;
                         for (k = 0; k < phys_count; ++k) {
                             if (strcmp(phys[k].id, phys_id) == 0) {
-                                if (!phys[k].seen) {
-                                    sem_report_rule(diagnostics,
-                                                    entry->loc,
-                                                    "MAP_DUP_PHYSICAL_LOCATION",
-                                                    "two logical pins mapped to same physical board pin");
-                                    phys[k].seen = 1;
-                                }
+                                sem_report_rule(diagnostics,
+                                                entry->loc,
+                                                "MAP_DUP_PHYSICAL_LOCATION",
+                                                "two logical pins mapped to same physical board pin");
                                 break;
                             }
                         }
                         if (k == phys_count && phys_count < sizeof(phys) / sizeof(phys[0])) {
                             strncpy(phys[phys_count].id, phys_id, sizeof(phys[phys_count].id) - 1);
                             phys[phys_count].id[sizeof(phys[phys_count].id) - 1] = '\0';
-                            phys[phys_count].seen = 0;
                             ++phys_count;
                         }
                     }
@@ -1672,7 +1701,7 @@ void sem_check_project_top_new(JZASTNode *project,
     if (!top_sym || !top_sym->node || top_sym->kind != JZ_SYM_MODULE) {
         sem_report_rule(diagnostics,
                         top_new->loc,
-                        "TOP_MODULE_NOT_FOUND",
+                        "INSTANCE_UNDEFINED_MODULE",
                         "top-level @top module not defined in project");
         return;
     }

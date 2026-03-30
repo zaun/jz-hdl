@@ -1,0 +1,67 @@
+// WARN_INCOMPLETE_SELECT_ASYNC: SELECT without DEFAULT in ASYNCHRONOUS block.
+// Note: compiler also emits ASYNC_UNDEFINED_PATH_NO_DRIVER for the same condition.
+// Tests incomplete SELECT in helper and top modules.
+// Valid: SELECT with DEFAULT included for no false positives.
+
+@project WARN_INCOMPLETE_SELECT_ASYNC_incomplete_select
+    @top TopMod {
+        IN  [4] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper module with ASYNC SELECT missing DEFAULT
+@module HelperMod
+    PORT {
+        IN  [4] sel;
+        OUT [1] out_a;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: ASYNC SELECT without DEFAULT in helper module
+        SELECT (sel) {
+            CASE 0 {
+                out_a <= VCC;
+            }
+            CASE 1 {
+                out_a <= GND;
+            }
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [4] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [4] sel = sel;
+        OUT [1] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: ASYNC SELECT without DEFAULT in top module
+        SELECT (sel) {
+            CASE 4'h0 {
+                out_a <= VCC;
+            }
+            CASE 4'h1 {
+                out_a <= GND;
+            }
+        }
+
+        // Valid: ASYNC SELECT with DEFAULT (no warning)
+        SELECT (sel) {
+            CASE 4'h0 {
+                out_b <= VCC;
+            }
+            DEFAULT {
+                out_b <= GND;
+            }
+        }
+    }
+@endmod

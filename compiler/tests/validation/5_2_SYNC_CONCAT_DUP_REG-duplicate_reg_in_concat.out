@@ -1,0 +1,4 @@
+File: 5_2_SYNC_CONCAT_DUP_REG-duplicate_reg_in_concat.jz
+      33:10   error SYNC_CONCAT_DUP_REG S5.2 Concatenation LHS includes same register more than once
+      71:10   error SYNC_CONCAT_DUP_REG S5.2 Concatenation LHS includes same register more than once
+      73:10   error SYNC_CONCAT_DUP_REG S5.2 Concatenation LHS includes same register more than once

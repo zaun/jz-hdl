@@ -1,0 +1,65 @@
+// PIN_INVALID_STANDARD: Invalid electrical standard in PIN declaration.
+// Tests unrecognized standards in IN_PINS, OUT_PINS, and INOUT_PINS.
+// Valid standards included to verify no false positives.
+
+@project PIN_INVALID_STANDARD_bad_standard
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Valid: recognized standard (no trigger)
+        valid_in = { standard=LVCMOS18 };
+        // Trigger 1: invalid standard in IN_PINS
+        bad_in = { standard=FAKESTD };
+    }
+
+    OUT_PINS {
+        // Valid: recognized standard (no trigger)
+        valid_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 2: invalid standard in OUT_PINS
+        bad_out = { standard=NOTREAL, drive=8 };
+    }
+
+    INOUT_PINS {
+        // Valid: recognized standard (no trigger)
+        valid_io = { standard=LVCMOS25, drive=4 };
+        // Trigger 3: invalid standard in INOUT_PINS
+        bad_io = { standard=BADSTD, drive=4 };
+    }
+
+    MAP {
+        sys_clk = 1;
+        valid_in = 2;
+        bad_in = 3;
+        valid_out = 4;
+        bad_out = 5;
+        valid_io = 6;
+        bad_io = 7;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

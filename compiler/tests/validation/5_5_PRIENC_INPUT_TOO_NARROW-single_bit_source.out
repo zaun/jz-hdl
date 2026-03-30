@@ -1,0 +1,5 @@
+File: 5_5_PRIENC_INPUT_TOO_NARROW-single_bit_source.jz
+      27:19   error PRIENC_INPUT_TOO_NARROW S5.5.14 prienc() source must be at least 2 bits wide
+      32:15   error PRIENC_INPUT_TOO_NARROW S5.5.14 prienc() source must be at least 2 bits wide
+      60:19   error PRIENC_INPUT_TOO_NARROW S5.5.14 prienc() source must be at least 2 bits wide
+      65:15   error PRIENC_INPUT_TOO_NARROW S5.5.14 prienc() source must be at least 2 bits wide

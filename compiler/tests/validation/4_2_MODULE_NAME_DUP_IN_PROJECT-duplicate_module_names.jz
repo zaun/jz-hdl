@@ -1,0 +1,83 @@
+// MODULE_NAME_DUP_IN_PROJECT: Two or more modules with the same name in a project.
+// Tests duplicate module names across the project scope.
+// Valid modules with unique names are included to verify no false positives.
+
+@project MODULE_NAME_DUP_IN_PROJECT_duplicate_module_names
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: first definition of DupMod
+@module DupMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Trigger 1: second definition of DupMod — duplicate module name
+@module DupMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Trigger 2: third definition of DupMod — also duplicate
+@module DupMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Valid: unique module name (no trigger)
+@module UniqueHelper
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_d DupMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    @new inst_u UniqueHelper {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

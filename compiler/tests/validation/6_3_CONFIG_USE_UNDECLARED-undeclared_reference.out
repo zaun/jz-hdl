@@ -1,0 +1,5 @@
+File: 6_3_CONFIG_USE_UNDECLARED-undeclared_reference.jz
+      19:32   error CONFIG_USE_UNDECLARED S6.3 Use of CONFIG.<name> not declared in project CONFIG
+      30:9    error CONFIG_USE_UNDECLARED S6.3 Use of CONFIG.<name> not declared in project CONFIG
+      36:32   error CONFIG_USE_UNDECLARED S6.3 Use of CONFIG.<name> not declared in project CONFIG
+      46:9    error CONFIG_USE_UNDECLARED S6.3 Use of CONFIG.<name> not declared in project CONFIG

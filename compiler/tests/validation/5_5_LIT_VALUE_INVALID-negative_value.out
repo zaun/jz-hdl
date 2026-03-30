@@ -1,0 +1,5 @@
+File: 5_5_LIT_VALUE_INVALID-negative_value.jz
+      25:18   error LIT_VALUE_INVALID S5.5.11 lit() value must be a nonnegative integer constant expression
+      30:14   error LIT_VALUE_INVALID S5.5.11 lit() value must be a nonnegative integer constant expression
+      56:18   error LIT_VALUE_INVALID S5.5.11 lit() value must be a nonnegative integer constant expression
+      61:14   error LIT_VALUE_INVALID S5.5.11 lit() value must be a nonnegative integer constant expression

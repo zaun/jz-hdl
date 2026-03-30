@@ -1,0 +1,5 @@
+File: 6_3_CONFIG_USED_WHERE_FORBIDDEN-runtime_use.jz
+      31:17   error CONFIG_USED_WHERE_FORBIDDEN S6.3 CONFIG.<name> used outside compile-time constant expression contexts (runtime expression)
+      35:14   error CONFIG_USED_WHERE_FORBIDDEN S6.3 CONFIG.<name> used outside compile-time constant expression contexts (runtime expression)
+      59:17   error CONFIG_USED_WHERE_FORBIDDEN S6.3 CONFIG.<name> used outside compile-time constant expression contexts (runtime expression)
+      64:14   error CONFIG_USED_WHERE_FORBIDDEN S6.3 CONFIG.<name> used outside compile-time constant expression contexts (runtime expression)

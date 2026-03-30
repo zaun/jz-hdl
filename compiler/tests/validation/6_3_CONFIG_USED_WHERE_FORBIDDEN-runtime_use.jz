@@ -1,0 +1,66 @@
+// CONFIG_USED_WHERE_FORBIDDEN: CONFIG.<name> used in runtime expression contexts.
+// Tests CONFIG used in ASYNCHRONOUS and SYNCHRONOUS blocks across modules.
+// Valid compile-time uses (port widths, register widths) included to verify no false positives.
+
+@project CONFIG_USED_WHERE_FORBIDDEN_runtime_use
+    CONFIG {
+        WIDTH = 8;
+        DEPTH = 4;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [CONFIG.WIDTH] data = _;
+        OUT [CONFIG.WIDTH] data2 = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        // Valid: CONFIG in port width (compile-time context)
+        IN  [1] clk;
+        OUT [CONFIG.WIDTH] dout;
+        OUT [CONFIG.WIDTH] dout2;
+    }
+    REGISTER {
+        r [CONFIG.WIDTH] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+        // Trigger 1: CONFIG in async assignment RHS
+        dout2 = CONFIG.WIDTH;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: CONFIG in sync assignment RHS
+        r <= CONFIG.DEPTH;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [CONFIG.WIDTH] data;
+        OUT [CONFIG.WIDTH] data2;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [CONFIG.WIDTH] dout = _;
+        OUT [CONFIG.WIDTH] dout2 = _;
+    };
+
+    REGISTER {
+        r [CONFIG.WIDTH] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+        // Trigger 3: CONFIG in async assignment RHS (top module)
+        data2 = CONFIG.WIDTH;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: CONFIG in sync assignment RHS (top module)
+        r <= CONFIG.DEPTH;
+    }
+@endmod

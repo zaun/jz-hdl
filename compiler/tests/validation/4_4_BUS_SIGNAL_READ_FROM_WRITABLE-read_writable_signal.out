@@ -1,0 +1,3 @@
+File: 4_4_BUS_SIGNAL_READ_FROM_WRITABLE-read_writable_signal.jz
+      39:21   error BUS_SIGNAL_READ_FROM_WRITABLE S4.4.1 Read access to writable BUS signal is not allowed
+      66:21   error BUS_SIGNAL_READ_FROM_WRITABLE S4.4.1 Read access to writable BUS signal is not allowed

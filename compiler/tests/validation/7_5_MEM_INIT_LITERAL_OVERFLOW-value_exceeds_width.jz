@@ -1,0 +1,84 @@
+// MEM_INIT_LITERAL_OVERFLOW: Init literal value exceeds word width triggers error.
+// Triggers in helper module (16-bit for 8-bit) and top module (32-bit for 8-bit).
+// Valid-width init included for no false positives.
+
+@project MEM_INIT_LITERAL_OVERFLOW_value_exceeds_width
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Trigger 1: 16-bit literal for 8-bit word in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM {
+        mem_a [8] [16] = 16'hFFFF {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = mem_a.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_a.wr[addr] <= 8'h00;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    // Trigger 2: 32-bit literal for 8-bit word in top module
+    MEM {
+        mem_b [8] [16] = 32'hDEAD_BEEF {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // Valid: 8-bit literal for 8-bit word (no error)
+    MEM {
+        mem_ok [8] [16] = 8'hFF {
+            OUT rd_ok ASYNC;
+            IN  wr_ok;
+        };
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = mem_b.rd[addr] ^ mem_ok.rd_ok[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= r;
+        mem_b.wr[addr] <= 8'h00;
+        mem_ok.wr_ok[addr] <= 8'h00;
+    }
+@endmod

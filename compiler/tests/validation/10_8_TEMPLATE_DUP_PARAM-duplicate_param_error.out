@@ -1,0 +1,4 @@
+File: 10_8_TEMPLATE_DUP_PARAM-duplicate_param_error.jz
+      22:26   error TEMPLATE_DUP_PARAM S10.2 Duplicate parameter name in template definition
+      33:29   error TEMPLATE_DUP_PARAM S10.2 Duplicate parameter name in template definition
+      49:29   error TEMPLATE_DUP_PARAM S10.2 Duplicate parameter name in template definition

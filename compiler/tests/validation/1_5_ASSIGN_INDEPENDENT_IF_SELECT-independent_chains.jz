@@ -1,0 +1,113 @@
+// ASSIGN_INDEPENDENT_IF_SELECT: Same identifier assigned in multiple independent IF/SELECT chains.
+// Tests independent chain conflicts in ASYNCHRONOUS blocks across modules.
+// Covers: independent IFs on port, independent IFs on wire, independent SELECTs,
+// and mixed IF+SELECT chain. Valid branch-exclusive assignments included to verify no false positives.
+
+@project ASSIGN_INDEPENDENT_IF_SELECT_independent_chains
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel_a = _;
+        IN  [1] sel_b = _;
+        IN  [2] sel2_a = _;
+        IN  [2] sel2_b = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+        OUT [1] out_c = _;
+        OUT [1] out_d = _;
+    }
+@endproj
+
+// Helper module: two independent IFs assigning same port
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel_a;
+        IN  [1] sel_b;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: two independent IFs assigning same port
+        IF (sel_a) {
+            out_a <= VCC;
+        } ELSE {
+            out_a <= GND;
+        }
+        IF (sel_b) {
+            out_a <= r;
+        } ELSE {
+            out_a <= VCC;
+        }
+        // Valid: branch-exclusive assignment (no false positive)
+        IF (sel_a) {
+            out_b <= VCC;
+        } ELSE {
+            out_b <= GND;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel_a;
+        IN  [1] sel_b;
+        IN  [2] sel2_a;
+        IN  [2] sel2_b;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+        OUT [1] out_d;
+    }
+    WIRE {
+        w [1];
+        ha_a [1];
+        ha_b [1];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [1] sel_a = sel_a;
+        IN  [1] sel_b = sel_b;
+        OUT [1] out_a = ha_a;
+        OUT [1] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        out_a = ha_a;
+        out_b = ha_b;
+        // Trigger 2: two independent IFs assigning same wire
+        IF (sel_a) {
+            w <= VCC;
+        } ELSE {
+            w <= GND;
+        }
+        IF (sel_b) {
+            w <= ha_a;
+        } ELSE {
+            w <= ha_b;
+        }
+        out_c = w;
+        // Trigger 3: two independent SELECTs assigning same port
+        SELECT (sel2_a) {
+            CASE 2'b00 { out_d <= VCC; }
+            DEFAULT { out_d <= GND; }
+        }
+        SELECT (sel2_b) {
+            CASE 2'b00 { out_d <= VCC; }
+            DEFAULT { out_d <= GND; }
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

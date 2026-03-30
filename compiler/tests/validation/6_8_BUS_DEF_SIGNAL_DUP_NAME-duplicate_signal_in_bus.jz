@@ -1,0 +1,87 @@
+// BUS_DEF_SIGNAL_DUP_NAME: Duplicate signal name inside BUS definition.
+// Tests duplicate signal names within BUS definitions across all direction combinations.
+// Valid BUS definitions with unique signal names included to verify no false positives.
+
+@project BUS_DEF_SIGNAL_DUP_NAME_duplicate_signal_in_bus
+
+    // Valid: all unique signal names (no trigger)
+    BUS GOOD_BUS {
+        OUT   [8] tx;
+        IN    [8] rx;
+        INOUT [1] bidir;
+    }
+
+    // BUS with duplicate OUT signals
+    BUS DUP_OUT_BUS {
+        OUT [8] data;
+        IN  [1] ack;
+        // Trigger 1: duplicate OUT signal name
+        OUT [4] data;
+    }
+
+    // BUS with duplicate IN signals
+    BUS DUP_IN_BUS {
+        IN  [8] rdata;
+        OUT [1] req;
+        // Trigger 2: duplicate IN signal name
+        IN  [4] rdata;
+    }
+
+    // BUS with duplicate INOUT signals
+    BUS DUP_INOUT_BUS {
+        INOUT [8] bidir;
+        OUT   [1] valid;
+        // Trigger 3: duplicate INOUT signal name
+        INOUT [4] bidir;
+    }
+
+    // BUS with cross-direction duplicate (same name, different direction)
+    BUS CROSS_DIR_BUS {
+        OUT [8] shared;
+        // Trigger 4: same name as OUT signal but declared as IN
+        IN  [8] shared;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        BUS GOOD_BUS SOURCE sbus;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        sbus.tx = r;
+        data = sbus.rx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= sbus.rx;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] dout;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        BUS GOOD_BUS SOURCE sbus = _;
+        OUT [8] data = dout;
+    };
+
+    ASYNCHRONOUS {
+        // TopMod passes through instance outputs
+    }
+@endmod

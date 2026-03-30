@@ -1,0 +1,57 @@
+// TEMPLATE_FORBIDDEN_DIRECTIVE: Cross-reference test for S10.4 @new directive in template.
+// Parser does not recover after the error, producing cascading PARSE000.
+// Split from @module trigger for this reason.
+
+@project TEMPLATE_FORBIDDEN_DIRECTIVE_new_in_template
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger: @new directive inside file-scoped template
+@template new_tmpl(a, b)
+    @new inst_inner HelperMod {
+        IN  [1] din = a;
+        OUT [1] data = b;
+    };
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

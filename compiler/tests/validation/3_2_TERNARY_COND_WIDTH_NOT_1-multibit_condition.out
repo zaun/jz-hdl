@@ -1,0 +1,5 @@
+File: 3_2_TERNARY_COND_WIDTH_NOT_1-multibit_condition.jz
+      35:17   error TERNARY_COND_WIDTH_NOT_1 S3.2/S8.1 Ternary `?:` condition must be 1 bit wide; use a comparison or reduction operator
+      42:14   error TERNARY_COND_WIDTH_NOT_1 S3.2/S8.1 Ternary `?:` condition must be 1 bit wide; use a comparison or reduction operator
+      79:17   error TERNARY_COND_WIDTH_NOT_1 S3.2/S8.1 Ternary `?:` condition must be 1 bit wide; use a comparison or reduction operator
+      86:14   error TERNARY_COND_WIDTH_NOT_1 S3.2/S8.1 Ternary `?:` condition must be 1 bit wide; use a comparison or reduction operator

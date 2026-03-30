@@ -1,0 +1,65 @@
+// PIN_PULL_ON_OUTPUT: Pull resistor specified on output-only pin (OUT_PINS).
+// Tests pull attributes on OUT_PINS (forbidden).
+// Pull on IN_PINS and INOUT_PINS is valid (no trigger).
+
+@project PIN_PULL_ON_OUTPUT_pull_on_out
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Valid: pull on IN_PINS (no trigger)
+        valid_pull_in = { standard=LVCMOS33, pull=UP };
+    }
+
+    OUT_PINS {
+        // Valid: no pull attribute (no trigger)
+        valid_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 1: pull=UP on OUT_PINS
+        pull_up_out = { standard=LVCMOS33, drive=8, pull=UP };
+        // Trigger 2: pull=DOWN on OUT_PINS
+        pull_down_out = { standard=LVCMOS33, drive=8, pull=DOWN };
+        // No trigger: pull=NONE on OUT_PINS is a no-op (compiler allows it)
+        pull_none_out = { standard=LVCMOS33, drive=8, pull=NONE };
+    }
+
+    INOUT_PINS {
+        // Valid: pull on INOUT_PINS (no trigger)
+        valid_pull_io = { standard=LVCMOS33, drive=4, pull=DOWN };
+    }
+
+    MAP {
+        sys_clk = 1;
+        valid_pull_in = 2;
+        valid_out = 3;
+        pull_up_out = 4;
+        pull_down_out = 5;
+        pull_none_out = 6;
+        valid_pull_io = 7;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

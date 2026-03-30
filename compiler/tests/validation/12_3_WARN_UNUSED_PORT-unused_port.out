@@ -1,0 +1,3 @@
+File: 12_3_WARN_UNUSED_PORT-unused_port.jz
+      18:17   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused
+      40:17   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused

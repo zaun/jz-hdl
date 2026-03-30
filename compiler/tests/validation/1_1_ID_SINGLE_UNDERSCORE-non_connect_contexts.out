@@ -1,0 +1,11 @@
+File: 1_1_ID_SINGLE_UNDERSCORE-non_connect_contexts.jz
+      19:17   error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      26:9    error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      41:9    error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      45:16   error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      50:9    error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      50:15   error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      62:5    error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      65:17   error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      87:9    error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context
+      93:17   error ID_SINGLE_UNDERSCORE S1.1 Single underscore `_` used as regular identifier outside no-connect context

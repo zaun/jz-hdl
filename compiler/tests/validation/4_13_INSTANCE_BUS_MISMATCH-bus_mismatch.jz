@@ -1,0 +1,118 @@
+// INSTANCE_BUS_MISMATCH: Instance BUS binding must match child BUS port BUS id and role.
+// Tests BUS id mismatch and BUS role mismatch in @new bindings across multiple modules.
+// Valid BUS bindings are included to verify no false positives.
+
+@project INSTANCE_BUS_MISMATCH_bus_mismatch
+
+    BUS ALPHA_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    BUS BETA_BUS {
+        OUT [4] data;
+        IN  [1] ack;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Child module with ALPHA_BUS SOURCE port
+@module ChildSource
+    PORT {
+        IN  [1] clk;
+        BUS ALPHA_BUS SOURCE sbus;
+        OUT [1] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        sbus.tx = r;
+        data = r[0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= sbus.rx;
+    }
+@endmod
+
+// Module with BUS mismatch triggers
+@module MidMod
+    PORT {
+        IN  [1] clk;
+        BUS ALPHA_BUS SOURCE mid_bus;
+        OUT [1] data;
+    }
+
+    // Trigger 1: BUS id mismatch (BETA_BUS instead of ALPHA_BUS)
+    @new inst_a ChildSource {
+        IN  [1] clk = clk;
+        BUS BETA_BUS SOURCE sbus = _;
+        OUT [1] data = _;
+    };
+
+    // Trigger 2: BUS role mismatch (TARGET instead of SOURCE)
+    @new inst_b ChildSource {
+        IN  [1] clk = clk;
+        BUS ALPHA_BUS TARGET sbus = _;
+        OUT [1] data = _;
+    };
+
+    // Valid: correct BUS id and role (no trigger)
+    @new inst_c ChildSource {
+        IN  [1] clk = clk;
+        BUS ALPHA_BUS SOURCE sbus = _;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        mid_bus.tx = r;
+        data = r[0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= mid_bus.rx;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 3: BUS id mismatch in top module
+    @new inst_d ChildSource {
+        IN  [1] clk = clk;
+        BUS BETA_BUS SOURCE sbus = _;
+        OUT [1] data = _;
+    };
+
+    // Trigger 4: both BUS id and role mismatch (fires twice)
+    @new inst_e ChildSource {
+        IN  [1] clk = clk;
+        BUS BETA_BUS TARGET sbus = _;
+        OUT [1] data = _;
+    };
+
+    @new inst_f MidMod {
+        IN  [1] clk = clk;
+        BUS ALPHA_BUS SOURCE mid_bus = _;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

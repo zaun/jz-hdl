@@ -1,0 +1,2 @@
+File: 6_2_IMPORT_FILE_HAS_PROJECT-imported_has_project_lib.jz
+       4:1    error IMPORT_FILE_HAS_PROJECT S6.2.1 Imported file contains its own @project/@endproj (forbidden)

@@ -1,0 +1,4 @@
+File: 4_2_BLACKBOX_NAME_DUP_IN_PROJECT-blackbox_name_conflicts.jz
+      23:5    error BLACKBOX_NAME_DUP_IN_PROJECT S6.7/S6.10 Blackbox name conflicts with existing module/blackbox name
+      45:1    error BLACKBOX_NAME_DUP_IN_PROJECT S6.7/S6.10 Blackbox name conflicts with existing module/blackbox name
+      45:1    warn  WARN_UNUSED_MODULE S8.3 Module declared but never instantiated; remove it or add a @new

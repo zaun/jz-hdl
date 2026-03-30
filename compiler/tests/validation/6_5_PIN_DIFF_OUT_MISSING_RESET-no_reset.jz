@@ -1,0 +1,63 @@
+// PIN_DIFF_OUT_MISSING_RESET: Differential output pin missing required reset attribute.
+// Tests OUT_PINS with mode=DIFFERENTIAL but no reset.
+// Differential input pins do not require reset. Valid differential output with
+// all attributes verifies no false positives.
+
+@project PIN_DIFF_OUT_MISSING_RESET_no_reset
+    CLOCKS {
+        sys_clk = { period=10 };
+        fast_clk = { period=2 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        fast_clk = { standard=LVCMOS33 };
+        // Valid: differential input does not need reset (no trigger)
+        valid_diff_in = { standard=LVDS25, mode=DIFFERENTIAL };
+    }
+
+    OUT_PINS {
+        // Valid: differential output with all attributes (no trigger)
+        valid_diff_out = { standard=LVDS25, drive=8, mode=DIFFERENTIAL, fclk=fast_clk, pclk=sys_clk, reset=sys_clk };
+        // Trigger 1: differential output missing reset in OUT_PINS
+        no_reset_out = { standard=LVDS25, drive=8, mode=DIFFERENTIAL, fclk=fast_clk, pclk=sys_clk };
+    }
+
+    INOUT_PINS {
+        // No trigger: INOUT_PINS differential without reset does not fire this rule
+        no_reset_io = { standard=LVDS25, drive=4, mode=DIFFERENTIAL, fclk=fast_clk, pclk=sys_clk };
+    }
+
+    MAP {
+        sys_clk = 1;
+        fast_clk = 2;
+        valid_diff_in = { P=3, N=4 };
+        valid_diff_out = { P=5, N=6 };
+        no_reset_out = { P=7, N=8 };
+        no_reset_io = { P=9, N=10 };
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

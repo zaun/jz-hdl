@@ -1,0 +1,65 @@
+// PIN_TERM_INVALID: Invalid termination value (must be ON or OFF).
+// Tests invalid termination values in IN_PINS, OUT_PINS, and INOUT_PINS.
+// Valid termination values included to verify no false positives.
+
+@project PIN_TERM_INVALID_bad_termination
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Valid: term=ON on supported standard (no trigger)
+        valid_term = { standard=SSTL18_I, term=ON };
+        // Valid: term=OFF (no trigger)
+        valid_off = { standard=LVCMOS33, term=OFF };
+        // Trigger 1: invalid termination in IN_PINS
+        bad_term_in = { standard=SSTL18_I, term=HALF };
+    }
+
+    OUT_PINS {
+        // Trigger 2: invalid termination in OUT_PINS
+        bad_term_out = { standard=LVCMOS33, drive=8, term=AUTO };
+    }
+
+    INOUT_PINS {
+        // Valid: term=ON on INOUT_PINS (no trigger)
+        valid_term_io = { standard=SSTL18_I, drive=4, term=ON };
+        // Trigger 3: invalid termination in INOUT_PINS
+        bad_term_io = { standard=SSTL18_I, drive=4, term=MAYBE };
+    }
+
+    MAP {
+        sys_clk = 1;
+        valid_term = 2;
+        valid_off = 3;
+        bad_term_in = 4;
+        bad_term_out = 5;
+        valid_term_io = 6;
+        bad_term_io = 7;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

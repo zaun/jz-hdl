@@ -1,0 +1,103 @@
+// ASSIGN_MULTIPLE_SAME_BITS: Cross-reference test for S10.6 exclusive assignment via template in ASYNC.
+// Two @apply calls writing the same wire bits on the same execution path.
+// Valid uses: single @apply, @apply in exclusive IF/ELSE branches.
+
+@project ASSIGN_MULTIPLE_SAME_BITS_template_async_error
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+@template set_high(out)
+    out <= VCC;
+@endtemplate
+
+@template set_low(out)
+    out <= GND;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: two @apply targeting same wire on same path
+        @apply set_high(w1);
+        @apply set_low(w1);
+
+        // Valid: single @apply, no conflict
+        @apply set_high(w2);
+
+        out_a = w1;
+        out_b = w2;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+        w3 [1];
+        ha [1];
+        hb [1];
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        OUT [1] out_a = ha;
+        OUT [1] out_b = hb;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: two @apply same wire in top module
+        @apply set_high(w1);
+        @apply set_low(w1);
+
+        // Valid: @apply in mutually exclusive IF/ELSE branches (no error)
+        IF (sel) {
+            @apply set_high(w2);
+        } ELSE {
+            @apply set_low(w2);
+        }
+
+        // Valid: different wires (no error)
+        @apply set_high(w3);
+
+        out_a = w1;
+        out_b = w3;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

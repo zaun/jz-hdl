@@ -1,0 +1,75 @@
+// TEMPLATE_APPLY_OUTSIDE_BLOCK: Cross-reference test for S10.5 @apply outside block error.
+// Tests @apply at file scope and module scope.
+// NOTE: Known compiler bug — this rule is not enforced. See issues.md.
+// Valid @apply inside ASYNC included for negative testing.
+
+@project TEMPLATE_APPLY_OUTSIDE_BLOCK_apply_outside_error
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@template simple(a, b)
+    a <= b;
+@endtemplate
+
+// Trigger 1: @apply at file scope
+@apply simple(x, y);
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w1 [1];
+    }
+
+    // Trigger 2: @apply at module scope
+    @apply simple(w1, din);
+
+    ASYNCHRONOUS {
+        // Valid: @apply inside ASYNC (no error)
+        @apply simple(w1, din);
+        data = w1;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    WIRE {
+        w1 [1];
+    }
+
+    // Trigger 3: @apply at module scope in TopMod
+    @apply simple(w1, r);
+
+    ASYNCHRONOUS {
+        // Valid: @apply inside ASYNC (no error)
+        @apply simple(w1, r);
+        data = w1;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

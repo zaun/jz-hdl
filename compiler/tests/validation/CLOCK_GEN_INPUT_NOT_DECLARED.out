@@ -1,3 +1,0 @@
-File: CLOCK_GEN_INPUT_NOT_DECLARED.jz
-       9:3    info  CLOCK_GEN_NO_CHIP_DATA S6.4.1 No chip specified; CLOCK_GEN parameters and constraints cannot be validated
-      11:7    error CLOCK_GEN_INPUT_NOT_DECLARED S6.4.1 CLOCK_GEN input clock not declared in CLOCKS block

@@ -1,0 +1,62 @@
+// CONST_NEGATIVE_OR_NONINT: CONST initialized with negative or non-integer value.
+// Tests negative values in CONST declarations across multiple modules.
+// Valid non-negative CONST values included to verify no false positives.
+
+@project CONST_NEGATIVE_OR_NONINT_negative_const_value
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+        OUT [1] out_h = _;
+    }
+@endproj
+
+// Helper module with negative CONST
+@module HelperMod
+    CONST {
+        GOOD = 8;
+        // Trigger 1: negative value in helper module CONST
+        BAD = -1;
+    }
+
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        WIDTH = 4;
+        // Trigger 2: negative value in top module CONST
+        NEG_VAL = -5;
+        // Valid: zero is a valid CONST value
+        ZERO = 0;
+    }
+
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+        OUT [1] out_h;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = out_h;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

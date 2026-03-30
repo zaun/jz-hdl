@@ -1,2 +1,0 @@
-File: MEM_WARN_PORT_NEVER_ACCESSED.jz
-      19:11   warn  MEM_WARN_PORT_NEVER_ACCESSED S7.7.3 MEM IN/OUT/INOUT port declared but never used

@@ -1,0 +1,118 @@
+// DIV_UNGUARDED_RUNTIME_ZERO: Runtime divisor without nonzero guard.
+// Tests unguarded division and modulus in sync blocks across modules.
+// Guarded division included to verify no false positives.
+// All divisions in SYNCHRONOUS blocks since ASYNC IF triggers ASYNC_ALIAS_IN_CONDITIONAL,
+// and DIV_UNGUARDED_RUNTIME_ZERO only fires when no errors exist (IR pass).
+
+@project DIV_UNGUARDED_RUNTIME_ZERO_unguarded_division
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] num = _;
+        IN  [8] den = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+        OUT [8] out_d = _;
+        OUT [8] out_e = _;
+    }
+@endproj
+
+// Helper module with unguarded division in sync
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] num;
+        IN  [8] den;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+    }
+    REGISTER {
+        r_div [8] = 8'd0;
+        r_mod [8] = 8'd0;
+        r_ok  [8] = 8'd0;
+    }
+    ASYNCHRONOUS {
+        out_a = r_div;
+        out_b = r_mod;
+        out_c = r_ok;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: unguarded division in sync
+        r_div <= num / den;
+        // Trigger 2: unguarded modulus in sync
+        r_mod <= num % den;
+        // Valid: guarded division (no false positive)
+        IF (den != 8'd0) {
+            r_ok <= num / den;
+        } ELSE {
+            r_ok <= 8'd0;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] num;
+        IN  [8] den;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+        OUT [8] out_d;
+        OUT [8] out_e;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+        ha_c [8];
+    }
+    REGISTER {
+        r_div [8] = 8'd0;
+        r_mod [8] = 8'd0;
+        r_grd [8] = 8'd0;
+        r_gt  [8] = 8'd0;
+        r_eq  [8] = 8'd0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] num = num;
+        IN  [8] den = den;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+        OUT [8] out_c = ha_c;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r_div;
+        out_b = r_mod;
+        out_c = r_grd;
+        out_d = r_gt;
+        out_e = r_eq;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: unguarded division in top sync
+        r_div <= num / den;
+        // Trigger 4: unguarded modulus in top sync
+        r_mod <= num % den;
+        // Valid: guarded with != 0 (no false positive)
+        IF (den != 8'd0) {
+            r_grd <= num / den;
+        } ELSE {
+            r_grd <= 8'd0;
+        }
+        // Valid: guarded with > 0 (no false positive)
+        IF (den > 8'd0) {
+            r_gt <= num % den;
+        } ELSE {
+            r_gt <= 8'd0;
+        }
+        // Valid: guarded with == nonzero (no false positive)
+        IF (den == 8'd5) {
+            r_eq <= num / den;
+        } ELSE {
+            r_eq <= 8'd0;
+        }
+    }
+@endmod

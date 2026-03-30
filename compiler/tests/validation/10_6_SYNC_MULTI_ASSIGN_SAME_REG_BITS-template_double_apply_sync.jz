@@ -1,0 +1,88 @@
+// SYNC_MULTI_ASSIGN_SAME_REG_BITS: Template expansion must respect exclusive assignment in SYNC.
+// Two @apply calls that assign the same register bits on the same execution path
+// in a SYNCHRONOUS block produce a multi-assign violation after expansion.
+// Valid uses: single @apply, @apply in exclusive IF/ELSE branches.
+
+@project SYNC_MULTI_ASSIGN_template_double_apply_sync
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+@template set_reg(reg, val)
+    reg <= val;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] a;
+        IN  [1] b;
+        OUT [1] out_a;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: two @apply targeting same register on same path in SYNC
+        @apply set_reg(r, a);
+        @apply set_reg(r, b);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        ha [1];
+    }
+
+    REGISTER {
+        r1 [1] = 1'b0;
+        r2 [1] = 1'b0;
+        r3 [1] = 1'b0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] a = sel;
+        IN  [1] b = sel;
+        OUT [1] out_a = ha;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r1 | r2;
+        out_b = r3;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: two @apply same register in top module SYNC
+        @apply set_reg(r1, sel);
+        @apply set_reg(r1, sel);
+
+        // Trigger 3: @apply + direct assignment to same register in SYNC
+        @apply set_reg(r2, sel);
+        r2 <= ~sel;
+
+        // Valid: @apply in exclusive IF/ELSE branches (no error)
+        IF (sel) {
+            @apply set_reg(r3, VCC);
+        } ELSE {
+            @apply set_reg(r3, GND);
+        }
+    }
+@endmod

@@ -1,0 +1,89 @@
+// HAPPY_PATH: Valid single-port INOUT memory in BLOCK mode (S7.6.8).
+// Exercises INOUT port with .addr/.data/.wdata access,
+// BLOCK type MEM, conditional write, and cross-module instantiation.
+
+@project HAPPY_PATH_single_port_inout
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] addr = _;
+        IN  [16] wr_data = _;
+        IN  [1] wr_en = _;
+        OUT [16] rd_data = _;
+        OUT [16] helper_data = _;
+    }
+@endproj
+
+// Helper: single-port INOUT memory
+@module SpHelper
+    PORT {
+        IN  [1] clk;
+        IN  [8] addr;
+        IN  [16] wdata;
+        IN  [1] we;
+        OUT [16] rdata;
+    }
+
+    REGISTER {
+        r_data [16] = 16'h0000;
+    }
+
+    MEM(type=BLOCK) {
+        mem [16] [256] = 16'h0000 {
+            INOUT rw;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = r_data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem.rw.addr <= addr;
+        r_data <= mem.rw.data;
+        IF (we) {
+            mem.rw.wdata <= wdata;
+        }
+    }
+@endmod
+
+// Top module: single-port RAM with INOUT port
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] addr;
+        IN  [16] wr_data;
+        IN  [1] wr_en;
+        OUT [16] rd_data;
+        OUT [16] helper_data;
+    }
+
+    REGISTER {
+        r_read [16] = 16'h0000;
+    }
+
+    MEM(type=BLOCK) {
+        mem [16] [256] = 16'h0000 {
+            INOUT rw;
+        };
+    }
+
+    @new inst_sp SpHelper {
+        IN  [1] clk = clk;
+        IN  [8] addr = addr;
+        IN  [16] wdata = wr_data;
+        IN  [1] we = wr_en;
+        OUT [16] rdata = helper_data;
+    };
+
+    ASYNCHRONOUS {
+        rd_data = r_read;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        mem.rw.addr <= addr;
+        r_read <= mem.rw.data;
+        IF (wr_en) {
+            mem.rw.wdata <= wr_data;
+        }
+    }
+@endmod

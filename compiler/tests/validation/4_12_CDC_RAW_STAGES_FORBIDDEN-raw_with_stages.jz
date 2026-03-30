@@ -1,0 +1,78 @@
+// CDC_RAW_STAGES_FORBIDDEN: RAW CDC type does not accept a stages parameter.
+// Tests RAW type with n_stages in multiple modules.
+// Valid RAW without stages included to verify no false positives.
+
+@project CDC_RAW_STAGES_FORBIDDEN_raw_with_stages
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with RAW CDC having stages
+@module HelperMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        reg_a [8] = 8'h00;
+        reg_b [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 1: RAW with stages in helper
+        RAW[2] reg_a (clk_a) => raw_a_sync (clk_b);
+        // Valid: RAW without stages
+        RAW reg_b (clk_a) => raw_b_sync (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        data = raw_b_sync;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        reg_a <= 8'hAA;
+        reg_b <= ~reg_b;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (raw_a_sync[0:0]) {
+            // reading alias
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        top_reg [4] = 4'h0;
+    }
+
+    CDC {
+        // Trigger 2: RAW with stages in top module
+        RAW[3] top_reg (clk_a) => top_raw_sync (clk_b);
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = top_raw_sync[0:0];
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        top_reg <= 4'hF;
+    }
+@endmod

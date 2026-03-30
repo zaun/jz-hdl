@@ -1,0 +1,4 @@
+File: 10_5_TEMPLATE_COUNT_NOT_NONNEG_INT-bad_count_expr.jz
+      36:9    error TEMPLATE_COUNT_NOT_NONNEG_INT S10.5 @apply count expression does not resolve to a non-negative integer
+      64:9    error TEMPLATE_COUNT_NOT_NONNEG_INT S10.5 @apply count expression does not resolve to a non-negative integer
+      70:9    error TEMPLATE_COUNT_NOT_NONNEG_INT S10.5 @apply count expression does not resolve to a non-negative integer

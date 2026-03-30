@@ -1,0 +1,58 @@
+// COMB_LOOP_UNCONDITIONAL: Self-assignment through expression.
+// Tests that a signal referencing itself in an expression is detected
+// as a combinational loop. Valid feed-forward paths included.
+
+@project COMB_LOOP_UNCONDITIONAL_self_assignment
+    @top TopMod {
+        IN  [1] in_a = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: self-assignment through expression
+@module HelperSelf
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        a [1];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: self-reference through expression a = a & 1'b0
+        a <= a & 1'b0;
+        out_a = a;
+        // Valid: feed-forward (no loop)
+        out_b = in_a;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        x [1];
+    }
+
+    @new inst_self HelperSelf {
+        IN  [1] in_a = in_a;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: self-reference through expression x = x | 1'b0
+        x <= x | 1'b0;
+        out_a = x;
+        // Valid: feed-forward (no loop)
+        out_b = in_a;
+    }
+@endmod

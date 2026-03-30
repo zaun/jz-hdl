@@ -1,0 +1,145 @@
+// HAPPY_PATH: Valid @feature guard constructs.
+// Exercises @feature with @else, feature in REGISTER/ASYNCHRONOUS/SYNCHRONOUS,
+// CONST and CONFIG expressions, logical operators (&&, ||, !),
+// comparison operators (==, !=, >, <, >=, <=), empty feature body,
+// and feature always-true / always-false conditions.
+
+@project HAPPY_PATH_feature_guards_ok
+    CONFIG {
+        DEBUG = 1;
+        WIDTH = 8;
+        MODE = 0;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: feature guard with CONST expression and @else
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    CONST {
+        INC = 1;
+    }
+
+    REGISTER {
+        // Valid: conditional register declaration inside feature guard
+        @feature INC == 1
+            counter [8] = 8'h00;
+        @endfeat
+    }
+
+    ASYNCHRONOUS {
+        // Valid: @feature with @else in ASYNCHRONOUS block
+        @feature INC == 1
+            dout = counter;
+        @else
+            dout = din;
+        @endfeat
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: @feature in SYNCHRONOUS block
+        @feature INC == 1
+            counter <= counter + 8'd1;
+        @endfeat
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    CONST {
+        FLAG = 1;
+        LEVEL = 16;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        OUT [8] dout = dout_b;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: CONFIG expression
+        @feature CONFIG.DEBUG == 1
+            dout_a = r;
+        @else
+            dout_a = din;
+        @endfeat
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: logical AND operator
+        @feature FLAG == 1 && CONFIG.DEBUG == 1
+            r <= din;
+        @endfeat
+
+        // Valid: logical OR operator
+        @feature FLAG == 0 || CONFIG.MODE == 0
+            r <= din;
+        @endfeat
+
+        // Valid: logical NOT operator
+        @feature !(FLAG == 0)
+            r <= din;
+        @endfeat
+
+        // Valid: comparison greater-than
+        @feature LEVEL > 8
+            r <= din;
+        @endfeat
+
+        // Valid: comparison less-than
+        @feature LEVEL < 32
+            r <= din;
+        @endfeat
+
+        // Valid: comparison greater-or-equal
+        @feature LEVEL >= 16
+            r <= din;
+        @endfeat
+
+        // Valid: comparison less-or-equal
+        @feature LEVEL <= 16
+            r <= din;
+        @endfeat
+
+        // Valid: comparison not-equal
+        @feature CONFIG.WIDTH != 0
+            r <= din;
+        @endfeat
+
+        // Valid: empty feature body
+        @feature FLAG == 0
+        @endfeat
+
+        // Valid: feature always-true condition
+        @feature 1'b1
+            r <= din;
+        @endfeat
+
+        // Valid: feature always-false condition
+        @feature 1'b0
+            r <= din;
+        @endfeat
+    }
+@endmod

@@ -1,0 +1,80 @@
+// TERNARY_BRANCH_WIDTH_MISMATCH: Ternary true/false branches must have matching widths.
+// Tests ternary width mismatch with signals, literals, and registers
+// in ASYNCHRONOUS and SYNCHRONOUS blocks across two modules.
+// Valid same-width ternary expressions included to verify no false positives.
+
+@project TERNARY_BRANCH_WIDTH_MISMATCH_ternary_arm_widths
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        IN  [8] a = _;
+        IN  [4] b = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: ternary mismatches in ASYNC and SYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: ternary mismatch with signals (8 vs 4)
+        out_a <= sel ? a : b;
+        // Trigger 2: ternary mismatch with literal (8 vs 4)
+        out_b <= sel ? 8'hFF : b;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: ternary mismatch in SYNC (8 vs 4)
+        r <= sel ? r : b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        IN  [8] a;
+        IN  [4] b;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    WIRE {
+        w [8];
+        h_a [8];
+        h_b [8];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] sel = sel;
+        IN  [8] a = a;
+        IN  [4] b = b;
+        OUT [8] out_a = h_a;
+        OUT [8] out_b = h_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 4: ternary mismatch in top module ASYNC (8 vs 4)
+        w = sel ? a : b;
+        // Valid: same-width ternary (no false positive)
+        out_a = sel ? h_a : h_b;
+        out_b = w;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: ternary mismatch in top module SYNC (8 vs 4)
+        r <= sel ? r : b;
+    }
+@endmod

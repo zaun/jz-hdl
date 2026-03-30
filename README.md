@@ -94,7 +94,7 @@ The `examples/` directory contains complete projects ranging from simple counter
 
 ## Documentation
 
-Full documentation is in the `docs/` directory and covers the language specification, type system, module system, memory semantics, simulation, and testbench authoring.
+Full documentation is available at [jz-hdl.github.io/jz-hdl](https://jz-hdl.github.io/jz-hdl/) and in the `docs/` directory, covering the language specification, type system, module system, memory semantics, simulation, and testbench authoring.
 
 ### Specification
 

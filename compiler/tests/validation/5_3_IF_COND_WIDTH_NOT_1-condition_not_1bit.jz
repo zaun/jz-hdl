@@ -1,0 +1,80 @@
+// IF_COND_WIDTH_NOT_1: IF/ELIF condition must be 1 bit wide.
+// Tests multi-bit conditions in IF and ELIF across ASYNC and SYNC blocks.
+// Valid 1-bit conditions included to verify no false positives.
+
+@project IF_COND_WIDTH_NOT_1_condition_not_1bit
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] wide = _;
+        IN  [1] sel = _;
+        OUT [1] out_a = _;
+    }
+@endproj
+
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [8] wide;
+        OUT [1] out_a;
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: IF with 8-bit condition in ASYNC
+        IF (wide) {
+            out_a <= r;
+        } ELSE {
+            out_a <= VCC;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: IF with 8-bit condition in SYNC
+        IF (wide) {
+            r <= VCC;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] wide;
+        IN  [1] sel;
+        OUT [1] out_a;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [8] wide = wide;
+        OUT [1] out_a = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        // Valid: 1-bit condition (no false positive)
+        IF (sel) {
+            // Trigger 3: nested IF with 8-bit condition in ASYNC
+            IF (wide) {
+                out_a <= VCC;
+            } ELSE {
+                out_a <= r;
+            }
+        // Trigger 4: ELIF with 8-bit condition in ASYNC
+        } ELIF (wide) {
+            out_a <= r;
+        } ELSE {
+            out_a <= GND;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: ELIF with 8-bit condition in SYNC
+        IF (sel) {
+            r <= VCC;
+        } ELIF (wide) {
+            r <= GND;
+        }
+    }
+@endmod

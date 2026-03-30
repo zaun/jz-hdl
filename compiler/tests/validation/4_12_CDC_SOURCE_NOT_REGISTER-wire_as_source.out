@@ -1,0 +1,3 @@
+File: 4_12_CDC_SOURCE_NOT_REGISTER-wire_as_source.jz
+      32:9    error CDC_SOURCE_NOT_REGISTER S4.12 CDC source must be a REGISTER declared in the module
+      66:9    error CDC_SOURCE_NOT_REGISTER S4.12 CDC source must be a REGISTER declared in the module

@@ -1,0 +1,5 @@
+File: 10_8_TEMPLATE_ARG_COUNT_MISMATCH-arg_count_error.jz
+      35:9    error TEMPLATE_ARG_COUNT_MISMATCH S10.5 @apply argument count does not match template parameter count
+      37:9    error TEMPLATE_ARG_COUNT_MISMATCH S10.5 @apply argument count does not match template parameter count
+      59:9    error TEMPLATE_ARG_COUNT_MISMATCH S10.5 @apply argument count does not match template parameter count
+      65:9    error TEMPLATE_ARG_COUNT_MISMATCH S10.5 @apply argument count does not match template parameter count

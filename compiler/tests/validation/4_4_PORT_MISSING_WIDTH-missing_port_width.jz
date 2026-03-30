@@ -1,0 +1,57 @@
+// PORT_MISSING_WIDTH: Port declaration without mandatory [N] width.
+// Tests IN, OUT, and INOUT ports without width specifier.
+// Valid ports with width included to verify no false positives.
+
+@project PORT_MISSING_WIDTH_missing_port_width
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Trigger 1: IN port without width in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  din_nowidth;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data_out <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= 8'h00;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  din_nowidth = _;
+        OUT [8] data_out = dout;
+    };
+
+    ASYNCHRONOUS {
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

@@ -1,2 +1,0 @@
-File: UNARY_ARITH_MISSING_PARENS.jz
-      18:11   error UNARY_ARITH_MISSING_PARENS S3.2/S8.1 Unary arithmetic `-flag`/`+flag` used without required parentheses

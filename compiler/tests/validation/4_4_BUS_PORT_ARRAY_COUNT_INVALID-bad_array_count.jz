@@ -1,0 +1,70 @@
+// BUS_PORT_ARRAY_COUNT_INVALID: BUS array count must be a positive integer.
+// Tests zero array count in BUS port declaration.
+// NET_DANGLING_UNUSED co-fires because a zero-count BUS port has no usable signals.
+// Valid positive array count included to verify no false positives.
+
+@project BUS_PORT_ARRAY_COUNT_INVALID_bad_array_count
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        BUS MY_BUS SOURCE [2] vbus = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+// Trigger 1: zero array count
+@module ZeroCountMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        BUS MY_BUS SOURCE [0] zbus;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data_out <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        // Valid: positive array count
+        BUS MY_BUS SOURCE [2] vbus;
+        OUT [8] dout;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_z ZeroCountMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        BUS MY_BUS SOURCE [0] zbus = _;
+        OUT [8] data_out = dout;
+    };
+
+    ASYNCHRONOUS {
+        vbus[0].tx <= r;
+        vbus[1].tx <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

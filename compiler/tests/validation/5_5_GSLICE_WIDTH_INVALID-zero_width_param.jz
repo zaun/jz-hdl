@@ -1,0 +1,71 @@
+// GSLICE_WIDTH_INVALID: gslice() width parameter must be a positive integer.
+// Tests gslice() with width=0 in ASYNC and SYNC blocks across modules.
+// Valid gslice() with positive width included to verify no false positives.
+
+@project GSLICE_WIDTH_INVALID_zero_width_param
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        IN  [3] idx = _;
+        OUT [4] out_a = _;
+        OUT [4] out_b = _;
+    }
+@endproj
+
+// Helper module: gslice() with zero width
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] src;
+        IN  [3] idx;
+        OUT [4] out_a;
+        OUT [4] out_b;
+    }
+    REGISTER {
+        r [4] = 4'd0;
+    }
+    ASYNCHRONOUS {
+        // Trigger 1: gslice(src, idx, 0) in helper ASYNC
+        out_a <=z gslice(src, idx, 0);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: gslice(src, idx, 0) in helper SYNC
+        r <=z gslice(src, idx, 0);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        IN  [3] idx;
+        OUT [4] out_a;
+        OUT [4] out_b;
+    }
+    WIRE {
+        ha_a [4];
+        ha_b [4];
+    }
+    REGISTER {
+        r [4] = 4'd0;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] src = data;
+        IN  [3] idx = idx;
+        OUT [4] out_a = ha_a;
+        OUT [4] out_b = ha_b;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 3: gslice(data, idx, 0) in top ASYNC
+        out_a <=z gslice(data, idx, 0);
+        out_b = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: gslice(data, idx, 0) in top SYNC
+        r <=z gslice(data, idx, 0);
+    }
+@endmod

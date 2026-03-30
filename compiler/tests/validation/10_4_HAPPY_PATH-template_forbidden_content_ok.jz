@@ -1,0 +1,123 @@
+// TEMPLATE_FORBIDDEN_CONTENT: Valid templates containing only allowed content.
+// Verifies no false positives from TEMPLATE_FORBIDDEN_DECL, TEMPLATE_FORBIDDEN_BLOCK_HEADER,
+// TEMPLATE_FORBIDDEN_DIRECTIVE, or TEMPLATE_NESTED_DEF rules.
+// Tests: assignments, IF/ELSE, SELECT/CASE, @scratch, and @apply — all permitted.
+
+@project TEMPLATE_FORBIDDEN_CONTENT_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Valid: simple assignment template
+@template assign_tmpl(dst, src)
+    dst <= src;
+@endtemplate
+
+// Valid: template with @scratch (allowed alternative to WIRE)
+@template scratch_tmpl(a, b)
+    @scratch tmp [8];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Valid: template with IF/ELSE control flow
+@template cond_tmpl(cond, dst, a, b)
+    IF (cond) {
+        dst <= a;
+    } ELSE {
+        dst <= b;
+    }
+@endtemplate
+
+// Valid: template with SELECT/CASE
+@template select_tmpl(sel, dst)
+    SELECT (sel) {
+        CASE 8'h00 {
+            dst <= 8'hFF;
+        }
+        CASE 8'h01 {
+            dst <= 8'h0F;
+        }
+        DEFAULT {
+            dst <= 8'h00;
+        }
+    }
+@endtemplate
+
+// Valid: template with multiple @scratch and nested IF
+@template complex_tmpl(cond, dst, a, b)
+    @scratch x [8];
+    @scratch y [8];
+    x <= a;
+    y <= b;
+    IF (cond) {
+        dst <= x;
+    } ELSE {
+        dst <= y;
+    }
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    // Valid: module-scoped template with @scratch
+    @template mod_tmpl(a, b)
+        @scratch tmp [8];
+        tmp <= a;
+        b <= tmp;
+    @endtemplate
+
+    WIRE {
+        w1 [8];
+    }
+
+    ASYNCHRONOUS {
+        @apply mod_tmpl(din, w1);
+        @apply assign_tmpl(data, w1);
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] data;
+    }
+
+    // Valid: module-scoped template in top module
+    @template top_tmpl(dst, src)
+        dst <= src;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [8] din = r;
+        OUT [8] data = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    WIRE {
+        w1 [8];
+    }
+
+    ASYNCHRONOUS {
+        @apply scratch_tmpl(din, w1);
+        @apply assign_tmpl(data, w1);
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        @apply top_tmpl(r, din);
+    }
+@endmod

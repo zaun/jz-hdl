@@ -1,0 +1,5 @@
+File: 5_5_BSWAP_WIDTH_NOT_BYTE_ALIGNED-non_byte_width.jz
+      27:19   error BSWAP_WIDTH_NOT_BYTE_ALIGNED S5.5.26 bswap() source width must be a multiple of 8
+      32:15   error BSWAP_WIDTH_NOT_BYTE_ALIGNED S5.5.26 bswap() source width must be a multiple of 8
+      60:19   error BSWAP_WIDTH_NOT_BYTE_ALIGNED S5.5.26 bswap() source width must be a multiple of 8
+      65:15   error BSWAP_WIDTH_NOT_BYTE_ALIGNED S5.5.26 bswap() source width must be a multiple of 8

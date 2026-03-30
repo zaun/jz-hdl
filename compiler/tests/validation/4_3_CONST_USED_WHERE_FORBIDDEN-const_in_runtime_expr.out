@@ -1,0 +1,4 @@
+File: 4_3_CONST_USED_WHERE_FORBIDDEN-const_in_runtime_expr.jz
+      36:14   error CONST_USED_WHERE_FORBIDDEN S4.3/S6.3 CONST identifier used outside compile-time constant expression contexts (runtime expression)
+      64:17   error CONST_USED_WHERE_FORBIDDEN S4.3/S6.3 CONST identifier used outside compile-time constant expression contexts (runtime expression)
+      69:14   error CONST_USED_WHERE_FORBIDDEN S4.3/S6.3 CONST identifier used outside compile-time constant expression contexts (runtime expression)

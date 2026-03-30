@@ -1,2 +1,0 @@
-File: MUX_SELECTOR_OUT_OF_RANGE_CONST.jz
-      23:12   error MUX_SELECTOR_OUT_OF_RANGE_CONST S4.6 Selector statically provable outside valid index range

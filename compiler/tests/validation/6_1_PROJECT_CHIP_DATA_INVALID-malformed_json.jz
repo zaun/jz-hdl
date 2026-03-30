@@ -1,0 +1,44 @@
+// PROJECT_CHIP_DATA_INVALID: Malformed chip JSON triggers parse error.
+// Only one trigger possible per file (single @project per file).
+// References a local JSON file (MALFORMED_CHIP_DATA.json) that contains invalid JSON syntax.
+
+@project(CHIP="MALFORMED_CHIP_DATA") PROJECT_CHIP_DATA_INVALID_malformed_json
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module Helper
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] din = r;
+        OUT [1] dout = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

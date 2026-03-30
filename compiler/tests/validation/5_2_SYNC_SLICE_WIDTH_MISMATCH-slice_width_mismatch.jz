@@ -1,0 +1,72 @@
+// SYNC_SLICE_WIDTH_MISMATCH: Register slice assignment expression width not
+// equal to slice width.
+// Tests slice width mismatch in SYNC block in multiple contexts.
+// Valid sliced assignments included to verify no false positives.
+// Note: SYNC_SLICE_WIDTH_MISMATCH is suppressed by ASSIGN_SLICE_WIDTH_MISMATCH
+// (higher priority on same line), so only ASSIGN_SLICE_WIDTH_MISMATCH appears.
+
+@project SYNC_SLICE_WIDTH_MISMATCH_slice_width_mismatch
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] data = _;
+        IN  [1] sel = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+    }
+@endproj
+
+// Helper module: slice width mismatch in SYNC
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        OUT [8] out_a;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 1: slice is 4 bits but RHS is 3 bits
+        r[7:4] <= data[2:0];
+        // Valid: correct slice width (should NOT trigger)
+        r[3:0] <= data[7:4];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] data;
+        IN  [1] sel;
+        OUT [8] out_a;
+        OUT [8] out_b;
+    }
+    REGISTER {
+        r_x [8] = 8'h00;
+        r_y [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] data = data;
+        OUT [8] out_a = _;
+    };
+
+    ASYNCHRONOUS {
+        out_a = r_x;
+        out_b = r_y;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: slice is 4 bits but RHS is 2 bits at root
+        r_x[7:4] <= data[1:0];
+        // Valid: correct slice width (should NOT trigger)
+        r_x[3:0] <= data[7:4];
+        // Trigger 3: slice width mismatch inside IF
+        IF (sel) {
+            r_y[3:0] <= data[2:0];
+        }
+    }
+@endmod

@@ -1,0 +1,78 @@
+// CDC_TYPE_INVALID: CDC type must be BIT, BUS, FIFO, HANDSHAKE, PULSE, MCP, or RAW.
+// Tests invalid CDC type keywords in multiple modules.
+// Valid CDC types included to verify no false positives.
+
+@project CDC_TYPE_INVALID_unknown_cdc_type
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with invalid CDC type
+@module HelperMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        reg_a [1] = 1'b0;
+        reg_b [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 1: invalid type INVALID
+        INVALID reg_a (clk_a) => sync_a (clk_b);
+        // Valid: BIT type
+        BIT reg_b (clk_a) => sync_b (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        data = sync_b;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        reg_a <= ~reg_a;
+        reg_b <= ~reg_b;
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (sync_a) {
+            // reading alias
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        top_reg [1] = 1'b0;
+    }
+
+    CDC {
+        // Trigger 2: invalid type NOTATYPE
+        NOTATYPE top_reg (clk_a) => top_sync (clk_b);
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = top_sync;
+    }
+
+    SYNCHRONOUS(CLK=clk_a) {
+        top_reg <= ~top_reg;
+    }
+@endmod

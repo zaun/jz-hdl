@@ -1,0 +1,3 @@
+File: 12_3_WARN_UNCONNECTED_OUTPUT-unconnected_output_port.jz
+      18:17   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect
+      41:17   warn  WARN_UNCONNECTED_OUTPUT S8.3 Output port is unconnected; assign a value or use `_` for intentional no-connect

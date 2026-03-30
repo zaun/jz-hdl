@@ -1,0 +1,4 @@
+File: 5_2_WRITE_WIRE_IN_SYNC-wire_in_sync.jz
+      36:9    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
+      70:9    error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS
+      73:13   error WRITE_WIRE_IN_SYNC S4.5/S5.2 Cannot assign to WIRE in SYNCHRONOUS block; use a REGISTER, or move to ASYNCHRONOUS

@@ -1,0 +1,86 @@
+// COMPILE_ERRORS: Multiple different error types in a single file.
+// Verifies all errors are reported with correct rule IDs and source locations.
+// Exercises cross-category error detection: keyword-as-identifier, literal overflow,
+// register init width mismatch, reversed slice, undeclared identifier, and
+// width mismatch in assignment — six different error categories.
+
+@project COMPILE_ERRORS_multiple_errors
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: KEYWORD_AS_IDENTIFIER — keyword SELECT used as module name
+@module SELECT
+    PORT {
+        IN  [1] din;
+        OUT [1] dout;
+    }
+    ASYNCHRONOUS {
+        dout = din;
+    }
+@endmod
+
+// Helper module with register init error
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        // Trigger 2: REG_INIT_WIDTH_MISMATCH — 4-bit init for 1-bit register
+        r [1] = 4'b0001;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+// Top module with several errors in various contexts
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_s SELECT {
+        IN  [1] din = s;
+        OUT [1] dout = _;
+    };
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        s [1] = 1'b0;
+        r [4] = 4'b0000;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 3: SLICE_MSB_LESS_THAN_LSB — reversed slice indices
+        data = r[0:3];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        s <= ~s;
+        // Trigger 4: LIT_OVERFLOW — value 255 exceeds 4-bit width
+        r <= 4'hFF;
+        // Trigger 5: UNDECLARED_IDENTIFIER — ghost does not exist
+        r <= ghost;
+        // Trigger 6: WIDTH_ASSIGN_MISMATCH_NO_EXT — 8-bit literal to 4-bit register
+        r <= 8'b0000_0001;
+    }
+@endmod

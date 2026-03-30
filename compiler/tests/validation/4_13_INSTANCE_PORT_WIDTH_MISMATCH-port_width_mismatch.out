@@ -1,0 +1,4 @@
+File: 4_13_INSTANCE_PORT_WIDTH_MISMATCH-port_width_mismatch.jz
+      32:17   error INSTANCE_PORT_WIDTH_MISMATCH S4.13/S6.9/S8.1 Instantiated port width does not match child module effective port width
+      39:17   error INSTANCE_PORT_WIDTH_MISMATCH S4.13/S6.9/S8.1 Instantiated port width does not match child module effective port width
+      61:18   error INSTANCE_PORT_WIDTH_MISMATCH S4.13/S6.9/S8.1 Instantiated port width does not match child module effective port width

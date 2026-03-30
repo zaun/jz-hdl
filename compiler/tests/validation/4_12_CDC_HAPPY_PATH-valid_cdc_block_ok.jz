@@ -1,0 +1,128 @@
+// CDC_HAPPY_PATH: Valid CDC block constructs across all 7 types.
+// Exercises BIT, BUS, FIFO, HANDSHAKE, PULSE, MCP, RAW types,
+// default and explicit n_stages, bidirectional crossing,
+// source in SYNC(src_clk), and dest alias read in SYNC(dest_clk).
+
+@project CDC_HAPPY_PATH_valid_cdc_block_ok
+    @top TopMod {
+        IN  [1] clk_a = _;
+        IN  [1] clk_b = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper module: exercises BIT, PULSE, RAW types with dest alias reading
+@module HelperMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        flag_a [1] = 1'b0;
+        pulse_a [1] = 1'b0;
+        status_a [8] = 8'h00;
+    }
+
+    CDC {
+        // Valid: BIT with default n_stages (2)
+        BIT flag_a (clk_a) => flag_sync (clk_b);
+        // Valid: PULSE with explicit n_stages
+        PULSE[3] pulse_a (clk_a) => pulse_sync (clk_b);
+        // Valid: RAW without n_stages
+        RAW status_a (clk_a) => status_raw (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        data = flag_sync;
+    }
+
+    // Valid: source register written in home domain
+    SYNCHRONOUS(CLK=clk_a) {
+        flag_a <= ~flag_a;
+        pulse_a <= ~pulse_a;
+        status_a <= 8'hAB;
+    }
+
+    // Valid: dest alias read in destination domain
+    SYNCHRONOUS(CLK=clk_b) {
+        IF (pulse_sync) {
+            // reading pulse in dest domain
+        }
+        IF (status_raw[0:0]) {
+            // reading raw alias in dest domain
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    REGISTER {
+        bus_reg [8] = 8'h00;
+        fifo_reg [16] = 16'h0000;
+        hs_reg [8] = 8'h00;
+        mcp_reg [8] = 8'h00;
+        bit_b [1] = 1'b0;
+    }
+
+    CDC {
+        // Valid: BUS with explicit n_stages
+        BUS[3] bus_reg (clk_a) => bus_sync (clk_b);
+        // Valid: FIFO (default n_stages)
+        FIFO fifo_reg (clk_a) => fifo_view (clk_b);
+        // Valid: HANDSHAKE
+        HANDSHAKE hs_reg (clk_a) => hs_sync (clk_b);
+        // Valid: MCP with n_stages
+        MCP[2] mcp_reg (clk_a) => mcp_sync (clk_b);
+        // Valid: bidirectional — clk_b to clk_a
+        BIT bit_b (clk_b) => bit_b_sync (clk_a);
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk_a = clk_a;
+        IN  [1] clk_b = clk_b;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        out_a = bus_sync[0:0];
+        out_b = bit_b_sync;
+    }
+
+    // Valid: source registers written in their home domains
+    SYNCHRONOUS(CLK=clk_a) {
+        bus_reg <= 8'hFF;
+        fifo_reg <= 16'hBEEF;
+        hs_reg <= 8'h42;
+        mcp_reg <= 8'hAA;
+        // Valid: reading bidirectional dest alias in clk_a domain
+        IF (bit_b_sync) {
+            // reading alias
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk_b) {
+        bit_b <= ~bit_b;
+        // Valid: reading dest aliases in clk_b domain
+        IF (bus_sync[0:0]) {
+            // reading bus alias
+        }
+        IF (fifo_view[0:0]) {
+            // reading fifo alias
+        }
+        IF (hs_sync[0:0]) {
+            // reading handshake alias
+        }
+        IF (mcp_sync[0:0]) {
+            // reading mcp alias
+        }
+    }
+@endmod

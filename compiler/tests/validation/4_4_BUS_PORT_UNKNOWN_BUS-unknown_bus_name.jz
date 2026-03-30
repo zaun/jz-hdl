@@ -1,0 +1,93 @@
+// BUS_PORT_UNKNOWN_BUS: BUS port references BUS name not declared in project.
+// Tests BUS port referencing undeclared bus in helper module and top module.
+// NOTE: BUS_PORT_UNKNOWN_BUS is not emitted by the compiler — see issues.md.
+// Instead, the undeclared BUS ports appear as dangling unused signals.
+// Valid BUS port referencing declared bus included to verify no false positives.
+
+@project BUS_PORT_UNKNOWN_BUS_unknown_bus_name
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        BUS MY_BUS SOURCE sbus = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Trigger 1: BUS port references undeclared bus FAKE_BUS in helper module
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        BUS FAKE_BUS SOURCE fbus;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data_out <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+// Trigger 2: BUS port references undeclared bus ANOTHER_BUS in another module
+@module AnotherMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        BUS ANOTHER_BUS TARGET abus;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        data_out <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        // Valid: MY_BUS is declared in @project
+        BUS MY_BUS SOURCE sbus;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        BUS FAKE_BUS SOURCE fbus = _;
+        OUT [8] data_out = dout_a;
+    };
+
+    @new inst_a AnotherMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        BUS ANOTHER_BUS TARGET abus = _;
+        OUT [8] data_out = dout_b;
+    };
+
+    ASYNCHRONOUS {
+        sbus.tx <= din;
+    }
+@endmod

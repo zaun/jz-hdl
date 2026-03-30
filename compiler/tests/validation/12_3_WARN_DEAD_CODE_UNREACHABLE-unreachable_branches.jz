@@ -1,0 +1,81 @@
+// WARN_DEAD_CODE_UNREACHABLE: Statically unreachable code detected by constant analysis.
+// Tests dead code detection for always-false IF, unreachable ELSE after always-true IF,
+// and unreachable ELIF after always-true IF across ASYNC and SYNC blocks.
+// Valid branches with non-constant conditions included for no false positives.
+
+@project WARN_DEAD_CODE_UNREACHABLE_unreachable_branches
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module with dead code in ASYNCHRONOUS block
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: always-false IF condition in ASYNC (body is dead)
+        IF (1'b0) {
+            data <= 1'b1;
+        } ELSE {
+            data <= r;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: non-constant condition (no warning)
+        IF (sel) {
+            r <= ~r;
+        } ELSE {
+            r <= r;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [1] sel = sel;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 2: always-true IF makes ELSE unreachable in ASYNC
+        IF (1'b1) {
+            data <= r;
+        } ELSE {
+            data <= 1'b0;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: always-true IF makes ELIF/ELSE unreachable in SYNC
+        IF (1'b1) {
+            r <= ~r;
+        } ELIF (sel) {
+            r <= 1'b0;
+        } ELSE {
+            r <= 1'b1;
+        }
+    }
+@endmod

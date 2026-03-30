@@ -1,0 +1,4 @@
+File: 6_3_CONFIG_INVALID_EXPR_TYPE-invalid_value.jz
+      16:9    error CONFIG_INVALID_EXPR_TYPE S6.3 CONFIG value not a nonnegative integer expression
+      18:9    error CONFIG_INVALID_EXPR_TYPE S6.3 CONFIG value not a nonnegative integer expression
+      20:9    error CONFIG_INVALID_EXPR_TYPE S6.3 CONFIG value not a nonnegative integer expression

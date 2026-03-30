@@ -1,0 +1,2 @@
+File: 5_3_IF_COND_MISSING_PARENS-sync_missing_parens.jz
+      27:9    error IF_COND_MISSING_PARENS S5.3 IF/ELIF condition missing required parentheses

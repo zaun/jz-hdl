@@ -1,0 +1,3 @@
+File: 7_2_MEM_MULTIPLE_WRITES_SAME_IN-double_write_in_port.jz
+      42:9    error MEM_MULTIPLE_WRITES_SAME_IN S7.2.2/S7.3.3/S7.7.2 Multiple writes to same IN port within single SYNCHRONOUS block
+      83:9    error MEM_MULTIPLE_WRITES_SAME_IN S7.2.2/S7.3.3/S7.7.2 Multiple writes to same IN port within single SYNCHRONOUS block

@@ -1,0 +1,45 @@
+// GLOBAL_CIRCULAR_DEP: Circular dependency between constants in an @global block.
+// Tests direct circular references and self-references.
+// Valid block is included to verify no false positives.
+
+// Trigger 1: A references B, B references A (direct cycle)
+@global CYCLE
+    A = B;
+    B = A;
+    C = 8'hCC;
+@endglob
+
+// Trigger 2: Self-reference
+@global SELF
+    X = X;
+    Y = 8'hFF;
+@endglob
+
+// Valid: no circular dependencies (should NOT trigger)
+@global GOOD
+    P = 8'h01;
+    Q = 8'h02;
+@endglob
+
+@project GLOBAL_CIRCULAR_DEP_circular_dependency
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= GOOD.P;
+    }
+@endmod

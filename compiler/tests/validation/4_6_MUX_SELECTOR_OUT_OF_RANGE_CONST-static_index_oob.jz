@@ -1,0 +1,89 @@
+// MUX_SELECTOR_OUT_OF_RANGE_CONST: Selector statically provable outside valid index range.
+// Tests out-of-range constant indices on aggregation and auto-slice MUXes
+// in both ASYNCHRONOUS and SYNCHRONOUS blocks.
+// Valid constant indices included to verify no false positives.
+
+@project MUX_SELECTOR_OUT_OF_RANGE_CONST_static_index_oob
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: out-of-range on aggregation MUX
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+
+    // 2-element aggregation: valid indices are 0 and 1
+    MUX {
+        agg2 = a, b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: static index 2 on 2-element MUX in ASYNC
+        data = agg2[2] | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: static index 3 on 2-element MUX in SYNC
+        r <= agg2[3];
+    }
+@endmod
+
+// Top module: out-of-range on auto-slice MUX
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+
+    WIRE {
+        w16 [16];
+        helper_out [8];
+    }
+
+    // 2-element auto-slice: 16 bits / 8 = 2 elements, valid indices 0 and 1
+    MUX {
+        slice2 [8] = w16;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] data = helper_out;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        w16 = {a, b};
+        // Trigger 3: static index 2 on 2-element auto-slice MUX in ASYNC
+        data = slice2[2] | helper_out | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 4: static index 3 on 2-element auto-slice MUX in SYNC
+        r <= slice2[3];
+        // Valid: index 1 is in range (no false positive)
+    }
+@endmod

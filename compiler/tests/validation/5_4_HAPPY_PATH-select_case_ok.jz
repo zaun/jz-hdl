@@ -1,0 +1,144 @@
+// HAPPY_PATH: Valid SELECT/CASE statement forms produce no diagnostics.
+// Exercises simple SELECT with DEFAULT, multiple CASEs, x-wildcard CASE,
+// partial x-wildcard, all-x wildcard, fall-through CASE, single CASE + DEFAULT,
+// nested SELECT, and SELECT in both ASYNC and SYNC blocks.
+
+@project HAPPY_PATH_select_case_ok
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] sel = _;
+        IN  [8] opcode = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+        OUT [8] out_d = _;
+    }
+@endproj
+
+// Helper: exercises SELECT with x-wildcard CASE values in ASYNC
+@module HelperMod
+    PORT {
+        IN  [8] opcode;
+        OUT [8] out_a;
+    }
+    ASYNCHRONOUS {
+        // Valid: x-wildcard CASE values with DEFAULT
+        SELECT (opcode) {
+            CASE 8'b1010_xxxx {
+                out_a <= 8'h01;
+            }
+            CASE 8'b0101_xxxx {
+                out_a <= 8'h02;
+            }
+            // Valid: partial x-wildcard pattern (non-x mixed with x)
+            CASE 8'b10xx_0011 {
+                out_a <= 8'h03;
+            }
+            DEFAULT {
+                out_a <= 8'h00;
+            }
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] sel;
+        IN  [8] opcode;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+        OUT [8] out_d;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] opcode = opcode;
+        OUT [8] out_a = _;
+    };
+
+    REGISTER {
+        r_a [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: simple SELECT with multiple CASEs and DEFAULT
+        SELECT (sel) {
+            CASE 4'h0 {
+                out_a <= r_a;
+            }
+            CASE 4'h1 {
+                out_a <= 8'hFF;
+            }
+            CASE 4'h2 {
+                out_a <= 8'hAA;
+            }
+            CASE 4'h3 {
+                out_a <= 8'h55;
+            }
+            DEFAULT {
+                out_a <= 8'h00;
+            }
+        }
+
+        // Valid: fall-through CASE (naked labels share handler)
+        SELECT (sel) {
+            CASE 0
+            CASE 1 {
+                out_b <= 8'h01;
+            }
+            CASE 2 {
+                out_b <= 8'h02;
+            }
+            DEFAULT {
+                out_b <= 8'h00;
+            }
+        }
+
+        // Valid: nested SELECT in ASYNC
+        SELECT (sel) {
+            CASE 0 {
+                SELECT (opcode) {
+                    CASE 8'h00 {
+                        out_c <= 8'h10;
+                    }
+                    DEFAULT {
+                        out_c <= 8'h20;
+                    }
+                }
+            }
+            DEFAULT {
+                out_c <= 8'h00;
+            }
+        }
+
+        // Valid: single CASE + DEFAULT (minimum useful SELECT)
+        SELECT (sel) {
+            CASE 4'hF {
+                out_d <= 8'hFF;
+            }
+            DEFAULT {
+                out_d <= 8'h00;
+            }
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: SYNC SELECT with DEFAULT
+        SELECT (sel) {
+            CASE 0 {
+                r_a <= 8'h01;
+            }
+            CASE 1 {
+                r_a <= 8'h02;
+            }
+            DEFAULT {
+                r_a <= 8'h00;
+            }
+        }
+    }
+@endmod

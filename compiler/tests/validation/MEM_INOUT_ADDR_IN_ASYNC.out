@@ -1,2 +1,0 @@
-File: MEM_INOUT_ADDR_IN_ASYNC.jz
-      25:5    error MEM_INOUT_ADDR_IN_ASYNC S7.2.3 INOUT port .addr may only be assigned in SYNCHRONOUS blocks

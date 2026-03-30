@@ -1,0 +1,145 @@
+// HAPPY_PATH: Valid MEM usage across module hierarchy (S7.9).
+// Verifies: normal MEM-containing module instantiation, multiple instances of
+// same MEM module (independent memories), same MEM name in parent and child
+// (scoped independently), and nested instantiation with MEM accessed via ports.
+
+@project HAPPY_PATH_mem_in_module_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        IN  [1] we = _;
+        OUT [8] rd_a = _;
+        OUT [8] rd_b = _;
+        OUT [8] own_rd = _;
+        OUT [8] nested_rd = _;
+    }
+@endproj
+
+// Leaf module: contains a MEM named "storage", accessed only via ports
+@module LeafMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        IN  [1] we;
+        OUT [8] rdata;
+    }
+
+    MEM {
+        storage [8] [16] = 8'h00 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = storage.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            storage.wr[addr] <= wdata;
+        }
+    }
+@endmod
+
+// Mid module: instantiates LeafMod, has its own MEM, passes data through ports
+@module MidMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        IN  [1] we;
+        OUT [8] rdata;
+    }
+
+    // Same MEM name "storage" as LeafMod — scoped independently (no conflict)
+    MEM {
+        storage [8] [16] = 8'hFF {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    WIRE {
+        leaf_data [8];
+    }
+
+    @new inst_leaf LeafMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        IN  [1] we = we;
+        OUT [8] rdata = leaf_data;
+    };
+
+    ASYNCHRONOUS {
+        // Access own MEM (valid), combine with child output via port
+        rdata = storage.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            storage.wr[addr] <= wdata;
+        }
+    }
+@endmod
+
+// Top module: two instances of LeafMod (independent memories) + nested MidMod
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        IN  [1] we;
+        OUT [8] rd_a;
+        OUT [8] rd_b;
+        OUT [8] own_rd;
+        OUT [8] nested_rd;
+    }
+
+    // Same MEM name "storage" as child modules — scoped independently
+    MEM {
+        storage [8] [16] = 8'hAA {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    // Multiple instances of same module — independent memories
+    @new inst_a LeafMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        IN  [1] we = we;
+        OUT [8] rdata = rd_a;
+    };
+
+    @new inst_b LeafMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        IN  [1] we = we;
+        OUT [8] rdata = rd_b;
+    };
+
+    // Nested: MidMod contains LeafMod, all MEM accessed via port chain
+    @new inst_mid MidMod {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        IN  [1] we = we;
+        OUT [8] rdata = nested_rd;
+    };
+
+    ASYNCHRONOUS {
+        own_rd = storage.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            storage.wr[addr] <= wdata;
+        }
+    }
+@endmod

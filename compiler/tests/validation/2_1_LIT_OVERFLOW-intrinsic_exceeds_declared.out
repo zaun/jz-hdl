@@ -1,0 +1,4 @@
+File: 2_1_LIT_OVERFLOW-intrinsic_exceeds_declared.jz
+      27:14   error LIT_OVERFLOW S2.1/S8.1 Literal numeric value exceeds declared width
+      29:14   error LIT_OVERFLOW S2.1/S8.1 Literal numeric value exceeds declared width
+      56:14   error LIT_OVERFLOW S2.1/S8.1 Literal numeric value exceeds declared width

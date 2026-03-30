@@ -1,2 +1,0 @@
-File: SSLICE_INDEX_OUT_OF_RANGE.jz
-      20:22   error SSLICE_INDEX_OUT_OF_RANGE S5.5.9 sslice() index is out of range for source width

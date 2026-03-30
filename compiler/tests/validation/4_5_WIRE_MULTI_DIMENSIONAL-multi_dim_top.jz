@@ -1,0 +1,44 @@
+// WIRE_MULTI_DIMENSIONAL: Wire declared with multi-dimensional syntax.
+// Trigger: multi-dimensional wire in top module.
+// NOTE: Compiler emits PARSE000 instead of WIRE_MULTI_DIMENSIONAL because
+// the parser cannot handle the second dimension bracket. See issues.md.
+
+@project WIRE_MULTI_DIMENSIONAL_multi_dim_top
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout;
+    }
+
+    WIRE {
+        // Valid: single-dimensional wire
+        w_valid [8];
+        // Trigger 1: multi-dimensional wire
+        w_multi [16] [2];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        w_valid <= din;
+        dout <= w_valid | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= w_valid;
+    }
+@endmod

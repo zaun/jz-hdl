@@ -1,0 +1,111 @@
+// HAPPY_PATH: Valid ASYNCHRONOUS assignment forms produce no diagnostics.
+// Exercises alias (=), drive (=>), receive (<=), sliced, concat decomposition,
+// register read, transitive alias, sign-extend (=s), zero-extend (=z),
+// ternary receive, constant drive via <=, and empty ASYNC block.
+
+@project HAPPY_PATH_async_assignments_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        IN  [1] narrow = _;
+        IN  [1] sel = _;
+        OUT [8] alias_out = _;
+        OUT [8] drive_out = _;
+        OUT [8] recv_out = _;
+        OUT [8] slice_out = _;
+        OUT [8] concat_out = _;
+        OUT [8] reg_read_out = _;
+        OUT [8] trans_out = _;
+        OUT [8] sext_out = _;
+        OUT [8] zext_out = _;
+        OUT [8] tern_out = _;
+        OUT [8] const_drv_out = _;
+    }
+@endproj
+
+// Helper module: exercises alias and drive in a child module
+@module HelperMod
+    PORT {
+        IN  [8] din;
+        OUT [8] alias_out;
+        OUT [8] drive_out;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: alias same width
+        alias_out = din;
+        // Valid: drive operator
+        din => drive_out;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        IN  [1] narrow;
+        IN  [1] sel;
+        OUT [8] alias_out;
+        OUT [8] drive_out;
+        OUT [8] recv_out;
+        OUT [8] slice_out;
+        OUT [8] concat_out;
+        OUT [8] reg_read_out;
+        OUT [8] trans_out;
+        OUT [8] sext_out;
+        OUT [8] zext_out;
+        OUT [8] tern_out;
+        OUT [8] const_drv_out;
+    }
+
+    WIRE {
+        w_trans [8];
+        w_slice [8];
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [8] din = din;
+        OUT [8] alias_out = alias_out;
+        OUT [8] drive_out = drive_out;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: receive operator
+        recv_out <= din;
+
+        // Valid: sliced assignment
+        w_slice[7:4] = din[3:0];
+        w_slice[3:0] = din[7:4];
+        slice_out = w_slice;
+
+        // Valid: concat decomposition
+        {concat_out} = din;
+
+        // Valid: register read in ASYNC (current value)
+        reg_read_out = r;
+
+        // Valid: transitive alias (din -> w_trans -> trans_out all merged)
+        w_trans = din;
+        trans_out = w_trans;
+
+        // Valid: sign-extend alias (1 -> 8)
+        sext_out =s narrow;
+
+        // Valid: zero-extend alias (1 -> 8)
+        zext_out =z narrow;
+
+        // Valid: ternary in receive
+        tern_out <= sel ? din : 8'h00;
+
+        // Valid: constant drive via directional <=
+        const_drv_out <= 8'hFF;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

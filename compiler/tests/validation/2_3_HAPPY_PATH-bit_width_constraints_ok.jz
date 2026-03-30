@@ -1,0 +1,94 @@
+// HAPPY_PATH: Valid bit-width operations with matching widths.
+// Exercises binary operators (+, -, &, |, ^, ==, !=, <, >, <=, >=),
+// ternary expressions, concatenation, and assignments with matching widths.
+// Note: * produces double-width; / and % require divisor guards — tested elsewhere.
+// No diagnostics expected — all operations are valid.
+
+@project BIT_WIDTH_CONSTRAINTS_valid_operations
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        IN  [1] sel = _;
+        OUT [8] result = _;
+    }
+@endproj
+
+// Helper: arithmetic and bitwise with matching widths
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        OUT [8] data;
+    }
+    WIRE {
+        w1 [8];
+        w2 [8];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Valid: same-width arithmetic
+        w1 = a + b;
+        w2 = a - b;
+        data = w1 ^ w2 ^ r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: same-width subtraction in SYNC
+        r <= a - b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] result;
+    }
+    WIRE {
+        w1 [8];
+        w2 [8];
+        w3 [8];
+        c1 [1];
+        c2 [1];
+        c3 [1];
+        c4 [1];
+        c5 [1];
+        c6 [1];
+        h_data [8];
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        OUT [8] data = h_data;
+    };
+
+    ASYNCHRONOUS {
+        // Valid: same-width bitwise
+        w1 = a & b;
+        w2 = a | b;
+        w3 = a ^ b;
+        // Valid: same-width comparisons (result is 1-bit)
+        c1 = a == b;
+        c2 = a != b;
+        c3 = a < b;
+        c4 = a > b;
+        c5 = a <= b;
+        c6 = a >= b;
+        // Valid: same-width ternary and concat
+        result <= sel ? (w1 ^ w2 ^ w3 ^ h_data ^ r) : {c1, c2, c3, c4, c5, c6, a[1:0]};
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: same-width receive
+        r <= sel ? a : b;
+    }
+@endmod

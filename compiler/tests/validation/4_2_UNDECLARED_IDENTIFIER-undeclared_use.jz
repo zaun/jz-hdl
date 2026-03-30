@@ -1,0 +1,123 @@
+// UNDECLARED_IDENTIFIER: Use of undeclared identifier in various contexts.
+// Tests that the compiler catches references to names that do not exist
+// in the current module scope. Valid references are included for no false positives.
+
+@project UNDECLARED_IDENTIFIER_undeclared_use
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module for instantiation
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module with undeclared identifier in ASYNC block
+@module AsyncErrMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: undeclared name on RHS in ASYNC (din is valid, ghost_a is not)
+        data = din | ghost_a;
+    }
+@endmod
+
+// Module with undeclared identifier in SYNC block
+@module SyncErrMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: undeclared name on RHS in SYNC
+        r <= ghost_b;
+    }
+@endmod
+
+// Module with undeclared name in CLK parameter
+@module ClkErrMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    // Trigger 3: undeclared name in SYNCHRONOUS CLK parameter
+    SYNCHRONOUS(CLK=no_such_clk) {
+        r <= din;
+    }
+@endmod
+
+// Top module — tests undeclared in @new binding and instance port ref
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a AsyncErrMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    @new inst_s SyncErrMod {
+        IN  [1] clk = clk;
+        OUT [1] data = _;
+    };
+
+    @new inst_c ClkErrMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    @new inst_h HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    // Trigger 4: undeclared signal in @new port binding value
+    @new inst_h2 HelperMod {
+        IN  [1] din = no_such_sig;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 5: reference to nonexistent port on valid instance
+        data = inst_h.bad_port;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

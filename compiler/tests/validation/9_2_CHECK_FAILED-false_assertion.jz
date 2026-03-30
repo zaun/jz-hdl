@@ -1,0 +1,79 @@
+// CHECK_FAILED: @check with false (zero) condition emits compile error.
+// Tests that false @check in project scope and module scope triggers
+// CHECK_FAILED. Valid (true) @check uses are included to verify no false positives.
+
+@project CHECK_FAILED_false_assertion
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    // Valid: true @check at project scope (no error)
+    @check (CONFIG.WIDTH == 8, "width is 8");
+
+    // Trigger 1: false @check at project scope — CONFIG equality fails
+    @check (CONFIG.WIDTH == 16, "width must be 16");
+
+    // Trigger 2: false @check at project scope — arithmetic evaluates to zero
+    @check (CONFIG.WIDTH - 8, "width minus 8 must be nonzero");
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module — triggers CHECK_FAILED in module scope
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    CONST { SIZE = 4; }
+
+    // Valid: true @check in helper module (no error)
+    @check (SIZE > 0, "size positive");
+
+    // Trigger 3: false @check in helper module — CONST equality fails
+    @check (SIZE == 8, "size must be 8");
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    CONST { DEPTH = 16; }
+    CONST { ADDR_W = 3; }
+
+    // Valid: true @check in top module (no error)
+    @check (DEPTH > 0, "depth positive");
+
+    // Trigger 4: false @check in top module — clog2 mismatch
+    @check (ADDR_W == clog2(DEPTH), "addr width must match depth");
+
+    // Trigger 5: false @check with literal zero
+    @check (0, "literal zero fails");
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

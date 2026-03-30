@@ -1,0 +1,5 @@
+File: 7_5_MEM_INIT_FILE_CONTAINS_X-xz_in_file.jz
+      26:31   error MEM_INIT_FILE_CONTAINS_X S7.5.2 Memory initialization file contains x or z values
+      26:31   warn  MEM_WARN_PARTIAL_INIT S7.5.2/S7.7.3 Initialization file smaller than depth (zero-padded)
+      31:31   error MEM_INIT_FILE_CONTAINS_X S7.5.2 Memory initialization file contains x or z values
+      31:31   warn  MEM_WARN_PARTIAL_INIT S7.5.2/S7.7.3 Initialization file smaller than depth (zero-padded)

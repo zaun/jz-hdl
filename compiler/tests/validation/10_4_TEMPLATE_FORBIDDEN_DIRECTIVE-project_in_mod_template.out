@@ -1,0 +1,2 @@
+File: 10_4_TEMPLATE_FORBIDDEN_DIRECTIVE-project_in_mod_template.jz
+      24:9    error TEMPLATE_FORBIDDEN_DIRECTIVE S10.4 Structural directives (@new, @module, @feature, etc.) are not allowed inside template body

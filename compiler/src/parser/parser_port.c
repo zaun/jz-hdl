@@ -171,7 +171,7 @@ int parse_port_block_body(Parser *p, JZASTNode *parent) {
         advance(p);
 
         if (!match(p, JZ_TOK_LBRACKET)) {
-            parser_error(p, "expected '[' after port direction");
+            parser_error_rule(p, "PORT_MISSING_WIDTH");
             return -1;
         }
 

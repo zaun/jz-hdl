@@ -1,0 +1,63 @@
+// PIN_TERM_ON_OUTPUT: Termination specified on output-only pin (OUT_PINS).
+// Tests term=ON on OUT_PINS (forbidden).
+// term=ON on IN_PINS and INOUT_PINS is valid (no trigger).
+// term=OFF on OUT_PINS does not trigger (OFF is default/no-op).
+
+@project PIN_TERM_ON_OUTPUT_term_on_out
+    CLOCKS {
+        sys_clk = { period=10 };
+    }
+
+    IN_PINS {
+        sys_clk = { standard=LVCMOS33 };
+        // Valid: term=ON on IN_PINS with supported standard (no trigger)
+        valid_term_in = { standard=SSTL18_I, term=ON };
+    }
+
+    OUT_PINS {
+        // Valid: no term attribute (no trigger)
+        valid_out = { standard=LVCMOS33, drive=8 };
+        // Trigger 1: term=ON on OUT_PINS
+        term_on_out = { standard=LVCMOS33, drive=8, term=ON };
+        // No trigger: term=OFF on OUT_PINS (OFF is default)
+        term_off_out = { standard=LVCMOS33, drive=8, term=OFF };
+    }
+
+    INOUT_PINS {
+        // Valid: term=ON on INOUT_PINS with supported standard (no trigger)
+        valid_term_io = { standard=SSTL18_I, drive=4, term=ON };
+    }
+
+    MAP {
+        sys_clk = 1;
+        valid_term_in = 2;
+        valid_out = 3;
+        term_on_out = 4;
+        term_off_out = 5;
+        valid_term_io = 6;
+    }
+
+    @top TopMod {
+        IN  [1] clk = sys_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

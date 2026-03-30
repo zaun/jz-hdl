@@ -64,11 +64,11 @@ static void sem_check_select_stmt_control_flow(JZASTNode *select_stmt,
      * Only flag when CASE value has an explicitly sized literal (contains tick mark),
      * since unsized literals (bare integers) are implicitly cast.
      */
+    JZBitvecType sel_t;
+    sel_t.width = 0;
+    sel_t.is_signed = 0;
     if (mod_scope) {
         JZASTNode *selector = select_stmt->children[0];
-        JZBitvecType sel_t;
-        sel_t.width = 0;
-        sel_t.is_signed = 0;
         if (selector) {
             infer_expr_type(selector, mod_scope, project_symbols, diagnostics, &sel_t);
         }
@@ -169,12 +169,38 @@ static void sem_check_select_stmt_control_flow(JZASTNode *select_stmt,
     /* DEFAULT coverage diagnostics differ between ASYNCHRONOUS and SYNCHRONOUS. */
     if (!has_default) {
         if (is_async) {
-            sem_report_rule(diagnostics,
-                            select_stmt->loc,
-                            "SELECT_DEFAULT_RECOMMENDED_ASYNC",
-                            "ASYNCHRONOUS SELECT has no DEFAULT branch. When no CASE\n"
-                            "matches, driven nets receive no assignment, which can create\n"
-                            "unintended latches. Add a DEFAULT to cover all values.");
+            /* Count distinct CASE labels to detect genuinely incomplete
+             * coverage.  If the selector width is known and the number of
+             * CASE labels is less than 2^width, the select is provably
+             * incomplete.
+             */
+            size_t case_count = keys.len / sizeof(JZSelectCaseKey);
+            int incomplete = 0;
+            if (sel_t.width > 0 && sel_t.width <= 20) {
+                unsigned long long total = 1ULL << sel_t.width;
+                if (case_count < total) {
+                    incomplete = 1;
+                }
+            } else {
+                /* Unknown width or very wide – assume incomplete when there
+                 * is no DEFAULT.
+                 */
+                incomplete = 1;
+            }
+            if (incomplete) {
+                sem_report_rule(diagnostics,
+                                select_stmt->loc,
+                                "WARN_INCOMPLETE_SELECT_ASYNC",
+                                "ASYNCHRONOUS SELECT has incomplete coverage and no DEFAULT.\n"
+                                "When no CASE matches, driven nets receive no assignment,\n"
+                                "which creates unintended latches. Add missing CASEs or DEFAULT.");
+            } else {
+                sem_report_rule(diagnostics,
+                                select_stmt->loc,
+                                "SELECT_DEFAULT_RECOMMENDED_ASYNC",
+                                "ASYNCHRONOUS SELECT has no DEFAULT branch. Coverage appears\n"
+                                "complete but a DEFAULT is still recommended for readability.");
+            }
         } else if (is_sync) {
             sem_report_rule(diagnostics,
                             select_stmt->loc,

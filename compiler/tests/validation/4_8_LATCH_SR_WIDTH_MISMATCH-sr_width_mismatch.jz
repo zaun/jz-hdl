@@ -1,0 +1,70 @@
+// LATCH_SR_WIDTH_MISMATCH: SR latch set/reset expression width mismatch.
+// Tests SR latch guarded assignment where set/reset expression widths
+// do not match the latch width across modules.
+// Valid same-width SR assignment included to verify no false positives.
+// Note: rule not implemented — compiler does not emit this diagnostic (see issues.md).
+
+@project LATCH_SR_WIDTH_MISMATCH_sr_width_mismatch
+    @top TopMod {
+        IN  [1] set_1 = _;
+        IN  [1] reset_1 = _;
+        IN  [4] set_wide = _;
+        IN  [4] reset_wide = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: SR latch with mismatched set/reset widths
+@module HelperMod
+    PORT {
+        IN  [1] set_1;
+        IN  [1] reset_1;
+        IN  [4] set_wide;
+        IN  [4] reset_wide;
+        OUT [8] data;
+    }
+
+    LATCH {
+        // Valid: width-1 SR latch with width-1 set/reset (should NOT trigger)
+        lat_ok [1] SR;
+        // Trigger 1: width-8 SR latch with width-4 set/reset in helper module
+        lat_bad [8] SR;
+    }
+
+    ASYNCHRONOUS {
+        lat_ok <= set_1 : reset_1;
+        lat_bad <= set_wide : reset_wide;
+        data <= lat_bad;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] set_1;
+        IN  [1] reset_1;
+        IN  [4] set_wide;
+        IN  [4] reset_wide;
+        OUT [8] data;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] set_1 = set_1;
+        IN  [1] reset_1 = reset_1;
+        IN  [4] set_wide = set_wide;
+        IN  [4] reset_wide = reset_wide;
+        OUT [8] data = _;
+    };
+
+    LATCH {
+        // Valid: width-1 SR latch
+        lat_top_ok [1] SR;
+        // Trigger 2: width-8 SR latch with width-4 set/reset in top module
+        lat_top_bad [8] SR;
+    }
+
+    ASYNCHRONOUS {
+        lat_top_ok <= set_1 : reset_1;
+        lat_top_bad <= set_wide : reset_wide;
+        data <= lat_top_bad;
+    }
+@endmod

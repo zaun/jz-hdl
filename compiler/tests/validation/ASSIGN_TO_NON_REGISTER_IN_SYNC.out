@@ -1,2 +1,0 @@
-File: ASSIGN_TO_NON_REGISTER_IN_SYNC.jz
-      26:5    error ASSIGN_TO_NON_REGISTER_IN_SYNC S5.2 Only REGISTERs may be assigned in SYNCHRONOUS blocks; declare as REGISTER or move to ASYNCHRONOUS

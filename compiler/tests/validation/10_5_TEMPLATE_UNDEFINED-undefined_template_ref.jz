@@ -1,0 +1,94 @@
+// TEMPLATE_UNDEFINED: @apply references an undefined template name.
+// Tests undefined references in ASYNCHRONOUS and SYNCHRONOUS blocks,
+// in file-scoped and module-scoped template lookup contexts,
+// with and without count parameter.
+// Valid @apply calls included to verify no false positives.
+
+@project TEMPLATE_UNDEFINED_undefined_template_ref
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid file-scoped template
+@template valid_tmpl(a, b)
+    a <= b;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Valid module-scoped template
+    @template helper_tmpl(a, b)
+        a <= b;
+    @endtemplate
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: apply file-scoped template (no error)
+        @apply valid_tmpl(w1, din);
+        // Valid: apply module-scoped template (no error)
+        @apply helper_tmpl(w2, din);
+        // Trigger 1: undefined template in ASYNCHRONOUS block
+        @apply nonexistent_tmpl(w1, din);
+        data = w2;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Module-scoped template
+    @template top_tmpl(a, b)
+        a <= b;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r  [1] = 1'b0;
+        r2 [1] = 1'b0;
+    }
+
+    WIRE {
+        w1 [1];
+    }
+
+    ASYNCHRONOUS {
+        // Valid: apply file-scoped template (no error)
+        @apply valid_tmpl(w1, r);
+        // Trigger 2: undefined template in TopMod ASYNCHRONOUS
+        @apply missing_async_tmpl(w1, r);
+        data = w1;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: apply module-scoped template in SYNC (no error)
+        @apply top_tmpl(r, clk);
+        // Trigger 3: undefined template in SYNCHRONOUS block
+        @apply missing_sync_tmpl(r2, clk);
+        // Trigger 4: typo of valid template name
+        @apply valid_tmpl_typo(r2, clk);
+        // Trigger 5: undefined template with count parameter
+        @apply[3] no_such_tmpl(r2, clk);
+        r2 <= ~r2;
+    }
+@endmod

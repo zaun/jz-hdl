@@ -1,0 +1,97 @@
+// ASSIGN_TRUNCATES: Assignment truncates RHS into smaller LHS even with modifier.
+// Tests truncation for <=z, <=s, =>z, =>s where the wider side still truncates.
+// Alias (=z, =s) never truncates (extends narrower side), so not tested here.
+// Valid extend assignments included to verify no false positives.
+
+@project ASSIGN_TRUNCATES_truncation_with_modifier
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] wide = _;
+        IN  [4] narrow = _;
+        OUT [4] out_a = _;
+        OUT [4] out_b = _;
+        OUT [4] out_c = _;
+        OUT [8] out_d = _;
+    }
+@endproj
+
+// Helper module: truncation in ASYNC receive and SYNC assignments with modifiers
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] wide;
+        IN  [4] narrow;
+        OUT [4] out_a;
+        OUT [4] out_b;
+        OUT [8] out_c;
+    }
+
+    REGISTER {
+        r_narrow [4] = 4'h0;
+        r_wide   [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: <=z receive wider RHS into narrower LHS (ASYNC)
+        out_a <=z wide;
+        // Trigger 2: <=s receive wider RHS into narrower LHS (ASYNC)
+        out_b <=s wide;
+        // Valid: <=z extend narrow into wide (correct direction, no truncation)
+        out_c <=z narrow;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: <=z wider register into narrower register (SYNC)
+        r_narrow <=z r_wide;
+        // Valid: <=s extend narrow register into wide register
+        r_wide <=s r_narrow;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] wide;
+        IN  [4] narrow;
+        OUT [4] out_a;
+        OUT [4] out_b;
+        OUT [4] out_c;
+        OUT [8] out_d;
+    }
+
+    REGISTER {
+        r_narrow [4] = 4'h0;
+        r_wide   [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] wide = wide;
+        IN  [4] narrow = narrow;
+        OUT [4] out_a = _;
+        OUT [4] out_b = _;
+        OUT [8] out_c = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 4: =>z drive wider source into narrower sink (ASYNC top)
+        wide =>z out_a;
+        // Trigger 5: =>s drive wider source into narrower sink (ASYNC top)
+        wide =>s out_b;
+        // Trigger 6: <=z receive wider RHS into narrower LHS (ASYNC top)
+        out_c <=z wide;
+        // Valid: =>z drive narrow source into wide sink (no truncation)
+        narrow =>z out_d;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 7: <=s wider register into narrower register (SYNC top)
+        r_narrow <=s r_wide;
+        // Valid: <=z extend narrow into wide register
+        r_wide <=z r_narrow;
+    }
+@endmod

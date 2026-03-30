@@ -1,2 +1,0 @@
-File: CLOCK_NAME_NOT_IN_PINS.jz
-       6:5    error CLOCK_NAME_NOT_IN_PINS S6.4/S6.5/S6.9 Clock name in CLOCKS has no matching IN_PINS declaration

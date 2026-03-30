@@ -1,0 +1,68 @@
+// HAPPY_PATH: Valid @global blocks with proper usage across multiple modules.
+// Multiple @global blocks with unique names, constants referenced in expressions,
+// assignments, and across module boundaries. No diagnostics expected.
+
+@global CMD
+    READ  = 4'b0001;
+    WRITE = 4'b0010;
+    RESET = 4'b0100;
+    NOP   = 4'b0000;
+@endglob
+
+@global STATUS
+    OK    = 8'h00;
+    ERR   = 8'hFF;
+    BUSY  = 8'h01;
+@endglob
+
+@project HAPPY_PATH_global_purpose_ok
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module reads globals from both namespaces
+@module Helper
+    PORT {
+        IN  [1] clk;
+        OUT [8] result;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Valid: read global constant in async RHS
+        result = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: read global constants in sync RHS
+        r <= STATUS.OK;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        OUT [8] result = _;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: read global in async expression
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Valid: read global in sync expression
+        r <= STATUS.ERR;
+    }
+@endmod

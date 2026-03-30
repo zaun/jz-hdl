@@ -1,0 +1,101 @@
+// MUX_ASSIGN_LHS: Assigning to MUX id or its indexed form on LHS is forbidden.
+// Tests assignment to MUX in ASYNCHRONOUS and SYNCHRONOUS blocks, both bare and indexed forms.
+// Valid MUX reads included to verify no false positives.
+
+@project MUX_ASSIGN_LHS_assign_to_mux
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] a = _;
+        IN  [8] b = _;
+        IN  [1] sel = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+// Helper module: MUX assignment violations in ASYNCHRONOUS and SYNCHRONOUS
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    MUX {
+        m = a, b;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: bare MUX assignment in ASYNC
+        m = a;
+        // Trigger 2: indexed MUX assignment in ASYNC
+        m[1'b0] = b;
+        // Valid: reading MUX (no false positive)
+        data = m[sel] | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: bare MUX assignment in SYNC
+        m <= a;
+        // Trigger 4: indexed MUX assignment in SYNC
+        m[1'b0] <= b;
+        r <= m[sel];
+    }
+@endmod
+
+// Top module: instantiates helper, also triggers MUX assignment
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] a;
+        IN  [8] b;
+        IN  [1] sel;
+        OUT [8] data;
+    }
+
+    WIRE {
+        helper_out [8];
+    }
+
+    MUX {
+        top_mux = a, b;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] a = a;
+        IN  [8] b = b;
+        IN  [1] sel = sel;
+        OUT [8] data = helper_out;
+    };
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 5: bare MUX assignment in top module ASYNC
+        top_mux = a;
+        // Trigger 6: indexed MUX assignment in top module ASYNC
+        top_mux[1'b0] = b;
+        // Valid: reading MUX
+        data = top_mux[sel] | helper_out | r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 7: bare MUX assignment in top module SYNC
+        top_mux <= a;
+        // Trigger 8: indexed MUX assignment in top module SYNC
+        top_mux[1'b0] <= b;
+        r <= top_mux[sel];
+    }
+@endmod

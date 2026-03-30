@@ -1,0 +1,5 @@
+File: 5_4_SELECT_CASE_WIDTH_MISMATCH-case_width_mismatch.jz
+      23:18   error SELECT_CASE_WIDTH_MISMATCH S5.4 SELECT CASE value width does not match selector expression width
+      53:18   error SELECT_CASE_WIDTH_MISMATCH S5.4 SELECT CASE value width does not match selector expression width
+      64:18   error SELECT_CASE_WIDTH_MISMATCH S5.4 SELECT CASE value width does not match selector expression width
+      76:18   error SELECT_CASE_WIDTH_MISMATCH S5.4 SELECT CASE value width does not match selector expression width

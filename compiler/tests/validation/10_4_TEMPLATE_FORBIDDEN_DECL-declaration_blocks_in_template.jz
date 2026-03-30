@@ -1,0 +1,131 @@
+// TEMPLATE_FORBIDDEN_DECL: Declaration blocks are not allowed inside template body.
+// Tests WIRE, REGISTER, PORT, CONST, MEM, MUX, and CDC declarations inside templates.
+// Contexts: file-scoped template, module-scoped template (helper), module-scoped template (top).
+// Valid template with only @scratch and assignments included for negative testing.
+
+@project TEMPLATE_FORBIDDEN_DECL_declaration_blocks_in_template
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Valid: template using only scratch and params (no error)
+@template valid_tmpl(a, b)
+    @scratch tmp [1];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+// Trigger 1: WIRE declaration inside template
+@template wire_in_tmpl(a, b)
+    WIRE {
+        w [1];
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 2: REGISTER declaration inside template
+@template reg_in_tmpl(a, b)
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 3: PORT declaration inside template
+@template port_in_tmpl(a, b)
+    PORT {
+        IN [1] p;
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 4: CONST declaration inside template
+@template const_in_tmpl(a, b)
+    CONST {
+        C = 1;
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 5: MEM declaration inside template
+@template mem_in_tmpl(a, b)
+    MEM {
+        my_mem [8] [16] = 8'h00 {
+            IN rw;
+        };
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 6: MUX declaration inside template
+@template mux_in_tmpl(a, b)
+    MUX {
+        my_mux = a, b;
+    }
+    a <= b;
+@endtemplate
+
+// Trigger 7: CDC declaration inside template
+@template cdc_in_tmpl(a, b)
+    CDC {
+        a <= b;
+    }
+    a <= b;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 8: WIRE in module-scoped template (helper module)
+    @template mod_wire_tmpl(a, b)
+        WIRE {
+            mw [1];
+        }
+        a <= b;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 9: REGISTER in module-scoped template (top module)
+    @template mod_reg_tmpl(a, b)
+        REGISTER {
+            mr [1] = 1'b0;
+        }
+        a <= b;
+    @endtemplate
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

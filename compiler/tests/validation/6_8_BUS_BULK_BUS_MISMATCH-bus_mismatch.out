@@ -1,0 +1,2 @@
+File: 6_8_BUS_BULK_BUS_MISMATCH-bus_mismatch.jz
+     119:9    error BUS_BULK_BUS_MISMATCH S6.8 Bulk BUS assignment requires both sides to reference the same BUS id

@@ -1,0 +1,5 @@
+File: 7_7_MEM_WARN_DEAD_CODE_ACCESS-unreachable_access.jz
+      46:13   warn  WARN_DEAD_CODE_UNREACHABLE S7.7.3/S8.3 Dead code (unreachable statements detected by analysis)
+      46:13   warn  MEM_WARN_DEAD_CODE_ACCESS S7.7.3 Memory access appears only in unreachable code
+      88:13   warn  WARN_DEAD_CODE_UNREACHABLE S7.7.3/S8.3 Dead code (unreachable statements detected by analysis)
+      88:13   warn  MEM_WARN_DEAD_CODE_ACCESS S7.7.3 Memory access appears only in unreachable code

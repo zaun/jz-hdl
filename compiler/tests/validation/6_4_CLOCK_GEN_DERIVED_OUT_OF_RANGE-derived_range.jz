@@ -1,0 +1,69 @@
+// CLOCK_GEN_DERIVED_OUT_OF_RANGE: CLOCK_GEN derived value outside valid chip-defined range.
+// Tests PLL configuration that produces FVCO outside 500-1250 MHz range.
+// Valid configuration (FVCO in range) included to verify no false positives.
+
+@project(CHIP="gw2ar-18-qn88-c8-i7") CLOCK_GEN_DERIVED_OUT_OF_RANGE_derived_range
+    CLOCKS {
+        ref_clk = { period=10 };
+        bad_out;
+        valid_out;
+    }
+
+    IN_PINS {
+        ref_clk = { standard=LVCMOS33 };
+    }
+
+    MAP {
+        ref_clk = 1;
+    }
+
+    CLOCK_GEN {
+        // Trigger: FVCO = (1000/10) * (1+1) * 2 / (0+1) = 400 MHz < 500 MHz minimum
+        PLL {
+            IN REF_CLK ref_clk;
+            OUT BASE bad_out;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 1;
+                ODIV = 2;
+            };
+        };
+
+        // Valid: FVCO = (1000/10) * (3+1) * 2 / (0+1) = 800 MHz (in range)
+        PLL {
+            IN REF_CLK ref_clk;
+            OUT BASE valid_out;
+
+            CONFIG {
+                IDIV = 0;
+                FBDIV = 3;
+                ODIV = 2;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] clk = ref_clk;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

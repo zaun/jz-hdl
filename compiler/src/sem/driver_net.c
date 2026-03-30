@@ -1480,6 +1480,7 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
         int has_input_port     = 0;
         int has_output_port    = 0;
         int has_inout_port     = 0;
+        int has_bus_port       = 0;
         int has_register_atom  = 0;
         int has_wire_or_port   = 0;
 
@@ -1505,6 +1506,7 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                          * errors on bus signals.
                          */
                         has_input_port = 1;
+                        has_bus_port = 1;
                     }
                 }
             } else if (decl->type == JZ_AST_WIRE_DECL) {
@@ -1571,7 +1573,7 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
             }
         }
 
-        if (has_output_port && !treated_as_driven) {
+        if (has_output_port && !treated_as_driven && !has_bus_port) {
             sem_report_rule(diagnostics,
                             atoms[0]->loc,
                             "WARN_UNCONNECTED_OUTPUT",
@@ -1682,10 +1684,34 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                 continue;
             }
 
-            sem_report_rule(diagnostics,
-                            atoms[0]->loc,
-                            "NET_DANGLING_UNUSED",
-                            "net has no drivers and no sinks");
+            /* Emit a more specific rule when the net is purely a PORT or
+             * purely a WIRE so that summary filtering can distinguish them.
+             */
+            {
+                int is_port = 0;
+                int is_wire = 0;
+                for (size_t ai = 0; ai < atom_count; ++ai) {
+                    if (!atoms[ai]) continue;
+                    if (atoms[ai]->type == JZ_AST_PORT_DECL) is_port = 1;
+                    if (atoms[ai]->type == JZ_AST_WIRE_DECL) is_wire = 1;
+                }
+                if (is_port && !is_wire) {
+                    sem_report_rule(diagnostics,
+                                    atoms[0]->loc,
+                                    "WARN_UNUSED_PORT",
+                                    "port has no drivers and no sinks");
+                } else if (is_wire && !is_port) {
+                    sem_report_rule(diagnostics,
+                                    atoms[0]->loc,
+                                    "WARN_UNUSED_WIRE",
+                                    "wire has no drivers and no sinks");
+                } else {
+                    sem_report_rule(diagnostics,
+                                    atoms[0]->loc,
+                                    "NET_DANGLING_UNUSED",
+                                    "net has no drivers and no sinks");
+                }
+            }
             continue;
         }
 
@@ -1809,10 +1835,17 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                             instance_driver_count);
                     }
                     if (!bus_ok) {
-                        sem_report_rule(diagnostics,
-                                        atoms[0]->loc,
-                                        "NET_MULTIPLE_ACTIVE_DRIVERS",
-                                        "net has multiple active (non-z) drivers; tri-state requires all but one driver to assign z");
+                        if (g_tristate_default_active) {
+                            sem_report_rule(diagnostics,
+                                            atoms[0]->loc,
+                                            "TRISTATE_TRANSFORM_MUTUAL_EXCLUSION_FAIL",
+                                            "tri-state drivers have non-mutually-exclusive enable conditions; cannot build safe priority chain");
+                        } else {
+                            sem_report_rule(diagnostics,
+                                            atoms[0]->loc,
+                                            "NET_MULTIPLE_ACTIVE_DRIVERS",
+                                            "net has multiple active (non-z) drivers; tri-state requires all but one driver to assign z");
+                        }
                     }
                 }
             }
@@ -1831,9 +1864,9 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
             }
             int total_non_z = non_z_assign_driver_count + instance_non_z_capable_count;
             if (total_non_z == 0 && has_z_only_driver && effective_has_sink) {
-                /* Report ASYNC_FLOATING_Z_READ at the point where the net is
-                 * actually read, not at its declaration. This makes the
-                 * diagnostic much more actionable (e.g. points at
+                /* Report at the point where the net is actually read, not at
+                 * its declaration. This makes the diagnostic much more
+                 * actionable (e.g. points at
                  *   out_a = data;  // read of fully released tri-state bus
                  * instead of the PORT/WIRE declaration).
                  */
@@ -1847,8 +1880,8 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
 
                 sem_report_rule(diagnostics,
                                 loc,
-                                "ASYNC_FLOATING_Z_READ",
-                                "net has sinks but all drivers assign 'z' (tri-state bus fully released while read)");
+                                "NET_TRI_STATE_ALL_Z_READ",
+                                "all drivers assign 'z' but signal is read; at least one driver must provide a value");
             }
         }
     }

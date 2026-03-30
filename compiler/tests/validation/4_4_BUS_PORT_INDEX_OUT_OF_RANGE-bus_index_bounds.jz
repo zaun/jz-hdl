@@ -1,0 +1,99 @@
+// BUS_PORT_INDEX_OUT_OF_RANGE: BUS port index outside declared range.
+// Tests out-of-bounds indices on arrayed BUS ports in ASYNC and SYNC.
+// Valid in-range accesses included to verify no false positives.
+
+@project BUS_PORT_INDEX_OUT_OF_RANGE_bus_index_bounds
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+    }
+@endproj
+
+// Helper module: small array (count=2)
+@module SmallArrayMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        BUS MY_BUS SOURCE [2] sbus;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: index 0 and 1 are in range for count=2
+        sbus[0].tx <= r;
+        sbus[1].tx <= r;
+        data_out <= sbus[0].rx;
+        // Trigger 1: index 2 out of range (count=2, valid 0..1)
+        sbus[2].tx <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+// Module: larger array (count=4)
+@module LargeArrayMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        BUS MY_BUS TARGET [4] tbus;
+        OUT [8] data_out;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: index 3 is in range for count=4
+        tbus[3].rx <= r;
+        data_out <= tbus[0].tx;
+        // Trigger 2: index 4 out of range (count=4, valid 0..3)
+        tbus[4].rx <= r;
+        // Trigger 3: large index out of range
+        tbus[100].rx <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+    }
+
+    @new inst_s SmallArrayMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        BUS MY_BUS SOURCE [2] sbus = _;
+        OUT [8] data_out = dout_a;
+    };
+
+    @new inst_l LargeArrayMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        BUS MY_BUS TARGET [4] tbus = _;
+        OUT [8] data_out = dout_b;
+    };
+
+    ASYNCHRONOUS {
+        // TopMod passes through instance outputs
+    }
+@endmod

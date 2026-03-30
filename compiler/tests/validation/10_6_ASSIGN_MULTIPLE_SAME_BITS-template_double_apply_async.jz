@@ -1,0 +1,109 @@
+// ASSIGN_MULTIPLE_SAME_BITS: Template expansion must respect exclusive assignment in ASYNC.
+// Two @apply calls writing the same wire bits on the same execution path in an
+// ASYNCHRONOUS block produce an exclusive assignment violation after expansion.
+// Valid uses (no-conflict) are included to verify no false positives.
+
+@project ASSIGN_MULTIPLE_SAME_BITS_template_double_apply_async
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+@template set_high(out)
+    out <= VCC;
+@endtemplate
+
+@template set_low(out)
+    out <= GND;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: two @apply targeting same wire on same path
+        @apply set_high(w1);
+        @apply set_low(w1);
+
+        // Valid: single @apply, no conflict
+        @apply set_high(w2);
+
+        out_a = w1;
+        out_b = w2;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        w1 [1];
+        w2 [1];
+        w3 [1];
+        w4 [1];
+        ha [1];
+        hb [1];
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    @new inst_a HelperMod {
+        IN  [1] clk = clk;
+        OUT [1] out_a = ha;
+        OUT [1] out_b = hb;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: two @apply same wire in top module
+        @apply set_high(w1);
+        @apply set_low(w1);
+
+        // Trigger 3: @apply + direct assignment to same wire
+        @apply set_high(w2);
+        w2 = GND;
+
+        // Valid: @apply in mutually exclusive IF/ELSE branches (no error)
+        IF (sel) {
+            @apply set_high(w3);
+        } ELSE {
+            @apply set_low(w3);
+        }
+
+        // Valid: different templates targeting different wires (no error)
+        @apply set_high(w4);
+
+        out_a = w1;
+        out_b = w4;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -91,7 +91,11 @@ int parse_wire_block_body(Parser *p, JZASTNode *parent) {
 
         if (!match(p, JZ_TOK_SEMICOLON)) {
             if (width_text) free(width_text);
-            parser_error(p, "expected ';' after WIRE declaration");
+            if (peek(p)->type == JZ_TOK_LBRACKET) {
+                parser_error_rule(p, "WIRE_MULTI_DIMENSIONAL");
+            } else {
+                parser_error(p, "expected ';' after WIRE declaration");
+            }
             return -1;
         }
 

@@ -1,0 +1,77 @@
+// TEMPLATE_SCRATCH_OUTSIDE: @scratch may only appear inside a @template body.
+// Tests @scratch in various non-template contexts: file scope, module top-level,
+// ASYNCHRONOUS block, SYNCHRONOUS block.
+// Valid @scratch inside templates included for negative testing.
+
+@project TEMPLATE_SCRATCH_OUTSIDE_scratch_outside_template
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: @scratch at file scope
+@scratch file_scratch [4];
+
+// Valid: @scratch inside a file-scoped template (no error)
+@template valid_file_tmpl(a, b)
+    @scratch tmp [4];
+    tmp <= a;
+    b <= tmp;
+@endtemplate
+
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+
+    // Trigger 2: @scratch at module top-level (outside any block or template)
+    @scratch mod_scratch [4];
+
+    // Valid: @scratch inside module-scoped template (no error)
+    @template valid_mod_tmpl(a, b)
+        @scratch tmp [2];
+        tmp <= a;
+        b <= tmp;
+    @endtemplate
+
+    ASYNCHRONOUS {
+        // Trigger 3: @scratch inside ASYNCHRONOUS block
+        @scratch async_scratch [1];
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    // Trigger 4: @scratch at module top-level in TopMod
+    @scratch top_scratch [8];
+
+    @new inst_a HelperMod {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 5: @scratch inside SYNCHRONOUS block
+        @scratch sync_scratch [1];
+        r <= ~r;
+    }
+@endmod

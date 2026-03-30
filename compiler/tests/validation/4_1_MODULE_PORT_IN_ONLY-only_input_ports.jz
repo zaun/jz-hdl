@@ -1,0 +1,70 @@
+// MODULE_PORT_IN_ONLY: Module declares only IN ports (no OUT/INOUT).
+// Tests modules with only IN ports in helper and top-instantiated contexts.
+// A module with multiple IN ports is also tested. Modules with OUT ports
+// are included to verify no false positives.
+
+@project MODULE_PORT_IN_ONLY_only_input_ports
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: Helper module with single IN port
+@module OnlyOneInput
+    PORT {
+        IN [1] din;
+    }
+@endmod
+
+// Trigger 2: Helper module with multiple IN ports (still no OUT)
+@module OnlyMultipleInputs
+    PORT {
+        IN [1] a;
+        IN [1] b;
+    }
+@endmod
+
+// Valid module — has both IN and OUT (should NOT trigger)
+@module HelperValid
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_one OnlyOneInput {
+        IN [1] din = r;
+    };
+
+    @new inst_multi OnlyMultipleInputs {
+        IN [1] a = r;
+        IN [1] b = r;
+    };
+
+    @new inst_v HelperValid {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

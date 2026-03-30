@@ -1,0 +1,7 @@
+File: 1_5_ASSIGN_INDEPENDENT_IF_SELECT-independent_chains.jz
+      40:13   error ASSIGN_INDEPENDENT_IF_SELECT S1.5/S5.3/S5.4/S8.1 Same identifier assigned in multiple independent IF/SELECT chains at same nesting level
+      42:13   error ASSIGN_INDEPENDENT_IF_SELECT S1.5/S5.3/S5.4/S8.1 Same identifier assigned in multiple independent IF/SELECT chains at same nesting level
+      95:13   error ASSIGN_INDEPENDENT_IF_SELECT S1.5/S5.3/S5.4/S8.1 Same identifier assigned in multiple independent IF/SELECT chains at same nesting level
+      97:13   error ASSIGN_INDEPENDENT_IF_SELECT S1.5/S5.3/S5.4/S8.1 Same identifier assigned in multiple independent IF/SELECT chains at same nesting level
+     106:26   error ASSIGN_INDEPENDENT_IF_SELECT S1.5/S5.3/S5.4/S8.1 Same identifier assigned in multiple independent IF/SELECT chains at same nesting level
+     107:23   error ASSIGN_INDEPENDENT_IF_SELECT S1.5/S5.3/S5.4/S8.1 Same identifier assigned in multiple independent IF/SELECT chains at same nesting level

@@ -1,2 +1,0 @@
-File: IF_COND_WIDTH_NOT_1.jz
-      19:9    error IF_COND_WIDTH_NOT_1 S5.3 IF/ELIF condition must be 1 bit wide; use a comparison or reduction operator

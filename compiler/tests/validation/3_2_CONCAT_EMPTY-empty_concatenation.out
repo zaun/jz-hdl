@@ -1,0 +1,5 @@
+File: 3_2_CONCAT_EMPTY-empty_concatenation.jz
+      29:17   error CONCAT_EMPTY S3.2/S8.1 Empty concatenation `{}` is not allowed
+      36:14   error CONCAT_EMPTY S3.2/S8.1 Empty concatenation `{}` is not allowed
+      67:17   error CONCAT_EMPTY S3.2/S8.1 Empty concatenation `{}` is not allowed
+      73:14   error CONCAT_EMPTY S3.2/S8.1 Empty concatenation `{}` is not allowed

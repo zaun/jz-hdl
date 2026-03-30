@@ -1,0 +1,2 @@
+File: 4_8_LATCH_INVALID_TYPE-invalid_latch_type.jz
+      28:21   error LATCH_INVALID_TYPE S4.8 LATCH type must be D or SR

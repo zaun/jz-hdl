@@ -622,7 +622,7 @@ static long long env_parse_primary(EnvParser *p)
         }
 
         if (p->env->state[idx] == EVAL_VISITING) {
-            env_parser_diag(p, "circular dependency in CONST/CONFIG definitions");
+            p->error = 2; /* circular dependency — distinct from generic error (1) */
             return 0;
         }
         if (p->env->state[idx] == EVAL_DONE) {
@@ -632,8 +632,9 @@ static long long env_parse_primary(EnvParser *p)
         }
 
         /* Need to evaluate this dependency now. */
-        if (eval_one(p->env, (size_t)idx) != 0) {
-            p->error = 1;
+        int eval_rc = eval_one(p->env, (size_t)idx);
+        if (eval_rc != 0) {
+            p->error = (eval_rc == -2) ? 2 : 1;
             return 0;
         }
         env_advance(p);
@@ -823,7 +824,7 @@ static int eval_one(EvalEnv *env, size_t index)
             jz_diagnostic_report(env->opts->diagnostics, loc, JZ_SEVERITY_ERROR,
                                  "CONST_CIRCULAR_DEP", "circular dependency in CONST/CONFIG definitions");
         }
-        return -1;
+        return -2; /* distinct code for circular dependency */
     }
 
     env->state[index] = EVAL_VISITING;
@@ -838,7 +839,7 @@ static int eval_one(EvalEnv *env, size_t index)
     }
     if (p.error) {
         env->state[index] = EVAL_NOT_VISITED;
-        return -1;
+        return (p.error == 2) ? -2 : -1;
     }
     if (value < 0) {
         env_parser_diag(&p, "constant expression must be non-negative");
@@ -872,8 +873,9 @@ int jz_const_eval_all(const JZConstDef *defs,
     int result = 0;
     for (size_t i = 0; i < count; ++i) {
         if (state[i] == EVAL_NOT_VISITED) {
-            if (eval_one(&env, i) != 0) {
-                result = -1;
+            int rc = eval_one(&env, i);
+            if (rc != 0) {
+                result = rc; /* preserve -2 for circular dep */
                 break;
             }
         }

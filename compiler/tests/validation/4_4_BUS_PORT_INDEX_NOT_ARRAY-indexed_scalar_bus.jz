@@ -1,0 +1,77 @@
+// BUS_PORT_INDEX_NOT_ARRAY: Indexed BUS access requires an arrayed BUS port.
+// Tests indexed access on scalar (non-arrayed) BUS ports in read and write contexts.
+// Valid scalar access without index included to verify no false positives.
+
+@project BUS_PORT_INDEX_NOT_ARRAY_indexed_scalar_bus
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] din = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+    }
+@endproj
+
+// Helper module: indexed access on scalar BUS
+@module HelperMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        BUS MY_BUS SOURCE sbus;
+        OUT [8] data_ok;
+        OUT [8] data_err;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        // Valid: scalar access without index (no error)
+        sbus.tx <= r;
+        data_ok <= sbus.rx;
+        // Trigger 1: write to scalar BUS with index
+        sbus[0].tx <= r;
+        // Trigger 2: read from scalar BUS with index
+        data_err <= sbus[0].rx;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] din;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst_h HelperMod {
+        IN  [1] clk = clk;
+        IN  [8] din = din;
+        BUS MY_BUS SOURCE sbus = _;
+        OUT [8] data_ok = dout_a;
+        OUT [8] data_err = dout_b;
+    };
+
+    ASYNCHRONOUS {
+        dout_c <= r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

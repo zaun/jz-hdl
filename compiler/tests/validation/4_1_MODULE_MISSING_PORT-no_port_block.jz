@@ -1,0 +1,58 @@
+// MODULE_MISSING_PORT: Module missing required PORT block or PORT block is empty.
+// Tests module with no PORT block and module with empty PORT block.
+// Valid modules with PORT blocks are included to verify no false positives.
+
+@project MODULE_MISSING_PORT_no_port_block
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Trigger 1: Module with no PORT block at all
+@module NoPorts
+    CONST {
+        WIDTH = 8;
+    }
+@endmod
+
+// Trigger 2: Module with empty PORT block
+@module EmptyPorts
+    PORT {
+    }
+@endmod
+
+// Valid module — has ports (should NOT trigger)
+@module HelperValid
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    @new inst_v HelperValid {
+        IN  [1] din = r;
+        OUT [1] data = _;
+    };
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod

@@ -1,0 +1,84 @@
+// CONST_UNDEFINED_IN_WIDTH_OR_SLICE: Non-CONST identifier used in slice index.
+// Tests wire, register, port names, and truly undefined identifiers as slice indices
+// across modules. Valid CONST-based slices included to verify no false positives.
+
+@project CONST_UNDEFINED_IN_WIDTH_OR_SLICE_non_const_in_slice
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+        OUT [1] out_c = _;
+    }
+@endproj
+
+// Helper: wire name and undefined identifier used as slice index
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [16] bus;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+    CONST {
+        VALID_IDX = 5;
+    }
+    WIRE {
+        w [4];
+    }
+    REGISTER {
+        r [1] = 1'b0;
+    }
+    ASYNCHRONOUS {
+        w = bus[3:0];
+        // Trigger 1: wire name in slice MSB position
+        out_a = bus[w:0];
+        // Valid: CONST name in slice (no false positive)
+        out_b = bus[VALID_IDX:VALID_IDX];
+        out_c = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 2: register name in slice LSB position
+        r <= bus[5:r];
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] out_a;
+        OUT [1] out_b;
+        OUT [1] out_c;
+    }
+    WIRE {
+        ha_out_a [1];
+        ha_out_b [1];
+        ha_out_c [1];
+    }
+    REGISTER {
+        r [16] = 16'h0000;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [16] bus = r;
+        OUT [1] out_a = ha_out_a;
+        OUT [1] out_b = ha_out_b;
+        OUT [1] out_c = ha_out_c;
+    };
+
+    ASYNCHRONOUS {
+        out_a = ha_out_a;
+        out_b = ha_out_b;
+        out_c = ha_out_c;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        // Trigger 3: port name (clk) in slice MSB position
+        r[clk:0] <= 1'b0;
+    }
+@endmod

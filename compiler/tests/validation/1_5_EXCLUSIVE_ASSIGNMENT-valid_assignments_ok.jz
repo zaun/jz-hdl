@@ -1,0 +1,129 @@
+// EXCLUSIVE_ASSIGNMENT: Valid exclusive assignment patterns.
+// Exercises single assignment, branch-exclusive IF/ELSE, branch-exclusive SELECT,
+// register clock gating, different identifiers on same path, bit-disjoint slices,
+// and nested IF with exclusive branches. No diagnostics expected.
+
+@project EXCLUSIVE_ASSIGNMENT_valid_assignments
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [1] sel_a = _;
+        IN  [1] sel_b = _;
+        IN  [2] sel2 = _;
+        IN  [8] data_in = _;
+        OUT [8] out_a = _;
+        OUT [8] out_b = _;
+        OUT [8] out_c = _;
+        OUT [8] out_d = _;
+        OUT [1] out_e = _;
+    }
+@endproj
+
+// Helper: single assignment and branch-exclusive IF/ELSE
+@module HelperA
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel_a;
+        IN  [1] sel_b;
+        IN  [8] data_in;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [1] out_e;
+    }
+    REGISTER {
+        r [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        // Happy path 1: single assignment per path
+        out_a = r;
+        // Happy path 2: branch-exclusive IF/ELSE
+        IF (sel_a) {
+            out_b <= data_in;
+        } ELSE {
+            out_b <= 8'h00;
+        }
+        // Happy path 7: nested IF with exclusive branches
+        IF (sel_a) {
+            IF (sel_b) {
+                out_e <= 1'b1;
+            } ELSE {
+                out_e <= 1'b0;
+            }
+        } ELSE {
+            out_e <= 1'b0;
+        }
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Happy path 4: register zero-path (clock gating) — no ELSE needed
+        IF (sel_a) {
+            r <= data_in;
+        }
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [1] sel_a;
+        IN  [1] sel_b;
+        IN  [2] sel2;
+        IN  [8] data_in;
+        OUT [8] out_a;
+        OUT [8] out_b;
+        OUT [8] out_c;
+        OUT [8] out_d;
+        OUT [1] out_e;
+    }
+    WIRE {
+        ha_a [8];
+        ha_b [8];
+        ha_e [1];
+    }
+    REGISTER {
+        reg_a [8] = 8'h00;
+    }
+
+    @new inst_a HelperA {
+        IN  [1] clk = clk;
+        IN  [1] sel_a = sel_a;
+        IN  [1] sel_b = sel_b;
+        IN  [8] data_in = data_in;
+        OUT [8] out_a = ha_a;
+        OUT [8] out_b = ha_b;
+        OUT [1] out_e = ha_e;
+    };
+
+    ASYNCHRONOUS {
+        // Happy path 5: different identifiers on same path (no conflict)
+        out_a = ha_a;
+        out_b = ha_b;
+        out_e = ha_e;
+        // Happy path 3: branch-exclusive SELECT
+        SELECT (sel2) {
+            CASE 2'b00 {
+                out_c <= 8'h01;
+            }
+            CASE 2'b01 {
+                out_c <= 8'h02;
+            }
+            CASE 2'b10 {
+                out_c <= 8'h03;
+            }
+            DEFAULT {
+                out_c <= 8'h00;
+            }
+        }
+        // Happy path 6: bit-disjoint sliced assignments
+        out_d[7:4] <= reg_a[7:4];
+        out_d[3:0] <= reg_a[3:0];
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // Happy path 4 repeated: register clock gating in top module
+        IF (sel_a) {
+            reg_a <= data_in;
+        }
+    }
+@endmod

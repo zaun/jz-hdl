@@ -1,0 +1,2 @@
+File: 6_5_PIN_DIFF_OUT_MISSING_PCLK-no_pclk.jz
+      23:9    error PIN_DIFF_OUT_MISSING_PCLK S6.5/S6.9 Differential output pin missing required pclk attribute

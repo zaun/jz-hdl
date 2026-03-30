@@ -1,0 +1,39 @@
+// LATCH_CHIP_UNSUPPORTED: LATCH type not supported by selected CHIP.
+// Tests D-latch and SR-latch on ice40up-5k-sg which has FAB.D=false, FAB.SR=false.
+// Internal latches (not connected to output pins) are not supported in fabric.
+
+@project(CHIP="ICE40UP-5K-SG48") LATCH_CHIP_UNSUPPORTED_chip_no_latch
+    @top TopMod {
+        IN  [1] enable = _;
+        IN  [1] din = _;
+        IN  [1] set_sig = _;
+        IN  [1] reset_sig = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] enable;
+        IN  [1] din;
+        IN  [1] set_sig;
+        IN  [1] reset_sig;
+        OUT [1] data;
+    }
+
+    // Trigger 1: D-latch not supported in fabric on ice40up
+    LATCH {
+        lat_d [1] D;
+    }
+
+    // Trigger 2: SR-latch not supported in fabric on ice40up
+    LATCH {
+        lat_sr [1] SR;
+    }
+
+    ASYNCHRONOUS {
+        lat_d <= enable : din;
+        lat_sr <= set_sig : reset_sig;
+        data <= lat_d;
+    }
+@endmod

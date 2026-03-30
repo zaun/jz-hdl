@@ -1,0 +1,6 @@
+File: 5_0_ASSIGN_SLICE_WIDTH_MISMATCH-slice_width_mismatch.jz
+      32:9    error ASSIGN_SLICE_WIDTH_MISMATCH S4.10/S5.1/S5.2 Slice assignment where source and destination slice widths differ
+      34:9    error ASSIGN_SLICE_WIDTH_MISMATCH S4.10/S5.1/S5.2 Slice assignment where source and destination slice widths differ
+      39:9    error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width
+      65:9    error ASSIGN_SLICE_WIDTH_MISMATCH S4.10/S5.1/S5.2 Slice assignment where source and destination slice widths differ
+      72:9    error SYNC_SLICE_WIDTH_MISMATCH S5.2 Register slice assignment expression width not equal to slice width

@@ -1,0 +1,73 @@
+// COMB_LOOP_UNCONDITIONAL: Conditional cycle on same control-flow path.
+// Tests that a cycle created by an unconditional assignment combined with
+// a conditional assignment on the same IF branch is detected as a loop.
+// Valid feed-forward paths included to verify no false positives.
+
+@project COMB_LOOP_UNCONDITIONAL_conditional_same_path
+    @top TopMod {
+        IN  [1] sel = _;
+        IN  [1] in_a = _;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    }
+@endproj
+
+// Helper: conditional cycle on same path
+@module HelperA
+    PORT {
+        IN  [1] sel;
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        a [1];
+        b [1];
+    }
+
+    ASYNCHRONOUS {
+        // Trigger 1: a depends on b unconditionally, b depends on a inside IF
+        a <= b;
+        IF (sel) {
+            b <= a;
+        } ELSE {
+            b <= in_a;
+        }
+        out_a = a;
+        out_b = b;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [1] sel;
+        IN  [1] in_a;
+        OUT [1] out_a;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        x [1];
+        y [1];
+    }
+
+    @new inst_a HelperA {
+        IN  [1] sel = sel;
+        IN  [1] in_a = in_a;
+        OUT [1] out_a = _;
+        OUT [1] out_b = _;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger 2: x depends on y unconditionally, y depends on x inside IF
+        x <= y;
+        IF (sel) {
+            y <= x;
+        } ELSE {
+            y <= in_a;
+        }
+        out_a = x;
+        out_b = y;
+    }
+@endmod

@@ -1,0 +1,126 @@
+// ID_DUP_IN_MODULE: Duplicate identifier within a module scope.
+// Tests duplicate names across ports, wires, registers, and consts.
+// Each trigger crosses a different declaration-type boundary.
+
+@project ID_DUP_IN_MODULE_duplicate_identifiers
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+// Helper module for instantiation (structurally valid, no triggers)
+@module HelperMod
+    PORT {
+        IN  [1] din;
+        OUT [1] data;
+    }
+    ASYNCHRONOUS {
+        data = din;
+    }
+@endmod
+
+// Module with port-port and register-CONST duplicates
+@module DupModA
+    CONST {
+        MY_C = 8;
+    }
+
+    PORT {
+        IN  [1] pclk;
+        IN  [1] din;
+        OUT [1] out_a;
+        // Trigger 1: port duplicates another port
+        IN  [1] din;
+    }
+
+    REGISTER {
+        // Trigger 2: register duplicates CONST name
+        MY_C [1] = 1'b0;
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        out_a = r;
+    }
+
+    SYNCHRONOUS(CLK=pclk) {
+        r <= din;
+    }
+@endmod
+
+// Module with CONST-CONST and wire-port duplicates
+@module DupModB
+    CONST {
+        AA = 1;
+        // Trigger 3: CONST duplicates another CONST
+        AA = 2;
+    }
+
+    PORT {
+        IN  [1] cclk;
+        OUT [1] out_b;
+    }
+
+    WIRE {
+        // Trigger 4: wire duplicates port name
+        out_b [1];
+    }
+
+    REGISTER {
+        rc [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        out_b = rc;
+    }
+
+    SYNCHRONOUS(CLK=cclk) {
+        rc <= ~rc;
+    }
+@endmod
+
+// Top module — tests wire-wire and register-register duplicates
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    WIRE {
+        w_a [1];
+        // Trigger 5: wire duplicates another wire
+        w_a [1];
+    }
+
+    REGISTER {
+        r_a [1] = 1'b0;
+        // Trigger 6: register duplicates another register
+        r_a [1] = 1'b0;
+    }
+
+    @new inst_a DupModA {
+        IN  [1] pclk = clk;
+        IN  [1] din = clk;
+        OUT [1] out_a = _;
+    };
+
+    @new inst_b DupModB {
+        IN  [1] cclk = clk;
+        OUT [1] out_b = _;
+    };
+
+    @new inst_h HelperMod {
+        IN  [1] din = r_a;
+        OUT [1] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r_a;
+        w_a = r_a;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r_a <= ~r_a;
+    }
+@endmod

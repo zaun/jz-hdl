@@ -1,0 +1,72 @@
+// BUS_PORT_INVALID_ROLE: BUS port role must be SOURCE or TARGET.
+// Tests invalid role keywords in BUS port declarations across multiple modules.
+// Valid SOURCE and TARGET roles included to verify no false positives.
+
+@project BUS_PORT_INVALID_ROLE_invalid_bus_role
+    BUS MY_BUS {
+        OUT [8] tx;
+        IN  [8] rx;
+    }
+
+    @top TopMod {
+        IN  [8] din = _;
+        BUS MY_BUS SOURCE sbus = _;
+        OUT [8] dout_a = _;
+        OUT [8] dout_b = _;
+        OUT [8] dout_c = _;
+    }
+@endproj
+
+// Trigger 1: invalid role DRIVER in helper module
+@module DriverRoleMod
+    PORT {
+        IN  [8] din;
+        BUS MY_BUS DRIVER dbus;
+        OUT [8] data_out;
+    }
+
+    ASYNCHRONOUS {
+        data_out <= din;
+    }
+@endmod
+
+// Trigger 2: invalid role MASTER in another module
+@module MasterRoleMod
+    PORT {
+        IN  [8] din;
+        BUS MY_BUS MASTER mbus;
+        OUT [8] data_out;
+    }
+
+    ASYNCHRONOUS {
+        data_out <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        IN  [8] din;
+        // Valid: SOURCE role
+        BUS MY_BUS SOURCE sbus;
+        OUT [8] dout_a;
+        OUT [8] dout_b;
+        OUT [8] dout_c;
+    }
+
+    @new inst_d DriverRoleMod {
+        IN  [8] din = din;
+        BUS MY_BUS DRIVER dbus = _;
+        OUT [8] data_out = dout_a;
+    };
+
+    @new inst_m MasterRoleMod {
+        IN  [8] din = din;
+        BUS MY_BUS MASTER mbus = _;
+        OUT [8] data_out = dout_b;
+    };
+
+    ASYNCHRONOUS {
+        sbus.tx <= din;
+        dout_c <= sbus.rx;
+    }
+@endmod

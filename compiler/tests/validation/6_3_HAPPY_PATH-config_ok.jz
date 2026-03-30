@@ -1,0 +1,72 @@
+// HAPPY_PATH: Valid CONFIG block with numeric, string, chained, and zero-value entries.
+// Tests CONFIG in port widths, register widths, CONST initializers, and cross-module refs.
+// Edge cases: CONFIG value = 0, CONFIG and CONST with same name (disjoint namespaces).
+// No diagnostics expected.
+
+@project HAPPY_PATH_config_ok
+    CONFIG {
+        XLEN = 32;
+        DEPTH = 16;
+        TOTAL = XLEN + DEPTH;
+        FIRMWARE = "out/fw.bin";
+        ZERO_VAL = 0;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [CONFIG.XLEN] din = _;
+        OUT [CONFIG.XLEN] dout = _;
+    }
+@endproj
+
+@module Helper
+    CONST {
+        // Edge case: CONST named same as CONFIG entry (disjoint namespaces)
+        XLEN = 16;
+    }
+    PORT {
+        IN  [1] clk;
+        IN  [CONFIG.XLEN] din;
+        OUT [CONFIG.XLEN] dout;
+    }
+    REGISTER {
+        r [CONFIG.XLEN] = 32'h0000;
+    }
+    ASYNCHRONOUS {
+        dout = r;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod
+
+@module TopMod
+    CONST {
+        // Valid: CONFIG in CONST initializer
+        LOCAL = CONFIG.XLEN;
+    }
+
+    PORT {
+        IN  [1] clk;
+        IN  [CONFIG.XLEN] din;
+        OUT [CONFIG.XLEN] dout;
+    }
+
+    @new inst_h Helper {
+        IN  [1] clk = clk;
+        IN  [CONFIG.XLEN] din = din;
+        OUT [CONFIG.XLEN] dout = _;
+    };
+
+    REGISTER {
+        r [CONFIG.XLEN] = 32'h0000;
+    }
+
+    ASYNCHRONOUS {
+        dout = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= din;
+    }
+@endmod

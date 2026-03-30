@@ -1,0 +1,73 @@
+// MEM_BLOCK_RESOURCE_EXCEEDED: Total BLOCK memory usage exceeds chip BSRAM capacity.
+// Uses gw1nr-9 chip with 26 BSRAM blocks. Creates 27 instances of a module
+// with one BLOCK MEM each, exceeding the 26-block limit.
+// Valid use (within limits) is implicitly tested by the many other MEM tests
+// that use BLOCK type without triggering this error.
+
+@project(CHIP="gw1nr-9-qn88-c6-i5") MEM_BLOCK_RESOURCE_EXCEEDED_exceeds_bsram_capacity
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [4] addr = _;
+        IN  [8] wdata = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module MemChild
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        blk [8] [2048] = 8'h00 {
+            OUT rd SYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        blk.rd.addr <= addr;
+        r <= blk.rd.data;
+        blk.wr[addr] <= wdata;
+    }
+@endmod
+
+// Trigger: 27 instances of MemChild, each with 1 BLOCK MEM = 27 blocks > 26 limit
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [4] addr;
+        IN  [8] wdata;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        r [8] = 8'h00;
+    }
+
+    @new inst[27] MemChild {
+        IN  [1] clk = clk;
+        IN  [4] addr = addr;
+        IN  [8] wdata = wdata;
+        OUT [8] data = _;
+    };
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= wdata;
+    }
+@endmod

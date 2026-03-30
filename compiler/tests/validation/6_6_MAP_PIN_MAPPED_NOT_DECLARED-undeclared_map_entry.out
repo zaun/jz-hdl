@@ -1,0 +1,5 @@
+File: 6_6_MAP_PIN_MAPPED_NOT_DECLARED-undeclared_map_entry.jz
+      18:9    error MAP_PIN_MAPPED_NOT_DECLARED S6.6/S6.9 MAP entry references undeclared pin
+      20:9    error MAP_PIN_MAPPED_NOT_DECLARED S6.6/S6.9 MAP entry references undeclared pin
+      22:9    error MAP_PIN_MAPPED_NOT_DECLARED S6.6/S6.9 MAP entry references undeclared pin
+      22:9    error MAP_SINGLE_UNEXPECTED_PAIR S6.6/S6.9 Single-ended pin must not use { P, N } MAP syntax

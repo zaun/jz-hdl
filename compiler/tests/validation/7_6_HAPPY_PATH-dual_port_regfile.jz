@@ -1,0 +1,87 @@
+// HAPPY_PATH: Valid dual-port register file with 2 async reads and 1 sync write (S7.6.2).
+// Exercises multi-port MEM (2R1W), dual ASYNC read ports, conditional SYNC write,
+// and cross-module instantiation.
+
+@project HAPPY_PATH_dual_port_regfile
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [5] rd_addr_a = _;
+        IN  [5] rd_addr_b = _;
+        IN  [5] wr_addr = _;
+        IN  [32] wr_data = _;
+        IN  [1] wr_en = _;
+        OUT [32] rd_data_a = _;
+        OUT [32] rd_data_b = _;
+        OUT [32] helper_data = _;
+    }
+@endproj
+
+// Helper: single-port register file (1R1W)
+@module RegfileHelper
+    PORT {
+        IN  [1] clk;
+        IN  [5] addr;
+        IN  [32] wdata;
+        IN  [1] we;
+        OUT [32] rdata;
+    }
+
+    MEM {
+        regs [32] [32] = 32'h0000_0000 {
+            OUT rd ASYNC;
+            IN  wr;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = regs.rd[addr];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (we) {
+            regs.wr[addr] <= wdata;
+        }
+    }
+@endmod
+
+// Top module: dual-port register file (2R1W)
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [5] rd_addr_a;
+        IN  [5] rd_addr_b;
+        IN  [5] wr_addr;
+        IN  [32] wr_data;
+        IN  [1] wr_en;
+        OUT [32] rd_data_a;
+        OUT [32] rd_data_b;
+        OUT [32] helper_data;
+    }
+
+    MEM {
+        registers [32] [32] = 32'h0000_0000 {
+            OUT rd_a ASYNC;
+            OUT rd_b ASYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_rf RegfileHelper {
+        IN  [1] clk = clk;
+        IN  [5] addr = wr_addr;
+        IN  [32] wdata = wr_data;
+        IN  [1] we = wr_en;
+        OUT [32] rdata = helper_data;
+    };
+
+    ASYNCHRONOUS {
+        rd_data_a = registers.rd_a[rd_addr_a];
+        rd_data_b = registers.rd_b[rd_addr_b];
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        IF (wr_en) {
+            registers.wr[wr_addr] <= wr_data;
+        }
+    }
+@endmod

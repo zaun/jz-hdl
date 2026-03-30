@@ -1,0 +1,85 @@
+// HAPPY_PATH: Valid registered read cache with SYNC read port (S7.6.4).
+// Exercises SYNC read port with .addr/.data access, pipeline read stage,
+// conditional SYNC write, and cross-module instantiation.
+
+@project HAPPY_PATH_registered_read_cache
+    @top TopMod {
+        IN  [1] clk = _;
+        IN  [8] read_addr = _;
+        OUT [8] read_data = _;
+        IN  [8] write_addr = _;
+        IN  [8] write_data = _;
+        IN  [1] write_en = _;
+        OUT [8] helper_data = _;
+    }
+@endproj
+
+// Helper: simple SYNC read memory
+@module CacheHelper
+    PORT {
+        IN  [1] clk;
+        IN  [8] addr;
+        OUT [8] rdata;
+    }
+
+    REGISTER {
+        r_data [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        cache [8] [256] = 8'h00 {
+            OUT rd SYNC;
+        };
+    }
+
+    ASYNCHRONOUS {
+        rdata = r_data;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        cache.rd.addr <= addr;
+        r_data <= cache.rd.data;
+    }
+@endmod
+
+// Top module: registered read cache with read and write ports
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        IN  [8] read_addr;
+        OUT [8] read_data;
+        IN  [8] write_addr;
+        IN  [8] write_data;
+        IN  [1] write_en;
+        OUT [8] helper_data;
+    }
+
+    REGISTER {
+        r_read [8] = 8'h00;
+    }
+
+    MEM(type=BLOCK) {
+        cache_mem [8] [256] = 8'h00 {
+            OUT rd SYNC;
+            IN  wr;
+        };
+    }
+
+    @new inst_cache CacheHelper {
+        IN  [1] clk = clk;
+        IN  [8] addr = read_addr;
+        OUT [8] rdata = helper_data;
+    };
+
+    ASYNCHRONOUS {
+        read_data = r_read;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        cache_mem.rd.addr <= read_addr;
+        r_read <= cache_mem.rd.data;
+        IF (write_en) {
+            cache_mem.wr[write_addr] <= write_data;
+        }
+    }
+@endmod

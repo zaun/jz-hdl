@@ -1,2 +1,0 @@
-File: GLOBAL_USED_WHERE_FORBIDDEN.jz
-      21:5    error GLOBAL_USED_WHERE_FORBIDDEN S8.4 GLOBAL.<name> used in a context where global constants are forbidden (CONST/OVERRIDE/CONFIG)

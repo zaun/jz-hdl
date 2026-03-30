@@ -1,2 +1,0 @@
-File: LIT_DECIMAL_HAS_XZ.jz
-      16:13   error LIT_DECIMAL_HAS_XZ S2.1 Decimal literal with `x` or `z` digits (e.g. `8'd10x`)

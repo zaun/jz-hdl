@@ -1,0 +1,4 @@
+File: 6_6_MAP_SINGLE_UNEXPECTED_PAIR-single_pair_map.jz
+      25:9    error MAP_SINGLE_UNEXPECTED_PAIR S6.6/S6.9 Single-ended pin must not use { P, N } MAP syntax
+      26:9    error MAP_SINGLE_UNEXPECTED_PAIR S6.6/S6.9 Single-ended pin must not use { P, N } MAP syntax
+      27:9    error MAP_SINGLE_UNEXPECTED_PAIR S6.6/S6.9 Single-ended pin must not use { P, N } MAP syntax

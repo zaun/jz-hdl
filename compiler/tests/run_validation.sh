@@ -42,10 +42,17 @@ for file in "${validation_files[@]}"; do
     continue
   fi
 
+  # Determine extra flags based on filename.
+  extra_flags=()
+  case "$(basename "${file}")" in
+    *_GND_*) extra_flags+=(--tristate-default=GND) ;;
+    *_VCC_*) extra_flags+=(--tristate-default=VCC) ;;
+  esac
+
   # Run linter; capture both stdout and stderr. Many tests are expected to
   # produce diagnostics and/or non-zero exit codes, so we do not treat a
   # non-zero status as a test failure by itself.
-  "${JZ_HDL_BIN}" --info --lint "${file}" >"${tmp_out}" 2>&1 || true
+  "${JZ_HDL_BIN}" --info --lint ${extra_flags[@]+"${extra_flags[@]}"} "${file}" >"${tmp_out}" 2>&1 || true
 
   if diff -u "${expected_out}" "${tmp_out}" > /dev/null; then
     echo "PASS ${rel_path}"

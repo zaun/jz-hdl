@@ -1,0 +1,51 @@
+// MAP_DUP_PHYSICAL_LOCATION: Differential P/N pins duplicate physical locations.
+// Trigger 1: Two differential pairs sharing the same P pin.
+// Trigger 2: Differential N pin conflicts with a single-ended pin.
+// Valid unique differential and single-ended mappings for no false positives.
+
+@project MAP_DUP_PHYSICAL_LOCATION_diff_duplicate
+    IN_PINS {
+        diff_a = { standard=LVDS25, mode=DIFFERENTIAL };
+        diff_b = { standard=LVDS25, mode=DIFFERENTIAL };
+        single_c = { standard=LVCMOS33 };
+        diff_d = { standard=LVDS25, mode=DIFFERENTIAL };
+        // Valid: unique differential pair
+        diff_ok = { standard=LVDS25, mode=DIFFERENTIAL };
+    }
+
+    MAP {
+        diff_a = { P=A1, N=A2 };
+        // Trigger 1: diff_b P pin duplicates diff_a P pin
+        diff_b = { P=A1, N=A3 };
+        // Trigger 2: single-ended pin duplicates diff_a N pin
+        single_c = A2;
+        // Trigger 3: diff_d N pin duplicates single_c / diff_a N pin
+        diff_d = { P=B5, N=A2 };
+        // Valid: unique pins (no error)
+        diff_ok = { P=C1, N=C2 };
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [1] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=clk) {
+        r <= ~r;
+    }
+@endmod
