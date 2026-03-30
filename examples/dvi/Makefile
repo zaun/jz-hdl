@@ -40,6 +40,16 @@ XRAY_DB_DIR ?= $(HOME)/Development/fpga-dev/prjxray/database/artix7
 HDL := src/pa35t-edu.jz
 endif
 
+# -- ICE40: IceSugar v1.5 --
+ifeq ($(BOARD_GOAL),ice_sugar_v15)
+ARCH := ice40
+PNR := nextpnr-ice40
+MOUNT := /Volumes/iCELink/
+DEVICE := up5k
+PACKAGE := sg48
+HDL := src/ice_sugar_v15.jz
+endif
+
 # ---- Tool paths (resolved only when needed) ----
 
 ifeq ($(ARCH),gowin)
@@ -61,6 +71,7 @@ help:
 	@echo "  tang_nano_9k"
 	@echo "  tang_nano_20k"
 	@echo "  pa35t-edu"
+	@echo "  ice_sugar_v15"
 	@echo ""
 	@echo "Commands:"
 	@echo "  make <board> build     - Transpile Verilog"
@@ -80,6 +91,10 @@ check:
 ifeq ($(ARCH),gowin)
 CHECK_ARCH_TOOLS = \
 	command -v gowin_pack >/dev/null 2>&1 && echo "gowin_pack:     Found" || { echo "gowin_pack:     Not found"; fail=1; };
+endif
+ifeq ($(ARCH),ice40)
+CHECK_ARCH_TOOLS = \
+	command -v icepack >/dev/null 2>&1 && echo "icepack:        Found" || { echo "icepack:        Not found"; fail=1; };
 endif
 ifeq ($(ARCH),xilinx)
 CHECK_ARCH_TOOLS = \
@@ -111,6 +126,9 @@ build: check
 ifeq ($(ARCH),gowin)
 	$(JZ_HDL) --sandbox-root=./ --allow-traversal --verilog $(HDL) -o out/project.v --cst out/project.cst --sdc out/project.sdc
 endif
+ifeq ($(ARCH),ice40)
+	$(JZ_HDL) --sandbox-root=./ --allow-traversal --verilog $(HDL) -o out/project.v --pcf out/project.pcf --sdc out/project.sdc
+endif
 ifeq ($(ARCH),xilinx)
 	$(JZ_HDL) --sandbox-root=./ --allow-traversal --verilog $(HDL) -o out/project.v --xdc out/project.xdc --sdc out/project.sdc
 endif
@@ -123,6 +141,11 @@ ifeq ($(ARCH),gowin)
 	$(YOSYS) -q -p "read_verilog ./out/project.v; synth_gowin -top top -json ./out/synthesis.json"
 	$(PNR) --json out/synthesis.json --write out/bitstream.json --device $(DEVICE) --vopt family=$(FAMILY) --vopt cst=./out/project.cst --sdc ./out/project.sdc
 	PATH="$(GOWIN_PATH):$(PATH)" gowin_pack -d $(FAMILY) -o out/project.fs out/bitstream.json
+endif
+ifeq ($(ARCH),ice40)
+	$(YOSYS) -q -p "read_verilog ./out/project.v; synth_ice40 -top top -json ./out/synthesis.json"
+	$(PNR) --$(DEVICE) --package $(PACKAGE) --json out/synthesis.json --pcf out/project.pcf --asc out/project.asc
+	icepack out/project.asc out/project.bin
 endif
 ifeq ($(ARCH),xilinx)
 	$(YOSYS) -q -p "read_verilog ./out/project.v; synth_xilinx -nocarry -top top -json ./out/synthesis.json"
@@ -138,12 +161,19 @@ load: synthesis
 ifeq ($(ARCH),gowin)
 	openFPGALoader -b $(BOARD) out/project.fs -f
 endif
+ifeq ($(ARCH),ice40)
+	cp out/project.bin ${MOUNT}
+endif
 ifeq ($(ARCH),xilinx)
 	openFPGALoader -c $(CABLE) --fpga-part $(FPGA_PART) out/project.bit -f
 endif
 
 fast_load: synthesis
 ifeq ($(ARCH),gowin)
+	@echo "ERROR: fast_load is not supported for Gowin boards"
+	@exit 1
+endif
+ifeq ($(ARCH),ice40)
 	@echo "ERROR: fast_load is not supported for Gowin boards"
 	@exit 1
 endif

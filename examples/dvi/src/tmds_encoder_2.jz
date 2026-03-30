@@ -16,7 +16,7 @@
         IN  [1]  c0;
         IN  [1]  c1;
         IN  [1]  display_enable;
-        OUT [10] tmds_out;
+        OUT [2]  tmds_out;
     }
 
     WIRE {
@@ -58,7 +58,6 @@
 
     REGISTER {
         cnt       [5]  = 5'b00000;
-        tmds_reg  [10] = 10'b0000000000;
 
         // Internal shift register for 2-bit serialization
         shift_reg [10] = 10'b0000000000;
@@ -66,8 +65,8 @@
     }
 
     ASYNCHRONOUS {
-        // Output the full 10-bit encoded word (same as tmds_encoder_10)
-        tmds_out <= tmds_reg;
+        // 2-bit serial output from shift register (for DDR IO)
+        tmds_out <= shift_reg[1:0];
 
         // --- Popcount of data_in ---
         d_p0 <= {1'b0, data_in[0]} + {1'b0, data_in[1]};
@@ -148,20 +147,15 @@
             IF (display_enable == 1'b0) {
                 cnt <= 5'b00000;
                 IF (c0 == 1'b0 && c1 == 1'b0) {
-                    tmds_reg  <= 10'b1101010100;
                     shift_reg <= 10'b1101010100;
                 } ELIF (c0 == 1'b1 && c1 == 1'b0) {
-                    tmds_reg  <= 10'b0010101011;
                     shift_reg <= 10'b0010101011;
                 } ELIF (c0 == 1'b0 && c1 == 1'b1) {
-                    tmds_reg  <= 10'b0101010100;
                     shift_reg <= 10'b0101010100;
                 } ELSE {
-                    tmds_reg  <= 10'b1010101011;
                     shift_reg <= 10'b1010101011;
                 }
             } ELSE {
-                tmds_reg  <= tmds_data;
                 shift_reg <= tmds_data;
                 cnt <= next_cnt;
             }

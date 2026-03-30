@@ -12,6 +12,9 @@
     CONFIG {
         warp = 1;
         serializer = 10;
+        // 1280x720 @ 30Hz (CEA-861, pixel clock = 37.125 MHz)
+        h_active = 1280; h_front = 110; h_sync = 40; h_back = 220;
+        v_active = 720;  v_front = 5;   v_sync = 5;  v_back = 20;
     }
     @check(CONFIG.serializer == 2 || CONFIG.serializer == 10, "Serialzer must be 2 or 10.");
 
@@ -29,8 +32,8 @@
 
     OUT_PINS {
         LED[6]       = { standard=LVCMOS33, drive=8 };
-        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
-        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, width=10, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, width=10, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
     }
 
     MAP {

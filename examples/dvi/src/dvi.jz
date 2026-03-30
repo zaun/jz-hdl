@@ -83,66 +83,36 @@
         OUT [10] y_pos          = y_pos;
     }
 
-    @feature CONFIG.serializer == 10
-        // Blue channel (data channel 0) - carries sync signals
-        @new enc0 tmds_encoder_10 {
-            IN  [1]  clk            = clk;
-            IN  [1]  rst_n          = reset;
-            IN  [8]  data_in        = blue;
-            IN  [1]  c0             = hsync;
-            IN  [1]  c1             = vsync;
-            IN  [1]  display_enable = de;
-            OUT [10] tmds_out       = dvi_tmds_d0;
-        }
-        // Green channel (data channel 1)
-        @new enc1 tmds_encoder_10 {
-            IN  [1]  clk            = clk;
-            IN  [1]  rst_n          = reset;
-            IN  [8]  data_in        = green;
-            IN  [1]  c0             = 1'b0;
-            IN  [1]  c1             = 1'b0;
-            IN  [1]  display_enable = de;
-            OUT [10] tmds_out       = dvi_tmds_d1;
-        }
-        // Red channel (data channel 2)
-        @new enc2 tmds_encoder_10 {
-            IN  [1]  clk            = clk;
-            IN  [1]  rst_n          = reset;
-            IN  [8]  data_in        = red;
-            IN  [1]  c0             = 1'b0;
-            IN  [1]  c1             = 1'b0;
-            IN  [1]  display_enable = de;
-            OUT [10] tmds_out       = dvi_tmds_d2;
-        }
-    @else
-        @new enc0 tmds_encoder_2 {
-            IN  [1]  clk            = clk;
-            IN  [1]  rst_n          = reset;
-            IN  [8]  data_in        = blue;
-            IN  [1]  c0             = hsync;
-            IN  [1]  c1             = vsync;
-            IN  [1]  display_enable = de;
-            OUT [10] tmds_out       = dvi_tmds_d0;
-        }
-        @new enc1 tmds_encoder_2 {
-            IN  [1]  clk            = clk;
-            IN  [1]  rst_n          = reset;
-            IN  [8]  data_in        = green;
-            IN  [1]  c0             = 1'b0;
-            IN  [1]  c1             = 1'b0;
-            IN  [1]  display_enable = de;
-            OUT [10] tmds_out       = dvi_tmds_d1;
-        }
-        @new enc2 tmds_encoder_2 {
-            IN  [1]  clk            = clk;
-            IN  [1]  rst_n          = reset;
-            IN  [8]  data_in        = red;
-            IN  [1]  c0             = 1'b0;
-            IN  [1]  c1             = 1'b0;
-            IN  [1]  display_enable = de;
-            OUT [10] tmds_out       = dvi_tmds_d2;
-        }
-    @endfeat
+    // Blue channel (data channel 0) - carries sync signals
+    @new enc0 tmds_encoder_10 {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = blue;
+        IN  [1]  c0             = hsync;
+        IN  [1]  c1             = vsync;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d0;
+    }
+    // Green channel (data channel 1)
+    @new enc1 tmds_encoder_10 {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = green;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d1;
+    }
+    // Red channel (data channel 2)
+    @new enc2 tmds_encoder_10 {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = red;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = de;
+        OUT [10] tmds_out       = dvi_tmds_d2;
+    }
 
     @new hb0 hbars {
         IN  [11] x_pos = x_pos;
@@ -181,10 +151,8 @@
     ASYNCHRONOUS {
         reset <= rst_n & por_n;
 
-        // TMDS clock channel: fixed 1111100000 pattern
+        // TMDS clock channel and registered output to port
         tmds_clk <= 10'b1111100000;
-
-        // Registered TMDS output to port
         tmds_d0 <= tmds_d0_r;
         tmds_d1 <= tmds_d1_r;
         tmds_d2 <= tmds_d2_r;

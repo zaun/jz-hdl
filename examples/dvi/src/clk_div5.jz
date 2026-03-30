@@ -1,0 +1,30 @@
+// Divide-by-5 clock generator
+// Produces an output clock at 1/5 the input frequency.
+// Output has 2-high / 3-low duty cycle (40/60%).
+@module clk_div5
+    PORT {
+        IN  [1] clk_in;
+        OUT [1] clk_out;
+    }
+
+    REGISTER {
+        cnt    [3] = 3'd0;
+        clk_r  [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        clk_out <= clk_r;
+    }
+
+    SYNCHRONOUS(CLK=clk_in) {
+        IF (cnt == 3'd4) {
+            cnt <= 3'd0;
+            clk_r <= 1'b1;
+        } ELSE {
+            cnt <= cnt + 3'd1;
+            IF (cnt == 3'd1) {
+                clk_r <= 1'b0;
+            }
+        }
+    }
+@endmod

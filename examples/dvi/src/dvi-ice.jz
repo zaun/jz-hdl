@@ -1,0 +1,178 @@
+// DVI Color Bar Test Pattern — iCE40 variant
+// clk = serial_clk (5x pixel). Internal /5 divider produces pixel_clk.
+// tmds_encoder_2 runs at serial_clk; video timing runs at pixel_clk.
+@module dvi_top
+    PORT {
+        IN   [1]  clk;         // serial_clk (5x pixel)
+        IN   [1]  por;         // POR input
+        IN   [1]  rst_n;       // Active-low reset
+        IN   [1]  next;        // Pattern select button
+        OUT  [6]  leds;        // Status LEDs
+        OUT  [2]  tmds_clk;    // TMDS clock (DDR)
+        OUT  [2]  tmds_d0;     // TMDS data 0 - blue
+        OUT  [2]  tmds_d1;     // TMDS data 1 - green
+        OUT  [2]  tmds_d2;     // TMDS data 2 - red
+    }
+
+    WIRE {
+        reset       [1];
+        por_n       [1];
+        pixel_clk   [1];
+        hsync       [1];
+        vsync       [1];
+        de          [1];
+        x_pos       [11];
+        y_pos       [10];
+        red         [8];
+        green       [8];
+        blue        [8];
+        dvi_tmds_d0 [2];
+        dvi_tmds_d1 [2];
+        dvi_tmds_d2 [2];
+        hbar_r  [8];
+        hbar_g  [8];
+        hbar_b  [8];
+        vbar_r  [8];
+        vbar_g  [8];
+        vbar_b  [8];
+    }
+
+    REGISTER {
+        heartbeat_cnt [25] = 25'b0;
+        heartbeat_led [1]  = 1'b0;
+        pattern_sel     [1] = 1'b0;
+        vsync_prev      [1] = 1'b0;
+        frame_cnt       [7] = 7'b0;
+        tmds_clk_r [2]  = 2'b00;
+        tmds_d0_r  [2]  = 2'b00;
+        tmds_d1_r  [2]  = 2'b00;
+        tmds_d2_r  [2]  = 2'b00;
+        // TMDS clock pattern shift register (5 high, 5 low = pixel clock)
+        clk_shift  [10] = 10'b1111100000;
+        clk_cnt    [3]  = 3'd0;
+    }
+
+    @new clkdiv0 clk_div5 {
+        IN  [1] clk_in  = clk;
+        OUT [1] clk_out = pixel_clk;
+    }
+
+    @new por0 por {
+        IN  [1] clk   = pixel_clk;
+        IN  [1] done  = por;
+        OUT [1] por_n = por_n;
+    }
+
+    @new vt0 video_timing {
+        IN  [1]  clk            = pixel_clk;
+        IN  [1]  rst_n          = reset;
+        OUT [1]  hsync          = hsync;
+        OUT [1]  vsync          = vsync;
+        OUT [1]  display_enable = de;
+        OUT [11] x_pos          = x_pos;
+        OUT [10] y_pos          = y_pos;
+    }
+
+    // Blue channel — carries sync signals
+    @new enc0 tmds_encoder_2 {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = blue;
+        IN  [1]  c0             = hsync;
+        IN  [1]  c1             = vsync;
+        IN  [1]  display_enable = de;
+        OUT [2]  tmds_out       = dvi_tmds_d0;
+    }
+    // Green channel
+    @new enc1 tmds_encoder_2 {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = green;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = de;
+        OUT [2]  tmds_out       = dvi_tmds_d1;
+    }
+    // Red channel
+    @new enc2 tmds_encoder_2 {
+        IN  [1]  clk            = clk;
+        IN  [1]  rst_n          = reset;
+        IN  [8]  data_in        = red;
+        IN  [1]  c0             = 1'b0;
+        IN  [1]  c1             = 1'b0;
+        IN  [1]  display_enable = de;
+        OUT [2]  tmds_out       = dvi_tmds_d2;
+    }
+
+    @new hb0 hbars {
+        IN  [11] x_pos = x_pos;
+        OUT [8]  red   = hbar_r;
+        OUT [8]  green = hbar_g;
+        OUT [8]  blue  = hbar_b;
+    }
+
+    @new vb0 vbars {
+        IN  [10] y_pos = y_pos;
+        OUT [8]  red   = vbar_r;
+        OUT [8]  green = vbar_g;
+        OUT [8]  blue  = vbar_b;
+    }
+
+
+    ASYNCHRONOUS {
+        reset <= rst_n & por_n;
+
+        tmds_clk <= tmds_clk_r;
+        tmds_d0  <= tmds_d0_r;
+        tmds_d1  <= tmds_d1_r;
+        tmds_d2  <= tmds_d2_r;
+
+        IF (pattern_sel == 1'b0) {
+            red   <= hbar_r;
+            green <= hbar_g;
+            blue  <= hbar_b;
+        } ELSE {
+            red   <= vbar_r;
+            green <= vbar_g;
+            blue  <= vbar_b;
+        }
+
+        leds <= { heartbeat_led, 5'b00000 };
+    }
+
+    // Serial-clock domain: TMDS output registers + clock pattern serializer
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        tmds_clk_r <= clk_shift[1:0];
+        tmds_d0_r  <= dvi_tmds_d0;
+        tmds_d1_r  <= dvi_tmds_d1;
+        tmds_d2_r  <= dvi_tmds_d2;
+
+        // Shift the 10-bit clock pattern out 2 bits per cycle (same as tmds_encoder_2)
+        IF (clk_cnt == 3'd4) {
+            clk_cnt   <= 3'd0;
+            clk_shift <= 10'b1111100000;
+        } ELSE {
+            clk_cnt   <= clk_cnt + 3'd1;
+            clk_shift <= { 2'b00, clk_shift[9:2] };
+        }
+    }
+
+    // Pixel-clock domain: pattern select, heartbeat
+    SYNCHRONOUS(CLK=pixel_clk RESET=reset RESET_ACTIVE=Low) {
+        vsync_prev <= vsync;
+        IF (vsync == 1'b1 && vsync_prev == 1'b0) {
+            IF (frame_cnt == 7'd119) {
+                frame_cnt   <= 7'b0;
+                pattern_sel <= ~pattern_sel;
+            } ELSE {
+                frame_cnt <= frame_cnt + 7'b1;
+            }
+        }
+        IF (heartbeat_cnt == 25'd33_554_431) {
+            heartbeat_cnt <= 25'b0;
+            heartbeat_led <= ~heartbeat_led;
+        } ELSE {
+            heartbeat_cnt <= heartbeat_cnt + 25'b1;
+        }
+    }
+@endmod
