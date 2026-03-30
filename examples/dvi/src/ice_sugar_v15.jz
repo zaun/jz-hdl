@@ -4,20 +4,19 @@
     @import "tmds_encoder_2.jz"
     @import "hbars.jz"
     @import "vbars.jz"
-    @import "debounce.jz"
-    @import "dvi-ice.jz"
+    @import "dvi-slow.jz"
     @import "clk_div5.jz"
 
     CONFIG {
         warp = 0;
-        // 640x480 @ 60Hz (pixel clock = 24.9 MHz, serial clock = 124.5 MHz)
+        // 640x480 @ 30Hz (pixel clock = 12.6 MHz, serial clock = 63 MHz)
         h_active = 640; h_front = 16; h_sync = 96; h_back = 48;
         v_active = 480; v_front = 10; v_sync = 2;  v_back = 33;
     }
 
     CLOCKS {
         SCLK       = { period=83.33 };   // 12MHz crystal
-        serial_clk;                       // 124.5MHz (5x pixel, from PLL)
+        serial_clk;                       // 63MHz (5x pixel, from PLL)
     }
 
     IN_PINS {
@@ -74,13 +73,13 @@
     CLOCK_GEN {
         PLL3 {
             IN REF_CLK SCLK;
-            OUT BASE serial_clk;    // 124.5 MHz (5x pixel clock)
+            OUT BASE serial_clk;    // 63 MHz (5x pixel clock)
             WIRE LOCK pll_lock;
 
             CONFIG {
                 DIVR = 0;             // divider = 1  → FREF = 12 MHz
-                DIVF = 82;            // multiplier = 83 → FVCO = 12 * 83 = 996 MHz
-                DIVQ = 3;             // Output = 996/8 = 124.5 MHz
+                DIVF = 83;            // multiplier = 84 → FVCO = 12 * 84 = 1008 MHz
+                DIVQ = 4;             // Output = 1008/16 = 63 MHz
                 FILTER_RANGE = 1;     // for FREF = 12 MHz
                 PLLOUT_SELECT = GENCLK;
             };
@@ -91,8 +90,7 @@
         IN   [1]  clk       = serial_clk;
         IN   [1]  por       = 1'b1;
         IN   [1]  rst_n     = 1'b1;
-        IN   [1]  next      = 1'b0;
-        OUT  [6]  leds      = { _, _, _, ~LED };
+        OUT  [6]  leds      = { ~LED, _, _, _ };
         OUT  [2]  tmds_clk  = TMDS_CLK;
         OUT  [2]  tmds_d0   = TMDS_DATA[0];
         OUT  [2]  tmds_d1   = TMDS_DATA[1];

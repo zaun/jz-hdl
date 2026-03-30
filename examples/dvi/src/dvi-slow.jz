@@ -6,7 +6,6 @@
         IN   [1]  clk;         // serial_clk (5x pixel)
         IN   [1]  por;         // POR input
         IN   [1]  rst_n;       // Active-low reset
-        IN   [1]  next;        // Pattern select button
         OUT  [6]  leds;        // Status LEDs
         OUT  [2]  tmds_clk;    // TMDS clock (DDR)
         OUT  [2]  tmds_d0;     // TMDS data 0 - blue
