@@ -49,6 +49,8 @@
         init_byte    [8];
         init_is_cmd  [1];
         init_has_dly [1];
+        pix_hi       [8];
+        pix_lo       [8];
     }
 
     REGISTER {
@@ -78,6 +80,16 @@
         LCD_RST  <= rst_out;
         HB       <= hb_st;
         DBG      <= dbg_st;
+
+        // Horizontal color bars, 8 bars of 30px each (py=0 is bottom)
+        IF (py < 8'd30)       { pix_hi <= 8'h00; pix_lo <= 8'h00; } // Black   (bottom)
+        ELIF (py < 8'd60)     { pix_hi <= 8'hFF; pix_lo <= 8'hFF; } // White
+        ELIF (py < 8'd90)     { pix_hi <= 8'hF8; pix_lo <= 8'h1F; } // Magenta
+        ELIF (py < 8'd120)    { pix_hi <= 8'h07; pix_lo <= 8'hFF; } // Cyan
+        ELIF (py < 8'd150)    { pix_hi <= 8'hFF; pix_lo <= 8'hE0; } // Yellow
+        ELIF (py < 8'd180)    { pix_hi <= 8'h00; pix_lo <= 8'h1F; } // Blue
+        ELIF (py < 8'd210)    { pix_hi <= 8'h07; pix_lo <= 8'hE0; } // Green
+        ELSE                  { pix_hi <= 8'hF8; pix_lo <= 8'h00; } // Red     (top)
 
         // ILI9341 init sequence
         SELECT (idx) {
@@ -201,7 +213,7 @@
             CASE (ST_W'd5) {
                 // S_PIX_HI: send pixel high byte
                 dbg_st <= 1'b1;
-                spi_sr <= 8'hF8;
+                spi_sr <= pix_hi;
                 dc <= 1'b1;
                 cs <= 1'b0;
                 spi_cnt <= 4'd0;
@@ -212,7 +224,7 @@
 
             CASE (ST_W'd6) {
                 // S_PIX_LO: send pixel low byte
-                spi_sr <= 8'h00;
+                spi_sr <= pix_lo;
                 spi_cnt <= 4'd0;
                 spi_ph <= 1'b0;
                 ret <= lit(ST_W, S_PIX_ADV);
@@ -237,8 +249,7 @@
             }
 
             CASE (ST_W'd8) {
-                // S_FRAME: deassert CS, send RAMWR, restart
-                cs <= 1'b1;
+                // S_FRAME: re-send RAMWR, restart
                 spi_sr <= 8'h2C;
                 dc <= 1'b0;
                 spi_cnt <= 4'd0;

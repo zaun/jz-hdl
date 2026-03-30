@@ -35,29 +35,38 @@
         LED[1] = 41;
         LED[2] = 39;
 
+        //               Top of Board
+        // PMOD 1 (top)   --------\
+        // P9  P4 P2 P47 GND 3V3  | Right Edge
+        // P10 P6 P3 P48 GND 3V3  | of Board
+
+        // PMOD 2 (top/right)
+        // 3V3 GND P37 P42 P44 P46  | Top of
+        // 3V3 GND P36 P38 P43 P45  | Board
+        //                  --------/
+        //                Edge of Board
+
+        // PMOD 3 (bottom/right)
+        // 3V3 GND P25 P27 P31 P34  | Top of
+        // 3V3 GND P23 P26 P28 P32  | Board
+        //                  --------/
+        //                Edge of Board
+
         // PMOD2 (ILI9341 TFTLCD 2.8inch SPI)
-        TFT_SPI_CS    = 46; // PMOD2_PIN1
-        TFT_SPI_MOSI  = 44; // PMOD2_PIN2
-        // PMOD2_PIN3  = 42; // PMOD2_PIN3
-        TFT_SPI_CLK   = 37; // PMOD2_PIN4
-        // PMOD2_PIN9  = 36; // PMOD2_PIN9
-        TFT_RS        = 38; // PMOD2_PIN10
-        // PMOD2_PIN11 = 43; // PMOD2_PIN11
-        // PMOD2_PIN12 = 45; // PMOD2_PIN12
+        TFT_SPI_CS   = 45;
+        TFT_SPI_MOSI = 43;
+        TFT_SPI_CLK  = 36;
+        TFT_RS       = 42;
 
         // PMOD3 (XPT2046)
-        TP_SPI_CS    = 34; // PMOD3_PIN1
-        TP_SPI_MOSI  = 31; // PMOD3_PIN2
-        TP_SPI_MISO  = 27; // PMOD3_PIN3
-        TP_SPI_CLK   = 25; // PMOD3_PIN4
-        // PMOD3_PIN9  = 23; // PMOD3_PIN9
-        // PMOD3_PIN10 = 26; // PMOD3_PIN10
-        // PMOD3_PIN11 = 28; // PMOD3_PIN11
-        // PMOD3_PIN12 = 32; // PMOD3_PIN12
+        TP_SPI_CS    = 32;
+        TP_SPI_MOSI  = 28;
+        TP_SPI_MISO  = 26;
+        TP_SPI_CLK   = 23;
     }
 
     CLOCK_GEN {
-        PLL2 {
+        PLL3 {
             IN  REF_CLK SCLK;   // 12 MHz input
             OUT BASE    PCLK;   // ~18.375 MHz
 
@@ -66,6 +75,7 @@
                 DIVF = 48;
                 DIVQ = 5;
                 FILTER_RANGE = 3;
+                PLLOUT_SELECT_A = GENCLK;
             };
         };
     }
