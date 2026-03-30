@@ -7,7 +7,6 @@
     @import "vbars.jz"
     @import "warp.jz"
     @import "debounce.jz"
-    @import "clk_div5.jz"
     @import "dvi.jz"
 
     CONFIG {
