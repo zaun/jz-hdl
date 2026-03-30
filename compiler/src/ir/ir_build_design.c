@@ -404,7 +404,7 @@ static double ir_cgen_eval_mul(const char **pp, IRCGenEvalCtx *ctx)
     return left;
 }
 
-static double ir_cgen_eval_expr(const char **pp, IRCGenEvalCtx *ctx)
+static double ir_cgen_eval_add(const char **pp, IRCGenEvalCtx *ctx)
 {
     double left = ir_cgen_eval_mul(pp, ctx);
     for (;;) {
@@ -414,6 +414,29 @@ static double ir_cgen_eval_expr(const char **pp, IRCGenEvalCtx *ctx)
         else break;
     }
     return left;
+}
+
+static double ir_cgen_eval_shift(const char **pp, IRCGenEvalCtx *ctx)
+{
+    double left = ir_cgen_eval_add(pp, ctx);
+    for (;;) {
+        ir_cgen_skip_ws(pp);
+        if ((*pp)[0] == '<' && (*pp)[1] == '<') {
+            *pp += 2;
+            double right = ir_cgen_eval_add(pp, ctx);
+            left = (double)((long long)left << (int)right);
+        } else if ((*pp)[0] == '>' && (*pp)[1] == '>') {
+            *pp += 2;
+            double right = ir_cgen_eval_add(pp, ctx);
+            left = (double)((long long)left >> (int)right);
+        } else break;
+    }
+    return left;
+}
+
+static double ir_cgen_eval_expr(const char **pp, IRCGenEvalCtx *ctx)
+{
+    return ir_cgen_eval_shift(pp, ctx);
 }
 
 /**

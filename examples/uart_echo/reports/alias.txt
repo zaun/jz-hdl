@@ -453,11 +453,11 @@ HARDWARE SUMMARY
 Input file: src/pa35t-edu.jz
 Module: echo_top
 
-User-visible identifiers:  29
-Internal elaboration nodes:41
-Total identifiers:        70
+User-visible identifiers:  30
+Internal elaboration nodes:42
+Total identifiers:        72
 Total alias statements:   1
-Resolved physical nets:   12
+Resolved physical nets:   13
 Tri-state nets:           0
 Extended-width aliases:   0
 
@@ -467,84 +467,84 @@ Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@4
 
 Consumers:
-    SYNCHRONOUS block (CLK=clk) at line 60
+    SYNCHRONOUS block (CLK=clk) at line 61
 
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@5
 
-Members (Aliased Identifiers):
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@27: reset == rst_n
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@27: reset == por_n
-
-Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@31: @new por0 por {
-
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@27: reset = por_n & rst_n;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@60: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@37: @new urx0 uart_rx {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@32: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN rst_n -> NRST (IN_PINS)
+    PORT binding: IN por -> 1'b1
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@6
 
+Members (Aliased Identifiers):
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: reset == rst_n
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: reset == por_n
+
+Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@32: @new por0 por {
+
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@37: @new urx0 uart_rx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: reset = por_n & rst_n;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@61: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@38: @new urx0 uart_rx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
+
+Top-level binding:
+    PORT binding: IN rst_n -> NRST (IN_PINS)
+
+PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@7
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@38: @new urx0 uart_rx {
 
 Top-level binding:
     PORT binding: IN uart_rx -> UART_RX (IN_PINS)
 
-PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
-------------------------------------------------------------
-Declared as: PORT OUT
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@7
-
-Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
-
-Top-level binding:
-    PORT binding: OUT uart_tx -> UART_TX (OUT_PINS)
-
-PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
+PHYSICAL NET: NET_0004    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@8
 
+Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
+
+Top-level binding:
+    PORT binding: OUT uart_tx -> UART_TX (OUT_PINS)
+
+PHYSICAL NET: NET_0005    Width: 6    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@9
+
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: leds <= led_reg;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@29: leds <= led_reg;
 
 Top-level binding:
     PORT binding: OUT leds -> LED (OUT_PINS)
 
-PHYSICAL NET: NET_0007    Width: 8    Tri-state: No
-------------------------------------------------------------
-Declared as: WIRE
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@14
-
-Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@37: @new urx0 uart_rx {
-
-Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@62: saved <= rx_data;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@64: led_reg <= rx_data[5:0];
-
-PHYSICAL NET: NET_0008    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
 ------------------------------------------------------------
 Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@15
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@37: @new urx0 uart_rx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@38: @new urx0 uart_rx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@61: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@63: saved <= rx_data;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: led_reg <= rx_data[5:0];
 
 PHYSICAL NET: NET_0009    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -552,75 +552,87 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@16
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@38: @new urx0 uart_rx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@62: IF (rx_valid == 1'b1) {
 
-PHYSICAL NET: NET_0010    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0010    Width: 1    Tri-state: No
 ------------------------------------------------------------
-Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@20
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@17
 
-SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@62: saved <= rx_data;
+Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@66: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
 
-PHYSICAL NET: NET_0011    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0011    Width: 8    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@21
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@66: tx_send <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@69: tx_send <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@63: saved <= rx_data;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
 
-PHYSICAL NET: NET_0012    Width: 6    Tri-state: No
+PHYSICAL NET: NET_0012    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@22
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@64: led_reg <= rx_data[5:0];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@67: tx_send <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@70: tx_send <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: leds <= led_reg;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@66: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
 
-PHYSICAL NET: NET_0013    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0013    Width: 6    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@23
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@63: has_byte <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@67: has_byte <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: led_reg <= rx_data[5:0];
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@29: leds <= led_reg;
+
+PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@24
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@64: has_byte <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@68: has_byte <= 1'b0;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@66: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
 
 ------------------------------------------------------------
 IDENTIFIER INDEX
 ------------------------------------------------------------
 clk  -> NET_0000
-rst_n  -> NET_0001
-reset  -> NET_0001
-por_n  -> NET_0001
-uart_rx  -> NET_0002
-uart_tx  -> NET_0003
-leds  -> NET_0004
-rx_data  -> NET_0007
-rx_valid  -> NET_0008
-tx_ready  -> NET_0009
-saved  -> NET_0010
-tx_send  -> NET_0011
-led_reg  -> NET_0012
-has_byte  -> NET_0013
+por  -> NET_0001
+rst_n  -> NET_0002
+reset  -> NET_0002
+por_n  -> NET_0002
+uart_rx  -> NET_0003
+uart_tx  -> NET_0004
+leds  -> NET_0005
+rx_data  -> NET_0008
+rx_valid  -> NET_0009
+tx_ready  -> NET_0010
+saved  -> NET_0011
+tx_send  -> NET_0012
+led_reg  -> NET_0013
+has_byte  -> NET_0014
 
 ------------------------------------------------------------
 HARDWARE SUMMARY
@@ -641,9 +653,9 @@ Module                 Nets Clocks   Regs Tri-St  Alias
 por                       5      1      2      0      0
 uart_rx                  13      1      8      0      0
 uart_tx                  12      1      6      0      0
-echo_top                 12      1      4      0      1
+echo_top                 13      1      4      0      1
 -------------------- ------ ------ ------ ------ ------
-TOTAL                    42      4     20      0      1
+TOTAL                    43      4     20      0      1
 ============================================================
 Input file: src/pa35t-edu.jz
 Module: por
@@ -1100,11 +1112,11 @@ HARDWARE SUMMARY
 Input file: src/pa35t-edu.jz
 Module: echo_top
 
-User-visible identifiers:  29
-Internal elaboration nodes:41
-Total identifiers:        70
+User-visible identifiers:  30
+Internal elaboration nodes:42
+Total identifiers:        72
 Total alias statements:   1
-Resolved physical nets:   12
+Resolved physical nets:   13
 Tri-state nets:           0
 Extended-width aliases:   0
 
@@ -1114,84 +1126,84 @@ Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@4
 
 Consumers:
-    SYNCHRONOUS block (CLK=clk) at line 60
+    SYNCHRONOUS block (CLK=clk) at line 61
 
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@5
 
-Members (Aliased Identifiers):
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@27: reset == rst_n
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@27: reset == por_n
-
-Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@31: @new por0 por {
-
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@27: reset = por_n & rst_n;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@60: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@37: @new urx0 uart_rx {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@32: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN rst_n -> NRST (IN_PINS)
+    PORT binding: IN por -> 1'b1
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@6
 
+Members (Aliased Identifiers):
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: reset == rst_n
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: reset == por_n
+
+Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@32: @new por0 por {
+
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@37: @new urx0 uart_rx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: reset = por_n & rst_n;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@61: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@38: @new urx0 uart_rx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
+
+Top-level binding:
+    PORT binding: IN rst_n -> NRST (IN_PINS)
+
+PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@7
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@38: @new urx0 uart_rx {
 
 Top-level binding:
     PORT binding: IN uart_rx -> UART_RX (IN_PINS)
 
-PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
-------------------------------------------------------------
-Declared as: PORT OUT
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@7
-
-Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
-
-Top-level binding:
-    PORT binding: OUT uart_tx -> UART_TX (OUT_PINS)
-
-PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
+PHYSICAL NET: NET_0004    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@8
 
+Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
+
+Top-level binding:
+    PORT binding: OUT uart_tx -> UART_TX (OUT_PINS)
+
+PHYSICAL NET: NET_0005    Width: 6    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@9
+
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: leds <= led_reg;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@29: leds <= led_reg;
 
 Top-level binding:
     PORT binding: OUT leds -> LED (OUT_PINS)
 
-PHYSICAL NET: NET_0007    Width: 8    Tri-state: No
-------------------------------------------------------------
-Declared as: WIRE
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@14
-
-Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@37: @new urx0 uart_rx {
-
-Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@62: saved <= rx_data;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@64: led_reg <= rx_data[5:0];
-
-PHYSICAL NET: NET_0008    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
 ------------------------------------------------------------
 Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@15
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@37: @new urx0 uart_rx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@38: @new urx0 uart_rx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@61: IF (rx_valid == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@63: saved <= rx_data;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: led_reg <= rx_data[5:0];
 
 PHYSICAL NET: NET_0009    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1199,75 +1211,87 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@16
 
 Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@38: @new urx0 uart_rx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@62: IF (rx_valid == 1'b1) {
 
-PHYSICAL NET: NET_0010    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0010    Width: 1    Tri-state: No
 ------------------------------------------------------------
-Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@20
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@17
 
-SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@62: saved <= rx_data;
+Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@66: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
 
-PHYSICAL NET: NET_0011    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0011    Width: 8    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@21
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@66: tx_send <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@69: tx_send <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@63: saved <= rx_data;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@48: @new utx0 uart_tx {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
 
-PHYSICAL NET: NET_0012    Width: 6    Tri-state: No
+PHYSICAL NET: NET_0012    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@22
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@64: led_reg <= rx_data[5:0];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@67: tx_send <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@70: tx_send <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@28: leds <= led_reg;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@66: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
 
-PHYSICAL NET: NET_0013    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0013    Width: 6    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@23
 
 SYNCHRONOUS(CLK=clk) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@63: has_byte <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@67: has_byte <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: led_reg <= rx_data[5:0];
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@65: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@29: leds <= led_reg;
+
+PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@24
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@64: has_byte <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@68: has_byte <= 1'b0;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@66: } ELIF (has_byte == 1'b1 && tx_ready == 1'b1 && tx_send == 1'b0) {
 
 ------------------------------------------------------------
 IDENTIFIER INDEX
 ------------------------------------------------------------
 clk  -> NET_0000
-rst_n  -> NET_0001
-reset  -> NET_0001
-por_n  -> NET_0001
-uart_rx  -> NET_0002
-uart_tx  -> NET_0003
-leds  -> NET_0004
-rx_data  -> NET_0007
-rx_valid  -> NET_0008
-tx_ready  -> NET_0009
-saved  -> NET_0010
-tx_send  -> NET_0011
-led_reg  -> NET_0012
-has_byte  -> NET_0013
+por  -> NET_0001
+rst_n  -> NET_0002
+reset  -> NET_0002
+por_n  -> NET_0002
+uart_rx  -> NET_0003
+uart_tx  -> NET_0004
+leds  -> NET_0005
+rx_data  -> NET_0008
+rx_valid  -> NET_0009
+tx_ready  -> NET_0010
+saved  -> NET_0011
+tx_send  -> NET_0012
+led_reg  -> NET_0013
+has_byte  -> NET_0014
 
 ------------------------------------------------------------
 HARDWARE SUMMARY
@@ -1288,7 +1312,7 @@ Module                 Nets Clocks   Regs Tri-St  Alias
 por                       5      1      2      0      0
 uart_rx                  13      1      8      0      0
 uart_tx                  12      1      6      0      0
-echo_top                 12      1      4      0      1
+echo_top                 13      1      4      0      1
 -------------------- ------ ------ ------ ------ ------
-TOTAL                    42      4     20      0      1
+TOTAL                    43      4     20      0      1
 ============================================================

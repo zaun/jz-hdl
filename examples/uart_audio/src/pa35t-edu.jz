@@ -34,8 +34,8 @@
     OUT_PINS {
         LED[6]  = { standard=LVCMOS33, drive=4 };
         UART_TX = { standard=LVCMOS33, drive=4 };
-        TMDS_CLK     = { mode=DIFFERENTIAL, standard=TMDS33, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
-        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=TMDS33, drive=3.5, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+        TMDS_CLK     = { mode=DIFFERENTIAL, standard=TMDS33, drive=3.5, width=10, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
+        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=TMDS33, drive=3.5, width=10, fclk=serial_clk, pclk=pixel_clk, reset=pll_lock };
     }
 
     MAP {
