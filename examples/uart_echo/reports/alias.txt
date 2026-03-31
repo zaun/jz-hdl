@@ -1,4 +1,4 @@
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: por
 
 User-visible identifiers:  6
@@ -79,7 +79,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: uart_rx
 
 User-visible identifiers:  14
@@ -271,7 +271,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: uart_tx
 
 User-visible identifiers:  13
@@ -450,7 +450,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: echo_top
 
 User-visible identifiers:  30
@@ -478,7 +478,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@32: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -499,7 +499,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
 
 Top-level binding:
-    PORT binding: IN rst_n -> NRST (IN_PINS)
+    PORT binding: IN rst_n -> ~ KEY [ 0 ]
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -532,7 +532,7 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@29: leds <= led_reg;
 
 Top-level binding:
-    PORT binding: OUT leds -> LED (OUT_PINS)
+    PORT binding: OUT leds -> ~ LED
 
 PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -657,7 +657,7 @@ echo_top                 13      1      4      0      1
 -------------------- ------ ------ ------ ------ ------
 TOTAL                    43      4     20      0      1
 ============================================================
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: por
 
 User-visible identifiers:  6
@@ -738,7 +738,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: uart_rx
 
 User-visible identifiers:  14
@@ -930,7 +930,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: uart_tx
 
 User-visible identifiers:  13
@@ -1109,7 +1109,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: echo_top
 
 User-visible identifiers:  30
@@ -1137,7 +1137,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@32: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1158,7 +1158,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@49: @new utx0 uart_tx {
 
 Top-level binding:
-    PORT binding: IN rst_n -> NRST (IN_PINS)
+    PORT binding: IN rst_n -> ~ KEY [ 0 ]
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1191,7 +1191,7 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/uart_echo/src/echo.jz@29: leds <= led_reg;
 
 Top-level binding:
-    PORT binding: OUT leds -> LED (OUT_PINS)
+    PORT binding: OUT leds -> ~ LED
 
 PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
 ------------------------------------------------------------

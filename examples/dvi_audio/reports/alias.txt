@@ -1,4 +1,4 @@
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: por
 
 User-visible identifiers:  6
@@ -79,7 +79,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: video_timing
 
 User-visible identifiers:  10
@@ -200,7 +200,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: tmds_encoder_2
 
 User-visible identifiers:  47
@@ -851,7 +851,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: tmds_encoder_10
 
 User-visible identifiers:  45
@@ -1470,7 +1470,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: terc4_encoder
 
 User-visible identifiers:  4
@@ -1540,7 +1540,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: dvi_data_island
 
 User-visible identifiers:  49
@@ -2614,7 +2614,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: melodies
 
 User-visible identifiers:  13
@@ -2754,7 +2754,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: tone_gen
 
 User-visible identifiers:  40
@@ -3175,7 +3175,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: mixer
 
 User-visible identifiers:  22
@@ -3452,7 +3452,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: spectrum_analyzer
 
 User-visible identifiers:  112
@@ -5184,7 +5184,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: spectrum_display
 
 User-visible identifiers:  46
@@ -5774,7 +5774,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: debounce
 
 User-visible identifiers:  10
@@ -5900,7 +5900,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: dvi_top
 
 User-visible identifiers:  202
@@ -5928,7 +5928,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@129: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> pll_lock
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -5939,7 +5939,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@325: reset <= rst_n & por_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> NRST (IN_PINS)
+    PORT binding: IN rst_n -> ~ KEY [ 1 ]
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -5961,7 +5961,7 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= { heartbeat_led, 5'b00000 };
 
 Top-level binding:
-    PORT binding: OUT leds -> LED (OUT_PINS)
+    PORT binding: OUT leds -> ~ LED
 
 PHYSICAL NET: NET_0005    Width: 10    Tri-state: No
 ------------------------------------------------------------
@@ -6931,7 +6931,7 @@ dvi_top                  79      1     15      0      0
 -------------------- ------ ------ ------ ------ ------
 TOTAL                   461     11     85      0      0
 ============================================================
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: por
 
 User-visible identifiers:  6
@@ -7012,7 +7012,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: video_timing
 
 User-visible identifiers:  10
@@ -7133,7 +7133,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: tmds_encoder_2
 
 User-visible identifiers:  47
@@ -7784,7 +7784,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: tmds_encoder_10
 
 User-visible identifiers:  45
@@ -7959,7 +7959,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/tmds_encoder_10.jz@78: qm4 <= (use_xnor == 1'b1) ? ~(data_in[4] ^ qm3) : (data_in[4] ^ qm3);
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/tmds_encoder_10.jz@79: qm5 <= (use_xnor == 1'b1) ? ~(data_in[5] ^ qm4) : (data_in[5] ^ qm4);
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/tmds_encoder_10.jz@80: qm6 <= (use_xnor == 1'b1) ? ~(data_in[6] ^ qm5) : (data_in[6] ^ qm5);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/tmds_encoder_10.jz@81: qm7 <= (use_xnor == 1'b1) ? ~(data_in[7] ^ qm6) : (data_in[7] ^ qm6);
+    /Users/justinzaun/Develxamples/dvi_audio/src/tmds_encoder_10.jz@81: qm7 <= (use_xnor == 1'b1) ? ~(data_in[7] ^ qm6) : (data_in[7] ^ qm6);
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/tmds_encoder_10.jz@82: qm8 <= (use_xnor == 1'b1) ? 1'b0 : 1'b1;
 
 PHYSICAL NET: NET_0015    Width: 1    Tri-state: No
@@ -8403,7 +8403,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: terc4_encoder
 
 User-visible identifiers:  4
@@ -8473,7 +8473,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: dvi_data_island
 
 User-visible identifiers:  49
@@ -9547,7 +9547,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: melodies
 
 User-visible identifiers:  13
@@ -9687,7 +9687,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: tone_gen
 
 User-visible identifiers:  40
@@ -10108,7 +10108,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: mixer
 
 User-visible identifiers:  22
@@ -10385,7 +10385,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: spectrum_analyzer
 
 User-visible identifiers:  112
@@ -10911,7 +10911,7 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/spectrum_analyzer.jz@254: ch3_fund <= 7'd9;   ch3_h3 <= 7'd29;  ch3_h5 <= 7'd44;
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/spectrum_analyzer.jz@256: ch3_fund <= 7'd11;  ch3_h3 <= 7'd31;  ch3_h5 <= 7'd47;
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/spectrum_analyzer.jz@258: ch3_fund <= 7'd12;  ch3_h3 <= 7'd32;  ch3_h5 <= 7'd48;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/spectrum_analyzer.jz@260: ch3_fund <= 7'd14;  ch3_h3 <= 7'd34;  ch3_h5 <= 7'd50;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/spectrum_analyzer.jz@260: ch3_rum_analyzer.jz@260: ch3_fund <= 7'd14;  ch3_h3 <= 7'd34;  ch3_h5 <= 7'd50;
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/spectrum_analyzer.jz@262: ch3_fund <= 7'd17;  ch3_h3 <= 7'd37;  ch3_h5 <= 7'd52;
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/spectrum_analyzer.jz@264: ch3_fund <= 7'd18;  ch3_h3 <= 7'd38;  ch3_h5 <= 7'd54;
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/spectrum_analyzer.jz@266: ch3_fund <= 7'd20;  ch3_h3 <= 7'd40;  ch3_h5 <= 7'd56;
@@ -12117,7 +12117,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: spectrum_display
 
 User-visible identifiers:  46
@@ -12707,7 +12707,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: debounce
 
 User-visible identifiers:  10
@@ -12833,7 +12833,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: dvi_top
 
 User-visible identifiers:  202
@@ -12861,7 +12861,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@129: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> pll_lock
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -12872,7 +12872,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@325: reset <= rst_n & por_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> NRST (IN_PINS)
+    PORT binding: IN rst_n -> ~ KEY [ 1 ]
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -12894,7 +12894,7 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/dvi_audio/src/dvi.jz@371: leds <= { heartbeat_led, 5'b00000 };
 
 Top-level binding:
-    PORT binding: OUT leds -> LED (OUT_PINS)
+    PORT binding: OUT leds -> ~ LED
 
 PHYSICAL NET: NET_0005    Width: 10    Tri-state: No
 ------------------------------------------------------------

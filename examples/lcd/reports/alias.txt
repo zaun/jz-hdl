@@ -1,11 +1,11 @@
 Input file: src/ice_sugar_v15.jz
 Module: lcd
 
-User-visible identifiers:  29
-Internal elaboration nodes:296
-Total identifiers:        325
+User-visible identifiers:  31
+Internal elaboration nodes:320
+Total identifiers:        351
 Total alias statements:   1
-Resolved physical nets:   27
+Resolved physical nets:   29
 Tri-state nets:           0
 Extended-width aliases:   0
 
@@ -15,10 +15,10 @@ Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@36
 
 Members (Aliased Identifiers):
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@73: PCLK_OUT == PCLK
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@75: PCLK_OUT == PCLK
 
 Consumers:
-    SYNCHRONOUS block (CLK=PCLK) at line 113
+    SYNCHRONOUS block (CLK=PCLK) at line 125
 
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -26,7 +26,7 @@ Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@37
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@113: SYNCHRONOUS(CLK=PCLK RESET=RST RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@125: SYNCHRONOUS(CLK=PCLK RESET=RST RESET_ACTIVE=Low) {
 
 Top-level binding:
     PORT binding: IN RST -> 1'b1
@@ -37,7 +37,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@38
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@74: SPI_CS   <= cs;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@76: SPI_CS   <= cs;
 
 Top-level binding:
     PORT binding: OUT SPI_CS -> TFT_SPI_CS (OUT_PINS)
@@ -48,7 +48,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@39
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@75: SPI_CLK  <= spi_ph;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@77: SPI_CLK  <= spi_ph;
 
 Top-level binding:
     PORT binding: OUT SPI_CLK -> TFT_SPI_CLK (OUT_PINS)
@@ -59,7 +59,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@40
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@76: SPI_MOSI <= spi_sr[7];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@78: SPI_MOSI <= spi_sr[7];
 
 Top-level binding:
     PORT binding: OUT SPI_MOSI -> TFT_SPI_MOSI (OUT_PINS)
@@ -70,7 +70,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@41
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@77: LCD_DC   <= dc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@79: LCD_DC   <= dc;
 
 Top-level binding:
     PORT binding: OUT LCD_DC -> TFT_RS (OUT_PINS)
@@ -81,7 +81,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@42
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@78: LCD_RST  <= rst_out;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@80: LCD_RST  <= rst_out;
 
 Top-level binding:
     PORT binding: OUT LCD_RST -> _
@@ -92,7 +92,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@43
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@79: HB       <= hb_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@81: HB       <= hb_st;
 
 Top-level binding:
     PORT binding: OUT HB -> ~ LED [ 0 ]
@@ -103,7 +103,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@45
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@80: DBG      <= dbg_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@82: DBG      <= dbg_st;
 
 Top-level binding:
     PORT binding: OUT DBG -> ~ LED [ 2 ]
@@ -114,35 +114,35 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@49
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@84: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@93: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@94: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@95: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@110: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@111: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@112: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@113: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@114: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@115: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@116: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@118: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@120: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@121: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@153: spi_sr <= init_byte;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@165: spi_sr <= init_byte;
 
 PHYSICAL NET: NET_0011    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -150,35 +150,35 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@50
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@84: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@93: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@94: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@95: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@110: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@111: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@112: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@113: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@114: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@115: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@116: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@118: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@120: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@121: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@154: dc <= ~init_is_cmd;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@166: dc <= ~init_is_cmd;
 
 PHYSICAL NET: NET_0012    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -186,69 +186,71 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@51
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@84: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@93: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@94: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@95: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@110: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@111: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@112: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@113: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@114: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@115: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@116: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@118: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@120: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@121: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@159: IF (init_has_dly == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@171: IF (init_has_dly == 1'b1) {
 
-PHYSICAL NET: NET_0013    Width: 4    Tri-state: No
+PHYSICAL NET: NET_0013    Width: 8    Tri-state: No
 ------------------------------------------------------------
-Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@55
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@52
 
-SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@130: state <= lit(ST_W, S_RESET_HI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@141: state <= lit(ST_W, S_INIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@151: state <= lit(ST_W, S_PIX_HI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@164: state <= lit(ST_W, S_SPI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@173: state <= lit(ST_W, S_INIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@191: state <= ret;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@210: state <= lit(ST_W, S_SPI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@219: state <= lit(ST_W, S_SPI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@228: state <= lit(ST_W, S_FRAME);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@231: state <= lit(ST_W, S_PIX_HI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@235: state <= lit(ST_W, S_PIX_HI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@247: state <= lit(ST_W, S_SPI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@251: state <= ST_W'b0;
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: IF (py < 8'd30)       { pix_hi <= 8'h00; pix_lo <= 8'h00; } // Black   (bottom)
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: ELIF (py < 8'd60)     { pix_hi <= 8'hFF; pix_lo <= 8'hFF; } // White
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: ELIF (py < 8'd90)     { pix_hi <= 8'hF8; pix_lo <= 8'h1F; } // Magenta
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: ELIF (py < 8'd120)    { pix_hi <= 8'h07; pix_lo <= 8'hFF; } // Cyan
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: ELIF (py < 8'd150)    { pix_hi <= 8'hFF; pix_lo <= 8'hE0; } // Yellow
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: ELIF (py < 8'd180)    { pix_hi <= 8'h00; pix_lo <= 8'h1F; } // Blue
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: ELIF (py < 8'd210)    { pix_hi <= 8'h07; pix_lo <= 8'hE0; } // Green
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: ELSE                  { pix_hi <= 8'hF8; pix_lo <= 8'h00; } // Red     (top)
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@123: SELECT (state) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@216: spi_sr <= pix_hi;
 
-PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0014    Width: 8    Tri-state: No
 ------------------------------------------------------------
-Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@56
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@53
 
-SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@203: dbg_st <= 1'b1;
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: IF (py < 8'd30)       { pix_hi <= 8'h00; pix_lo <= 8'h00; } // Black   (bottom)
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: ELIF (py < 8'd60)     { pix_hi <= 8'hFF; pix_lo <= 8'hFF; } // White
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: ELIF (py < 8'd90)     { pix_hi <= 8'hF8; pix_lo <= 8'h1F; } // Magenta
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: ELIF (py < 8'd120)    { pix_hi <= 8'h07; pix_lo <= 8'hFF; } // Cyan
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: ELIF (py < 8'd150)    { pix_hi <= 8'hFF; pix_lo <= 8'hE0; } // Yellow
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: ELIF (py < 8'd180)    { pix_hi <= 8'h00; pix_lo <= 8'h1F; } // Blue
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: ELIF (py < 8'd210)    { pix_hi <= 8'h07; pix_lo <= 8'hE0; } // Green
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: ELSE                  { pix_hi <= 8'hF8; pix_lo <= 8'h00; } // Red     (top)
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@80: DBG      <= dbg_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@227: spi_sr <= pix_lo;
 
 PHYSICAL NET: NET_0015    Width: 4    Tri-state: No
 ------------------------------------------------------------
@@ -256,30 +258,33 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@57
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@160: ret <= lit(ST_W, S_INIT_DLY);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@162: ret <= lit(ST_W, S_INIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@209: ret <= lit(ST_W, S_PIX_LO);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@218: ret <= lit(ST_W, S_PIX_ADV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@246: ret <= lit(ST_W, S_PIX_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@142: state <= lit(ST_W, S_RESET_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@153: state <= lit(ST_W, S_INIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@163: state <= lit(ST_W, S_PIX_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@176: state <= lit(ST_W, S_SPI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@185: state <= lit(ST_W, S_INIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@203: state <= ret;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@222: state <= lit(ST_W, S_SPI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@231: state <= lit(ST_W, S_SPI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@240: state <= lit(ST_W, S_FRAME);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@243: state <= lit(ST_W, S_PIX_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@247: state <= lit(ST_W, S_PIX_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@258: state <= lit(ST_W, S_SPI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@262: state <= ST_W'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@191: state <= ret;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@135: SELECT (state) {
 
-PHYSICAL NET: NET_0016    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0016    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@58
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@153: spi_sr <= init_byte;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@194: spi_sr <= { spi_sr[6:0], 1'b0 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@204: spi_sr <= 8'hF8;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@215: spi_sr <= 8'h00;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@242: spi_sr <= 8'h2C;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@215: dbg_st <= 1'b1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@76: SPI_MOSI <= spi_sr[7];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@194: spi_sr <= { spi_sr[6:0], 1'b0 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@82: DBG      <= dbg_st;
 
 PHYSICAL NET: NET_0017    Width: 4    Tri-state: No
 ------------------------------------------------------------
@@ -287,47 +292,47 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@59
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@157: spi_cnt <= 4'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@192: spi_cnt <= 4'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@195: spi_cnt <= spi_cnt + 4'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@207: spi_cnt <= 4'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@216: spi_cnt <= 4'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@244: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@172: ret <= lit(ST_W, S_INIT_DLY);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@174: ret <= lit(ST_W, S_INIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@221: ret <= lit(ST_W, S_PIX_LO);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@230: ret <= lit(ST_W, S_PIX_ADV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@257: ret <= lit(ST_W, S_PIX_HI);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@190: IF (spi_cnt == 4'd7) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@195: spi_cnt <= spi_cnt + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@203: state <= ret;
 
-PHYSICAL NET: NET_0018    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0018    Width: 8    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@60
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@158: spi_ph <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@187: spi_ph <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@189: spi_ph <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@208: spi_ph <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@217: spi_ph <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@245: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@165: spi_sr <= init_byte;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@206: spi_sr <= { spi_sr[6:0], 1'b0 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@216: spi_sr <= pix_hi;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@227: spi_sr <= pix_lo;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@253: spi_sr <= 8'h2C;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@75: SPI_CLK  <= spi_ph;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@186: IF (spi_ph == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@78: SPI_MOSI <= spi_sr[7];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@206: spi_sr <= { spi_sr[6:0], 1'b0 };
 
-PHYSICAL NET: NET_0019    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0019    Width: 4    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@61
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@150: dc <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@154: dc <= ~init_is_cmd;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@205: dc <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@243: dc <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@169: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@204: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@207: spi_cnt <= spi_cnt + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@219: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@228: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@255: spi_cnt <= 4'd0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@77: LCD_DC   <= dc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@202: IF (spi_cnt == 4'd7) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@207: spi_cnt <= spi_cnt + 4'd1;
 
 PHYSICAL NET: NET_0020    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -335,14 +340,16 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@62
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@127: cs <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@155: cs <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@170: cs <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@206: cs <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@241: cs <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@170: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@199: spi_ph <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@201: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@220: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@229: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@256: spi_ph <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@74: SPI_CS   <= cs;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@77: SPI_CLK  <= spi_ph;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@198: IF (spi_ph == 1'b0) {
 
 PHYSICAL NET: NET_0021    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -350,100 +357,135 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@63
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@126: rst_out <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@138: rst_out <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@162: dc <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@166: dc <= ~init_is_cmd;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@217: dc <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@254: dc <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@78: LCD_RST  <= rst_out;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@79: LCD_DC   <= dc;
 
-PHYSICAL NET: NET_0022    Width: 22    Tri-state: No
+PHYSICAL NET: NET_0022    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@64
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@129: dly <= DLY_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@132: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@140: dly <= DLY_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@143: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@172: dly <= DLY_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@175: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@183: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@185: dly <= DLY_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@139: cs <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@167: cs <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@182: cs <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@218: cs <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@128: IF (dly == lit(DLY_W, DLY_10MS - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@132: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@139: IF (dly == lit(DLY_W, DLY_150MS - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@143: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@171: IF (dly == lit(DLY_W, DLY_150MS - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@175: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@182: IF (dly[2:0] != 3'b111) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@183: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@76: SPI_CS   <= cs;
 
-PHYSICAL NET: NET_0023    Width: 5    Tri-state: No
+PHYSICAL NET: NET_0023    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@65
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@156: idx <= idx + lit(IDX_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@138: rst_out <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@150: rst_out <= 1'b1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@83: SELECT (idx) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@149: IF (idx == lit(IDX_W, INIT_LEN)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@156: idx <= idx + lit(IDX_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@80: LCD_RST  <= rst_out;
 
-PHYSICAL NET: NET_0024    Width: 9    Tri-state: No
+PHYSICAL NET: NET_0024    Width: 22    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@66
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@225: px <= X_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@234: px <= px + lit(X_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@141: dly <= DLY_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@144: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@152: dly <= DLY_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@155: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@184: dly <= DLY_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@187: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@195: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@197: dly <= DLY_W'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@224: IF (px == lit(X_W, DISP_W - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@234: px <= px + lit(X_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@140: IF (dly == lit(DLY_W, DLY_10MS - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@144: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@151: IF (dly == lit(DLY_W, DLY_150MS - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@155: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@183: IF (dly == lit(DLY_W, DLY_150MS - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@187: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@194: IF (dly[2:0] != 3'b111) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@195: dly <= dly + lit(DLY_W, 1);
 
-PHYSICAL NET: NET_0025    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0025    Width: 5    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@67
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@227: py <= Y_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@230: py <= py + lit(Y_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@168: idx <= idx + lit(IDX_W, 1);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@226: IF (py == lit(Y_W, DISP_H - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@230: py <= py + lit(Y_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@95: SELECT (idx) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@161: IF (idx == lit(IDX_W, INIT_LEN)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@168: idx <= idx + lit(IDX_W, 1);
 
-PHYSICAL NET: NET_0026    Width: 24    Tri-state: No
+PHYSICAL NET: NET_0026    Width: 9    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@68
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@116: hb_cnt <= HB_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: hb_cnt <= hb_cnt + lit(HB_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@237: px <= X_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@246: px <= px + lit(X_W, 1);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@115: IF (hb_cnt == lit(HB_W, HB_MAX - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: hb_cnt <= hb_cnt + lit(HB_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@236: IF (px == lit(X_W, DISP_W - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@246: px <= px + lit(X_W, 1);
 
-PHYSICAL NET: NET_0027    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0027    Width: 8    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@69
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: hb_st <= ~hb_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@239: py <= Y_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@242: py <= py + lit(Y_W, 1);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@79: HB       <= hb_st;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: hb_st <= ~hb_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: IF (py < 8'd30)       { pix_hi <= 8'h00; pix_lo <= 8'h00; } // Black   (bottom)
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: ELIF (py < 8'd60)     { pix_hi <= 8'hFF; pix_lo <= 8'hFF; } // White
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: ELIF (py < 8'd90)     { pix_hi <= 8'hF8; pix_lo <= 8'h1F; } // Magenta
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: ELIF (py < 8'd120)    { pix_hi <= 8'h07; pix_lo <= 8'hFF; } // Cyan
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: ELIF (py < 8'd150)    { pix_hi <= 8'hFF; pix_lo <= 8'hE0; } // Yellow
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: ELIF (py < 8'd180)    { pix_hi <= 8'h00; pix_lo <= 8'h1F; } // Blue
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: ELIF (py < 8'd210)    { pix_hi <= 8'h07; pix_lo <= 8'hE0; } // Green
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@238: IF (py == lit(Y_W, DISP_H - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@242: py <= py + lit(Y_W, 1);
+
+PHYSICAL NET: NET_0028    Width: 24    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@70
+
+SYNCHRONOUS(CLK=PCLK) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@128: hb_cnt <= HB_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@131: hb_cnt <= hb_cnt + lit(HB_W, 1);
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@127: IF (hb_cnt == lit(HB_W, HB_MAX - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@131: hb_cnt <= hb_cnt + lit(HB_W, 1);
+
+PHYSICAL NET: NET_0029    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@71
+
+SYNCHRONOUS(CLK=PCLK) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@129: hb_st <= ~hb_st;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@81: HB       <= hb_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@129: hb_st <= ~hb_st;
 
 ------------------------------------------------------------
 IDENTIFIER INDEX
@@ -461,21 +503,23 @@ DBG  -> NET_0009
 init_byte  -> NET_0010
 init_is_cmd  -> NET_0011
 init_has_dly  -> NET_0012
-state  -> NET_0013
-dbg_st  -> NET_0014
-ret  -> NET_0015
-spi_sr  -> NET_0016
-spi_cnt  -> NET_0017
-spi_ph  -> NET_0018
-dc  -> NET_0019
-cs  -> NET_0020
-rst_out  -> NET_0021
-dly  -> NET_0022
-idx  -> NET_0023
-px  -> NET_0024
-py  -> NET_0025
-hb_cnt  -> NET_0026
-hb_st  -> NET_0027
+pix_hi  -> NET_0013
+pix_lo  -> NET_0014
+state  -> NET_0015
+dbg_st  -> NET_0016
+ret  -> NET_0017
+spi_sr  -> NET_0018
+spi_cnt  -> NET_0019
+spi_ph  -> NET_0020
+dc  -> NET_0021
+cs  -> NET_0022
+rst_out  -> NET_0023
+dly  -> NET_0024
+idx  -> NET_0025
+px  -> NET_0026
+py  -> NET_0027
+hb_cnt  -> NET_0028
+hb_st  -> NET_0029
 
 ------------------------------------------------------------
 HARDWARE SUMMARY
@@ -493,18 +537,18 @@ Total modules analyzed: 1
 
 Module                 Nets Clocks   Regs Tri-St  Alias
 -------------------- ------ ------ ------ ------ ------
-lcd                      27      1     15      0      1
+lcd                      29      1     15      0      1
 -------------------- ------ ------ ------ ------ ------
-TOTAL                    27      1     15      0      1
+TOTAL                    29      1     15      0      1
 ============================================================
 Input file: src/ice_sugar_v15.jz
 Module: lcd
 
-User-visible identifiers:  29
-Internal elaboration nodes:296
-Total identifiers:        325
+User-visible identifiers:  31
+Internal elaboration nodes:320
+Total identifiers:        351
 Total alias statements:   1
-Resolved physical nets:   27
+Resolved physical nets:   29
 Tri-state nets:           0
 Extended-width aliases:   0
 
@@ -514,10 +558,10 @@ Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@36
 
 Members (Aliased Identifiers):
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@73: PCLK_OUT == PCLK
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@75: PCLK_OUT == PCLK
 
 Consumers:
-    SYNCHRONOUS block (CLK=PCLK) at line 113
+    SYNCHRONOUS block (CLK=PCLK) at line 125
 
 PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -525,7 +569,7 @@ Declared as: PORT IN
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@37
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@113: SYNCHRONOUS(CLK=PCLK RESET=RST RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@125: SYNCHRONOUS(CLK=PCLK RESET=RST RESET_ACTIVE=Low) {
 
 Top-level binding:
     PORT binding: IN RST -> 1'b1
@@ -536,7 +580,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@38
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@74: SPI_CS   <= cs;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@76: SPI_CS   <= cs;
 
 Top-level binding:
     PORT binding: OUT SPI_CS -> TFT_SPI_CS (OUT_PINS)
@@ -547,7 +591,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@39
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@75: SPI_CLK  <= spi_ph;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@77: SPI_CLK  <= spi_ph;
 
 Top-level binding:
     PORT binding: OUT SPI_CLK -> TFT_SPI_CLK (OUT_PINS)
@@ -558,7 +602,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@40
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@76: SPI_MOSI <= spi_sr[7];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@78: SPI_MOSI <= spi_sr[7];
 
 Top-level binding:
     PORT binding: OUT SPI_MOSI -> TFT_SPI_MOSI (OUT_PINS)
@@ -569,7 +613,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@41
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@77: LCD_DC   <= dc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@79: LCD_DC   <= dc;
 
 Top-level binding:
     PORT binding: OUT LCD_DC -> TFT_RS (OUT_PINS)
@@ -580,7 +624,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@42
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@78: LCD_RST  <= rst_out;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@80: LCD_RST  <= rst_out;
 
 Top-level binding:
     PORT binding: OUT LCD_RST -> _
@@ -591,7 +635,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@43
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@79: HB       <= hb_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@81: HB       <= hb_st;
 
 Top-level binding:
     PORT binding: OUT HB -> ~ LED [ 0 ]
@@ -602,7 +646,7 @@ Declared as: PORT OUT
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@45
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@80: DBG      <= dbg_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@82: DBG      <= dbg_st;
 
 Top-level binding:
     PORT binding: OUT DBG -> ~ LED [ 2 ]
@@ -613,35 +657,35 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@49
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@84: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@93: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@94: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@95: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@110: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@111: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@112: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@113: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@114: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@115: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@116: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@118: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@120: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@121: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@153: spi_sr <= init_byte;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@165: spi_sr <= init_byte;
 
 PHYSICAL NET: NET_0011    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -649,35 +693,35 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@50
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@84: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@93: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@94: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@95: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@110: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@111: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@112: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@113: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@114: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@115: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@116: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@118: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@120: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@121: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@154: dc <= ~init_is_cmd;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@166: dc <= ~init_is_cmd;
 
 PHYSICAL NET: NET_0012    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -685,69 +729,71 @@ Declared as: WIRE
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@51
 
 ASYNCHRONOUS Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@84: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@93: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@94: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@95: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@96: CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@97: CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@98: CASE (IDX_W'd2)  { init_byte <= 8'hC0; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@99: CASE (IDX_W'd3)  { init_byte <= 8'h23; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   VRH=4.60V
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@100: CASE (IDX_W'd4)  { init_byte <= 8'hC1; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Power Control 2
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@101: CASE (IDX_W'd5)  { init_byte <= 8'h10; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@102: CASE (IDX_W'd6)  { init_byte <= 8'hC5; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // VCOM Control 1
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@103: CASE (IDX_W'd7)  { init_byte <= 8'h3E; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@104: CASE (IDX_W'd8)  { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@105: CASE (IDX_W'd9)  { init_byte <= 8'h36; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // MADCTL
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@106: CASE (IDX_W'd10) { init_byte <= 8'h28; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   Landscape BGR
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@107: CASE (IDX_W'd11) { init_byte <= 8'h3A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Pixel Format
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@108: CASE (IDX_W'd12) { init_byte <= 8'h55; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   RGB565
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@109: CASE (IDX_W'd13) { init_byte <= 8'h29; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Display ON
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@110: CASE (IDX_W'd14) { init_byte <= 8'h2A; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Column Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@111: CASE (IDX_W'd15) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@112: CASE (IDX_W'd16) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SC low = 0
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@113: CASE (IDX_W'd17) { init_byte <= 8'h01; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@114: CASE (IDX_W'd18) { init_byte <= 8'h3F; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EC low = 319
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@115: CASE (IDX_W'd19) { init_byte <= 8'h2B; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Page Addr Set
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@116: CASE (IDX_W'd20) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: CASE (IDX_W'd21) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   SP low
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@118: CASE (IDX_W'd22) { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP high
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: CASE (IDX_W'd23) { init_byte <= 8'hEF; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; } //   EP low = 239
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@120: CASE (IDX_W'd24) { init_byte <= 8'h2C; init_is_cmd <= 1'b1; init_has_dly <= 1'b0; } // Memory Write
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@121: DEFAULT          { init_byte <= 8'h00; init_is_cmd <= 1'b0; init_has_dly <= 1'b0; }
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@159: IF (init_has_dly == 1'b1) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@171: IF (init_has_dly == 1'b1) {
 
-PHYSICAL NET: NET_0013    Width: 4    Tri-state: No
+PHYSICAL NET: NET_0013    Width: 8    Tri-state: No
 ------------------------------------------------------------
-Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@55
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@52
 
-SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@130: state <= lit(ST_W, S_RESET_HI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@141: state <= lit(ST_W, S_INIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@151: state <= lit(ST_W, S_PIX_HI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@164: state <= lit(ST_W, S_SPI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@173: state <= lit(ST_W, S_INIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@191: state <= ret;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@210: state <= lit(ST_W, S_SPI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@219: state <= lit(ST_W, S_SPI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@228: state <= lit(ST_W, S_FRAME);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@231: state <= lit(ST_W, S_PIX_HI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@235: state <= lit(ST_W, S_PIX_HI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@247: state <= lit(ST_W, S_SPI);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@251: state <= ST_W'b0;
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: IF (py < 8'd30)       { pix_hi <= 8'h00; pix_lo <= 8'h00; } // Black   (bottom)
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: ELIF (py < 8'd60)     { pix_hi <= 8'hFF; pix_lo <= 8'hFF; } // White
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: ELIF (py < 8'd90)     { pix_hi <= 8'hF8; pix_lo <= 8'h1F; } // Magenta
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: ELIF (py < 8'd120)    { pix_hi <= 8'h07; pix_lo <= 8'hFF; } // Cyan
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: ELIF (py < 8'd150)    { pix_hi <= 8'hFF; pix_lo <= 8'hE0; } // Yellow
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: ELIF (py < 8'd180)    { pix_hi <= 8'h00; pix_lo <= 8'h1F; } // Blue
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: ELIF (py < 8'd210)    { pix_hi <= 8'h07; pix_lo <= 8'hE0; } // Green
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: ELSE                  { pix_hi <= 8'hF8; pix_lo <= 8'h00; } // Red     (top)
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@123: SELECT (state) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@216: spi_sr <= pix_hi;
 
-PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0014    Width: 8    Tri-state: No
 ------------------------------------------------------------
-Declared as: REGISTER
-Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@56
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@53
 
-SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@203: dbg_st <= 1'b1;
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: IF (py < 8'd30)       { pix_hi <= 8'h00; pix_lo <= 8'h00; } // Black   (bottom)
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: ELIF (py < 8'd60)     { pix_hi <= 8'hFF; pix_lo <= 8'hFF; } // White
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: ELIF (py < 8'd90)     { pix_hi <= 8'hF8; pix_lo <= 8'h1F; } // Magenta
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: ELIF (py < 8'd120)    { pix_hi <= 8'h07; pix_lo <= 8'hFF; } // Cyan
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: ELIF (py < 8'd150)    { pix_hi <= 8'hFF; pix_lo <= 8'hE0; } // Yellow
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: ELIF (py < 8'd180)    { pix_hi <= 8'h00; pix_lo <= 8'h1F; } // Blue
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: ELIF (py < 8'd210)    { pix_hi <= 8'h07; pix_lo <= 8'hE0; } // Green
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@92: ELSE                  { pix_hi <= 8'hF8; pix_lo <= 8'h00; } // Red     (top)
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@80: DBG      <= dbg_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@227: spi_sr <= pix_lo;
 
 PHYSICAL NET: NET_0015    Width: 4    Tri-state: No
 ------------------------------------------------------------
@@ -755,30 +801,33 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@57
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@160: ret <= lit(ST_W, S_INIT_DLY);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@162: ret <= lit(ST_W, S_INIT);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@209: ret <= lit(ST_W, S_PIX_LO);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@218: ret <= lit(ST_W, S_PIX_ADV);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@246: ret <= lit(ST_W, S_PIX_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@142: state <= lit(ST_W, S_RESET_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@153: state <= lit(ST_W, S_INIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@163: state <= lit(ST_W, S_PIX_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@176: state <= lit(ST_W, S_SPI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@185: state <= lit(ST_W, S_INIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@203: state <= ret;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@222: state <= lit(ST_W, S_SPI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@231: state <= lit(ST_W, S_SPI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@240: state <= lit(ST_W, S_FRAME);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@243: state <= lit(ST_W, S_PIX_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@247: state <= lit(ST_W, S_PIX_HI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@258: state <= lit(ST_W, S_SPI);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@262: state <= ST_W'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@191: state <= ret;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@135: SELECT (state) {
 
-PHYSICAL NET: NET_0016    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0016    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@58
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@153: spi_sr <= init_byte;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@194: spi_sr <= { spi_sr[6:0], 1'b0 };
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@204: spi_sr <= 8'hF8;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@215: spi_sr <= 8'h00;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@242: spi_sr <= 8'h2C;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@215: dbg_st <= 1'b1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@76: SPI_MOSI <= spi_sr[7];
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@194: spi_sr <= { spi_sr[6:0], 1'b0 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@82: DBG      <= dbg_st;
 
 PHYSICAL NET: NET_0017    Width: 4    Tri-state: No
 ------------------------------------------------------------
@@ -786,47 +835,47 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@59
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@157: spi_cnt <= 4'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@192: spi_cnt <= 4'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@195: spi_cnt <= spi_cnt + 4'd1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@207: spi_cnt <= 4'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@216: spi_cnt <= 4'd0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@244: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@172: ret <= lit(ST_W, S_INIT_DLY);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@174: ret <= lit(ST_W, S_INIT);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@221: ret <= lit(ST_W, S_PIX_LO);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@230: ret <= lit(ST_W, S_PIX_ADV);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@257: ret <= lit(ST_W, S_PIX_HI);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@190: IF (spi_cnt == 4'd7) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@195: spi_cnt <= spi_cnt + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@203: state <= ret;
 
-PHYSICAL NET: NET_0018    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0018    Width: 8    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@60
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@158: spi_ph <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@187: spi_ph <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@189: spi_ph <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@208: spi_ph <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@217: spi_ph <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@245: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@165: spi_sr <= init_byte;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@206: spi_sr <= { spi_sr[6:0], 1'b0 };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@216: spi_sr <= pix_hi;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@227: spi_sr <= pix_lo;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@253: spi_sr <= 8'h2C;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@75: SPI_CLK  <= spi_ph;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@186: IF (spi_ph == 1'b0) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@78: SPI_MOSI <= spi_sr[7];
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@206: spi_sr <= { spi_sr[6:0], 1'b0 };
 
-PHYSICAL NET: NET_0019    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0019    Width: 4    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@61
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@150: dc <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@154: dc <= ~init_is_cmd;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@205: dc <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@243: dc <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@169: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@204: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@207: spi_cnt <= spi_cnt + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@219: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@228: spi_cnt <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@255: spi_cnt <= 4'd0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@77: LCD_DC   <= dc;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@202: IF (spi_cnt == 4'd7) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@207: spi_cnt <= spi_cnt + 4'd1;
 
 PHYSICAL NET: NET_0020    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -834,14 +883,16 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@62
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@127: cs <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@155: cs <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@170: cs <= 1'b1;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@206: cs <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@241: cs <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@170: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@199: spi_ph <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@201: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@220: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@229: spi_ph <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@256: spi_ph <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@74: SPI_CS   <= cs;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@77: SPI_CLK  <= spi_ph;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@198: IF (spi_ph == 1'b0) {
 
 PHYSICAL NET: NET_0021    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -849,100 +900,135 @@ Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@63
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@126: rst_out <= 1'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@138: rst_out <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@162: dc <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@166: dc <= ~init_is_cmd;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@217: dc <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@254: dc <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@78: LCD_RST  <= rst_out;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@79: LCD_DC   <= dc;
 
-PHYSICAL NET: NET_0022    Width: 22    Tri-state: No
+PHYSICAL NET: NET_0022    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@64
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@129: dly <= DLY_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@132: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@140: dly <= DLY_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@143: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@172: dly <= DLY_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@175: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@183: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@185: dly <= DLY_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@139: cs <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@167: cs <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@182: cs <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@218: cs <= 1'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@128: IF (dly == lit(DLY_W, DLY_10MS - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@132: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@139: IF (dly == lit(DLY_W, DLY_150MS - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@143: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@171: IF (dly == lit(DLY_W, DLY_150MS - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@175: dly <= dly + lit(DLY_W, 1);
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@182: IF (dly[2:0] != 3'b111) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@183: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@76: SPI_CS   <= cs;
 
-PHYSICAL NET: NET_0023    Width: 5    Tri-state: No
+PHYSICAL NET: NET_0023    Width: 1    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@65
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@156: idx <= idx + lit(IDX_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@138: rst_out <= 1'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@150: rst_out <= 1'b1;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@83: SELECT (idx) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@149: IF (idx == lit(IDX_W, INIT_LEN)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@156: idx <= idx + lit(IDX_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@80: LCD_RST  <= rst_out;
 
-PHYSICAL NET: NET_0024    Width: 9    Tri-state: No
+PHYSICAL NET: NET_0024    Width: 22    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@66
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@225: px <= X_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@234: px <= px + lit(X_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@141: dly <= DLY_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@144: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@152: dly <= DLY_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@155: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@184: dly <= DLY_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@187: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@195: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@197: dly <= DLY_W'b0;
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@224: IF (px == lit(X_W, DISP_W - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@234: px <= px + lit(X_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@140: IF (dly == lit(DLY_W, DLY_10MS - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@144: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@151: IF (dly == lit(DLY_W, DLY_150MS - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@155: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@183: IF (dly == lit(DLY_W, DLY_150MS - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@187: dly <= dly + lit(DLY_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@194: IF (dly[2:0] != 3'b111) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@195: dly <= dly + lit(DLY_W, 1);
 
-PHYSICAL NET: NET_0025    Width: 8    Tri-state: No
+PHYSICAL NET: NET_0025    Width: 5    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@67
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@227: py <= Y_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@230: py <= py + lit(Y_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@168: idx <= idx + lit(IDX_W, 1);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@226: IF (py == lit(Y_W, DISP_H - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@230: py <= py + lit(Y_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@95: SELECT (idx) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@161: IF (idx == lit(IDX_W, INIT_LEN)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@168: idx <= idx + lit(IDX_W, 1);
 
-PHYSICAL NET: NET_0026    Width: 24    Tri-state: No
+PHYSICAL NET: NET_0026    Width: 9    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@68
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@116: hb_cnt <= HB_W'b0;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: hb_cnt <= hb_cnt + lit(HB_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@237: px <= X_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@246: px <= px + lit(X_W, 1);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@115: IF (hb_cnt == lit(HB_W, HB_MAX - 1)) {
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@119: hb_cnt <= hb_cnt + lit(HB_W, 1);
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@236: IF (px == lit(X_W, DISP_W - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@246: px <= px + lit(X_W, 1);
 
-PHYSICAL NET: NET_0027    Width: 1    Tri-state: No
+PHYSICAL NET: NET_0027    Width: 8    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@69
 
 SYNCHRONOUS(CLK=PCLK) Drivers:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: hb_st <= ~hb_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@239: py <= Y_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@242: py <= py + lit(Y_W, 1);
 
 Sinks:
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@79: HB       <= hb_st;
-    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@117: hb_st <= ~hb_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@85: IF (py < 8'd30)       { pix_hi <= 8'h00; pix_lo <= 8'h00; } // Black   (bottom)
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@86: ELIF (py < 8'd60)     { pix_hi <= 8'hFF; pix_lo <= 8'hFF; } // White
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@87: ELIF (py < 8'd90)     { pix_hi <= 8'hF8; pix_lo <= 8'h1F; } // Magenta
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@88: ELIF (py < 8'd120)    { pix_hi <= 8'h07; pix_lo <= 8'hFF; } // Cyan
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@89: ELIF (py < 8'd150)    { pix_hi <= 8'hFF; pix_lo <= 8'hE0; } // Yellow
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@90: ELIF (py < 8'd180)    { pix_hi <= 8'h00; pix_lo <= 8'h1F; } // Blue
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@91: ELIF (py < 8'd210)    { pix_hi <= 8'h07; pix_lo <= 8'hE0; } // Green
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@238: IF (py == lit(Y_W, DISP_H - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@242: py <= py + lit(Y_W, 1);
+
+PHYSICAL NET: NET_0028    Width: 24    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@70
+
+SYNCHRONOUS(CLK=PCLK) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@128: hb_cnt <= HB_W'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@131: hb_cnt <= hb_cnt + lit(HB_W, 1);
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@127: IF (hb_cnt == lit(HB_W, HB_MAX - 1)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@131: hb_cnt <= hb_cnt + lit(HB_W, 1);
+
+PHYSICAL NET: NET_0029    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@71
+
+SYNCHRONOUS(CLK=PCLK) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@129: hb_st <= ~hb_st;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@81: HB       <= hb_st;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/lcd/src/lcd.jz@129: hb_st <= ~hb_st;
 
 ------------------------------------------------------------
 IDENTIFIER INDEX
@@ -960,21 +1046,23 @@ DBG  -> NET_0009
 init_byte  -> NET_0010
 init_is_cmd  -> NET_0011
 init_has_dly  -> NET_0012
-state  -> NET_0013
-dbg_st  -> NET_0014
-ret  -> NET_0015
-spi_sr  -> NET_0016
-spi_cnt  -> NET_0017
-spi_ph  -> NET_0018
-dc  -> NET_0019
-cs  -> NET_0020
-rst_out  -> NET_0021
-dly  -> NET_0022
-idx  -> NET_0023
-px  -> NET_0024
-py  -> NET_0025
-hb_cnt  -> NET_0026
-hb_st  -> NET_0027
+pix_hi  -> NET_0013
+pix_lo  -> NET_0014
+state  -> NET_0015
+dbg_st  -> NET_0016
+ret  -> NET_0017
+spi_sr  -> NET_0018
+spi_cnt  -> NET_0019
+spi_ph  -> NET_0020
+dc  -> NET_0021
+cs  -> NET_0022
+rst_out  -> NET_0023
+dly  -> NET_0024
+idx  -> NET_0025
+px  -> NET_0026
+py  -> NET_0027
+hb_cnt  -> NET_0028
+hb_st  -> NET_0029
 
 ------------------------------------------------------------
 HARDWARE SUMMARY
@@ -992,7 +1080,7 @@ Total modules analyzed: 1
 
 Module                 Nets Clocks   Regs Tri-St  Alias
 -------------------- ------ ------ ------ ------ ------
-lcd                      27      1     15      0      1
+lcd                      29      1     15      0      1
 -------------------- ------ ------ ------ ------ ------
-TOTAL                    27      1     15      0      1
+TOTAL                    29      1     15      0      1
 ============================================================

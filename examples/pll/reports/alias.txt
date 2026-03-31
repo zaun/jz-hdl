@@ -1,4 +1,4 @@
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: blinkers
 
 User-visible identifiers:  15
@@ -58,7 +58,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0006    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -69,7 +69,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> KEY [ 0 ]
+    PORT binding: IN rst_n -> ~ KEY [ 0 ]
 
 PHYSICAL NET: NET_0007    Width: 5    Tri-state: No
 ------------------------------------------------------------
@@ -199,7 +199,7 @@ blinkers                 14      5      5      0      0
 -------------------- ------ ------ ------ ------ ------
 TOTAL                    14      5      5      0      0
 ============================================================
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_20k.jz
 Module: blinkers
 
 User-visible identifiers:  15
@@ -259,7 +259,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0006    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -270,7 +270,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/pll/src/blinkers.jz@26: reset <= por & rst_n;
 
 Top-level binding:
-    PORT binding: IN rst_n -> KEY [ 0 ]
+    PORT binding: IN rst_n -> ~ KEY [ 0 ]
 
 PHYSICAL NET: NET_0007    Width: 5    Tri-state: No
 ------------------------------------------------------------

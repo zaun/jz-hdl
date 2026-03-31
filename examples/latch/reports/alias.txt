@@ -1,4 +1,4 @@
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: latch_test
 
 User-visible identifiers:  8
@@ -31,7 +31,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -43,7 +43,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
 
 Top-level binding:
-    PORT binding: IN btn -> BTN (IN_PINS)
+    PORT binding: IN btn -> ~ KEY [ 1 ]
 
 PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
 ------------------------------------------------------------
@@ -111,7 +111,7 @@ latch_test                6      1      1      0      1
 -------------------- ------ ------ ------ ------ ------
 TOTAL                     6      1      1      0      1
 ============================================================
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: latch_test
 
 User-visible identifiers:  8
@@ -144,7 +144,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -156,7 +156,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/latch/src/latch.jz@27: leds <= { btn, display_buffer[4:0] };
 
 Top-level binding:
-    PORT binding: IN btn -> BTN (IN_PINS)
+    PORT binding: IN btn -> ~ KEY [ 1 ]
 
 PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
 ------------------------------------------------------------

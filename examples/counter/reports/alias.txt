@@ -1,4 +1,4 @@
-Input file: src/ice_sugar_v15.jz
+Input file: src/tang_nano_9k.jz
 Module: counter
 
 User-visible identifiers:  7
@@ -31,7 +31,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 6    Tri-state: No
 ------------------------------------------------------------
@@ -42,9 +42,9 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@27: leds <= counter[LED_HIGH:LED_LOW];
 
 Top-level binding:
-    PORT binding: OUT leds -> { ~ LED , _ , _ , _ }
+    PORT binding: OUT leds -> ~ LED
 
-PHYSICAL NET: NET_0005    Width: 26    Tri-state: No
+PHYSICAL NET: NET_0005    Width: 27    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@21
@@ -86,7 +86,7 @@ counter                   4      1      1      0      1
 -------------------- ------ ------ ------ ------ ------
 TOTAL                     4      1      1      0      1
 ============================================================
-Input file: src/ice_sugar_v15.jz
+Input file: src/tang_nano_9k.jz
 Module: counter
 
 User-visible identifiers:  7
@@ -119,7 +119,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@30: SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0003    Width: 6    Tri-state: No
 ------------------------------------------------------------
@@ -130,9 +130,9 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@27: leds <= counter[LED_HIGH:LED_LOW];
 
 Top-level binding:
-    PORT binding: OUT leds -> { ~ LED , _ , _ , _ }
+    PORT binding: OUT leds -> ~ LED
 
-PHYSICAL NET: NET_0005    Width: 26    Tri-state: No
+PHYSICAL NET: NET_0005    Width: 27    Tri-state: No
 ------------------------------------------------------------
 Declared as: REGISTER
 Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/counter/src/counter.jz@21

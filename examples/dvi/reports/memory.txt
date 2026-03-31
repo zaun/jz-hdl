@@ -1,18 +1,24 @@
 Memory Report
 -------------
-Project: src/ice_sugar_v15.jz
-Chip: ICE40UP-5K-SG48
+Project: src/tang_nano_9k.jz
+Chip: GW1NR-9-QN88-C6-I5
 
 Memory Summary
 --------------
 Block Memory:
     Requested: 0 bytes
-    Max Available: 15360 bytes (30 blocks x 4 Kbits)
-    Used: 0 / 30 blocks (one per BLOCK MEMORY)
+    Max Available: 59904 bytes (26 blocks x 18 Kbits)
+    Used: 0 / 26 blocks (one per BLOCK MEMORY)
 
 Distributed Memory:
     Requested: 0 bytes
-    Max Available: Unknown
+    Max Available: 2048 bytes
     Used: 0 bytes
+
+SDRAM (on-chip):
+    Capacity: 8388608 bytes
+
+Flash (on-chip):
+    Capacity: 77824 bytes
 
 Errors: 0

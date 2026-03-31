@@ -1,4 +1,4 @@
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: por
 
 User-visible identifiers:  6
@@ -79,7 +79,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: uart_rx
 
 User-visible identifiers:  14
@@ -271,7 +271,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: uart_tx
 
 User-visible identifiers:  13
@@ -450,7 +450,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: ascon
 
 User-visible identifiers:  58
@@ -1023,7 +1023,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: ascon_top
 
 User-visible identifiers:  78
@@ -1051,7 +1051,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@118: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1073,7 +1073,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Top-level binding:
-    PORT binding: IN rst_n -> NRST (IN_PINS)
+    PORT binding: IN rst_n -> KEY [ 0 ]
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -1106,7 +1106,7 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@115: leds <= led_reg;
 
 Top-level binding:
-    PORT binding: OUT leds -> LED (OUT_PINS)
+    PORT binding: OUT leds -> ~ LED
 
 PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
 ------------------------------------------------------------
@@ -1813,7 +1813,7 @@ ascon_top                43      1     28      0      1
 -------------------- ------ ------ ------ ------ ------
 TOTAL                   104      5     61      0     22
 ============================================================
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: por
 
 User-visible identifiers:  6
@@ -1894,7 +1894,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: uart_rx
 
 User-visible identifiers:  14
@@ -2086,7 +2086,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: uart_tx
 
 User-visible identifiers:  13
@@ -2265,7 +2265,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: ascon
 
 User-visible identifiers:  58
@@ -2838,7 +2838,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/pa35t-edu.jz
+Input file: src/tang_nano_9k.jz
 Module: ascon_top
 
 User-visible identifiers:  78
@@ -2866,7 +2866,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@118: @new por0 por {
 
 Top-level binding:
-    PORT binding: IN por -> 1'b1
+    PORT binding: IN por -> DONE (IN_PINS)
 
 PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -2888,7 +2888,7 @@ Sinks:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@147: @new ac0 ascon {
 
 Top-level binding:
-    PORT binding: IN rst_n -> NRST (IN_PINS)
+    PORT binding: IN rst_n -> KEY [ 0 ]
 
 PHYSICAL NET: NET_0003    Width: 1    Tri-state: No
 ------------------------------------------------------------
@@ -2921,7 +2921,7 @@ ASYNCHRONOUS Drivers:
     /Users/justinzaun/Development/jz-hdl-dev/examples/ascon/src/top.jz@115: leds <= led_reg;
 
 Top-level binding:
-    PORT binding: OUT leds -> LED (OUT_PINS)
+    PORT binding: OUT leds -> ~ LED
 
 PHYSICAL NET: NET_0008    Width: 8    Tri-state: No
 ------------------------------------------------------------
