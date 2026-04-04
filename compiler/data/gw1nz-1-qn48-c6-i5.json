@@ -1,0 +1,1029 @@
+{
+  "chipid": "GW1NZ-1-QN48-C6-I5",
+  "description": "Primitives available on the GW1NZ-1-QN48-C6/I5 device.",
+  "boards": [
+    {
+      "name": "Tang Nano 1k",
+      "url": "https://wiki.sipeed.com/hardware/en/tang/Tang-Nano-1K/Nano-1k.html"
+    }
+  ],
+  "resources": {
+    "LUT4": 1152,
+    "DFF": 864,
+    "ALU": 864,
+    "IOB": 40,
+    "GSR": 1
+  },
+  "latches": {
+    "source": "DS841-1.8E, Table 2-1, Section 3.2 (CFU); UG288 Gowin CFU User Guide",
+    "FAB": {
+      "description": "Configurable Function Unit (General Logic)",
+      "D": true,
+      "SR": false,
+      "note": "CFU REG elements can be configured as D latches. GW1NZ-1 has 1152 LUTs and 864 REGs. Each CFU has 4 CLS with 2 LUTs and 2 REGs each (CLS3 has REG/SREG). See UG288 Gowin CFU User Guide for details."
+    },
+    "IOB": {
+      "description": "I/O Blocks (Input/Output Pins)",
+      "D": true,
+      "SR": false,
+      "modes": [
+        "Transparent",
+        "Gated"
+      ],
+      "note": "Registers in I/O logic can be programmed as latches."
+    }
+  },
+  "memory": [
+    {
+      "type": "DISTRIBUTED",
+      "source": "DS841-1.8E, Table 2-1 (Shadow SRAM 4K)",
+      "description": "Distributed memory from CFU slices (Shadow SRAM)",
+      "total_bits": 4096,
+      "r_ports": 1,
+      "w_ports": 1,
+      "configurations": [
+        {
+          "width": 1,
+          "depth": 4096
+        },
+        {
+          "width": 2,
+          "depth": 2048
+        },
+        {
+          "width": 4,
+          "depth": 1024
+        },
+        {
+          "width": 8,
+          "depth": 512
+        },
+        {
+          "width": 16,
+          "depth": 256
+        }
+      ]
+    },
+    {
+      "type": "BLOCK",
+      "source": "DS841-1.8E, Table 2-1 (Block SRAM 72K), Section 3.6 (BSRAM), Table 3-7 (Memory Size Configuration)",
+      "description": "Block Static Random Access Memory (BSRAM). Each block is 18,432 bits (18 Kbits). Total of 4 blocks providing 72 Kbits of BSRAM.",
+      "quantity": 4,
+      "bits_per_block": 18432,
+      "total_bits": 73728,
+      "max_freq_mhz": 170,
+      "note": "4 blocks x 18,432 bits = 73,728 bits. Each block is 18,432 bits (16K data + 2K parity). Read-before-write mode typical 100MHz. GW1NZ-1 does NOT support Dual Port BSRAM (DS841 Table 3-7, Note [1]).",
+      "modes": [
+        {
+          "name": "Single Port",
+          "description": "Single port read/write at one clock edge",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 32,
+              "depth": 512
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        },
+        {
+          "name": "Semi-Dual Port",
+          "description": "Write on Port A, read on Port B simultaneously",
+          "ports": [
+            {
+              "id": "A",
+              "read": false,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 32,
+              "depth": 512
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        },
+        {
+          "name": "Read Only Memory",
+          "description": "Read-only with initialization during power-on",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 32,
+              "depth": 512
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "FLASH",
+      "source": "DS841-1.8E, Table 2-1 (User Flash 64K), Section 3.7 (User Flash)",
+      "description": "User Flash Memory",
+      "quantity": 1,
+      "total_bits": 65536,
+      "note": "64K User Flash. 32-bit data width, 10,000 write cycles, 40MHz clock. Normal mode for LV C6/I5 speed grade.",
+      "modes": [
+        {
+          "name": "Read Only",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 32,
+              "depth": 2048
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "clock_gen": [
+    {
+      "type": "osc",
+      "source": "DS841-1.8E, Section 3.12 (On Chip Oscillator), Table 3-15 (Oscillator Output Frequency Options)",
+      "description": "Internal User Oscillator",
+      "count": 1,
+      "map": {
+        "verilog-2005": [
+          "OSC #(\n",
+          "    .FREQ_DIV(%%DIV%%)\n",
+          ") u_osc (\n",
+          "    .OSCOUT(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\OSC $auto$osc\n",
+          "  parameter \\FREQ_DIV %%DIV%%\n",
+          "  connect \\OSCOUT \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "required": false,
+          "description": "OSC has no external clock input"
+        }
+      },
+      "parameters": {
+        "DIV": {
+          "description": "Oscillator divider. Base frequency is ~250MHz divided by DIV.",
+          "type": "int",
+          "default": 2,
+          "valid": [
+            2,
+            4,
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18,
+            20,
+            22,
+            24,
+            26,
+            28,
+            30,
+            32,
+            34,
+            36,
+            38,
+            40,
+            42,
+            44,
+            46,
+            48,
+            50,
+            52,
+            54,
+            56,
+            58,
+            60,
+            62,
+            64,
+            66,
+            68,
+            70,
+            72,
+            74,
+            76,
+            78,
+            80,
+            82,
+            84,
+            86,
+            88,
+            90,
+            92,
+            94,
+            96,
+            98,
+            100,
+            102,
+            104,
+            106,
+            108,
+            110,
+            112,
+            114,
+            116,
+            118,
+            120,
+            122,
+            124,
+            126,
+            128
+          ]
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "port": "OSCOUT",
+          "is_clock": true,
+          "frequency_mhz": {
+            "expr": "250.0 / DIV"
+          }
+        }
+      }
+    },
+    {
+      "type": "pll",
+      "source": "DS841-1.8E, Section 3.8.2 (PLL), Table 3-14 (PLL Ports Definition); UG286 Gowin Clock User Guide",
+      "description": "Phase-Locked Loop block with one reference input, a single VCO, and four physically distinct clock outputs.",
+      "count": 1,
+      "chaining": false,
+      "map": {
+        "verilog-2005": [
+          "rPLL #(\n",
+          "    .DEVICE(\"GW1NZ-1\"),          // Specify your device\n",
+          "    .FCLKIN(%%REF_CLK_mhz%%),       // Input frequency in MHz\n",
+          "    .IDIV_SEL(%%IDIV%%),           // IDIV: Input divider\n",
+          "    .FBDIV_SEL(%%FBDIV%%),         // FBDIV: Feedback divider\n",
+          "    .ODIV_SEL(%%ODIV%%),           // ODIV: Output divider\n",
+          "    .PSDA_SEL(\"%%PSDA_SEL%%\"),\n",
+          "    .DUTYDA_SEL(\"1000\"),\n",
+          "    .DYN_IDIV_SEL(\"FALSE\"),\n",
+          "    .DYN_FBDIV_SEL(\"FALSE\"),\n",
+          "    .DYN_ODIV_SEL(\"FALSE\"),\n",
+          "    .DYN_DA_EN(\"FALSE\"),\n",
+          "    .DYN_SDIV_SEL(%%CLKOUTD_DIV%%),\n",
+          "    .CLKOUT_FT_DIR(1'b1),\n",
+          "    .CLKOUTP_FT_DIR(1'b1),\n",
+          "    .CLKOUT_DLY_STEP(0),\n",
+          "    .CLKOUTP_DLY_STEP(0),\n",
+          "    .CLKFB_SEL(\"internal\"),\n",
+          "    .CLKOUT_BYPASS(\"FALSE\"),\n",
+          "    .CLKOUTP_BYPASS(\"FALSE\"),\n",
+          "    .CLKOUTD_BYPASS(\"FALSE\"),\n",
+          "    .CLKOUTD_SRC(\"CLKOUT\"),\n",
+          "    .CLKOUTD3_SRC(\"CLKOUT\")\n",
+          ") u_pll_%%instance_idx%% (\n",
+          "    .CLKOUT(%%BASE%%),   // Primary output\n",
+          "    .LOCK(%%LOCK%%),     // High when stable\n",
+          "    .CLKOUTP(%%PHASE%%), // Phase shifted output\n",
+          "    .CLKOUTD(%%DIV%%),   // Divided output\n",
+          "    .CLKOUTD3(%%DIV3%%), // Divided by 3 output\n",
+          "    .RESET(1'b0),        // Reset signal\n",
+          "    .RESET_P(1'b0),      // PLL power down\n",
+          "    .CLKIN(%%REF_CLK%%),  // Reference clock input\n",
+          "    .CLKFB(1'b0)         // External feedback\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\rPLL $auto$%%instance_idx%%\n",
+          "  parameter \\DEVICE \"GW1NZ-1\"\n",
+          "  parameter \\FCLKIN %%REF_CLK_mhz%%\n",
+          "  parameter \\IDIV_SEL %%IDIV%%\n",
+          "  parameter \\FBDIV_SEL %%FBDIV%%\n",
+          "  parameter \\ODIV_SEL %%ODIV%%\n",
+          "  parameter \\PSDA_SEL \"%%PSDA_SEL%%\"\n",
+          "  parameter \\DUTYDA_SEL \"1000\"\n",
+          "  parameter \\DYN_IDIV_SEL \"FALSE\"\n",
+          "  parameter \\DYN_FBDIV_SEL \"FALSE\"\n",
+          "  parameter \\DYN_ODIV_SEL \"FALSE\"\n",
+          "  parameter \\DYN_DA_EN \"FALSE\"\n",
+          "  parameter \\DYN_SDIV_SEL %%CLKOUTD_DIV%%\n",
+          "  parameter \\CLKOUT_FT_DIR 1\n",
+          "  parameter \\CLKOUTP_FT_DIR 1\n",
+          "  parameter \\CLKOUT_DLY_STEP 0\n",
+          "  parameter \\CLKOUTP_DLY_STEP 0\n",
+          "  parameter \\CLKFB_SEL \"internal\"\n",
+          "  parameter \\CLKOUT_BYPASS \"FALSE\"\n",
+          "  parameter \\CLKOUTP_BYPASS \"FALSE\"\n",
+          "  parameter \\CLKOUTD_BYPASS \"FALSE\"\n",
+          "  parameter \\CLKOUTD_SRC \"CLKOUT\"\n",
+          "  parameter \\CLKOUTD3_SRC \"CLKOUT\"\n",
+          "  connect \\CLKIN \\%%REF_CLK%%\n",
+          "  connect \\CLKOUT \\%%BASE%%\n",
+          "  connect \\LOCK \\%%LOCK%%\n",
+          "  connect \\CLKOUTP \\%%PHASE%%\n",
+          "  connect \\CLKOUTD \\%%DIV%%\n",
+          "  connect \\CLKOUTD3 \\%%DIV3%%\n",
+          "  connect \\RESET 1'0\n",
+          "  connect \\RESET_P 1'0\n",
+          "  connect \\CLKFB 1'0\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the PLL",
+          "required": true,
+          "width": 1,
+          "requires_period": true,
+          "min_mhz": 3,
+          "max_mhz": 400
+        }
+      },
+      "parameters": {
+        "IDIV": {
+          "description": "Input clock divider select (actual divider = IDIV + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 63
+        },
+        "FBDIV": {
+          "description": "Feedback divider select (actual multiplier = FBDIV + 1)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 63
+        },
+        "ODIV": {
+          "description": "Output divider select (used directly)",
+          "type": "int",
+          "default": 8,
+          "valid": [
+            2,
+            4,
+            8,
+            16,
+            32,
+            48,
+            64,
+            80,
+            96,
+            112,
+            128
+          ]
+        },
+        "PHASESEL": {
+          "description": "Phase tap (0-315° in 45° steps)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 7
+        },
+        "CLKOUTD_DIV": {
+          "description": "Post-divider for DIV output",
+          "type": "int",
+          "default": 2,
+          "min": 2,
+          "max": 128
+        }
+      },
+      "derived": {
+        "FVCO": {
+          "description": "Internal Voltage-Controlled Oscillator Frequency",
+          "expr": "(1000.0 / REF_CLK_period_ns) * (FBDIV + 1) * ODIV / (IDIV + 1)",
+          "min": 400,
+          "max": 1200
+        },
+        "PSDA_SEL": {
+          "description": "String representation of the binary number for PHASESEL ex: \"0001\", \"1100\".",
+          "expr": "toString(PHASESEL * 2, BIN, 4)"
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "Primary output",
+          "port": "CLKOUT",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Frequency of the base output clock derived directly from the FVCO.",
+            "expr": "FVCO / ODIV"
+          }
+        },
+        "PHASE": {
+          "description": "Primary output, Phase shifted. Requires PHASESEL",
+          "port": "CLKOUTP",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Frequency of the phased output clock. Identical to the base output frequency.",
+            "expr": "FVCO / ODIV"
+          },
+          "phase_deg": {
+            "description": "Phase offset applied to the phased output, expressed in degrees relative to the base output.",
+            "expr": "PHASESEL * 45"
+          }
+        },
+        "DIV": {
+          "description": "Divided PLL output, Requires CLKOUTD_DIV",
+          "port": "CLKOUTD",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Frequency of the divided output clock after applying the post-divider.",
+            "expr": "(FVCO / ODIV) / CLKOUTD_DIV"
+          }
+        },
+        "DIV3": {
+          "description": "Fixed divide-by-3 PLL output",
+          "port": "CLKOUT3",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Frequency of the fixed divide-by-3 output derived from the base output.",
+            "expr": "(FVCO / ODIV) / 3"
+          }
+        },
+        "LOCK": {
+          "description": "PLL lock indicator, high when PLL is locked",
+          "port": "LOCK",
+          "is_clock": false
+        }
+      },
+      "constraints": [
+        {
+          "description": "The phased output may only be used if a valid PHASESEL value is provided.",
+          "rule": "PHASE output requires PHASESEL"
+        },
+        {
+          "description": "The divided output may only be used if a valid CLKOUTD_DIV value is provided.",
+          "rule": "DIV output requires CLKOUTD_DIV"
+        }
+      ]
+    },
+    {
+      "type": "clkdiv",
+      "source": "DS841-1.8E, Section 3.8 (Clock); UG286 Gowin Clock User Guide",
+      "mode": "local",
+      "description": "Local clock divider (CLKDIV) for IO logic. Divides an input clock by a fixed ratio.",
+      "count": 4,
+      "map": {
+        "verilog-2005": [
+          "CLKDIV #(\n",
+          "    .DIV_MODE(\"%%DIV_MODE%%\"),\n",
+          "    .GSREN(\"false\")\n",
+          ") u_clkdiv_%%instance_idx%% (\n",
+          "    .HCLKIN(%%REF_CLK%%),\n",
+          "    .RESETN(1'b1),\n",
+          "    .CALIB(1'b0),\n",
+          "    .CLKOUT(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\CLKDIV $auto$%%instance_idx%%\n",
+          "  parameter \\DIV_MODE \"%%DIV_MODE%%\"\n",
+          "  parameter \\GSREN \"false\"\n",
+          "  connect \\HCLKIN \\%%REF_CLK%%\n",
+          "  connect \\RESETN 1'1\n",
+          "  connect \\CALIB 1'0\n",
+          "  connect \\CLKOUT \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the clock divider",
+          "required": true,
+          "width": 1,
+          "requires_period": true
+        }
+      },
+      "parameters": {
+        "DIV_MODE": {
+          "description": "Clock division ratio",
+          "type": "string",
+          "default": "2",
+          "valid": [
+            "2",
+            "3.5",
+            "4",
+            "5",
+            "8"
+          ]
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "Divided clock output",
+          "port": "CLKOUT",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Frequency of the divided output clock.",
+            "expr": "(1000.0 / REF_CLK_period_ns) / DIV_MODE"
+          }
+        }
+      }
+    },
+    {
+      "type": "buf",
+      "source": "DS841-1.8E, Section 3.8.1 (Global Clock), Figure 3-17 (GCLK Quadrant Distribution); UG286 Gowin Clock User Guide",
+      "mode": "global",
+      "description": "Global clock buffer (DQCE). Promotes a clock onto the global GCLK network with dynamic clock enable.",
+      "count": 12,
+      "map": {
+        "verilog-2005": [
+          "DQCE u_dqce_%%instance_idx%% (\n",
+          "    .CLKIN(%%REF_CLK%%),\n",
+          "    .CE(%%CE%%),\n",
+          "    .CLKOUT(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\DQCE $auto$%%instance_idx%%\n",
+          "  connect \\CLKIN \\%%REF_CLK%%\n",
+          "  connect \\CE 1'1\n",
+          "  connect \\CLKOUT \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the buffer",
+          "required": true,
+          "width": 1,
+          "requires_period": true
+        },
+        "CE": {
+          "description": "Clock enable (active-high). When deasserted, output is held low.",
+          "required": false,
+          "default": "1'b1",
+          "width": 1
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "Buffered clock output on global network",
+          "port": "CLKOUT",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Same frequency as input (buffer, no division).",
+            "expr": "(1000.0 / REF_CLK_period_ns)"
+          }
+        }
+      }
+    },
+    {
+      "type": "buf2",
+      "source": "DS841-1.8E, Section 3.8.3 (HCLK); UG286 Gowin Clock User Guide",
+      "mode": "local",
+      "description": "HCLK clock buffer (DHCEN). Promotes a clock onto the regional HCLK network with dynamic clock enable (active-low CE).",
+      "count": 4,
+      "map": {
+        "verilog-2005": [
+          "DHCEN u_dhcen_%%instance_idx%% (\n",
+          "    .CLKIN(%%REF_CLK%%),\n",
+          "    .CE(%%CE%%),\n",
+          "    .CLKOUT(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\DHCEN $auto$%%instance_idx%%\n",
+          "  connect \\CLKIN \\%%REF_CLK%%\n",
+          "  connect \\CE 1'0\n",
+          "  connect \\CLKOUT \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the buffer",
+          "required": true,
+          "width": 1,
+          "requires_period": true
+        },
+        "CE": {
+          "description": "Clock enable (active-low). When asserted low, output is enabled.",
+          "required": false,
+          "default": "1'b0",
+          "width": 1
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "Buffered clock output on HCLK network",
+          "port": "CLKOUT",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Same frequency as input (buffer, no division).",
+            "expr": "(1000.0 / REF_CLK_period_ns)"
+          }
+        }
+      }
+    }
+  ],
+  "differential": {
+    "source": "DS841-1.8E, Section 3.3 (IOB). GW1NZ-1 supports differential OUTPUT only, not differential input.",
+    "type": "emulated",
+    "io_type": "LVCMOS33D",
+    "output": {
+      "buffer": {
+        "description": "Emulated LVDS differential output buffer",
+        "map": {
+          "verilog-2005": [
+            "ELVDS_OBUF u_%%instance%% (\n",
+            "    .I(%%input%%),\n",
+            "    .O(%%pin_p%%),\n",
+            "    .OB(%%pin_n%%)\n",
+            ");\n"
+          ],
+          "rtlil": [
+            "cell \\ELVDS_OBUF $auto$%%instance%%\n",
+            "  connect \\I \\%%input%%\n",
+            "  connect \\O \\%%pin_p%%\n",
+            "  connect \\OB \\%%pin_n%%\n",
+            "end\n"
+          ]
+        }
+      },
+      "serializer": [
+        {
+          "description": "4:1 output serializer for LVDS",
+          "ratio": 4,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
+          "map": {
+            "verilog-2005": [
+              "OSER4 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\"),\n",
+              "    .HWL(\"false\"),\n",
+              "    .TXCLK_POL(1'b0)\n",
+              ") u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .TX0(1'b0),\n",
+              "    .TX1(1'b0),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q0(%%output%%),\n",
+              "    .Q1()\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\OSER4 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  parameter \\HWL \"false\"\n",
+              "  parameter \\TXCLK_POL 1'0\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\TX0 1'0\n",
+              "  connect \\TX1 1'0\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q0 \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "8:1 output serializer for LVDS",
+          "ratio": 8,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
+          "map": {
+            "verilog-2005": [
+              "OSER8 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\"),\n",
+              "    .HWL(\"false\"),\n",
+              "    .TXCLK_POL(1'b0)\n",
+              ") u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .D4(%%D4%%),\n",
+              "    .D5(%%D5%%),\n",
+              "    .D6(%%D6%%),\n",
+              "    .D7(%%D7%%),\n",
+              "    .TX0(1'b0),\n",
+              "    .TX1(1'b0),\n",
+              "    .TX2(1'b0),\n",
+              "    .TX3(1'b0),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q0(%%output%%),\n",
+              "    .Q1()\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\OSER8 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  parameter \\HWL \"false\"\n",
+              "  parameter \\TXCLK_POL 1'0\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\D4 \\%%D4%%\n",
+              "  connect \\D5 \\%%D5%%\n",
+              "  connect \\D6 \\%%D6%%\n",
+              "  connect \\D7 \\%%D7%%\n",
+              "  connect \\TX0 1'0\n",
+              "  connect \\TX1 1'0\n",
+              "  connect \\TX2 1'0\n",
+              "  connect \\TX3 1'0\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q0 \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "10:1 output serializer for TMDS/LVDS",
+          "ratio": 10,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
+          "map": {
+            "verilog-2005": [
+              "OSER10 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\")\n",
+              ") u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .D4(%%D4%%),\n",
+              "    .D5(%%D5%%),\n",
+              "    .D6(%%D6%%),\n",
+              "    .D7(%%D7%%),\n",
+              "    .D8(%%D8%%),\n",
+              "    .D9(%%D9%%),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q(%%output%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\OSER10 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\D4 \\%%D4%%\n",
+              "  connect \\D5 \\%%D5%%\n",
+              "  connect \\D6 \\%%D6%%\n",
+              "  connect \\D7 \\%%D7%%\n",
+              "  connect \\D8 \\%%D8%%\n",
+              "  connect \\D9 \\%%D9%%\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "description": "16:1 output serializer for LVDS",
+          "ratio": 16,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
+          "map": {
+            "verilog-2005": [
+              "OSER16 #(\n",
+              "    .GSREN(\"FALSE\"),\n",
+              "    .LSREN(\"TRUE\")\n",
+              ") u_%%instance%% (\n",
+              "    .D0(%%D0%%),\n",
+              "    .D1(%%D1%%),\n",
+              "    .D2(%%D2%%),\n",
+              "    .D3(%%D3%%),\n",
+              "    .D4(%%D4%%),\n",
+              "    .D5(%%D5%%),\n",
+              "    .D6(%%D6%%),\n",
+              "    .D7(%%D7%%),\n",
+              "    .D8(%%D8%%),\n",
+              "    .D9(%%D9%%),\n",
+              "    .D10(%%D10%%),\n",
+              "    .D11(%%D11%%),\n",
+              "    .D12(%%D12%%),\n",
+              "    .D13(%%D13%%),\n",
+              "    .D14(%%D14%%),\n",
+              "    .D15(%%D15%%),\n",
+              "    .FCLK(%%fclk%%),\n",
+              "    .PCLK(%%pclk%%),\n",
+              "    .RESET(~%%reset%%),\n",
+              "    .Q(%%output%%)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "wire width 1 \\jz_not_%%reset%%_%%instance%%\n",
+              "cell $not $auto$not_%%instance%%\n",
+              "  parameter \\A_SIGNED 0\n",
+              "  parameter \\A_WIDTH 1\n",
+              "  parameter \\Y_WIDTH 1\n",
+              "  connect \\A \\%%reset%%\n",
+              "  connect \\Y \\jz_not_%%reset%%_%%instance%%\n",
+              "end\n",
+              "cell \\OSER16 $auto$%%instance%%\n",
+              "  parameter \\GSREN \"FALSE\"\n",
+              "  parameter \\LSREN \"TRUE\"\n",
+              "  connect \\D0 \\%%D0%%\n",
+              "  connect \\D1 \\%%D1%%\n",
+              "  connect \\D2 \\%%D2%%\n",
+              "  connect \\D3 \\%%D3%%\n",
+              "  connect \\D4 \\%%D4%%\n",
+              "  connect \\D5 \\%%D5%%\n",
+              "  connect \\D6 \\%%D6%%\n",
+              "  connect \\D7 \\%%D7%%\n",
+              "  connect \\D8 \\%%D8%%\n",
+              "  connect \\D9 \\%%D9%%\n",
+              "  connect \\D10 \\%%D10%%\n",
+              "  connect \\D11 \\%%D11%%\n",
+              "  connect \\D12 \\%%D12%%\n",
+              "  connect \\D13 \\%%D13%%\n",
+              "  connect \\D14 \\%%D14%%\n",
+              "  connect \\D15 \\%%D15%%\n",
+              "  connect \\FCLK \\%%fclk%%\n",
+              "  connect \\PCLK \\%%pclk%%\n",
+              "  connect \\RESET \\jz_not_%%reset%%_%%instance%%\n",
+              "  connect \\Q \\%%output%%\n",
+              "end\n"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "fixed_pins": [
+    {
+      "pad": "IOL14A",
+      "pin": 10,
+      "name": "DONE",
+      "note": "Configuration done indicator"
+    }
+  ]
+}

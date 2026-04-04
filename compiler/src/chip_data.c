@@ -16,6 +16,7 @@ typedef struct JZChipBuiltin {
 
 /* Built-in chip data generated at build time. */
 #include "data/gw1nr-9-qn88-c6-i5.h"
+#include "data/gw1nz-1-qn48-c6-i5.h"
 #include "data/gw2ar-18-qn88-c7-i6.h"
 #include "data/gw2ar-18-qn88-c8-i7.h"
 #include "data/ice40up-5k-sg.h"
@@ -25,6 +26,7 @@ typedef struct JZChipBuiltin {
 
 static const JZChipBuiltin k_builtin_chips[] = {
     { "GW1NR-9-QN88-C6-I5",  (const char *)gw1nr_9_qn88_c6_i5_json },
+    { "GW1NZ-1-QN48-C6-I5",  (const char *)gw1nz_1_qn48_c6_i5_json },
     { "GW2AR-18-QN88-C7-I6", (const char *)gw2ar_18_qn88_c7_i6_json },
     { "GW2AR-18-QN88-C8-I7", (const char *)gw2ar_18_qn88_c8_i7_json },
     { "ICE40UP-5K-SG48",     (const char *)ice40up_5k_sg_json },
