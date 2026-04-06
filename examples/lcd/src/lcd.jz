@@ -1,97 +1,376 @@
 @module lcd
     CONST {
-        // State machine
-        S_RESET_LO = 0;
-        S_RESET_HI = 1;
-        S_INIT     = 2;
-        S_INIT_DLY = 3;
-        S_SPI      = 4;
-        S_PIX_HI   = 5;
-        S_PIX_LO   = 6;
-        S_PIX_ADV  = 7;
-        S_FRAME    = 8;
-        ST_W       = 4;
+        // ---- State machine ----
+        S_RESET_LO  = 0;
+        S_RESET_HI  = 1;
+        S_INIT      = 2;
+        S_INIT_DLY  = 3;
+        S_SPI       = 4;
+        S_PIX_HI    = 5;
+        S_PIX_LO    = 6;
+        S_PIX_ADV   = 7;
+        S_FRAME     = 8;
+        S_TP_START  = 9;
+        S_TP_SPI    = 10;
+        S_TP_XDONE  = 11;
+        S_TP_PROC   = 12;
+        ST_W        = 4;
 
-        // Delays at ~18.375 MHz
-        DLY_10MS   = 183750;
-        DLY_150MS  = 2756250;
-        DLY_W      = clog2(DLY_150MS);
+        // ---- Delays at ~18.375 MHz ----
+        DLY_10MS  = 183750;
+        DLY_150MS = 2756250;
+        DLY_W     = clog2(DLY_150MS);
 
-        // Display 320x240 (landscape)
+        // ---- Display 320x240 (landscape) ----
         DISP_W = 320;
         DISP_H = 240;
         X_W    = clog2(DISP_W);
         Y_W    = clog2(DISP_H);
 
-        // Init sequence length
+        // ---- Init sequence length ----
         INIT_LEN = 25;
         IDX_W    = clog2(INIT_LEN + 1);
 
-        // Heartbeat (~0.5s toggle)
-        HB_MAX = 9000000;
-        HB_W   = clog2(HB_MAX);
+        // ---- Grid layout (2px borders) ----
+        //  Columns: |2px| 104px |2px| 104px |2px| 104px |2px|
+        //  Rows:    |2px| 117px |2px| 117px |2px|
+        CELL_W   = 104;
+        CELL_H   = 117;
+        COL1_X   = 106;  // start of column-divider 0/1
+        COL2_X   = 212;  // start of column-divider 1/2
+        ROW1_Y   = 119;  // start of row-divider
+
+        // ---- Icon tile (8x8 bitmap scaled 8x = 64x64 pixels) ----
+        ICON_OFS_X = 20;  // (104-64)/2
+        ICON_OFS_Y = 26;  // (117-64)/2 ≈ 26
+        ICON_END_X = 84;  // 20+64
+        ICON_END_Y = 90;  // 26+64
+
+        // ---- Touch thresholds ----
+        TP_LO = 200;
+        TP_HI = 3900;
+        // Column boundaries in touch-space (0..4095 over 320px)
+        TP_COL1 = 1365;
+        TP_COL2 = 2730;
+        // Row boundary
+        TP_ROW1 = 2048;
+
+        // Colors are inlined as literals (CONST can't be used at runtime)
     }
 
     PORT {
         IN  [1] PCLK;
         IN  [1] RST;
+        IN  [1] TP_MISO;
         OUT [1] SPI_CS;
         OUT [1] SPI_CLK;
         OUT [1] SPI_MOSI;
         OUT [1] LCD_DC;
         OUT [1] LCD_RST;
-        OUT [1] HB;
-        OUT [1] PCLK_OUT;
-        OUT [1] DBG;
+        OUT [1] TP_CS;
+        OUT [1] TP_CLK;
+        OUT [1] TP_MOSI;
+        OUT [1] LED_R;
+        OUT [1] LED_G;
+        OUT [1] LED_B;
     }
 
     WIRE {
+        // Pixel color output
+        pix_hi       [8];
+        pix_lo       [8];
+        // Init ROM
         init_byte    [8];
         init_is_cmd  [1];
         init_has_dly [1];
-        pix_hi       [8];
-        pix_lo       [8];
+
+        // Grid geometry
+        is_border    [1];
+        cell_col     [2];
+        cell_row     [1];
+        px_local     [X_W];  // px minus cell start (9-bit)
+        py_local     [Y_W];  // py minus cell start (8-bit)
+        lx           [7];
+        ly           [7];
+
+        // Icon tile
+        in_icon      [1];
+        icon_lx      [7];   // lx - 20 (local x within icon area)
+        icon_ly      [7];   // ly - 26 (local y within icon area)
+        tile_x       [3];
+        tile_y       [3];
+        bitmap_row   [8];
+        icon_pixel   [1];
+        icon_hi      [8];
+        icon_lo      [8];
+
+        // Absolute-distance helpers (for dot diamond)
+        abs_dx       [7];
+        abs_dy       [7];
+        mdist        [8]; // manhattan distance
     }
 
     REGISTER {
-        state   [ST_W]  = ST_W'b0;
-        dbg_st  [1]     = 1'b0;
-        ret     [ST_W]  = ST_W'b0;
-        spi_sr  [8]     = 8'h00;
-        spi_cnt [4]     = 4'd0;
-        spi_ph  [1]     = 1'b0;
-        dc      [1]     = 1'b0;
-        cs      [1]     = 1'b1;
-        rst_out [1]     = 1'b1;
-        dly     [DLY_W] = DLY_W'b0;
-        idx     [IDX_W] = IDX_W'b0;
-        px      [X_W]   = X_W'b0;
-        py      [Y_W]   = Y_W'b0;
-        hb_cnt  [HB_W]  = HB_W'b0;
-        hb_st   [1]     = 1'b0;
+        // Main FSM
+        state    [ST_W]  = ST_W'b0;
+        ret      [ST_W]  = ST_W'b0;
+
+        // LCD SPI
+        spi_sr   [8]     = 8'h00;
+        spi_cnt  [4]     = 4'd0;
+        spi_ph   [1]     = 1'b0;
+        dc       [1]     = 1'b0;
+        cs       [1]     = 1'b1;
+        rst_out  [1]     = 1'b1;
+
+        // Delay / counters
+        dly      [DLY_W] = DLY_W'b0;
+        idx      [IDX_W] = IDX_W'b0;
+        px       [X_W]   = X_W'b0;
+        py       [Y_W]   = Y_W'b0;
+
+        // Touch SPI
+        tp_cs_r   [1]    = 1'b1;
+        tp_ph     [1]    = 1'b0;
+        tp_sr_out [8]    = 8'h00;
+        tp_sr_in  [16]   = 16'h0000;
+        tp_cnt    [5]    = 5'd0;
+        tp_x      [12]   = 12'd0;
+        was_touch [1]    = 1'b0;
+
+        // LED toggle state (active-high = on)
+        led_r_st  [1]    = 1'b0;
+        led_g_st  [1]    = 1'b0;
+        led_b_st  [1]    = 1'b0;
+
+        // Debug: sampled MISO
+        miso_sample [1]  = 1'b0;
+        hb_ctr [24]      = 24'd0;
     }
 
     ASYNCHRONOUS {
-        PCLK_OUT = PCLK;
+        // ---- Output pin assignments ----
         SPI_CS   <= cs;
         SPI_CLK  <= spi_ph;
         SPI_MOSI <= spi_sr[7];
         LCD_DC   <= dc;
         LCD_RST  <= rst_out;
-        HB       <= hb_st;
-        DBG      <= dbg_st;
+        TP_CS    <= hb_ctr[23];   // DEBUG: ~1Hz blink on CS pin (P32)
+        TP_CLK   <= hb_ctr[22];  // DEBUG: ~2Hz blink on CLK pin (P23)
+        TP_MOSI  <= hb_ctr[21];  // DEBUG: ~4Hz blink on MOSI pin (P28)
+        LED_R    <= hb_ctr[23];  // DEBUG: heartbeat matches CS
+        LED_G    <= 1'b0;        // DEBUG: off
+        LED_B    <= ~miso_sample; // DEBUG: blue ON when MISO is LOW
 
-        // Horizontal color bars, 8 bars of 30px each (py=0 is bottom)
-        IF (py < 8'd30)       { pix_hi <= 8'h00; pix_lo <= 8'h00; } // Black   (bottom)
-        ELIF (py < 8'd60)     { pix_hi <= 8'hFF; pix_lo <= 8'hFF; } // White
-        ELIF (py < 8'd90)     { pix_hi <= 8'hF8; pix_lo <= 8'h1F; } // Magenta
-        ELIF (py < 8'd120)    { pix_hi <= 8'h07; pix_lo <= 8'hFF; } // Cyan
-        ELIF (py < 8'd150)    { pix_hi <= 8'hFF; pix_lo <= 8'hE0; } // Yellow
-        ELIF (py < 8'd180)    { pix_hi <= 8'h00; pix_lo <= 8'h1F; } // Blue
-        ELIF (py < 8'd210)    { pix_hi <= 8'h07; pix_lo <= 8'hE0; } // Green
-        ELSE                  { pix_hi <= 8'hF8; pix_lo <= 8'h00; } // Red     (top)
+        // ================================================================
+        //  Grid geometry: determine cell, local coords, border
+        // ================================================================
 
-        // ILI9341 init sequence
+        // Column identification (9-bit subtraction, then truncate to 7)
+        IF (px < lit(X_W, COL1_X)) {
+            cell_col <= 2'd0;
+            px_local <= px - 9'd2;
+        } ELIF (px < lit(X_W, COL2_X)) {
+            cell_col <= 2'd1;
+            px_local <= px - 9'd108;
+        } ELSE {
+            cell_col <= 2'd2;
+            px_local <= px - 9'd214;
+        }
+        lx <= px_local[6:0];
+
+        // Row identification (8-bit subtraction, then truncate to 7)
+        // py=0 is bottom of display, so low py = bottom row (icons)
+        IF (py < lit(Y_W, ROW1_Y)) {
+            cell_row <= 1'b1;
+            py_local <= py - 8'd2;
+        } ELSE {
+            cell_row <= 1'b0;
+            py_local <= py - 8'd121;
+        }
+        ly <= py_local[6:0];
+
+        // Border detection
+        IF (px < 9'd2 || px >= 9'd318) {
+            is_border <= 1'b1;
+        } ELIF (px >= lit(X_W, COL1_X) && px < 9'd108) {
+            is_border <= 1'b1;
+        } ELIF (px >= lit(X_W, COL2_X) && px < 9'd214) {
+            is_border <= 1'b1;
+        } ELIF (py < 8'd2 || py >= 8'd238) {
+            is_border <= 1'b1;
+        } ELIF (py >= lit(Y_W, ROW1_Y) && py < 8'd121) {
+            is_border <= 1'b1;
+        } ELSE {
+            is_border <= 1'b0;
+        }
+
+        // ================================================================
+        //  Icon tile coordinates
+        // ================================================================
+        IF (lx >= 7'd20 && lx < 7'd84 && ly >= 7'd26 && ly < 7'd90) {
+            in_icon <= 1'b1;
+        } ELSE {
+            in_icon <= 1'b0;
+        }
+        icon_lx <= lx - 7'd20;
+        icon_ly <= ly - 7'd26;
+        tile_x <= icon_lx[5:3];
+        tile_y <= icon_ly[5:3];
+
+        // ================================================================
+        //  Absolute distance from cell center (52, 58) for dot diamond
+        // ================================================================
+        IF (lx >= 7'd52) {
+            abs_dx <= lx - 7'd52;
+        } ELSE {
+            abs_dx <= 7'd52 - lx;
+        }
+        IF (ly >= 7'd58) {
+            abs_dy <= ly - 7'd58;
+        } ELSE {
+            abs_dy <= 7'd58 - ly;
+        }
+        mdist <= {1'b0, abs_dx} + {1'b0, abs_dy};
+
+        // ================================================================
+        //  Bitmap row lookup (8x8 icons per cell type)
+        // ================================================================
+
+        // Row 0 (all three): filled circle
+        //   ..####..  = 0x3C
+        //   .######.  = 0x7E
+        //   ########  = 0xFF
+        //   ########  = 0xFF
+        //   ########  = 0xFF
+        //   ########  = 0xFF
+        //   .######.  = 0x7E
+        //   ..####..  = 0x3C
+
+        // Row 1, Col 0: tic-tac-toe grid
+        //   ..#..#..  = 0x24
+        //   ..#..#..  = 0x24
+        //   ########  = 0xFF
+        //   ..#..#..  = 0x24
+        //   ..#..#..  = 0x24
+        //   ########  = 0xFF
+        //   ..#..#..  = 0x24
+        //   ..#..#..  = 0x24
+
+        // Row 1, Col 1: star (+ cross)
+        //   ...##...  = 0x18
+        //   ...##...  = 0x18
+        //   ..####..  = 0x3C
+        //   ########  = 0xFF
+        //   ########  = 0xFF
+        //   ..####..  = 0x3C
+        //   ...##...  = 0x18
+        //   ...##...  = 0x18
+
+        // Row 1, Col 2: empty (no icon)
+
+        IF (cell_row == 1'b0) {
+            // Top row: circle bitmap (used for all 3 dots)
+            SELECT (tile_y) {
+                CASE (3'd0) { bitmap_row <= 8'h3C; }
+                CASE (3'd1) { bitmap_row <= 8'h7E; }
+                CASE (3'd2) { bitmap_row <= 8'hFF; }
+                CASE (3'd3) { bitmap_row <= 8'hFF; }
+                CASE (3'd4) { bitmap_row <= 8'hFF; }
+                CASE (3'd5) { bitmap_row <= 8'hFF; }
+                CASE (3'd6) { bitmap_row <= 8'h7E; }
+                CASE (3'd7) { bitmap_row <= 8'h3C; }
+                DEFAULT     { bitmap_row <= 8'h00; }
+            }
+        } ELIF (cell_col == 2'd0) {
+            // Bottom-left: tic-tac-toe grid
+            SELECT (tile_y) {
+                CASE (3'd0) { bitmap_row <= 8'h24; }
+                CASE (3'd1) { bitmap_row <= 8'h24; }
+                CASE (3'd2) { bitmap_row <= 8'hFF; }
+                CASE (3'd3) { bitmap_row <= 8'h24; }
+                CASE (3'd4) { bitmap_row <= 8'h24; }
+                CASE (3'd5) { bitmap_row <= 8'hFF; }
+                CASE (3'd6) { bitmap_row <= 8'h24; }
+                CASE (3'd7) { bitmap_row <= 8'h24; }
+                DEFAULT     { bitmap_row <= 8'h00; }
+            }
+        } ELIF (cell_col == 2'd1) {
+            // Bottom-middle: star (cross shape)
+            SELECT (tile_y) {
+                CASE (3'd0) { bitmap_row <= 8'h18; }
+                CASE (3'd1) { bitmap_row <= 8'h18; }
+                CASE (3'd2) { bitmap_row <= 8'h3C; }
+                CASE (3'd3) { bitmap_row <= 8'hFF; }
+                CASE (3'd4) { bitmap_row <= 8'hFF; }
+                CASE (3'd5) { bitmap_row <= 8'h3C; }
+                CASE (3'd6) { bitmap_row <= 8'h18; }
+                CASE (3'd7) { bitmap_row <= 8'h18; }
+                DEFAULT     { bitmap_row <= 8'h00; }
+            }
+        } ELSE {
+            // Bottom-right: empty
+            bitmap_row <= 8'h00;
+        }
+
+        // ================================================================
+        //  Bitmap column (bit) select
+        // ================================================================
+        SELECT (tile_x) {
+            CASE (3'd0) { icon_pixel <= bitmap_row[7]; }
+            CASE (3'd1) { icon_pixel <= bitmap_row[6]; }
+            CASE (3'd2) { icon_pixel <= bitmap_row[5]; }
+            CASE (3'd3) { icon_pixel <= bitmap_row[4]; }
+            CASE (3'd4) { icon_pixel <= bitmap_row[3]; }
+            CASE (3'd5) { icon_pixel <= bitmap_row[2]; }
+            CASE (3'd6) { icon_pixel <= bitmap_row[1]; }
+            CASE (3'd7) { icon_pixel <= bitmap_row[0]; }
+            DEFAULT     { icon_pixel <= 1'b0; }
+        }
+
+        // ================================================================
+        //  Icon color based on cell
+        // ================================================================
+        IF (cell_row == 1'b0 && cell_col == 2'd0) {
+            // Red dot: bright if LED on, dim if off
+            IF (led_r_st == 1'b1) {
+                icon_hi <= 8'hF8;  icon_lo <= 8'h00;  // bright red
+            } ELSE {
+                icon_hi <= 8'h80;  icon_lo <= 8'h00;  // dim red
+            }
+        } ELIF (cell_row == 1'b0 && cell_col == 2'd1) {
+            // Green dot
+            IF (led_g_st == 1'b1) {
+                icon_hi <= 8'h07;  icon_lo <= 8'hE0;  // bright green
+            } ELSE {
+                icon_hi <= 8'h03;  icon_lo <= 8'h00;  // dim green
+            }
+        } ELIF (cell_row == 1'b0 && cell_col == 2'd2) {
+            // Blue dot
+            IF (led_b_st == 1'b1) {
+                icon_hi <= 8'h00;  icon_lo <= 8'h1F;  // bright blue
+            } ELSE {
+                icon_hi <= 8'h00;  icon_lo <= 8'h0A;  // dim blue
+            }
+        } ELSE {
+            // Bottom row icons: dark gray
+            icon_hi <= 8'h52;  icon_lo <= 8'h8A;
+        }
+
+        // ================================================================
+        //  Final pixel color mux
+        // ================================================================
+        IF (is_border == 1'b1) {
+            pix_hi <= 8'h31;  pix_lo <= 8'hA6;  // dark gray border
+        } ELIF (in_icon == 1'b1 && icon_pixel == 1'b1) {
+            pix_hi <= icon_hi; pix_lo <= icon_lo;
+        } ELSE {
+            pix_hi <= 8'hCE;  pix_lo <= 8'hBF;  // light blue-gray bg
+        }
+
+        // ================================================================
+        //  ILI9341 init sequence ROM (same as original)
+        // ================================================================
         SELECT (idx) {
             CASE (IDX_W'd0)  { init_byte <= 8'h01; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // SW Reset
             CASE (IDX_W'd1)  { init_byte <= 8'h11; init_is_cmd <= 1'b1; init_has_dly <= 1'b1; } // Sleep Out
@@ -123,18 +402,20 @@
     }
 
     SYNCHRONOUS(CLK=PCLK RESET=RST RESET_ACTIVE=Low) {
-        // Heartbeat
-        IF (hb_cnt == lit(HB_W, HB_MAX - 1)) {
-            hb_cnt <= HB_W'b0;
-            hb_st <= ~hb_st;
-        } ELSE {
-            hb_cnt <= hb_cnt + lit(HB_W, 1);
-        }
 
-        // Main state machine
+        // ============================================================
+        //  Debug: heartbeat + MISO sample
+        // ============================================================
+        hb_ctr <= hb_ctr + 24'd1;
+        miso_sample <= TP_MISO;
+
+        // ============================================================
+        //  Main state machine
+        // ============================================================
         SELECT (state) {
+
+            // ---- LCD Hardware Reset (low for 10ms) ----
             CASE (ST_W'd0) {
-                // S_RESET_LO: hold LCD reset low for 10ms
                 rst_out <= 1'b0;
                 cs <= 1'b1;
                 IF (dly == lit(DLY_W, DLY_10MS - 1)) {
@@ -145,8 +426,8 @@
                 }
             }
 
+            // ---- Release reset, wait 150ms ----
             CASE (ST_W'd1) {
-                // S_RESET_HI: release reset, wait 150ms
                 rst_out <= 1'b1;
                 IF (dly == lit(DLY_W, DLY_150MS - 1)) {
                     dly <= DLY_W'b0;
@@ -156,8 +437,8 @@
                 }
             }
 
+            // ---- Send next init byte ----
             CASE (ST_W'd2) {
-                // S_INIT: send next init command/data byte
                 IF (idx == lit(IDX_W, INIT_LEN)) {
                     dc <= 1'b1;
                     state <= lit(ST_W, S_PIX_HI);
@@ -177,8 +458,8 @@
                 }
             }
 
+            // ---- Init delay: deassert CS, wait 150ms ----
             CASE (ST_W'd3) {
-                // S_INIT_DLY: deassert CS, delay 150ms
                 cs <= 1'b1;
                 IF (dly == lit(DLY_W, DLY_150MS - 1)) {
                     dly <= DLY_W'b0;
@@ -188,9 +469,8 @@
                 }
             }
 
+            // ---- LCD SPI: clock out one byte MSB-first (Mode 0, ÷16) ----
             CASE (ST_W'd4) {
-                // S_SPI: clock out one byte MSB first (SPI Mode 0)
-                // Divide clock by 16 (~1.15 MHz SPI)
                 IF (dly[2:0] != 3'b111) {
                     dly <= dly + lit(DLY_W, 1);
                 } ELSE {
@@ -210,9 +490,8 @@
                 }
             }
 
+            // ---- Send pixel high byte ----
             CASE (ST_W'd5) {
-                // S_PIX_HI: send pixel high byte
-                dbg_st <= 1'b1;
                 spi_sr <= pix_hi;
                 dc <= 1'b1;
                 cs <= 1'b0;
@@ -222,8 +501,8 @@
                 state <= lit(ST_W, S_SPI);
             }
 
+            // ---- Send pixel low byte ----
             CASE (ST_W'd6) {
-                // S_PIX_LO: send pixel low byte
                 spi_sr <= pix_lo;
                 spi_cnt <= 4'd0;
                 spi_ph <= 1'b0;
@@ -231,13 +510,13 @@
                 state <= lit(ST_W, S_SPI);
             }
 
+            // ---- Advance to next pixel ----
             CASE (ST_W'd7) {
-                // S_PIX_ADV: advance to next pixel
                 IF (px == lit(X_W, DISP_W - 1)) {
                     px <= X_W'b0;
                     IF (py == lit(Y_W, DISP_H - 1)) {
                         py <= Y_W'b0;
-                        state <= lit(ST_W, S_FRAME);
+                        state <= lit(ST_W, S_TP_START);
                     } ELSE {
                         py <= py + lit(Y_W, 1);
                         state <= lit(ST_W, S_PIX_HI);
@@ -248,14 +527,107 @@
                 }
             }
 
+            // ---- Frame done → re-send RAMWR then restart pixels ----
             CASE (ST_W'd8) {
-                // S_FRAME: re-send RAMWR, restart
                 spi_sr <= 8'h2C;
                 dc <= 1'b0;
+                cs <= 1'b0;
                 spi_cnt <= 4'd0;
                 spi_ph <= 1'b0;
                 ret <= lit(ST_W, S_PIX_HI);
                 state <= lit(ST_W, S_SPI);
+            }
+
+            // ---- Touch: begin read sequence ----
+            CASE (ST_W'd9) {
+                // Deassert LCD CS, assert touch CS
+                cs <= 1'b1;
+                tp_cs_r <= 1'b0;
+                // Load X-position command (0xD3 = X, 12-bit, differential, PD=11 always-on)
+                tp_sr_out <= 8'hD3;
+                tp_sr_in <= 16'h0000;
+                tp_cnt <= 5'd0;
+                tp_ph <= 1'b0;
+                dly <= DLY_W'b0;
+                ret <= lit(ST_W, S_TP_XDONE);
+                state <= lit(ST_W, S_TP_SPI);
+            }
+
+            // ---- Touch SPI: clock 24 bits (8 cmd out + 16 data in) ----
+            CASE (ST_W'd10) {
+                IF (dly[2:0] != 3'b111) {
+                    dly <= dly + lit(DLY_W, 1);
+                } ELSE {
+                    dly <= DLY_W'b0;
+                    IF (tp_ph == 1'b0) {
+                        // Rising edge
+                        tp_ph <= 1'b1;
+                        // Sample MISO during data phase (bits 8..23)
+                        IF (tp_cnt >= 5'd8) {
+                            tp_sr_in <= { tp_sr_in[14:0], TP_MISO };
+                        }
+                    } ELSE {
+                        // Falling edge
+                        tp_ph <= 1'b0;
+                        IF (tp_cnt == 5'd23) {
+                            tp_cnt <= 5'd0;
+                            state <= ret;
+                        } ELSE {
+                            // Shift out command bits (first 8 clocks)
+                            IF (tp_cnt < 5'd7) {
+                                tp_sr_out <= { tp_sr_out[6:0], 1'b0 };
+                            } ELIF (tp_cnt == 5'd7) {
+                                tp_sr_out <= 8'h00;
+                            }
+                            tp_cnt <= tp_cnt + 5'd1;
+                        }
+                    }
+                }
+            }
+
+            // ---- Touch: X done, start Y read ----
+            CASE (ST_W'd11) {
+                // Save X result (bits 14:3 = 12-bit ADC value)
+                tp_x <= tp_sr_in[14:3];
+                // Load Y-position command (0x93 = Y, 12-bit, differential, PD=11 always-on)
+                tp_sr_out <= 8'h93;
+                tp_sr_in <= 16'h0000;
+                tp_cnt <= 5'd0;
+                tp_ph <= 1'b0;
+                dly <= DLY_W'b0;
+                ret <= lit(ST_W, S_TP_PROC);
+                state <= lit(ST_W, S_TP_SPI);
+            }
+
+            // ---- Touch: process result, toggle LEDs ----
+            CASE (ST_W'd12) {
+                // Deassert touch CS
+                tp_cs_r <= 1'b1;
+
+                // Detect touch: both X and Y in valid range
+                IF (tp_x > lit(12, TP_LO) && tp_x < lit(12, TP_HI) &&
+                    tp_sr_in[14:3] > lit(12, TP_LO) && tp_sr_in[14:3] < lit(12, TP_HI)) {
+                    // New touch only (not held)
+                    IF (was_touch == 1'b0) {
+                        was_touch <= 1'b1;
+                        // Determine which button (top row only)
+                        IF (tp_sr_in[14:3] < lit(12, TP_ROW1)) {
+                            // Top row
+                            IF (tp_x < lit(12, TP_COL1)) {
+                                led_r_st <= ~led_r_st;
+                            } ELIF (tp_x < lit(12, TP_COL2)) {
+                                led_g_st <= ~led_g_st;
+                            } ELSE {
+                                led_b_st <= ~led_b_st;
+                            }
+                        }
+                    }
+                } ELSE {
+                    was_touch <= 1'b0;
+                }
+
+                // Go to FRAME to re-send RAMWR and start next frame
+                state <= lit(ST_W, S_FRAME);
             }
 
             DEFAULT {

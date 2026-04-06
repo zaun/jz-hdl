@@ -83,14 +83,18 @@
     @top lcd {
         IN  [1] PCLK     = PCLK;
         IN  [1] RST      = 1'b1;
+        IN  [1] TP_MISO  = TP_SPI_MISO;
 
         OUT [1] SPI_CS   = TFT_SPI_CS;
         OUT [1] SPI_CLK  = TFT_SPI_CLK;
         OUT [1] SPI_MOSI = TFT_SPI_MOSI;
         OUT [1] LCD_DC   = TFT_RS;
         OUT [1] LCD_RST  = _;
-        OUT [1] HB       = ~LED[0];
-        OUT [1] PCLK_OUT = ~LED[1];
-        OUT [1] DBG      = ~LED[2];
+        OUT [1] TP_CS    = TP_SPI_CS;
+        OUT [1] TP_CLK   = TP_SPI_CLK;
+        OUT [1] TP_MOSI  = TP_SPI_MOSI;
+        OUT [1] LED_R    = ~LED[0];
+        OUT [1] LED_G    = ~LED[1];
+        OUT [1] LED_B    = ~LED[2];
     }
 @endproj
