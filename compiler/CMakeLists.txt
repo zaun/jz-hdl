@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(jz_hdl VERSION 0.1.6 LANGUAGES C)
+project(jz_hdl VERSION 0.1.7 LANGUAGES C)
 
 # Default to Debug if no build type is specified (for single-config generators)
 if(NOT CMAKE_CONFIGURATION_TYPES)

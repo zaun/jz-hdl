@@ -2,7 +2,7 @@
 mainfont: "Helvetica Neue"
 monofont: "Menlo"
 title: "JZ-HDL SPECIFICATION"
-subtitle: "State: Beta — Version: 0.1.6"
+subtitle: "State: Beta — Version: 0.1.7"
 toc: true
 header-includes:
   - \usepackage{titling}
