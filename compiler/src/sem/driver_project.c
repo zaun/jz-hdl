@@ -1925,10 +1925,39 @@ static void resolve_qualified_identifier_node(JZASTNode *node,
         }
 
         if (!found) {
-            sem_report_rule(diagnostics,
-                            node->loc,
-                            "UNDECLARED_IDENTIFIER",
-                            "reference to undefined instance port");
+            /* Check if the name matches an internal signal (WIRE, REGISTER,
+             * LATCH) in the child module. If so, give a specific error:
+             * internal signals are not accessible via inst.name in
+             * synthesizable code (only in simulation/TAP).
+             */
+            int is_internal = 0;
+            for (size_t i = 0; i < child_mod->child_count && !is_internal; ++i) {
+                JZASTNode *blk = child_mod->children[i];
+                if (!blk) continue;
+                if (blk->type != JZ_AST_WIRE_BLOCK &&
+                    blk->type != JZ_AST_REGISTER_BLOCK &&
+                    blk->type != JZ_AST_LATCH_BLOCK) continue;
+                for (size_t j = 0; j < blk->child_count; ++j) {
+                    JZASTNode *decl = blk->children[j];
+                    if (decl && decl->name && strcmp(decl->name, tail) == 0) {
+                        is_internal = 1;
+                        break;
+                    }
+                }
+            }
+            if (is_internal) {
+                sem_report_rule(diagnostics,
+                                node->loc,
+                                "INSTANCE_INTERNAL_ACCESS",
+                                "cannot access internal signal of instance; "
+                                "only PORT members are accessible via inst.name "
+                                "(internal access is allowed in simulation only)");
+            } else {
+                sem_report_rule(diagnostics,
+                                node->loc,
+                                "UNDECLARED_IDENTIFIER",
+                                "reference to undefined instance port");
+            }
         }
         return;
     }

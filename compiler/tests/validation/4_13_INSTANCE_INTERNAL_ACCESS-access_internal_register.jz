@@ -1,0 +1,41 @@
+// INSTANCE_INTERNAL_ACCESS: Accessing an internal signal of an instance is
+// not permitted in synthesizable code.  Only PORT members are accessible
+// via the inst.name syntax.  Internal access is allowed in simulation only.
+
+@project INSTANCE_INTERNAL_ACCESS_access_internal_register
+    @top TopMod {
+        OUT [8] result = _;
+    }
+@endproj
+
+@module ChildMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+    REGISTER {
+        internal_reg [8] = 8'h00;
+    }
+    ASYNCHRONOUS {
+        data = internal_reg;
+    }
+    SYNCHRONOUS(CLK=din[0]) {
+        internal_reg <= din;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        OUT [8] result;
+    }
+
+    @new inst1 ChildMod {
+        IN  [8] din = 8'h42;
+        OUT [8] data = result;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger: accessing internal register of child module
+        result = inst1.internal_reg;
+    }
+@endmod

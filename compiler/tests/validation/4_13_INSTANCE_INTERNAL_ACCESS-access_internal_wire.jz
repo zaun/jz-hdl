@@ -1,0 +1,38 @@
+// INSTANCE_INTERNAL_ACCESS: Accessing an internal wire of an instance is
+// not permitted in synthesizable code.
+
+@project INSTANCE_INTERNAL_ACCESS_access_internal_wire
+    @top TopMod {
+        OUT [8] result = _;
+    }
+@endproj
+
+@module ChildMod
+    PORT {
+        IN  [8] din;
+        OUT [8] data;
+    }
+    WIRE {
+        temp [8];
+    }
+    ASYNCHRONOUS {
+        temp = din;
+        data = temp;
+    }
+@endmod
+
+@module TopMod
+    PORT {
+        OUT [8] result;
+    }
+
+    @new inst1 ChildMod {
+        IN  [8] din = 8'h42;
+        OUT [8] data = result;
+    };
+
+    ASYNCHRONOUS {
+        // Trigger: accessing internal wire of child module
+        result = inst1.temp;
+    }
+@endmod

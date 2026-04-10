@@ -1580,3 +1580,210 @@ int ir_build_instances_for_module(const JZModuleScope *scope,
     mod->num_instances = inst_index;
     return 0;
 }
+
+/* ============================================================================
+ * Instance port mapping for expression resolution
+ * ============================================================================
+ */
+
+/**
+ * @brief Build bus_map entries for instance output port bindings.
+ *
+ * Scans @new instance declarations in the module AST and, for each OUT/INOUT
+ * port binding that maps to a parent signal, appends an IR_BusSignalMapping
+ * entry. This allows ir_build_expr to resolve qualified identifiers of the
+ * form "inst.port" via the existing BUS signal lookup path.
+ *
+ * Must be called during the first IR pass (after signals, before statement
+ * lowering) so that expressions like `result = inst.data;` resolve correctly.
+ *
+ * @param scope           Parent module scope.
+ * @param project_symbols Project-level symbol table.
+ * @param arena           Arena for allocation.
+ * @param bus_map         Pointer to bus_map array (may be reallocated).
+ * @param bus_map_count   Pointer to bus_map entry count.
+ * @return 0 on success, non-zero on failure.
+ */
+int ir_build_instance_port_mappings(const JZModuleScope *scope,
+                                     const JZBuffer *project_symbols,
+                                     JZArena *arena,
+                                     IR_BusSignalMapping **bus_map,
+                                     int *bus_map_count)
+{
+    if (!scope || !scope->node || !arena || !bus_map || !bus_map_count) {
+        return -1;
+    }
+
+    JZASTNode *ast_mod = scope->node;
+
+    /* Collect active instance nodes (evaluating feature guards). */
+    JZASTNode *active_inst_nodes[512];
+    int active_inst_node_count = 0;
+    collect_active_instances(ast_mod, scope, project_symbols,
+                             active_inst_nodes, &active_inst_node_count, 512);
+
+    if (active_inst_node_count == 0) {
+        return 0;
+    }
+
+    /* First pass: count how many OUT/INOUT port bindings map to parent
+     * signals across all scalar instances. Instance arrays are handled
+     * per-element if each element has a distinct parent signal.
+     */
+    int needed = 0;
+    for (int ai = 0; ai < active_inst_node_count; ++ai) {
+        JZASTNode *inst_node = active_inst_nodes[ai];
+        if (!inst_node || inst_node->type != JZ_AST_MODULE_INSTANCE) {
+            continue;
+        }
+
+        /* Determine array count. */
+        unsigned array_count = 1;
+        if (inst_node->width && *inst_node->width) {
+            unsigned tmp = 0;
+            if (eval_simple_positive_decl_int(inst_node->width, &tmp) == 1 && tmp > 0) {
+                array_count = tmp;
+            }
+        }
+
+        for (size_t c = 0; c < inst_node->child_count; ++c) {
+            JZASTNode *bind = inst_node->children[c];
+            if (!bind || bind->type != JZ_AST_PORT_DECL || !bind->name) {
+                continue;
+            }
+            /* Only map OUT and INOUT ports. */
+            const char *dir = bind->block_kind ? bind->block_kind : "";
+            if (strcmp(dir, "OUT") != 0 && strcmp(dir, "INOUT") != 0) {
+                continue;
+            }
+            /* Skip BUS bindings (handled separately). */
+            if (strcmp(dir, "BUS") == 0) {
+                continue;
+            }
+            /* Check if the binding has a parent signal (not _ / no-connect). */
+            if (bind->child_count == 0) {
+                continue;
+            }
+            JZASTNode *rhs = bind->children[0];
+            if (!rhs) {
+                continue;
+            }
+
+            /* For simple identifiers, check if parent signal exists. */
+            JZASTNode *base = rhs;
+            if (rhs->type == JZ_AST_EXPR_SLICE && rhs->child_count >= 1) {
+                base = rhs->children[0];
+            }
+            if (base && base->type == JZ_AST_EXPR_IDENTIFIER && base->name) {
+                const JZSymbol *psym = module_scope_lookup(scope, base->name);
+                if (psym && (psym->kind == JZ_SYM_PORT ||
+                             psym->kind == JZ_SYM_WIRE ||
+                             psym->kind == JZ_SYM_REGISTER)) {
+                    needed += (int)array_count;
+                }
+            }
+        }
+    }
+
+    if (needed == 0) {
+        return 0;
+    }
+
+    /* Grow the bus_map array. */
+    int new_map_count = *bus_map_count + needed;
+    IR_BusSignalMapping *new_map = (IR_BusSignalMapping *)jz_arena_alloc(
+        arena, sizeof(IR_BusSignalMapping) * (size_t)new_map_count);
+    if (!new_map) {
+        return -1;
+    }
+    if (*bus_map && *bus_map_count > 0) {
+        memcpy(new_map, *bus_map,
+               sizeof(IR_BusSignalMapping) * (size_t)*bus_map_count);
+    }
+
+    int map_idx = *bus_map_count;
+
+    /* Second pass: populate the mapping entries. */
+    for (int ai = 0; ai < active_inst_node_count; ++ai) {
+        JZASTNode *inst_node = active_inst_nodes[ai];
+        if (!inst_node || inst_node->type != JZ_AST_MODULE_INSTANCE) {
+            continue;
+        }
+
+        const char *inst_name = inst_node->name;
+        if (!inst_name) {
+            continue;
+        }
+
+        /* Determine array count. */
+        unsigned array_count = 1;
+        if (inst_node->width && *inst_node->width) {
+            unsigned tmp = 0;
+            if (eval_simple_positive_decl_int(inst_node->width, &tmp) == 1 && tmp > 0) {
+                array_count = tmp;
+            }
+        }
+
+        for (size_t c = 0; c < inst_node->child_count; ++c) {
+            JZASTNode *bind = inst_node->children[c];
+            if (!bind || bind->type != JZ_AST_PORT_DECL || !bind->name) {
+                continue;
+            }
+            const char *dir = bind->block_kind ? bind->block_kind : "";
+            if (strcmp(dir, "OUT") != 0 && strcmp(dir, "INOUT") != 0) {
+                continue;
+            }
+            if (bind->child_count == 0) {
+                continue;
+            }
+            JZASTNode *rhs = bind->children[0];
+            if (!rhs) {
+                continue;
+            }
+
+            JZASTNode *base = rhs;
+            if (rhs->type == JZ_AST_EXPR_SLICE && rhs->child_count >= 1) {
+                base = rhs->children[0];
+            }
+            if (!base || base->type != JZ_AST_EXPR_IDENTIFIER || !base->name) {
+                continue;
+            }
+            const JZSymbol *psym = module_scope_lookup(scope, base->name);
+            if (!psym || (psym->kind != JZ_SYM_PORT &&
+                          psym->kind != JZ_SYM_WIRE &&
+                          psym->kind != JZ_SYM_REGISTER)) {
+                continue;
+            }
+
+            /* Evaluate port width for the mapping entry. */
+            unsigned port_width = 0;
+            if (bind->width) {
+                sem_eval_width_expr(bind->width, scope, project_symbols, &port_width);
+            }
+
+            /* Add mapping entry for each array element. */
+            for (unsigned elem = 0; elem < array_count; ++elem) {
+                if (map_idx >= new_map_count) break;
+
+                IR_BusSignalMapping *entry = &new_map[map_idx++];
+
+                if (array_count > 1) {
+                    /* Array instance: use "inst[N]" as the port name. */
+                    char name_buf[256];
+                    snprintf(name_buf, sizeof(name_buf), "%s[%u]", inst_name, elem);
+                    entry->bus_port_name = ir_strdup_arena(arena, name_buf);
+                } else {
+                    entry->bus_port_name = ir_strdup_arena(arena, inst_name);
+                }
+                entry->signal_name = ir_strdup_arena(arena, bind->name);
+                entry->array_index = (array_count > 1) ? (int)elem : -1;
+                entry->ir_signal_id = psym->id;
+                entry->width = (int)port_width;
+            }
+        }
+    }
+
+    *bus_map = new_map;
+    *bus_map_count = map_idx;
+    return 0;
+}

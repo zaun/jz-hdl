@@ -126,6 +126,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "MODULE_AND_INSTANTIATION", "INSTANCE_ARRAY_IDX_SLICE_OUT_OF_RANGE", 0, JZ_RULE_MODE_ERR, "S4.13.1 Instance array IDX-dependent slice evaluates to indices outside the parent signal width for some instance index" },
     { "MODULE_AND_INSTANTIATION", "INSTANCE_OUT_PORT_LITERAL",            0, JZ_RULE_MODE_ERR, "S4.13 OUT port binding in @new may not be a literal value" },
     { "MODULE_AND_INSTANTIATION", "INSTANCE_ARRAY_MULTI_DIMENSIONAL",     0, JZ_RULE_MODE_ERR, "S4.13.1 Multi-dimensional instance arrays are not supported" },
+    { "MODULE_AND_INSTANTIATION", "INSTANCE_INTERNAL_ACCESS",              0, JZ_RULE_MODE_ERR, "S4.13 Cannot access internal signals (WIRE/REGISTER/LATCH) of an instance; only PORT members are accessible" },
 
     /* [MUX_RULES] */
     { "MUX_RULES", "MUX_ASSIGN_LHS",                                2, JZ_RULE_MODE_ERR, "S4.6 Assigning to MUX id or its indexed form on LHS is forbidden (MUX is read-only)" },

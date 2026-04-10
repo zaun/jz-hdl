@@ -383,6 +383,10 @@ The sections below list all diagnostic rules organized by category. Each entry s
 - Severity: ERROR
 - Fix: Ensure parent signal has the width declared in instantiation clause (check parent's CONST resolution).
 
+### MODULE_AND_INSTANTIATION.INSTANCE_INTERNAL_ACCESS — Cannot access internal signal of instance
+- Severity: ERROR
+- Fix: Only PORT members are accessible via `inst.name` in synthesizable code. WIRE, REGISTER, and LATCH signals inside a child module are internal and not visible to the parent. Use an OUT port to expose values, or access internals in simulation mode only.
+
 ---
 
 ## MUX Rules
