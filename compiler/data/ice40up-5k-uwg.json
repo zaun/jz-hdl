@@ -266,46 +266,13 @@
     },
     {
       "type": "pll",
-      "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_CORE); Lattice TN1251 iCE40 sysCLOCK PLL Design and Usage Guide",
-      "description": "Phase-Locked Loop (SB_PLL40_CORE). SIMPLE mode with internal feedback.",
+      "source": "DS-ICE40-UltraPlus, Section: PLL; Lattice TN1251 & TN02052 iCE40 sysCLOCK PLL Design and Usage Guides",
+      "description": "Phase-Locked Loop. One physical PLL block; the underlying primitive cell (SB_PLL40_CORE, SB_PLL40_2F_CORE, SB_PLL40_PAD, or SB_PLL40_2F_PAD) is selected automatically from the reference clock source (pad vs fabric) and the number of declared outputs (one vs two).",
       "count": 1,
       "chaining": false,
-      "map": {
-        "verilog-2005": [
-          "SB_PLL40_CORE #(\n",
-          "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
-          "    .DIVR(%%DIVR%%),\n",
-          "    .DIVF(%%DIVF%%),\n",
-          "    .DIVQ(%%DIVQ%%),\n",
-          "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
-          "    .PLLOUT_SELECT(\"%%PLLOUT_SELECT_A%%\")\n",
-          ") u_pll_%%instance_idx%% (\n",
-          "    .REFERENCECLK(%%REF_CLK%%),\n",
-          "    .PLLOUTGLOBAL(%%BASE%%),\n",
-          "    .LOCK(%%LOCK%%),\n",
-          "    .BYPASS(1'b0),\n",
-          "    .RESETB(1'b1)\n",
-          ");\n"
-        ],
-        "rtlil": [
-          "cell \\SB_PLL40_CORE $auto$%%instance_idx%%\n",
-          "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
-          "  parameter \\DIVR %%DIVR%%\n",
-          "  parameter \\DIVF %%DIVF%%\n",
-          "  parameter \\DIVQ %%DIVQ%%\n",
-          "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
-          "  parameter \\PLLOUT_SELECT \"%%PLLOUT_SELECT_A%%\"\n",
-          "  connect \\REFERENCECLK \\%%REF_CLK%%\n",
-          "  connect \\PLLOUTGLOBAL \\%%BASE%%\n",
-          "  connect \\LOCK \\%%LOCK%%\n",
-          "  connect \\BYPASS 1'0\n",
-          "  connect \\RESETB 1'1\n",
-          "end\n"
-        ]
-      },
       "inputs": {
         "REF_CLK": {
-          "description": "Reference clock input to the PLL",
+          "description": "Reference clock input to the PLL. When driven from a project input pin (pad), the compiler selects a PAD variant and connects the signal to PACKAGEPIN. When driven from fabric, the compiler selects a CORE variant and connects the signal to REFERENCECLK.",
           "required": true,
           "width": 1,
           "requires_period": true,
@@ -342,8 +309,19 @@
           "min": 0,
           "max": 7
         },
-        "PLLOUT_SELECT_A": {
-          "description": "Output A mux: GENCLK, GENCLK_HALF, SHIFTREG_0deg, or SHIFTREG_90deg",
+        "PLLOUT_SELECT_P": {
+          "description": "Primary output mux: GENCLK (FVCO/2^DIVQ), GENCLK_HALF (FVCO/2^(DIVQ+1)), SHIFTREG_0deg, or SHIFTREG_90deg",
+          "type": "string",
+          "default": "GENCLK",
+          "valid": [
+            "GENCLK",
+            "GENCLK_HALF",
+            "SHIFTREG_0deg",
+            "SHIFTREG_90deg"
+          ]
+        },
+        "PLLOUT_SELECT_S": {
+          "description": "Secondary output mux (two-output variants only): GENCLK (FVCO/2^DIVQ), GENCLK_HALF (FVCO/2^(DIVQ+1)), SHIFTREG_0deg, or SHIFTREG_90deg",
           "type": "string",
           "default": "GENCLK",
           "valid": [
@@ -363,278 +341,21 @@
         }
       },
       "outputs": {
-        "BASE": {
-          "description": "Primary PLL output (PLLOUTGLOBAL)",
+        "PRIMARY": {
+          "description": "Primary PLL output. Physical port is PLLOUTGLOBAL on single-output variants and PLLOUTGLOBALA on two-output variants.",
           "port": "PLLOUTGLOBAL",
           "is_clock": true,
           "frequency_mhz": {
-            "description": "Output frequency: F_VCO / 2^DIVQ",
+            "description": "Output frequency assuming PLLOUT_SELECT_P=GENCLK: F_VCO / 2^DIVQ",
             "expr": "FVCO / (1 << DIVQ)"
           }
         },
-        "LOCK": {
-          "description": "PLL lock indicator, high when PLL is locked",
-          "port": "LOCK",
-          "is_clock": false
-        }
-      },
-      "constraints": [
-        {
-          "description": "VCO frequency must be within 533-1066 MHz range.",
-          "rule": "FVCO range check"
-        }
-      ]
-    },
-    {
-      "type": "pll2",
-      "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_2F_CORE); Lattice TN02052 iCE40 sysCLOCK PLL Design and Usage Guide, Table 3.1, Table 4.1",
-      "description": "Dual-output Phase-Locked Loop (SB_PLL40_2F_CORE). SIMPLE mode with internal feedback. Provides two independent global clock outputs (Port A and Port B) with separate PLLOUT_SELECT muxes, sharing the same VCO.",
-      "count": 1,
-      "chaining": false,
-      "map": {
-        "verilog-2005": [
-          "SB_PLL40_2F_CORE #(\n",
-          "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
-          "    .DIVR(%%DIVR%%),\n",
-          "    .DIVF(%%DIVF%%),\n",
-          "    .DIVQ(%%DIVQ%%),\n",
-          "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
-          "    .PLLOUT_SELECT_PORTA(\"%%PLLOUT_SELECT_A%%\"),\n",
-          "    .PLLOUT_SELECT_PORTB(\"%%PLLOUT_SELECT_B%%\")\n",
-          ") u_pll2_%%instance_idx%% (\n",
-          "    .REFERENCECLK(%%REF_CLK%%),\n",
-          "    .PLLOUTGLOBALA(%%BASE_A%%),\n",
-          "    .PLLOUTGLOBALB(%%BASE_B%%),\n",
-          "    .LOCK(%%LOCK%%),\n",
-          "    .BYPASS(1'b0),\n",
-          "    .RESETB(1'b1)\n",
-          ");\n"
-        ],
-        "rtlil": [
-          "cell \\SB_PLL40_2F_CORE $auto$%%instance_idx%%\n",
-          "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
-          "  parameter \\DIVR %%DIVR%%\n",
-          "  parameter \\DIVF %%DIVF%%\n",
-          "  parameter \\DIVQ %%DIVQ%%\n",
-          "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
-          "  parameter \\PLLOUT_SELECT_PORTA \"%%PLLOUT_SELECT_A%%\"\n",
-          "  parameter \\PLLOUT_SELECT_PORTB \"%%PLLOUT_SELECT_B%%\"\n",
-          "  connect \\REFERENCECLK \\%%REF_CLK%%\n",
-          "  connect \\PLLOUTGLOBALA \\%%BASE_A%%\n",
-          "  connect \\PLLOUTGLOBALB \\%%BASE_B%%\n",
-          "  connect \\LOCK \\%%LOCK%%\n",
-          "  connect \\BYPASS 1'0\n",
-          "  connect \\RESETB 1'1\n",
-          "end\n"
-        ]
-      },
-      "inputs": {
-        "REF_CLK": {
-          "description": "Reference clock input to the PLL",
-          "required": true,
-          "width": 1,
-          "requires_period": true,
-          "min_mhz": 10,
-          "max_mhz": 133
-        }
-      },
-      "parameters": {
-        "DIVR": {
-          "description": "Reference clock divider (actual divider = DIVR + 1)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 15
-        },
-        "DIVF": {
-          "description": "Feedback divider (actual multiplier = DIVF + 1)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 127
-        },
-        "DIVQ": {
-          "description": "Output divider (divides VCO by 2^DIVQ)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 7
-        },
-        "FILTER_RANGE": {
-          "description": "PLL filter range for loop stability",
-          "type": "int",
-          "default": 1,
-          "min": 0,
-          "max": 7
-        },
-        "PLLOUT_SELECT_A": {
-          "description": "Port A output mux: GENCLK (full VCO/2^DIVQ), GENCLK_HALF (half), SHIFTREG_0deg, or SHIFTREG_90deg",
-          "type": "string",
-          "default": "GENCLK",
-          "valid": [
-            "GENCLK",
-            "GENCLK_HALF",
-            "SHIFTREG_0deg",
-            "SHIFTREG_90deg"
-          ]
-        },
-        "PLLOUT_SELECT_B": {
-          "description": "Port B output mux: GENCLK (full VCO/2^DIVQ), GENCLK_HALF (half), SHIFTREG_0deg, or SHIFTREG_90deg",
-          "type": "string",
-          "default": "GENCLK",
-          "valid": [
-            "GENCLK",
-            "GENCLK_HALF",
-            "SHIFTREG_0deg",
-            "SHIFTREG_90deg"
-          ]
-        }
-      },
-      "derived": {
-        "FVCO": {
-          "description": "Internal VCO frequency",
-          "expr": "(1000.0 / REF_CLK_period_ns) * (DIVF + 1) / (DIVR + 1)",
-          "min": 533,
-          "max": 1066
-        }
-      },
-      "outputs": {
-        "BASE_A": {
-          "description": "Port A PLL output (PLLOUTGLOBALA). Frequency depends on PLLOUT_SELECT_A: GENCLK = FVCO/2^DIVQ, GENCLK_HALF = FVCO/2^(DIVQ+1).",
-          "port": "PLLOUTGLOBALA",
-          "is_clock": true,
-          "frequency_mhz": {
-            "description": "Port A output frequency assuming PLLOUT_SELECT_A=GENCLK: F_VCO / 2^DIVQ",
-            "expr": "FVCO / (1 << DIVQ)"
-          }
-        },
-        "BASE_B": {
-          "description": "Port B PLL output (PLLOUTGLOBALB). Frequency depends on PLLOUT_SELECT_B: GENCLK = FVCO/2^DIVQ, GENCLK_HALF = FVCO/2^(DIVQ+1).",
+        "SECONDARY": {
+          "description": "Secondary PLL output (two-output variants only). Physical port is PLLOUTGLOBALB.",
           "port": "PLLOUTGLOBALB",
           "is_clock": true,
           "frequency_mhz": {
-            "description": "Port B output frequency assuming PLLOUT_SELECT_B=GENCLK_HALF: F_VCO / 2^(DIVQ+1)",
-            "expr": "FVCO / (2 * (1 << DIVQ))"
-          }
-        },
-        "LOCK": {
-          "description": "PLL lock indicator, high when PLL is locked",
-          "port": "LOCK",
-          "is_clock": false
-        }
-      },
-      "constraints": [
-        {
-          "description": "VCO frequency must be within 533-1066 MHz range.",
-          "rule": "FVCO range check"
-        }
-      ]
-    },
-    {
-      "type": "pll3",
-      "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_PAD); Lattice TN1251 iCE40 sysCLOCK PLL Design and Usage Guide",
-      "description": "Phase-Locked Loop with pad input (SB_PLL40_PAD). SIMPLE mode with internal feedback. Reference clock connects directly to the I/O pad.",
-      "count": 1,
-      "chaining": false,
-      "map": {
-        "verilog-2005": [
-          "SB_PLL40_PAD #(\n",
-          "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
-          "    .DIVR(%%DIVR%%),\n",
-          "    .DIVF(%%DIVF%%),\n",
-          "    .DIVQ(%%DIVQ%%),\n",
-          "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
-          "    .PLLOUT_SELECT(\"%%PLLOUT_SELECT_A%%\")\n",
-          ") u_pll3_%%instance_idx%% (\n",
-          "    .PACKAGEPIN(%%REF_CLK%%),\n",
-          "    .PLLOUTGLOBAL(%%BASE%%),\n",
-          "    .LOCK(%%LOCK%%),\n",
-          "    .BYPASS(1'b0),\n",
-          "    .RESETB(1'b1)\n",
-          ");\n"
-        ],
-        "rtlil": [
-          "cell \\SB_PLL40_PAD $auto$%%instance_idx%%\n",
-          "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
-          "  parameter \\DIVR %%DIVR%%\n",
-          "  parameter \\DIVF %%DIVF%%\n",
-          "  parameter \\DIVQ %%DIVQ%%\n",
-          "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
-          "  parameter \\PLLOUT_SELECT \"%%PLLOUT_SELECT_A%%\"\n",
-          "  connect \\PACKAGEPIN \\%%REF_CLK%%\n",
-          "  connect \\PLLOUTGLOBAL \\%%BASE%%\n",
-          "  connect \\LOCK \\%%LOCK%%\n",
-          "  connect \\BYPASS 1'0\n",
-          "  connect \\RESETB 1'1\n",
-          "end\n"
-        ]
-      },
-      "inputs": {
-        "REF_CLK": {
-          "description": "Reference clock input from I/O pad",
-          "required": true,
-          "width": 1,
-          "requires_period": true,
-          "min_mhz": 10,
-          "max_mhz": 133
-        }
-      },
-      "parameters": {
-        "DIVR": {
-          "description": "Reference clock divider (actual divider = DIVR + 1)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 15
-        },
-        "DIVF": {
-          "description": "Feedback divider (actual multiplier = DIVF + 1)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 127
-        },
-        "DIVQ": {
-          "description": "Output divider (divides VCO by 2^DIVQ)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 7
-        },
-        "FILTER_RANGE": {
-          "description": "PLL filter range for loop stability",
-          "type": "int",
-          "default": 1,
-          "min": 0,
-          "max": 7
-        },
-        "PLLOUT_SELECT_A": {
-          "description": "Output A mux: GENCLK, GENCLK_HALF, SHIFTREG_0deg, or SHIFTREG_90deg",
-          "type": "string",
-          "default": "GENCLK",
-          "valid": [
-            "GENCLK",
-            "GENCLK_HALF",
-            "SHIFTREG_0deg",
-            "SHIFTREG_90deg"
-          ]
-        }
-      },
-      "derived": {
-        "FVCO": {
-          "description": "Internal VCO frequency",
-          "expr": "(1000.0 / REF_CLK_period_ns) * (DIVF + 1) / (DIVR + 1)",
-          "min": 533,
-          "max": 1066
-        }
-      },
-      "outputs": {
-        "BASE": {
-          "description": "Primary PLL output (PLLOUTGLOBAL)",
-          "port": "PLLOUTGLOBAL",
-          "is_clock": true,
-          "frequency_mhz": {
-            "description": "Output frequency: F_VCO / 2^DIVQ",
+            "description": "Output frequency assuming PLLOUT_SELECT_S=GENCLK: F_VCO / 2^DIVQ",
             "expr": "FVCO / (1 << DIVQ)"
           }
         },
@@ -649,150 +370,171 @@
           "description": "VCO frequency must be within 533-1066 MHz range.",
           "rule": "FVCO range check"
         }
-      ]
-    },
-    {
-      "type": "pll4",
-      "source": "DS-ICE40-UltraPlus, Section: PLL (SB_PLL40_2F_PAD); Lattice TN02052 iCE40 sysCLOCK PLL Design and Usage Guide, Table 3.1, Table 4.1",
-      "description": "Dual-output Phase-Locked Loop with pad input (SB_PLL40_2F_PAD). SIMPLE mode with internal feedback. Reference clock connects directly to the I/O pad. Provides two independent global clock outputs (Port A and Port B).",
-      "count": 1,
-      "chaining": false,
-      "map": {
-        "verilog-2005": [
-          "SB_PLL40_2F_PAD #(\n",
-          "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
-          "    .DIVR(%%DIVR%%),\n",
-          "    .DIVF(%%DIVF%%),\n",
-          "    .DIVQ(%%DIVQ%%),\n",
-          "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
-          "    .PLLOUT_SELECT_PORTA(\"%%PLLOUT_SELECT_A%%\"),\n",
-          "    .PLLOUT_SELECT_PORTB(\"%%PLLOUT_SELECT_B%%\")\n",
-          ") u_pll4_%%instance_idx%% (\n",
-          "    .PACKAGEPIN(%%REF_CLK%%),\n",
-          "    .PLLOUTGLOBALA(%%BASE_A%%),\n",
-          "    .PLLOUTGLOBALB(%%BASE_B%%),\n",
-          "    .LOCK(%%LOCK%%),\n",
-          "    .BYPASS(1'b0),\n",
-          "    .RESETB(1'b1)\n",
-          ");\n"
-        ],
-        "rtlil": [
-          "cell \\SB_PLL40_2F_PAD $auto$%%instance_idx%%\n",
-          "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
-          "  parameter \\DIVR %%DIVR%%\n",
-          "  parameter \\DIVF %%DIVF%%\n",
-          "  parameter \\DIVQ %%DIVQ%%\n",
-          "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
-          "  parameter \\PLLOUT_SELECT_PORTA \"%%PLLOUT_SELECT_A%%\"\n",
-          "  parameter \\PLLOUT_SELECT_PORTB \"%%PLLOUT_SELECT_B%%\"\n",
-          "  connect \\PACKAGEPIN \\%%REF_CLK%%\n",
-          "  connect \\PLLOUTGLOBALA \\%%BASE_A%%\n",
-          "  connect \\PLLOUTGLOBALB \\%%BASE_B%%\n",
-          "  connect \\LOCK \\%%LOCK%%\n",
-          "  connect \\BYPASS 1'0\n",
-          "  connect \\RESETB 1'1\n",
-          "end\n"
-        ]
-      },
-      "inputs": {
-        "REF_CLK": {
-          "description": "Reference clock input from I/O pad",
-          "required": true,
-          "width": 1,
-          "requires_period": true,
-          "min_mhz": 10,
-          "max_mhz": 133
-        }
-      },
-      "parameters": {
-        "DIVR": {
-          "description": "Reference clock divider (actual divider = DIVR + 1)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 15
-        },
-        "DIVF": {
-          "description": "Feedback divider (actual multiplier = DIVF + 1)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 127
-        },
-        "DIVQ": {
-          "description": "Output divider (divides VCO by 2^DIVQ)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "max": 7
-        },
-        "FILTER_RANGE": {
-          "description": "PLL filter range for loop stability",
-          "type": "int",
-          "default": 1,
-          "min": 0,
-          "max": 7
-        },
-        "PLLOUT_SELECT_A": {
-          "description": "Port A output mux",
-          "type": "string",
-          "default": "GENCLK",
-          "valid": [
-            "GENCLK",
-            "GENCLK_HALF",
-            "SHIFTREG_0deg",
-            "SHIFTREG_90deg"
-          ]
-        },
-        "PLLOUT_SELECT_B": {
-          "description": "Port B output mux",
-          "type": "string",
-          "default": "GENCLK",
-          "valid": [
-            "GENCLK",
-            "GENCLK_HALF",
-            "SHIFTREG_0deg",
-            "SHIFTREG_90deg"
-          ]
-        }
-      },
-      "derived": {
-        "FVCO": {
-          "description": "Internal VCO frequency",
-          "expr": "(1000.0 / REF_CLK_period_ns) * (DIVF + 1) / (DIVR + 1)",
-          "min": 533,
-          "max": 1066
-        }
-      },
-      "outputs": {
-        "BASE_A": {
-          "description": "Port A PLL output (PLLOUTGLOBALA)",
-          "port": "PLLOUTGLOBALA",
-          "is_clock": true,
-          "frequency_mhz": {
-            "description": "Port A output frequency assuming PLLOUT_SELECT_A=GENCLK: F_VCO / 2^DIVQ",
-            "expr": "FVCO / (1 << DIVQ)"
-          }
-        },
-        "BASE_B": {
-          "description": "Port B PLL output (PLLOUTGLOBALB)",
-          "port": "PLLOUTGLOBALB",
-          "is_clock": true,
-          "frequency_mhz": {
-            "description": "Port B output frequency assuming PLLOUT_SELECT_B=GENCLK_HALF: F_VCO / 2^(DIVQ+1)",
-            "expr": "FVCO / (2 * (1 << DIVQ))"
-          }
-        },
-        "LOCK": {
-          "description": "PLL lock indicator, high when PLL is locked",
-          "port": "LOCK",
-          "is_clock": false
-        }
-      },
-      "constraints": [
+      ],
+      "variants": [
         {
-          "description": "VCO frequency must be within 533-1066 MHz range.",
-          "rule": "FVCO range check"
+          "when": {
+            "input.REF_CLK.source": "fabric",
+            "output.count": 1
+          },
+          "map": {
+            "verilog-2005": [
+              "SB_PLL40_CORE #(\n",
+              "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
+              "    .DIVR(%%DIVR%%),\n",
+              "    .DIVF(%%DIVF%%),\n",
+              "    .DIVQ(%%DIVQ%%),\n",
+              "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
+              "    .PLLOUT_SELECT(\"%%PLLOUT_SELECT_P%%\")\n",
+              ") u_pll_%%instance_idx%% (\n",
+              "    .REFERENCECLK(%%REF_CLK%%),\n",
+              "    .PLLOUTGLOBAL(%%PRIMARY%%),\n",
+              "    .LOCK(%%LOCK%%),\n",
+              "    .BYPASS(1'b0),\n",
+              "    .RESETB(1'b1)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\SB_PLL40_CORE $auto$%%instance_idx%%\n",
+              "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
+              "  parameter \\DIVR %%DIVR%%\n",
+              "  parameter \\DIVF %%DIVF%%\n",
+              "  parameter \\DIVQ %%DIVQ%%\n",
+              "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
+              "  parameter \\PLLOUT_SELECT \"%%PLLOUT_SELECT_P%%\"\n",
+              "  connect \\REFERENCECLK \\%%REF_CLK%%\n",
+              "  connect \\PLLOUTGLOBAL \\%%PRIMARY%%\n",
+              "  connect \\LOCK \\%%LOCK%%\n",
+              "  connect \\BYPASS 1'0\n",
+              "  connect \\RESETB 1'1\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "when": {
+            "input.REF_CLK.source": "fabric",
+            "output.count": 2
+          },
+          "map": {
+            "verilog-2005": [
+              "SB_PLL40_2F_CORE #(\n",
+              "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
+              "    .DIVR(%%DIVR%%),\n",
+              "    .DIVF(%%DIVF%%),\n",
+              "    .DIVQ(%%DIVQ%%),\n",
+              "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
+              "    .PLLOUT_SELECT_PORTA(\"%%PLLOUT_SELECT_P%%\"),\n",
+              "    .PLLOUT_SELECT_PORTB(\"%%PLLOUT_SELECT_S%%\")\n",
+              ") u_pll_%%instance_idx%% (\n",
+              "    .REFERENCECLK(%%REF_CLK%%),\n",
+              "    .PLLOUTGLOBALA(%%PRIMARY%%),\n",
+              "    .PLLOUTGLOBALB(%%SECONDARY%%),\n",
+              "    .LOCK(%%LOCK%%),\n",
+              "    .BYPASS(1'b0),\n",
+              "    .RESETB(1'b1)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\SB_PLL40_2F_CORE $auto$%%instance_idx%%\n",
+              "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
+              "  parameter \\DIVR %%DIVR%%\n",
+              "  parameter \\DIVF %%DIVF%%\n",
+              "  parameter \\DIVQ %%DIVQ%%\n",
+              "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
+              "  parameter \\PLLOUT_SELECT_PORTA \"%%PLLOUT_SELECT_P%%\"\n",
+              "  parameter \\PLLOUT_SELECT_PORTB \"%%PLLOUT_SELECT_S%%\"\n",
+              "  connect \\REFERENCECLK \\%%REF_CLK%%\n",
+              "  connect \\PLLOUTGLOBALA \\%%PRIMARY%%\n",
+              "  connect \\PLLOUTGLOBALB \\%%SECONDARY%%\n",
+              "  connect \\LOCK \\%%LOCK%%\n",
+              "  connect \\BYPASS 1'0\n",
+              "  connect \\RESETB 1'1\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "when": {
+            "input.REF_CLK.source": "pad",
+            "output.count": 1
+          },
+          "map": {
+            "verilog-2005": [
+              "SB_PLL40_PAD #(\n",
+              "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
+              "    .DIVR(%%DIVR%%),\n",
+              "    .DIVF(%%DIVF%%),\n",
+              "    .DIVQ(%%DIVQ%%),\n",
+              "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
+              "    .PLLOUT_SELECT(\"%%PLLOUT_SELECT_P%%\")\n",
+              ") u_pll_%%instance_idx%% (\n",
+              "    .PACKAGEPIN(%%REF_CLK%%),\n",
+              "    .PLLOUTGLOBAL(%%PRIMARY%%),\n",
+              "    .LOCK(%%LOCK%%),\n",
+              "    .BYPASS(1'b0),\n",
+              "    .RESETB(1'b1)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\SB_PLL40_PAD $auto$%%instance_idx%%\n",
+              "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
+              "  parameter \\DIVR %%DIVR%%\n",
+              "  parameter \\DIVF %%DIVF%%\n",
+              "  parameter \\DIVQ %%DIVQ%%\n",
+              "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
+              "  parameter \\PLLOUT_SELECT \"%%PLLOUT_SELECT_P%%\"\n",
+              "  connect \\PACKAGEPIN \\%%REF_CLK%%\n",
+              "  connect \\PLLOUTGLOBAL \\%%PRIMARY%%\n",
+              "  connect \\LOCK \\%%LOCK%%\n",
+              "  connect \\BYPASS 1'0\n",
+              "  connect \\RESETB 1'1\n",
+              "end\n"
+            ]
+          }
+        },
+        {
+          "when": {
+            "input.REF_CLK.source": "pad",
+            "output.count": 2
+          },
+          "map": {
+            "verilog-2005": [
+              "SB_PLL40_2F_PAD #(\n",
+              "    .FEEDBACK_PATH(\"SIMPLE\"),\n",
+              "    .DIVR(%%DIVR%%),\n",
+              "    .DIVF(%%DIVF%%),\n",
+              "    .DIVQ(%%DIVQ%%),\n",
+              "    .FILTER_RANGE(%%FILTER_RANGE%%),\n",
+              "    .PLLOUT_SELECT_PORTA(\"%%PLLOUT_SELECT_P%%\"),\n",
+              "    .PLLOUT_SELECT_PORTB(\"%%PLLOUT_SELECT_S%%\")\n",
+              ") u_pll_%%instance_idx%% (\n",
+              "    .PACKAGEPIN(%%REF_CLK%%),\n",
+              "    .PLLOUTGLOBALA(%%PRIMARY%%),\n",
+              "    .PLLOUTGLOBALB(%%SECONDARY%%),\n",
+              "    .LOCK(%%LOCK%%),\n",
+              "    .BYPASS(1'b0),\n",
+              "    .RESETB(1'b1)\n",
+              ");\n"
+            ],
+            "rtlil": [
+              "cell \\SB_PLL40_2F_PAD $auto$%%instance_idx%%\n",
+              "  parameter \\FEEDBACK_PATH \"SIMPLE\"\n",
+              "  parameter \\DIVR %%DIVR%%\n",
+              "  parameter \\DIVF %%DIVF%%\n",
+              "  parameter \\DIVQ %%DIVQ%%\n",
+              "  parameter \\FILTER_RANGE %%FILTER_RANGE%%\n",
+              "  parameter \\PLLOUT_SELECT_PORTA \"%%PLLOUT_SELECT_P%%\"\n",
+              "  parameter \\PLLOUT_SELECT_PORTB \"%%PLLOUT_SELECT_S%%\"\n",
+              "  connect \\PACKAGEPIN \\%%REF_CLK%%\n",
+              "  connect \\PLLOUTGLOBALA \\%%PRIMARY%%\n",
+              "  connect \\PLLOUTGLOBALB \\%%SECONDARY%%\n",
+              "  connect \\LOCK \\%%LOCK%%\n",
+              "  connect \\BYPASS 1'0\n",
+              "  connect \\RESETB 1'1\n",
+              "end\n"
+            ]
+          }
         }
       ]
     },

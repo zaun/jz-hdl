@@ -63,9 +63,9 @@
     }
 
     CLOCK_GEN {
-        PLL3 {
+        PLL {
             IN REF_CLK SCLK;
-            OUT BASE serial_clk;    // 63 MHz (5x pixel clock)
+            OUT PRIMARY serial_clk;    // 63 MHz (5x pixel clock)
             WIRE LOCK pll_lock;
 
             CONFIG {
@@ -73,7 +73,7 @@
                 DIVF = 83;            // multiplier = 84 → FVCO = 12 * 84 = 1008 MHz
                 DIVQ = 4;             // Output = 1008/16 = 63 MHz
                 FILTER_RANGE = 1;     // for FREF = 12 MHz
-                PLLOUT_SELECT = GENCLK;
+                PLLOUT_SELECT_P = GENCLK;
             };
         };
     }

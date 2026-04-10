@@ -244,6 +244,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "PROJECT_AND_IMPORTS", "PROJECT_MISSING_TOP_MODULE",          0, JZ_RULE_MODE_ERR, "S6.9 Project does not declare a top-level @top module binding" },
     { "PROJECT_AND_IMPORTS", "PROJECT_CHIP_DATA_NOT_FOUND",         0, JZ_RULE_MODE_ERR, "S6.1 Chip data not found for CHIP id (no local JSON and no built-in data)" },
     { "PROJECT_AND_IMPORTS", "PROJECT_CHIP_DATA_INVALID",           0, JZ_RULE_MODE_ERR, "S6.1 Chip JSON data could not be parsed" },
+    { "PROJECT_AND_IMPORTS", "PROJECT_CHIP_DATA_VARIANT_INVALID",   0, JZ_RULE_MODE_ERR, "S9.3 Chip JSON clock_gen variants are invalid (parse error, not exhaustive, or not disjoint)" },
     { "PROJECT_AND_IMPORTS", "IMPORT_OUTSIDE_PROJECT",              0, JZ_RULE_MODE_ERR, "S6.2.1 @import used outside @project block" },
     { "PROJECT_AND_IMPORTS", "IMPORT_NOT_AT_PROJECT_TOP",           0, JZ_RULE_MODE_ERR, "S6.2.1 @import appears after CONFIG/CLOCKS/PIN/blackbox/top-level new blocks" },
     { "PROJECT_AND_IMPORTS", "IMPORT_FILE_HAS_PROJECT",             0, JZ_RULE_MODE_ERR, "S6.2.1 Imported file contains its own @project/@endproj (forbidden)" },
@@ -332,6 +333,8 @@ const JZRuleInfo jz_rule_table[] = {
     { "CLOCK_GEN_RULES", "CLOCK_GEN_PARAM_TYPE_MISMATCH",        0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN CONFIG parameter type mismatch (integer parameter given decimal value)" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_DERIVED_OUT_OF_RANGE",        0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN derived value (frequency/VCO) outside valid chip-defined range" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_NO_CHIP_DATA",               0, JZ_RULE_MODE_INF, "S6.4.1 No chip specified; CLOCK_GEN parameters and constraints cannot be validated" },
+    { "CLOCK_GEN_RULES", "CLOCK_GEN_VARIANT_NO_MATCH",            0, JZ_RULE_MODE_ERR, "S9.3 No chip clock_gen variant matches the elaborated CLOCK_GEN facts (input source / output count)" },
+    { "CLOCK_GEN_RULES", "CLOCK_GEN_VARIANT_AMBIGUOUS",           0, JZ_RULE_MODE_ERR, "S9.3 Multiple chip clock_gen variants match the elaborated CLOCK_GEN facts (chip JSON is not disjoint)" },
 
     /* [BLACKBOX_RULES] */
     { "BLACKBOX_RULES", "BLACKBOX_BODY_DISALLOWED",                 0, JZ_RULE_MODE_ERR, "S6.7 Blackbox contains forbidden blocks (ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM)" },

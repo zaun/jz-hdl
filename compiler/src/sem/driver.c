@@ -2614,15 +2614,28 @@ int jz_sem_run(JZASTNode *root,
                             "PROJECT_CHIP_DATA_NOT_FOUND",
                             msg);
         } else if (chip_status == JZ_CHIP_LOAD_JSON_ERROR) {
-            char msg[512];
-            snprintf(msg, sizeof(msg),
-                     "chip data JSON for '%s' could not be parsed\n"
-                     "check the JSON file for syntax errors",
-                     root->text);
-            sem_report_rule(diagnostics,
-                            root->loc,
-                            "PROJECT_CHIP_DATA_INVALID",
-                            msg);
+            const char *detail = jz_chip_data_last_error();
+            if (detail && detail[0] != '\0') {
+                char msg[768];
+                snprintf(msg, sizeof(msg),
+                         "chip data for '%s' has invalid clock_gen variants\n"
+                         "%s",
+                         root->text, detail);
+                sem_report_rule(diagnostics,
+                                root->loc,
+                                "PROJECT_CHIP_DATA_VARIANT_INVALID",
+                                msg);
+            } else {
+                char msg[512];
+                snprintf(msg, sizeof(msg),
+                         "chip data JSON for '%s' could not be parsed\n"
+                         "check the JSON file for syntax errors",
+                         root->text);
+                sem_report_rule(diagnostics,
+                                root->loc,
+                                "PROJECT_CHIP_DATA_INVALID",
+                                msg);
+            }
         }
     }
 

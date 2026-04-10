@@ -736,6 +736,83 @@ void sem_check_project_clock_gen(JZASTNode *project,
                                 "CLOCK_GEN PLL/DLL must have at least one OUT clock");
             }
 
+            /* Variant dispatch check: compute the facts for this unit and
+             * verify exactly one chip variant matches. Only meaningful when
+             * chip data is available. */
+            if (chip && unit->name && has_output) {
+                char type_lower[32];
+                {
+                    size_t tlen = strlen(unit->name);
+                    if (tlen >= sizeof(type_lower)) tlen = sizeof(type_lower) - 1;
+                    for (size_t t = 0; t < tlen; ++t)
+                        type_lower[t] = (char)tolower((unsigned char)unit->name[t]);
+                    type_lower[tlen] = '\0';
+                }
+
+                /* Count OUT (clock) outputs only — WIRE outputs are excluded
+                 * per S9.3 output.count semantics. */
+                int out_count = 0;
+                for (size_t c = 0; c < unit->child_count; ++c) {
+                    JZASTNode *elem = unit->children[c];
+                    if (elem && elem->type == JZ_AST_CLOCK_GEN_OUT) out_count++;
+                }
+
+                /* Build per-input source facts (pad|fabric). */
+                JZChipClockGenInputFact input_facts[16];
+                size_t input_fact_count = 0;
+                for (size_t c = 0; c < unit->child_count &&
+                                   input_fact_count < 16; ++c) {
+                    JZASTNode *elem = unit->children[c];
+                    if (!elem || elem->type != JZ_AST_CLOCK_GEN_IN) continue;
+                    if (!elem->block_kind || !elem->name) continue;
+
+                    const JZSymbol *pin_sym =
+                        project_lookup(project_symbols, elem->name, JZ_SYM_PIN);
+                    const char *src = pin_sym ? "pad" : "fabric";
+                    input_facts[input_fact_count].input_name = elem->block_kind;
+                    input_facts[input_fact_count].source = src;
+                    input_fact_count++;
+                }
+
+                JZChipClockGenFacts facts;
+                facts.inputs = input_facts;
+                facts.input_count = input_fact_count;
+                facts.output_count = out_count;
+
+                /* We don't care about the template text here — just the
+                 * match count. Use a canonical backend name ("verilog-2005");
+                 * a successful lookup only requires the variant to exist,
+                 * and any backend will do for presence checking. */
+                int match_count = 0;
+                (void)jz_chip_clock_gen_map_for_facts(chip, type_lower,
+                                                      "verilog-2005",
+                                                      &facts, &match_count);
+                if (match_count == 0) {
+                    char msg[512];
+                    size_t off = 0;
+                    off += (size_t)snprintf(msg + off, sizeof(msg) - off,
+                                             "no chip clock_gen variant matches facts { ");
+                    for (size_t fi = 0; fi < input_fact_count &&
+                                         off + 1 < sizeof(msg); ++fi) {
+                        off += (size_t)snprintf(msg + off, sizeof(msg) - off,
+                                                 "input.%s.source=\"%s\", ",
+                                                 input_facts[fi].input_name,
+                                                 input_facts[fi].source);
+                    }
+                    snprintf(msg + off, sizeof(msg) - off,
+                             "output.count=%d }", out_count);
+                    sem_report_rule(diagnostics, unit->loc,
+                                    "CLOCK_GEN_VARIANT_NO_MATCH", msg);
+                } else if (match_count > 1) {
+                    char msg[256];
+                    snprintf(msg, sizeof(msg),
+                             "%d chip clock_gen variants match this unit's "
+                             "facts (chip JSON is not disjoint)", match_count);
+                    sem_report_rule(diagnostics, unit->loc,
+                                    "CLOCK_GEN_VARIANT_AMBIGUOUS", msg);
+                }
+            }
+
             /* Move this unit's outputs into prior_unit_outputs for next unit */
             {
                 size_t this_count = this_unit_outputs.len / sizeof(char *);

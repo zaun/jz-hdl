@@ -399,6 +399,8 @@ static void emit_clock_gen_from_template(FILE *out,
                                         fb_wire_base, cg_idx, unit_idx);
                             } else if (strcmp(placeholder, "LOCK") == 0 ||
                                        strcmp(placeholder, "BASE") == 0 ||
+                                       strcmp(placeholder, "PRIMARY") == 0 ||
+                                       strcmp(placeholder, "SECONDARY") == 0 ||
                                        strcmp(placeholder, "PHASE") == 0 ||
                                        strcmp(placeholder, "DIV") == 0 ||
                                        strcmp(placeholder, "DIV3") == 0) {
@@ -767,21 +769,60 @@ void rtlil_emit_project_wrapper(FILE *out, const IR_Design *design)
             const IR_ClockGenUnit *unit = &clock_gen->units[u];
             const char *unit_type_str = unit->type ? unit->type : "pll";
 
-            /* Try to get the RTLIL template map from chip data */
+            /* Try to get the RTLIL template map from chip data. Compute
+             * facts for facts-based dispatch (S9.3 variants). Falls back
+             * to the flat map for legacy clock_gen entries. */
             const char *template_text = NULL;
             if (effective_chip) {
-                template_text = jz_chip_clock_gen_map(effective_chip, unit_type_str, "rtlil");
+                JZChipClockGenInputFact input_facts[16];
+                size_t input_fact_count = 0;
+                for (int ii = 0; ii < unit->num_inputs && input_fact_count < 16; ++ii) {
+                    const IR_ClockGenInput *in = &unit->inputs[ii];
+                    if (!in->selector || !in->signal_name) continue;
+                    int is_pad = 0;
+                    for (int pi = 0; pi < proj->num_pins; ++pi) {
+                        if (proj->pins[pi].name &&
+                            strcmp(proj->pins[pi].name, in->signal_name) == 0) {
+                            is_pad = 1;
+                            break;
+                        }
+                    }
+                    input_facts[input_fact_count].input_name = in->selector;
+                    input_facts[input_fact_count].source = is_pad ? "pad" : "fabric";
+                    input_fact_count++;
+                }
+                int clk_out_count = 0;
+                for (int oi = 0; oi < unit->num_outputs; ++oi) {
+                    if (unit->outputs[oi].is_clock) clk_out_count++;
+                }
+                JZChipClockGenFacts facts;
+                facts.inputs = input_facts;
+                facts.input_count = input_fact_count;
+                facts.output_count = clk_out_count;
+
+                int match_count = 0;
+                template_text = jz_chip_clock_gen_map_for_facts(
+                    effective_chip, unit_type_str, "rtlil",
+                    &facts, &match_count);
             }
 
             if (template_text) {
                 /* Emit dummy wires for unused PLL/MMCM outputs before the cell */
                 if (unit_type_str && strncmp(unit_type_str, "pll", 3) == 0) {
                     static const char *pll_selectors[] = {
-                        "LOCK", "PHASE", "DIV", "DIV3",
+                        "LOCK", "BASE", "PRIMARY", "SECONDARY",
+                        "PHASE", "DIV", "DIV3",
                         "CLKOUT1", "CLKOUT2", "CLKOUT3", "CLKOUT4",
                         "CLKOUT5", "CLKOUT6", NULL
                     };
                     for (int si = 0; pll_selectors[si]; ++si) {
+                        /* Only emit dummy wires for selectors that the chip's
+                         * clock_gen declares as valid outputs. */
+                        if (!jz_chip_clock_gen_output_valid(effective_chip,
+                                                             unit_type_str,
+                                                             pll_selectors[si])) {
+                            continue;
+                        }
                         const char *out_name = find_clock_gen_output(unit, pll_selectors[si]);
                         if (!out_name || out_name[0] == '\0') {
                             rtlil_indent(out, 1);
