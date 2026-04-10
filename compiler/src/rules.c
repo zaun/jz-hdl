@@ -77,7 +77,6 @@ const JZRuleInfo jz_rule_table[] = {
     { "IDENTIFIERS_AND_SCOPE", "INSTANCE_NAME_DUP_IN_MODULE",       0, JZ_RULE_MODE_ERR, "S4.2/S8.1 Multiple instances with same name in parent module" },
     { "IDENTIFIERS_AND_SCOPE", "INSTANCE_NAME_CONFLICT",            0, JZ_RULE_MODE_ERR, "S4.2/S8.1 Instance name matches another identifier (port/wire/register/CONST) in parent module" },
     { "IDENTIFIERS_AND_SCOPE", "UNDECLARED_IDENTIFIER",             1, JZ_RULE_MODE_ERR, "S4.2/S8.1 Use of undeclared identifier in expression or statement" },
-    { "IDENTIFIERS_AND_SCOPE", "INSTANCE_PORT_NOT_ACCESSIBLE",     0, JZ_RULE_MODE_ERR, "S4.2/S8.1 Instance port access not allowed in synthesizable code; wire the output via @new binding" },
     { "IDENTIFIERS_AND_SCOPE", "AMBIGUOUS_REFERENCE",               0, JZ_RULE_MODE_ERR, "S4.2/S8.1 Identifier reference ambiguous without instance prefix" },
 
     /* [CONST_RULES] */

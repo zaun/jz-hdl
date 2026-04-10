@@ -1,4 +1,0 @@
-File: 4_13_INSTANCE_PORT_NOT_ACCESSIBLE-inst_port_access.jz
-      35:9    warn  WARN_UNSINKED_REGISTER S8.3 Register is written but its value is never read
-      45:16   error INSTANCE_PORT_NOT_ACCESSIBLE S4.2/S8.1 Instance port access not allowed in synthesizable code; wire the output via @new binding
-      50:21   error INSTANCE_PORT_NOT_ACCESSIBLE S4.2/S8.1 Instance port access not allowed in synthesizable code; wire the output via @new binding

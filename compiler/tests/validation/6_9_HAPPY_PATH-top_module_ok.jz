@@ -66,14 +66,10 @@
         IN  [1] reserved;
     }
 
-    WIRE {
-        helper_result [1];
-    }
-
     @new helper_inst Helper {
         IN  [1] clk = clk;
         IN  [1] enable = btn_in;
-        OUT [1] result = helper_result;
+        OUT [1] result = _;
     };
 
     REGISTER {
@@ -82,7 +78,7 @@
 
     ASYNCHRONOUS {
         led_out = r;
-        status_out = helper_result;
+        status_out = helper_inst.result;
         debug = tie_high;
     }
 
