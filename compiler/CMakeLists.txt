@@ -243,6 +243,9 @@ target_link_libraries(jz_hdl_lib PUBLIC sqlite3_lib)
 
 add_executable(jz-hdl
     src/main.c
+    src/cli_options.c
+    src/cli_frontend.c
+    src/cli_modes.c
 )
 
 target_link_libraries(jz-hdl PRIVATE jz_hdl_lib m)

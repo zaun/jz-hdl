@@ -1588,7 +1588,7 @@ static void handle_text_document_hover(const char *msg, int id,
 static const char *jz_keywords[] = {
     "@module", "@endmod", "@project", "@endproj", "@blackbox",
     "@new", "@top", "@import", "@global", "@endglob",
-    "@feature", "@endfeat", "@feature_else", "@check",
+    "@feature", "@endfeat", "@else", "@check",
     "@template", "@endtemplate", "@apply", "@scratch",
     "@testbench", "@endtb", "@simulation", "@endsim",
     "@setup", "@update", "@clock", "@run", "@run_until", "@run_while",

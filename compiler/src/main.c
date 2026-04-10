@@ -3,198 +3,25 @@
 #include <string.h>
 #include <time.h>
 
-#include "ast.h"
-#include "ast_json.h"
-#include "lexer.h"
-#include "parser.h"
-#include "util.h"
 #include "compiler.h"
-#include "sem_driver.h"
-#include "ir_builder.h"
-#include "ir_serialize.h"
-#include "verilog_backend.h"
-#include "rtlil_backend.h"
 #include "rules.h"
-#include "version.h"
 #include "chip_data.h"
-#include "template_expand.h"
-#include "repeat_expand.h"
-#include "sim/sim_engine.h"
-#include "sim/sim_waveform.h"
 #include "path_security.h"
+#include "parser.h"
+#include "sem_driver.h"
 #include "lsp.h"
+#include "ir.h"
+
+#include "cli_options.h"
+#include "cli_frontend.h"
+#include "cli_modes.h"
 
 /* Global verbose flag for timing diagnostics. */
 int jz_verbose = 0;
 
-static void print_usage(const char *prog) {
-    fprintf(stderr,
-            "Usage: %s JZ_FILE --lint [--warn-as-error] [--color] [--info] [--explain] [--Wno-group=NAME] [--tristate-default=GND|VCC] [-o OUT_FILE]\n"
-            "       %s JZ_FILE --verilog [-o OUT_FILE] [--sdc SDC_FILE] [--xdc XDC_FILE] [--pcf PCF_FILE] [--cst CST_FILE] [--tristate-default=GND|VCC]\n"
-            "       %s JZ_FILE --rtlil [-o OUT_FILE] [--sdc SDC_FILE] [--xdc XDC_FILE] [--pcf PCF_FILE] [--cst CST_FILE] [--tristate-default=GND|VCC]\n"
-            "       %s JZ_FILE --alias-report [-o OUT_FILE]\n"
-            "       %s JZ_FILE --memory-report [-o OUT_FILE]\n"
-            "       %s JZ_FILE --tristate-report [-o OUT_FILE]\n"
-            "       %s JZ_FILE --ast [-o OUT_FILE]\n"
-            "       %s JZ_FILE --ir [-o OUT_FILE] [--tristate-default=GND|VCC]\n"
-            "       %s JZ_FILE --test [--verbose] [--seed=0xHEX] [--tristate-default=GND|VCC]\n"
-            "       %s JZ_FILE --simulate [-o WAVEFORM_FILE] [--vcd] [--fst] [--jzw] [--verbose] [--seed=0xHEX] [--tristate-default=GND|VCC]\n"
-            "       %s --chip-info [CHIP_ID] [-o OUT_FILE]\n"
-            "       %s --lint-rules\n"
-            "       %s --lsp\n"
-            "       %s --help\n"
-            "       %s --version\n"
-            "\n"
-            "Path security options:\n"
-            "  --sandbox-root=<dir>     Add permitted root directory for file access\n"
-            "  --allow-absolute-paths   Allow absolute paths in @import / @file()\n"
-            "  --allow-traversal        Allow '..' directory traversal in paths\n",
-            prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog, prog);
-}
-
-static void print_version(void) {
-    fprintf(stdout, "%s\n", JZ_HDL_VERSION_STRING);
-}
-
-static double elapsed_ms(clock_t start) {
-    return (double)(clock() - start) / CLOCKS_PER_SEC * 1000.0;
-}
-
-static int run_frontend(JZCompiler *compiler,
-                         const char *filename,
-                         int print_ast_json,
-                         FILE *ast_out,
-                         int test_mode,
-                         int simulate_mode,
-                         int verbose)
-{
-    clock_t t0, t1;
-
-    t0 = clock();
-    size_t size = 0;
-    char *source = jz_read_entire_file(filename, &size);
-    if (!source) {
-        JZLocation loc = { filename, 1, 1 };
-        jz_diagnostic_report(&compiler->diagnostics, loc, JZ_SEVERITY_ERROR,
-                             "IO001", "failed to read source file");
-        return 1;
-    }
-
-    /* Expand @repeat N ... @end blocks before lexing */
-    char *expanded = jz_repeat_expand(source, filename, &compiler->diagnostics);
-    if (!expanded) {
-        free(source);
-        return 1;
-    }
-    free(source);
-    source = expanded;
-
-    JZTokenStream tokens;
-    size_t diag_before = compiler->diagnostics.buffer.len;
-    if (jz_lex_source(filename, source, &tokens, &compiler->diagnostics) != 0) {
-        /* If the lexer did not report a specific rule-based diagnostic, emit a
-         * generic fallback.
-         */
-        if (compiler->diagnostics.buffer.len == diag_before) {
-            JZLocation loc = { filename, 1, 1 };
-            jz_diagnostic_report(&compiler->diagnostics, loc, JZ_SEVERITY_ERROR,
-                                 "LEX000", "lexing failed");
-        }
-        free(source);
-        return 1;
-    }
-    t1 = clock();
-    if (verbose) fprintf(stderr, "[verbose] lex: %.1f ms\n", elapsed_ms(t0));
-
-    t0 = clock();
-    size_t diag_before_parse = compiler->diagnostics.buffer.len;
-    JZASTNode *ast = jz_parse_file(filename, &tokens, &compiler->diagnostics);
-    if (!ast) {
-        /* If the parser did not emit any rule-based diagnostics, provide a
-         * generic fallback code so validation still has an anchor.
-         */
-        if (compiler->diagnostics.buffer.len == diag_before_parse) {
-            JZLocation loc = { filename, 1, 1 };
-            jz_diagnostic_report(&compiler->diagnostics, loc, JZ_SEVERITY_ERROR,
-                                 "PARSE000", "parsing failed");
-        }
-        jz_token_stream_free(&tokens);
-        free(source);
-        return 1;
-    }
-    t1 = clock();
-    if (verbose) fprintf(stderr, "[verbose] parse: %.1f ms\n", elapsed_ms(t0));
-
-    compiler->ast_root = ast;
-
-    /* Expand templates before semantic analysis or AST output. */
-    t0 = clock();
-    jz_template_expand(compiler->ast_root, &compiler->diagnostics, filename);
-    t1 = clock();
-    if (verbose) fprintf(stderr, "[verbose] template_expand: %.1f ms\n", elapsed_ms(t0));
-
-    /* Reject testbench files unless --test mode is active. */
-    if (!test_mode) {
-        for (size_t i = 0; i < compiler->ast_root->child_count; ++i) {
-            JZASTNode *child = compiler->ast_root->children[i];
-            if (child && child->type == JZ_AST_TESTBENCH) {
-                JZLocation loc = child->loc;
-                jz_diagnostic_report(&compiler->diagnostics, loc, JZ_SEVERITY_ERROR,
-                                     "TB_WRONG_TOOL",
-                                     "this file contains @testbench blocks; "
-                                     "use --test to run testbenches");
-                return 1;
-            }
-        }
-    }
-
-    /* Reject simulation files unless --simulate mode is active. */
-    if (!simulate_mode) {
-        for (size_t i = 0; i < compiler->ast_root->child_count; ++i) {
-            JZASTNode *child = compiler->ast_root->children[i];
-            if (child && child->type == JZ_AST_SIMULATION) {
-                JZLocation loc = child->loc;
-                jz_diagnostic_report(&compiler->diagnostics, loc, JZ_SEVERITY_ERROR,
-                                     "SIM_WRONG_TOOL",
-                                     "this file contains @simulation blocks; "
-                                     "use --simulate to run simulations");
-                return 1;
-            }
-        }
-    }
-
-    if (print_ast_json) {
-        /* --ast mode: print JSON AST only; no validation yet. */
-        FILE *out = ast_out ? ast_out : stdout;
-        jz_ast_print_json(out, compiler->ast_root);
-    } else {
-        /* Default / --lint mode: run semantic validation (section 5 rules). */
-        t0 = clock();
-        if (jz_sem_run(compiler->ast_root,
-                       &compiler->diagnostics,
-                       filename,
-                       verbose) != 0) {
-            /* Non-zero return indicates semantic failure; diagnostics are
-             * expected to have been recorded already.
-             */
-        }
-        t1 = clock();
-        if (verbose) fprintf(stderr, "[verbose] sem_run (total): %.1f ms\n", elapsed_ms(t0));
-    }
-
-    /* Leave compiler->ast_root populated so that later stages (IR
-     * construction, backends) can consume the verified AST. The token stream
-     * and raw source buffer can be freed immediately.
-     */
-    jz_token_stream_free(&tokens);
-    free(source);
-    (void)t1;
-    return 0;
-}
-
 int main(int argc, char **argv) {
     if (argc < 2) {
-        print_usage(argv[0]);
+        jz_cli_print_usage(argv[0]);
         return 1;
     }
 
@@ -205,241 +32,23 @@ int main(int argc, char **argv) {
         }
     }
 
-    const char *mode = NULL;
-    const char *input_filename = NULL;
-    const char *output_filename = NULL;
-    const char *sdc_filename = NULL;
-    const char *xdc_filename = NULL;
-    const char *pcf_filename = NULL;
-    const char *cst_filename = NULL;
+    JZCLIOptions opts;
+    int parse_rc = jz_cli_parse_options(&opts, argc, argv);
+    if (parse_rc < 0) return 0;  /* --help or --version */
+    if (parse_rc > 0) return 1;  /* parse error */
 
-    int lint_rules = 0;
-    int warn_as_error = 0;
-    int show_info = 0;
-    int use_color = 0;
-    int alias_report = 0;
-    int memory_report = 0;
-    int tristate_report = 0;
-    int chip_info = 0;
-    const char *chip_info_id = NULL;
-    int tristate_default = 0; /* 0=none, 1=GND, 2=VCC */
-    int test_mode = 0;
-    int simulate_mode = 0;
-    int sim_format_fst = 0;
-    int sim_format_jzw = 0;
-    int verbose = 0;
-    uint32_t test_seed = 0;
-    int test_seed_set = 0;
-    int show_explain = 0;
-    int allow_absolute_paths = 0;
-    int allow_traversal = 0;
-    const char *sandbox_roots[16];
-    size_t sandbox_root_count = 0;
-    JZWarningGroupOverride group_overrides[16];
-    size_t group_override_count = 0;
-    SimJitterConfig jitter_configs[16];
-    int num_jitter = 0;
-    SimDriftConfig drift_configs[16];
-    int num_drift = 0;
-
-    for (int i = 1; i < argc; ++i) {
-        const char *arg = argv[i];
-        if (strcmp(arg, "--help") == 0) {
-            print_usage(argv[0]);
-            return 0;
-        } else if (strcmp(arg, "--version") == 0) {
-            print_version();
-            return 0;
-        } else if (strcmp(arg, "--warn-as-error") == 0) {
-            warn_as_error = 1;
-        } else if (strcmp(arg, "--info") == 0) {
-            show_info = 1;
-        } else if (strcmp(arg, "--color") == 0) {
-            use_color = 1;
-        } else if (strcmp(arg, "--explain") == 0) {
-            show_explain = 1;
-        } else if (strcmp(arg, "--alias-report") == 0) {
-            alias_report = 1;
-        } else if (strcmp(arg, "--memory-report") == 0) {
-            memory_report = 1;
-        } else if (strcmp(arg, "--tristate-report") == 0) {
-            tristate_report = 1;
-        } else if (strcmp(arg, "--chip-info") == 0) {
-            chip_info = 1;
-            if (i + 1 < argc && argv[i + 1][0] != '-') {
-                chip_info_id = argv[++i];
-            }
-        } else if (strcmp(arg, "--test") == 0) {
-            test_mode = 1;
-        } else if (strcmp(arg, "--simulate") == 0) {
-            simulate_mode = 1;
-        } else if (strcmp(arg, "--vcd") == 0) {
-            sim_format_fst = 0; /* VCD is default; explicit flag resets FST/JZW */
-            sim_format_jzw = 0;
-        } else if (strcmp(arg, "--fst") == 0) {
-            sim_format_fst = 1;
-            sim_format_jzw = 0;
-        } else if (strcmp(arg, "--jzw") == 0) {
-            sim_format_jzw = 1;
-            sim_format_fst = 0;
-        } else if (strcmp(arg, "--verbose") == 0) {
-            verbose = 1;
-        } else if (strncmp(arg, "--seed=", 7) == 0) {
-            test_seed = (uint32_t)strtoul(arg + 7, NULL, 16);
-            test_seed_set = 1;
-        } else if (strncmp(arg, "--jitter=", 9) == 0) {
-            if (num_jitter >= (int)(sizeof(jitter_configs) / sizeof(jitter_configs[0]))) {
-                fprintf(stderr, "Too many --jitter flags (max %d)\n",
-                        (int)(sizeof(jitter_configs) / sizeof(jitter_configs[0])));
-                return 1;
-            }
-            /* Parse --jitter=clock_name;pp_ps */
-            const char *val = arg + 9;
-            const char *semi = strchr(val, ':');
-            if (!semi || semi == val || *(semi + 1) == '\0') {
-                fprintf(stderr, "Invalid --jitter format: '%s' (expected --jitter=<clock>:<ps>)\n", arg);
-                return 1;
-            }
-            size_t name_len = (size_t)(semi - val);
-            char *name_copy = malloc(name_len + 1);
-            memcpy(name_copy, val, name_len);
-            name_copy[name_len] = '\0';
-            uint64_t pp = strtoull(semi + 1, NULL, 10);
-            if (pp == 0) {
-                fprintf(stderr, "Invalid --jitter value: '%s' (peak-to-peak must be > 0)\n", semi + 1);
-                free(name_copy);
-                return 1;
-            }
-            jitter_configs[num_jitter].clock_name = name_copy;
-            jitter_configs[num_jitter].pp_ps = pp;
-            num_jitter++;
-        } else if (strncmp(arg, "--drift=", 8) == 0) {
-            if (num_drift >= (int)(sizeof(drift_configs) / sizeof(drift_configs[0]))) {
-                fprintf(stderr, "Too many --drift flags (max %d)\n",
-                        (int)(sizeof(drift_configs) / sizeof(drift_configs[0])));
-                return 1;
-            }
-            /* Parse --drift=clock_name:max_ppm */
-            const char *val = arg + 8;
-            const char *colon = strchr(val, ':');
-            if (!colon || colon == val || *(colon + 1) == '\0') {
-                fprintf(stderr, "Invalid --drift format: '%s' (expected --drift=<clock>:<ppm>)\n", arg);
-                return 1;
-            }
-            size_t name_len = (size_t)(colon - val);
-            char *name_copy = malloc(name_len + 1);
-            memcpy(name_copy, val, name_len);
-            name_copy[name_len] = '\0';
-            double ppm = strtod(colon + 1, NULL);
-            if (ppm <= 0.0) {
-                fprintf(stderr, "Invalid --drift value: '%s' (ppm must be > 0)\n", colon + 1);
-                free(name_copy);
-                return 1;
-            }
-            drift_configs[num_drift].clock_name = name_copy;
-            drift_configs[num_drift].max_ppm = ppm;
-            num_drift++;
-        } else if (strcmp(arg, "--lint-rules") == 0) {
-            lint_rules = 1;
-        } else if (strcmp(arg, "--sdc") == 0 ||
-                   strcmp(arg, "--xdc") == 0 ||
-                   strcmp(arg, "--pcf") == 0 ||
-                   strcmp(arg, "--cst") == 0) {
-            const char **target = NULL;
-            if (strcmp(arg, "--sdc") == 0) {
-                target = &sdc_filename;
-            } else if (strcmp(arg, "--xdc") == 0) {
-                target = &xdc_filename;
-            } else if (strcmp(arg, "--pcf") == 0) {
-                target = &pcf_filename;
-            } else {
-                target = &cst_filename;
-            }
-            if (i + 1 >= argc) {
-                fprintf(stderr, "Missing filename after %s\n", arg);
-                return 1;
-            }
-            if (*target) {
-                fprintf(stderr, "%s specified more than once\n", arg);
-                return 1;
-            }
-            *target = argv[++i];
-        } else if (strcmp(arg, "-o") == 0) {
-            if (i + 1 >= argc) {
-                fprintf(stderr, "Missing output filename after -o\n");
-                return 1;
-            }
-            if (output_filename) {
-                fprintf(stderr, "-o specified more than once\n");
-                return 1;
-            }
-            output_filename = argv[++i];
-        } else if (strncmp(arg, "--tristate-default=", 19) == 0) {
-            const char *val = arg + 19;
-            if (strcmp(val, "GND") == 0) {
-                tristate_default = 1;
-            } else if (strcmp(val, "VCC") == 0) {
-                tristate_default = 2;
-            } else {
-                fprintf(stderr, "Invalid value for --tristate-default: '%s' (expected GND or VCC)\n", val);
-                return 1;
-            }
-        } else if (strncmp(arg, "--Wno-group=", 12) == 0) {
-            const char *group = arg + 12;
-            if (*group && group_override_count < sizeof(group_overrides) / sizeof(group_overrides[0])) {
-                group_overrides[group_override_count].group = group;
-                group_overrides[group_override_count].enabled = 0;
-                group_override_count++;
-            }
-        } else if (strncmp(arg, "--Wgroup=", 9) == 0) {
-            const char *group = arg + 9;
-            if (*group && group_override_count < sizeof(group_overrides) / sizeof(group_overrides[0])) {
-                group_overrides[group_override_count].group = group;
-                group_overrides[group_override_count].enabled = 1;
-                group_override_count++;
-            }
-        } else if (strcmp(arg, "--allow-absolute-paths") == 0) {
-            allow_absolute_paths = 1;
-        } else if (strcmp(arg, "--allow-traversal") == 0) {
-            allow_traversal = 1;
-        } else if (strncmp(arg, "--sandbox-root=", 15) == 0) {
-            const char *val = arg + 15;
-            if (*val && sandbox_root_count < sizeof(sandbox_roots) / sizeof(sandbox_roots[0])) {
-                sandbox_roots[sandbox_root_count++] = val;
-            }
-        } else if (strcmp(arg, "--ast") == 0 || strcmp(arg, "--lint") == 0 ||
-                   strcmp(arg, "--verilog") == 0 || strcmp(arg, "--emit-verilog") == 0 ||
-                   strcmp(arg, "--rtlil") == 0 || strcmp(arg, "--emit-rtlil") == 0 ||
-                   strcmp(arg, "--ir") == 0) {
-            if (mode && strcmp(mode, arg) != 0) {
-                fprintf(stderr, "Multiple modes specified (%s and %s)\n", mode, arg);
-                return 1;
-            }
-            mode = arg;
-        } else if (arg[0] == '-' && arg[1] != '\0') {
-            fprintf(stderr, "Unknown option: %s\n", arg);
-            return 1;
-        } else {
-            /* Bare filename: treated as JZ_FILE input. */
-            if (input_filename) {
-                fprintf(stderr, "Multiple input files specified (%s and %s)\n", input_filename, arg);
-                return 1;
-            }
-            input_filename = arg;
-        }
-    }
-
-    if (chip_info) {
+    /* Handle --chip-info (standalone, no input file needed). */
+    if (opts.chip_info) {
         FILE *chip_out = stdout;
-        if (output_filename) {
-            chip_out = fopen(output_filename, "w");
+        if (opts.output_filename) {
+            chip_out = fopen(opts.output_filename, "w");
             if (!chip_out) {
-                fprintf(stderr, "Failed to open output file '%s'\n", output_filename);
+                fprintf(stderr, "Failed to open output file '%s'\n", opts.output_filename);
                 return 1;
             }
         }
         int chip_rc = 0;
-        if (!chip_info_id) {
+        if (!opts.chip_info_id) {
             size_t count = jz_chip_builtin_count();
             if (count == 0) {
                 fprintf(chip_out, "No built-in chips available.\n");
@@ -452,8 +61,8 @@ int main(int argc, char **argv) {
                     }
                 }
             }
-        } else if (jz_chip_print_info(chip_info_id, chip_out) != 0) {
-            fprintf(stderr, "CHIP \"%s\" not found in built-in database.\n", chip_info_id);
+        } else if (jz_chip_print_info(opts.chip_info_id, chip_out) != 0) {
+            fprintf(stderr, "CHIP \"%s\" not found in built-in database.\n", opts.chip_info_id);
             chip_rc = 1;
         }
         if (chip_out != stdout) {
@@ -462,47 +71,48 @@ int main(int argc, char **argv) {
         return chip_rc;
     }
 
-    if (lint_rules) {
+    /* Handle --lint-rules (standalone). */
+    if (opts.lint_rules) {
         jz_rules_print_all(stdout);
         return 0;
     }
 
     /* Default mode when a file is provided without an explicit mode flag. */
-    if (!mode && input_filename) {
-        mode = "--lint";
+    if (!opts.mode && opts.input_filename) {
+        opts.mode = "--lint";
     }
 
-    if (!input_filename && mode && strcmp(mode, "--lint-rules") != 0) {
-        print_usage(argv[0]);
+    if (!opts.input_filename && opts.mode && strcmp(opts.mode, "--lint-rules") != 0) {
+        jz_cli_print_usage(argv[0]);
         return 1;
     }
 
     /* Classify the primary mode. */
-    int is_ast_mode = (mode && strcmp(mode, "--ast") == 0);
-    int is_ir_mode = (mode && strcmp(mode, "--ir") == 0);
-    int is_verilog_mode = (mode && (strcmp(mode, "--verilog") == 0 || strcmp(mode, "--emit-verilog") == 0));
-    int is_rtlil_mode = (mode && (strcmp(mode, "--rtlil") == 0 || strcmp(mode, "--emit-rtlil") == 0));
-    int is_lint_mode = !is_ast_mode && !is_ir_mode && !is_verilog_mode && !is_rtlil_mode; /* includes default lint */
+    int is_ast_mode = (opts.mode && strcmp(opts.mode, "--ast") == 0);
+    int is_ir_mode = (opts.mode && strcmp(opts.mode, "--ir") == 0);
+    int is_verilog_mode = (opts.mode && (strcmp(opts.mode, "--verilog") == 0 || strcmp(opts.mode, "--emit-verilog") == 0));
+    int is_rtlil_mode = (opts.mode && (strcmp(opts.mode, "--rtlil") == 0 || strcmp(opts.mode, "--emit-rtlil") == 0));
+    int is_lint_mode = !is_ast_mode && !is_ir_mode && !is_verilog_mode && !is_rtlil_mode;
 
-    if (!is_verilog_mode && !is_rtlil_mode && (sdc_filename || xdc_filename || pcf_filename || cst_filename)) {
+    if (!is_verilog_mode && !is_rtlil_mode && (opts.sdc_filename || opts.xdc_filename || opts.pcf_filename || opts.cst_filename)) {
         fprintf(stderr, "--sdc/--xdc/--pcf/--cst may only be used with --verilog or --rtlil\n");
         return 1;
     }
-    if (tristate_default != 0 && is_ast_mode) {
+    if (opts.tristate_default != 0 && is_ast_mode) {
         fprintf(stderr, "--tristate-default may not be used with --ast\n");
         return 1;
     }
-    int alias_report_active = alias_report && is_lint_mode;
-    int memory_report_active = memory_report && is_lint_mode;
-    int tristate_report_active = tristate_report && is_lint_mode;
+    int alias_report_active = opts.alias_report && is_lint_mode;
+    int memory_report_active = opts.memory_report && is_lint_mode;
+    int tristate_report_active = opts.tristate_report && is_lint_mode;
 
-    /* Only one consumer of -o is supported at a time (AST, IR, alias-report, etc.). */
-    int use_output_for_ast = is_ast_mode && (output_filename != NULL);
-    int use_output_for_ir = is_ir_mode && (output_filename != NULL);
-    int use_output_for_alias = alias_report_active && (output_filename != NULL);
-    int use_output_for_memory = memory_report_active && (output_filename != NULL);
-    int use_output_for_tristate = tristate_report_active && (output_filename != NULL);
-    int use_output_for_verilog = is_verilog_mode && (output_filename != NULL);
+    /* Only one consumer of -o is supported at a time. */
+    int use_output_for_ast = is_ast_mode && (opts.output_filename != NULL);
+    int use_output_for_ir = is_ir_mode && (opts.output_filename != NULL);
+    int use_output_for_alias = alias_report_active && (opts.output_filename != NULL);
+    int use_output_for_memory = memory_report_active && (opts.output_filename != NULL);
+    int use_output_for_tristate = tristate_report_active && (opts.output_filename != NULL);
+    int use_output_for_verilog = is_verilog_mode && (opts.output_filename != NULL);
     int output_consumers = (use_output_for_ast ? 1 : 0) +
                            (use_output_for_ir ? 1 : 0) +
                            (use_output_for_alias ? 1 : 0) +
@@ -524,7 +134,6 @@ int main(int argc, char **argv) {
     } else if (is_verilog_mode || is_rtlil_mode) {
         cmode = JZ_COMPILER_MODE_VERILOG;
     } else {
-        /* Lint and IR both use the lint front-end mode. */
         cmode = JZ_COMPILER_MODE_LINT;
         if (is_ir_mode) {
             emit_ir = 1;
@@ -538,10 +147,10 @@ int main(int argc, char **argv) {
     FILE *tristate_out = NULL;
 
     if (is_ast_mode) {
-        if (output_filename) {
-            ast_out = fopen(output_filename, "w");
+        if (opts.output_filename) {
+            ast_out = fopen(opts.output_filename, "w");
             if (!ast_out) {
-                fprintf(stderr, "Failed to open AST output file '%s'\n", output_filename);
+                fprintf(stderr, "Failed to open AST output file '%s'\n", opts.output_filename);
                 return 1;
             }
         } else {
@@ -550,10 +159,10 @@ int main(int argc, char **argv) {
     }
 
     if (alias_report_active) {
-        if (output_filename) {
-            alias_out = fopen(output_filename, "w");
+        if (opts.output_filename) {
+            alias_out = fopen(opts.output_filename, "w");
             if (!alias_out) {
-                fprintf(stderr, "Failed to open alias-report output file '%s'\n", output_filename);
+                fprintf(stderr, "Failed to open alias-report output file '%s'\n", opts.output_filename);
                 if (ast_out && ast_out != stdout) {
                     fclose(ast_out);
                 }
@@ -565,10 +174,10 @@ int main(int argc, char **argv) {
     }
 
     if (memory_report_active) {
-        if (output_filename) {
-            memory_out = fopen(output_filename, "w");
+        if (opts.output_filename) {
+            memory_out = fopen(opts.output_filename, "w");
             if (!memory_out) {
-                fprintf(stderr, "Failed to open memory-report output file '%s'\n", output_filename);
+                fprintf(stderr, "Failed to open memory-report output file '%s'\n", opts.output_filename);
                 if (ast_out && ast_out != stdout) {
                     fclose(ast_out);
                 }
@@ -583,10 +192,10 @@ int main(int argc, char **argv) {
     }
 
     if (tristate_report_active) {
-        if (output_filename) {
-            tristate_out = fopen(output_filename, "w");
+        if (opts.output_filename) {
+            tristate_out = fopen(opts.output_filename, "w");
             if (!tristate_out) {
-                fprintf(stderr, "Failed to open tristate-report output file '%s'\n", output_filename);
+                fprintf(stderr, "Failed to open tristate-report output file '%s'\n", opts.output_filename);
                 if (ast_out && ast_out != stdout) {
                     fclose(ast_out);
                 }
@@ -607,403 +216,107 @@ int main(int argc, char **argv) {
     jz_compiler_init(&compiler, cmode);
 
     /* Initialize path security sandbox. */
-    if (input_filename) {
-        jz_path_security_init(input_filename);
-        if (allow_absolute_paths) {
+    if (opts.input_filename) {
+        jz_path_security_init(opts.input_filename);
+        if (opts.allow_absolute_paths) {
             jz_path_security_set_allow_absolute(1);
         }
-        if (allow_traversal) {
+        if (opts.allow_traversal) {
             jz_path_security_set_allow_traversal(1);
         }
-        for (size_t i = 0; i < sandbox_root_count; i++) {
-            jz_path_security_add_root(sandbox_roots[i]);
+        for (size_t i = 0; i < opts.sandbox_root_count; i++) {
+            jz_path_security_add_root(opts.sandbox_roots[i]);
         }
     }
 
-    if (alias_report_active && input_filename) {
-        /* Enable alias-resolution reporting during semantic analysis. */
+    if (alias_report_active && opts.input_filename) {
         FILE *out = alias_out ? alias_out : stdout;
-        jz_sem_enable_alias_report(out, "JZ-HDL 1.0", input_filename);
+        jz_sem_enable_alias_report(out, "JZ-HDL 1.0", opts.input_filename);
     }
-    if (memory_report_active && input_filename) {
+    if (memory_report_active && opts.input_filename) {
         FILE *out = memory_out ? memory_out : stdout;
-        jz_sem_enable_memory_report(out, "JZ-HDL 1.0", input_filename);
+        jz_sem_enable_memory_report(out, "JZ-HDL 1.0", opts.input_filename);
     }
-    if (tristate_report_active && input_filename) {
+    if (tristate_report_active && opts.input_filename) {
         FILE *out = tristate_out ? tristate_out : stdout;
-        jz_sem_enable_tristate_report(out, "JZ-HDL 1.0", input_filename);
+        jz_sem_enable_tristate_report(out, "JZ-HDL 1.0", opts.input_filename);
     }
 
-    if (tristate_default != 0) {
+    if (opts.tristate_default != 0) {
         jz_sem_set_tristate_default(1);
-        show_info = 1;
+        opts.show_info = 1;
     }
 
     /* Set global verbose flag for use by IR builder and other subsystems. */
-    jz_verbose = verbose;
+    jz_verbose = opts.verbose;
 
     int rc = 0;
     clock_t phase_t0;
+
     /* Always run the front end for AST, lint, IR, Verilog, and test modes. */
     phase_t0 = clock();
-    rc = run_frontend(&compiler, input_filename, print_ast_json, ast_out, test_mode, simulate_mode, verbose);
-    if (verbose) fprintf(stderr, "[verbose] frontend (total): %.1f ms\n", elapsed_ms(phase_t0));
+    rc = jz_cli_run_frontend(&compiler, opts.input_filename, print_ast_json, ast_out, opts.test_mode, opts.simulate_mode, opts.verbose);
+    if (opts.verbose) fprintf(stderr, "[verbose] frontend (total): %.1f ms\n", jz_cli_elapsed_ms(phase_t0));
 
-    /* In lint mode, build IR (if no errors) to run the division guard check.
-     * This surfaces DIV_UNGUARDED_RUNTIME_ZERO warnings during --lint.
-     */
+    /* In lint mode, build IR (if no errors) to run the division guard check. */
     if (is_lint_mode && rc == 0 &&
         !jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR) &&
         compiler.ast_root != NULL && !compiler.ir_root) {
-        phase_t0 = clock();
-        if (jz_ir_build_design(compiler.ast_root,
-                               &compiler.ir_root,
-                               &compiler.ir_arena,
-                               &compiler.diagnostics) == 0 &&
-            compiler.ir_root) {
-            if (verbose) fprintf(stderr, "[verbose] ir_build (lint): %.1f ms\n", elapsed_ms(phase_t0));
-            if (tristate_default != 0) {
-                phase_t0 = clock();
-                compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
-                if (jz_ir_tristate_transform(compiler.ir_root,
-                                              &compiler.ir_arena,
-                                              &compiler.diagnostics) != 0) {
-                    rc = 1;
-                }
-                if (verbose) fprintf(stderr, "[verbose] tristate_transform (lint): %.1f ms\n", elapsed_ms(phase_t0));
-            }
-            phase_t0 = clock();
-            jz_ir_div_guard_check(compiler.ir_root, &compiler.diagnostics);
-            if (verbose) fprintf(stderr, "[verbose] div_guard_check: %.1f ms\n", elapsed_ms(phase_t0));
-        } else {
-            if (verbose) fprintf(stderr, "[verbose] ir_build (lint): %.1f ms (failed)\n", elapsed_ms(phase_t0));
-        }
+        rc = jz_cli_run_lint_ir(&compiler, &opts);
     }
 
-    /* If IR output was requested and the front end completed without
-     * diagnostics at ERROR severity, construct IR and serialize to JSON.
-     */
+    /* IR output mode. */
     if (emit_ir && rc == 0 &&
         !jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR) &&
         compiler.ast_root != NULL) {
-        if (jz_ir_build_design(compiler.ast_root,
-                               &compiler.ir_root,
-                               &compiler.ir_arena,
-                               &compiler.diagnostics) != 0) {
-            rc = 1;
-        } else {
-            if (tristate_default != 0 && compiler.ir_root) {
-                compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
-                if (jz_ir_tristate_transform(compiler.ir_root,
-                                              &compiler.ir_arena,
-                                              &compiler.diagnostics) != 0) {
-                    rc = 1;
-                }
-            }
-            if (rc == 0 && compiler.ir_root) {
-                jz_ir_div_guard_check(compiler.ir_root, &compiler.diagnostics);
-            }
-            if (rc == 0) {
-                const char *ir_target = output_filename ? output_filename : "-";
-                if (jz_ir_write_json(compiler.ir_root,
-                                      ir_target,
-                                      &compiler.diagnostics,
-                                      input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-        }
+        rc = jz_cli_run_ir_emit(&compiler, &opts);
     }
 
-    /* If Verilog output was requested and the front end completed without
-     * diagnostics at ERROR severity, construct IR (if needed) and invoke the
-     * Verilog backend.
-     */
+    /* Verilog output mode. */
     if (cmode == JZ_COMPILER_MODE_VERILOG && !is_rtlil_mode &&
         rc == 0 &&
         !jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR) &&
         compiler.ast_root != NULL) {
-        if (!compiler.ir_root) {
-            phase_t0 = clock();
-            if (jz_ir_build_design(compiler.ast_root,
-                                   &compiler.ir_root,
-                                   &compiler.ir_arena,
-                                   &compiler.diagnostics) != 0) {
-                rc = 1;
-            }
-            if (verbose) fprintf(stderr, "[verbose] ir_build (verilog): %.1f ms\n", elapsed_ms(phase_t0));
-        }
-        if (rc == 0 && compiler.ir_root) {
-            if (tristate_default != 0) {
-                phase_t0 = clock();
-                compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
-                if (jz_ir_tristate_transform(compiler.ir_root,
-                                              &compiler.ir_arena,
-                                              &compiler.diagnostics) != 0) {
-                    rc = 1;
-                }
-                if (verbose) fprintf(stderr, "[verbose] tristate_transform: %.1f ms\n", elapsed_ms(phase_t0));
-            }
-        }
-        if (rc == 0 && compiler.ir_root) {
-            phase_t0 = clock();
-            jz_ir_div_guard_check(compiler.ir_root, &compiler.diagnostics);
-            if (verbose) fprintf(stderr, "[verbose] div_guard_check: %.1f ms\n", elapsed_ms(phase_t0));
-        }
-        if (rc == 0 && compiler.ir_root) {
-            phase_t0 = clock();
-            const char *verilog_target = output_filename ? output_filename : "-";
-            if (jz_emit_verilog(compiler.ir_root,
-                                verilog_target,
-                                &compiler.diagnostics,
-                                input_filename) != 0) {
-                rc = 1;
-            }
-            if (verbose) fprintf(stderr, "[verbose] emit_verilog: %.1f ms\n", elapsed_ms(phase_t0));
-            if (rc == 0 && sdc_filename) {
-                if (jz_emit_sdc_constraints(compiler.ir_root,
-                                            sdc_filename,
-                                            &compiler.diagnostics,
-                                            input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-            if (rc == 0 && xdc_filename) {
-                if (jz_emit_xdc_constraints(compiler.ir_root,
-                                            xdc_filename,
-                                            &compiler.diagnostics,
-                                            input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-            if (rc == 0 && pcf_filename) {
-                if (jz_emit_pcf_constraints(compiler.ir_root,
-                                            pcf_filename,
-                                            &compiler.diagnostics,
-                                            input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-            if (rc == 0 && cst_filename) {
-                if (jz_emit_cst_constraints(compiler.ir_root,
-                                            cst_filename,
-                                            &compiler.diagnostics,
-                                            input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-        }
+        rc = jz_cli_run_verilog(&compiler, &opts);
     }
 
-    /* If RTLIL output was requested and the front end completed without
-     * diagnostics at ERROR severity, construct IR and invoke the RTLIL backend.
-     */
+    /* RTLIL output mode. */
     if (is_rtlil_mode &&
         rc == 0 &&
         !jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR) &&
         compiler.ast_root != NULL) {
-        if (!compiler.ir_root) {
-            if (jz_ir_build_design(compiler.ast_root,
-                                   &compiler.ir_root,
-                                   &compiler.ir_arena,
-                                   &compiler.diagnostics) != 0) {
-                rc = 1;
-            }
-        }
-        if (rc == 0 && compiler.ir_root) {
-            if (tristate_default != 0) {
-                compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
-                if (jz_ir_tristate_transform(compiler.ir_root,
-                                              &compiler.ir_arena,
-                                              &compiler.diagnostics) != 0) {
-                    rc = 1;
-                }
-            }
-        }
-        if (rc == 0 && compiler.ir_root) {
-            jz_ir_div_guard_check(compiler.ir_root, &compiler.diagnostics);
-        }
-        if (rc == 0 && compiler.ir_root) {
-            const char *rtlil_target = output_filename ? output_filename : "-";
-            if (jz_emit_rtlil(compiler.ir_root,
-                               rtlil_target,
-                               &compiler.diagnostics,
-                               input_filename) != 0) {
-                rc = 1;
-            }
-            /* Constraint files work with RTLIL mode too. */
-            if (rc == 0 && sdc_filename) {
-                if (jz_emit_sdc_constraints(compiler.ir_root,
-                                            sdc_filename,
-                                            &compiler.diagnostics,
-                                            input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-            if (rc == 0 && xdc_filename) {
-                if (jz_emit_xdc_constraints(compiler.ir_root,
-                                            xdc_filename,
-                                            &compiler.diagnostics,
-                                            input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-            if (rc == 0 && pcf_filename) {
-                if (jz_emit_pcf_constraints(compiler.ir_root,
-                                            pcf_filename,
-                                            &compiler.diagnostics,
-                                            input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-            if (rc == 0 && cst_filename) {
-                if (jz_emit_cst_constraints(compiler.ir_root,
-                                            cst_filename,
-                                            &compiler.diagnostics,
-                                            input_filename) != 0) {
-                    rc = 1;
-                }
-            }
-        }
+        rc = jz_cli_run_rtlil(&compiler, &opts);
     }
 
-    /* If --test mode was requested and the front end completed without
-     * diagnostics at ERROR severity, build IR and run testbenches.
-     */
-    if (test_mode &&
+    /* Testbench mode. */
+    if (opts.test_mode &&
         rc == 0 &&
         !jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR) &&
         compiler.ast_root != NULL) {
-        if (!compiler.ir_root) {
-            if (jz_ir_build_design(compiler.ast_root,
-                                   &compiler.ir_root,
-                                   &compiler.ir_arena,
-                                   &compiler.diagnostics) != 0) {
-                rc = 1;
-            }
-        }
-        if (rc == 0 && compiler.ir_root) {
-            if (tristate_default != 0) {
-                phase_t0 = clock();
-                compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
-                if (jz_ir_tristate_transform(compiler.ir_root,
-                                              &compiler.ir_arena,
-                                              &compiler.diagnostics) != 0) {
-                    rc = 1;
-                }
-                if (verbose) fprintf(stderr, "[verbose] tristate_transform (test): %.1f ms\n", elapsed_ms(phase_t0));
-            }
-        }
-        if (rc == 0 && compiler.ir_root) {
-            jz_ir_div_guard_check(compiler.ir_root, &compiler.diagnostics);
-        }
-        if (rc == 0 && compiler.ir_root) {
-            if (!test_seed_set) {
-                test_seed = 0;
-            }
-            int sim_rc = jz_sim_run_testbenches(compiler.ast_root,
-                                                 compiler.ir_root,
-                                                 test_seed,
-                                                 verbose,
-                                                 &compiler.diagnostics,
-                                                 input_filename);
-            if (sim_rc != 0) {
-                rc = 1;
-            }
-        }
+        rc = jz_cli_run_test(&compiler, &opts);
     }
 
-    /* If --simulate mode was requested and the front end completed without
-     * diagnostics at ERROR severity, build IR and run simulations.
-     */
-    if (simulate_mode &&
+    /* Simulation mode. */
+    if (opts.simulate_mode &&
         rc == 0 &&
         !jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR) &&
         compiler.ast_root != NULL) {
-        {
-            SimWaveFormat wave_format = sim_format_jzw ? SIM_WAVE_JZW
-                                     : sim_format_fst ? SIM_WAVE_FST
-                                     : SIM_WAVE_VCD;
-            const char *ext = sim_format_jzw ? ".jzw"
-                            : sim_format_fst ? ".fst" : ".vcd";
-
-            if (!compiler.ir_root) {
-                if (jz_ir_build_design(compiler.ast_root,
-                                       &compiler.ir_root,
-                                       &compiler.ir_arena,
-                                       &compiler.diagnostics) != 0) {
-                    rc = 1;
-                }
-            }
-            if (rc == 0 && compiler.ir_root) {
-                if (tristate_default != 0) {
-                    phase_t0 = clock();
-                    compiler.ir_root->tristate_default = (IR_TristateDefault)tristate_default;
-                    if (jz_ir_tristate_transform(compiler.ir_root,
-                                                  &compiler.ir_arena,
-                                                  &compiler.diagnostics) != 0) {
-                        rc = 1;
-                    }
-                    if (verbose) fprintf(stderr, "[verbose] tristate_transform (simulate): %.1f ms\n", elapsed_ms(phase_t0));
-                }
-            }
-            if (rc == 0 && compiler.ir_root) {
-                jz_ir_div_guard_check(compiler.ir_root, &compiler.diagnostics);
-            }
-            if (rc == 0 && compiler.ir_root) {
-                if (!test_seed_set) {
-                    test_seed = 0;
-                }
-                /* Determine output path: -o flag or default to <input>.<ext> */
-                char default_wave[1024];
-                const char *sim_output = output_filename;
-                if (!sim_output) {
-                    /* Strip extension and append format extension */
-                    const char *dot = strrchr(input_filename, '.');
-                    size_t base_len = dot ? (size_t)(dot - input_filename) : strlen(input_filename);
-                    if (base_len > sizeof(default_wave) - 5) base_len = sizeof(default_wave) - 5;
-                    memcpy(default_wave, input_filename, base_len);
-                    memcpy(default_wave + base_len, ext, strlen(ext) + 1);
-                    sim_output = default_wave;
-                }
-                int sim_rc = jz_sim_run_simulations(compiler.ast_root,
-                                                     compiler.ir_root,
-                                                     test_seed,
-                                                     verbose,
-                                                     &compiler.diagnostics,
-                                                     input_filename,
-                                                     sim_output,
-                                                     wave_format,
-                                                     num_jitter > 0 ? jitter_configs : NULL,
-                                                     num_jitter,
-                                                     num_drift > 0 ? drift_configs : NULL,
-                                                     num_drift);
-                if (sim_rc != 0) {
-                    rc = 1;
-                }
-            }
-        }
+        rc = jz_cli_run_simulate(&compiler, &opts);
     }
 
-    /* Apply warning policy (group enables/disables and optional warn-as-error)
-     * before printing or computing final exit status.
-     */
+    /* Apply warning policy before printing or computing final exit status. */
     JZWarningPolicy policy;
-    policy.warn_as_error = warn_as_error;
-    policy.groups = (group_override_count > 0) ? group_overrides : NULL;
-    policy.group_count = group_override_count;
+    policy.warn_as_error = opts.warn_as_error;
+    policy.groups = (opts.group_override_count > 0) ? opts.group_overrides : NULL;
+    policy.group_count = opts.group_override_count;
     jz_diagnostic_apply_warning_policy(&compiler.diagnostics, &policy);
 
     /* Print buffered diagnostics for non-AST modes, or on failure. */
     if (cmode != JZ_COMPILER_MODE_AST || rc != 0) {
-        jz_diagnostic_print_all(&compiler.diagnostics, stderr, use_color, input_filename, show_info, show_explain);
+        jz_diagnostic_print_all(&compiler.diagnostics, stderr, opts.use_color, opts.input_filename, opts.show_info, opts.show_explain);
     }
 
-    /* Any error-severity diagnostic forces a non-zero exit code, regardless
-     * of mode.  This includes diagnostics emitted by semantic analysis
-     * (e.g. MEM_INIT_FILE_NOT_FOUND) that don't cause the pipeline to abort
-     * internally but still represent a build failure.
-     */
+    /* Any error-severity diagnostic forces a non-zero exit code. */
     if (rc == 0 &&
         jz_diagnostic_has_severity(&compiler.diagnostics, JZ_SEVERITY_ERROR)) {
         rc = 1;

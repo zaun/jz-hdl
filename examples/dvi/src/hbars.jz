@@ -1,5 +1,5 @@
 // Horizontal color bars pattern generator
-// 5 bars of 256px each: Red, Green, Blue, White, Black
+// 5 bars: Red, Green, Blue, White, Black (equal width from CONFIG.h_active)
 @module hbars
     PORT {
         IN  [11] x_pos;
@@ -8,14 +8,18 @@
         OUT [8]  blue;
     }
 
+    CONST {
+        BAR = CONFIG.h_active / 5;
+    }
+
     ASYNCHRONOUS {
-        IF (x_pos < 11'd256) {
+        IF (x_pos < lit(11, BAR)) {
             red <= 8'hFF; green <= 8'h00; blue <= 8'h00;
-        } ELSE { IF (x_pos < 11'd512) {
+        } ELSE { IF (x_pos < lit(11, BAR * 2)) {
             red <= 8'h00; green <= 8'hFF; blue <= 8'h00;
-        } ELSE { IF (x_pos < 11'd768) {
+        } ELSE { IF (x_pos < lit(11, BAR * 3)) {
             red <= 8'h00; green <= 8'h00; blue <= 8'hFF;
-        } ELSE { IF (x_pos < 11'd1024) {
+        } ELSE { IF (x_pos < lit(11, BAR * 4)) {
             red <= 8'hFF; green <= 8'hFF; blue <= 8'hFF;
         } ELSE {
             red <= 8'h00; green <= 8'h00; blue <= 8'h00;

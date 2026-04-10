@@ -404,7 +404,7 @@ static double ir_cgen_eval_mul(const char **pp, IRCGenEvalCtx *ctx)
     return left;
 }
 
-static double ir_cgen_eval_expr(const char **pp, IRCGenEvalCtx *ctx)
+static double ir_cgen_eval_add(const char **pp, IRCGenEvalCtx *ctx)
 {
     double left = ir_cgen_eval_mul(pp, ctx);
     for (;;) {
@@ -414,6 +414,29 @@ static double ir_cgen_eval_expr(const char **pp, IRCGenEvalCtx *ctx)
         else break;
     }
     return left;
+}
+
+static double ir_cgen_eval_shift(const char **pp, IRCGenEvalCtx *ctx)
+{
+    double left = ir_cgen_eval_add(pp, ctx);
+    for (;;) {
+        ir_cgen_skip_ws(pp);
+        if ((*pp)[0] == '<' && (*pp)[1] == '<') {
+            *pp += 2;
+            double right = ir_cgen_eval_add(pp, ctx);
+            left = (double)((long long)left << (int)right);
+        } else if ((*pp)[0] == '>' && (*pp)[1] == '>') {
+            *pp += 2;
+            double right = ir_cgen_eval_add(pp, ctx);
+            left = (double)((long long)left >> (int)right);
+        } else break;
+    }
+    return left;
+}
+
+static double ir_cgen_eval_expr(const char **pp, IRCGenEvalCtx *ctx)
+{
+    return ir_cgen_eval_shift(pp, ctx);
 }
 
 /**
@@ -1833,6 +1856,38 @@ int jz_ir_build_design(JZASTNode *root,
                         }
                     }
 
+                    /* ser_width (serialization width from width= attribute) */
+                    p->ser_width = 0;
+                    {
+                        const char *sw_attr = strstr(attrs, "width");
+                        if (sw_attr) {
+                            /* whole-word check */
+                            if (sw_attr != attrs) {
+                                char before = sw_attr[-1];
+                                if (isalnum((unsigned char)before) || before == '_')
+                                    sw_attr = NULL;
+                            }
+                        }
+                        if (sw_attr) {
+                            sw_attr = strchr(sw_attr, '=');
+                            if (sw_attr) {
+                                ++sw_attr;
+                                while (*sw_attr && isspace((unsigned char)*sw_attr)) ++sw_attr;
+                                char val[64];
+                                size_t len2 = 0;
+                                while (sw_attr[len2] && !isspace((unsigned char)sw_attr[len2]) &&
+                                       sw_attr[len2] != ',' && sw_attr[len2] != ';' && sw_attr[len2] != '}') {
+                                    ++len2;
+                                }
+                                if (len2 > 0 && len2 < sizeof(val)) {
+                                    memcpy(val, sw_attr, len2);
+                                    val[len2] = '\0';
+                                    p->ser_width = atoi(val);
+                                }
+                            }
+                        }
+                    }
+
                     ++pi;
                 }
 
@@ -2114,9 +2169,8 @@ int jz_ir_build_design(JZASTNode *root,
                              * assigned to top-port bits from MSB downwards in
                              * left-to-right order.
                              *
-                             * A leading '~' is not interpreted for
-                             * concatenations; such expressions are currently
-                             * ignored for inversion semantics.
+                             * Each element may also be prefixed with '~' for
+                             * per-element inversion, or '_' for no-connect.
                              */
                             if (target_expr[0] == '{') {
                                 const char *lbrace = strchr(target_expr, '{');
@@ -2183,6 +2237,24 @@ int jz_ir_build_design(JZASTNode *root,
                                             continue;
                                         }
 
+                                        /* Handle no-connect element '_'. */
+                                        if (elem_trim[0] == '_' && elem_trim[1] == '\0') {
+                                            top_bit_cursor--;
+                                            continue;
+                                        }
+
+                                        /* Strip leading '~' for per-element inversion. */
+                                        int elem_invert = 0;
+                                        {
+                                            const char *ep = elem_trim;
+                                            if (*ep == '~') {
+                                                elem_invert = 1;
+                                                ++ep;
+                                                while (*ep && isspace((unsigned char)*ep)) ++ep;
+                                                memmove(elem_trim, ep, strlen(ep) + 1);
+                                            }
+                                        }
+
                                         /* Otherwise treat as a pin reference. */
                                         char pin_name[128];
                                         int pin_bit_index = -1;
@@ -2211,6 +2283,7 @@ int jz_ir_build_design(JZASTNode *root,
                                                 tb->pin_id = pin_id;
                                                 tb->pin_bit_index = pin_bit_index;
                                                 tb->const_value = 0;
+                                                tb->inverted = elem_invert;
                                                 top_bit_cursor--;
                                             }
                                         } else {
@@ -2227,6 +2300,7 @@ int jz_ir_build_design(JZASTNode *root,
                                                 tb->pin_id = pin_id;
                                                 tb->pin_bit_index = (pin_width - 1) - bidx;
                                                 tb->const_value = 0;
+                                                tb->inverted = elem_invert;
                                                 top_bit_cursor--;
                                             }
                                         }

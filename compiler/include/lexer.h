@@ -108,7 +108,7 @@ typedef enum JZTokenType {
     JZ_TOK_KW_ENDGLOB,    /**< \@endglob */
     JZ_TOK_KW_FEATURE,    /**< \@feature */
     JZ_TOK_KW_ENDFEAT,    /**< \@endfeat */
-    JZ_TOK_KW_FEATURE_ELSE, /**< \@feature_else */
+    JZ_TOK_KW_FEATURE_ELSE, /**< \@else */
     JZ_TOK_KW_CHECK,      /**< \@check */
 
     JZ_TOK_KW_CONST,      /**< CONST block keyword. */

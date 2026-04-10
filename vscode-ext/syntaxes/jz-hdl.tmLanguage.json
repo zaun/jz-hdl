@@ -59,7 +59,7 @@
             "patterns": [
                 {
                     "name": "keyword.control.directive.jz-hdl",
-                    "match": "@(module|endmod|project|endproj|blackbox|new|top|import|global|endglob|feature|endfeat|feature_else|check|template|endtemplate|apply|scratch|testbench|endtb|simulation|endsim|setup|update|clock|run|run_until|run_while|print|print_if|trace|mark|mark_if|alert|alert_if|expect_equal|expect_not_equal|expect_tristate|repeat|end)\\b"
+                    "match": "@(module|endmod|project|endproj|blackbox|new|top|import|global|endglob|feature|endfeat|else|check|template|endtemplate|apply|scratch|testbench|endtb|simulation|endsim|setup|update|clock|run|run_until|run_while|print|print_if|trace|mark|mark_if|alert|alert_if|expect_equal|expect_not_equal|expect_tristate|repeat|end)\\b"
                 }
             ]
         },

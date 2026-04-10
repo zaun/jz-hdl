@@ -1,0 +1,91 @@
+@project(CHIP="ICE40UP-5K-SG48") DVI_TEST
+    @import "por.jz"
+    @import "video_timing.jz"
+    @import "tmds_encoder_2.jz"
+    @import "hbars.jz"
+    @import "vbars.jz"
+    @import "dvi-slow.jz"
+    @import "clk_div5.jz"
+
+    CONFIG {
+        warp = 0;
+        // 640x480 @ 30Hz (pixel clock = 12.6 MHz, serial clock = 63 MHz)
+        h_active = 640; h_front = 16; h_sync = 96; h_back = 48;
+        v_active = 480; v_front = 10; v_sync = 2;  v_back = 33;
+    }
+
+    CLOCKS {
+        SCLK       = { period=83.33 };   // 12MHz crystal
+        serial_clk;                       // 63MHz (5x pixel, from PLL)
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[3]       = { standard=LVCMOS33, drive=8 };
+        TMDS_CLK     = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, reset=pll_lock, width=2 };
+        TMDS_DATA[3] = { mode=DIFFERENTIAL, standard=LVDS25, drive=3.5, fclk=serial_clk, reset=pll_lock, width=2 };
+    }
+
+    MAP {
+        // System Clock 12MHz
+        SCLK = 35;
+
+        // LEDs (active low)
+        LED[0] = 40;
+        LED[1] = 41;
+        LED[2] = 39;
+
+        //               Top of Board
+        // PMOD 1 (top)   --------\
+        // P9  P4 P2 P47 GND 3V3  | Right Edge
+        // P10 P6 P3 P48 GND 3V3  | of Board
+
+        // PMOD 2 (top/right)
+        // 3V3 GND P37 P42 P44 P46  | Top of
+        // 3V3 GND P36 P38 P43 P45  | Board
+        //                  --------/
+        //                Edge of Board
+
+        // PMOD 3 (bottom/right)
+        // 3V3 GND P25 P27 P31 P34  | Top of
+        // 3V3 GND P23 P26 P28 P32  | Board
+        //                  --------/
+        //                Edge of Board
+
+
+        TMDS_DATA[2] = { P=10, N=9  };
+        TMDS_DATA[1] = { P=6,  N=4  };
+        TMDS_DATA[0] = { P=3,  N=2  };
+        TMDS_CLK     = { P=48, N=47 };
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK SCLK;
+            OUT PRIMARY serial_clk;    // 63 MHz (5x pixel clock)
+            WIRE LOCK pll_lock;
+
+            CONFIG {
+                DIVR = 0;             // divider = 1  → FREF = 12 MHz
+                DIVF = 83;            // multiplier = 84 → FVCO = 12 * 84 = 1008 MHz
+                DIVQ = 4;             // Output = 1008/16 = 63 MHz
+                FILTER_RANGE = 1;     // for FREF = 12 MHz
+                PLLOUT_SELECT_P = GENCLK;
+            };
+        };
+    }
+
+    @top dvi_top {
+        IN   [1]  clk       = serial_clk;
+        IN   [1]  por       = 1'b1;
+        IN   [1]  rst_n     = 1'b1;
+        OUT  [6]  leds      = { ~LED, _, _, _ };
+        OUT  [2]  tmds_clk  = TMDS_CLK;
+        OUT  [2]  tmds_d0   = TMDS_DATA[0];
+        OUT  [2]  tmds_d1   = TMDS_DATA[1];
+        OUT  [2]  tmds_d2   = TMDS_DATA[2];
+    }
+@endproj

@@ -1748,6 +1748,9 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
          */
         int effective_has_sink = has_sink || has_output_port || has_inout_port;
 
+        /* Precompute the parent module node for feature-guard analysis. */
+        JZASTNode *mod_node = scope ? scope->node : NULL;
+
         if (has_driver) {
             int non_z_assign_driver_count = 0;
             int has_z_only_driver = 0;
@@ -1767,8 +1770,9 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
 
                 if (stmt->type == JZ_AST_MODULE_INSTANCE) {
                     /* Module instance OUT port driver.
-                     * Skip duplicate instance names — same-named instances only
-                     * exist in mutually exclusive @feature branches, so they
+                     * Skip instances that are in a different branch of the
+                     * same @feature guard as an already-collected driver —
+                     * @feature branches are mutually exclusive, so they
                      * represent one logical driver, not two.
                      */
                     int is_dup = 0;
@@ -1779,6 +1783,35 @@ static void sem_net_apply_simple_rules_for_module(const JZModuleScope *scope,
                                 is_dup = 1;
                                 break;
                             }
+                        }
+                    }
+                    /* Also check if this instance and any existing driver are
+                     * in different branches of the same FEATURE_GUARD. Walk the
+                     * module's top-level children to find feature guard parents.
+                     */
+                    if (!is_dup && mod_node && instance_driver_count > 0) {
+                        for (size_t di = 0; di < instance_driver_count; ++di) {
+                            JZASTNode *other = instance_drivers[di];
+                            /* Find if both are inside the same FEATURE_GUARD. */
+                            for (size_t ci = 0; ci < mod_node->child_count; ++ci) {
+                                JZASTNode *fg = mod_node->children[ci];
+                                if (!fg || fg->type != JZ_AST_FEATURE_GUARD) continue;
+                                int stmt_branch = -1, other_branch = -1;
+                                for (size_t fi = 1; fi < fg->child_count; ++fi) {
+                                    JZASTNode *branch = fg->children[fi];
+                                    if (!branch) continue;
+                                    for (size_t gi = 0; gi < branch->child_count; ++gi) {
+                                        if (branch->children[gi] == stmt) stmt_branch = (int)fi;
+                                        if (branch->children[gi] == other) other_branch = (int)fi;
+                                    }
+                                }
+                                if (stmt_branch >= 0 && other_branch >= 0 &&
+                                    stmt_branch != other_branch) {
+                                    is_dup = 1;
+                                    break;
+                                }
+                            }
+                            if (is_dup) break;
                         }
                     }
                     if (!is_dup && instance_driver_count < 16) {

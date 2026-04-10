@@ -26,6 +26,7 @@
 
 #include "template_expand.h"
 #include "rules.h"
+#include "sem.h"
 
 /* ── Random suffix for scratch wire names ────────────────────────── */
 
@@ -126,23 +127,138 @@ static int parse_int_str(const char *s, long *out)
 }
 
 /**
- * Walk the AST and collect CONST and CONFIG values for count evaluation.
+ * Strip "CONFIG." / "CONFIG . " prefixes from an expression string.
+ * Returns a malloc'd copy with prefixes removed, or NULL on failure.
+ * The caller must free the returned string.
  */
-static void collect_consts_from_ast(ExpandContext *ctx, JZASTNode *node)
+static char *strip_config_prefix(const char *expr)
+{
+    if (!expr) return NULL;
+    size_t len = strlen(expr);
+    char *buf = (char *)malloc(len + 1);
+    if (!buf) return NULL;
+
+    const char *cp = expr;
+    size_t co = 0;
+    while (*cp) {
+        if (cp[0] == 'C' && strncmp(cp, "CONFIG", 6) == 0) {
+            int ws = (cp == expr) ||
+                !((cp[-1] >= 'A' && cp[-1] <= 'Z') ||
+                  (cp[-1] >= 'a' && cp[-1] <= 'z') ||
+                  (cp[-1] >= '0' && cp[-1] <= '9') ||
+                  cp[-1] == '_');
+            if (ws) {
+                const char *rr = cp + 6;
+                while (*rr && isspace((unsigned char)*rr)) ++rr;
+                if (*rr == '.') {
+                    ++rr;
+                    while (*rr && isspace((unsigned char)*rr)) ++rr;
+                    cp = rr;
+                    continue;
+                }
+            }
+        }
+        buf[co++] = *cp++;
+    }
+    buf[co] = '\0';
+    return buf;
+}
+
+/**
+ * Helper to add one CONST_DECL to the defs array, stripping CONFIG. prefixes.
+ */
+static void add_const_def(JZASTNode *decl,
+                           JZConstDef **defs, char ***stripped_exprs,
+                           size_t *count, size_t *cap)
+{
+    if (!decl || !decl->name || !decl->text) return;
+    if (*count == *cap) {
+        size_t new_cap = *cap ? *cap * 2 : 64;
+        void *pd = realloc(*defs, new_cap * sizeof(JZConstDef));
+        void *ps = realloc(*stripped_exprs, new_cap * sizeof(char *));
+        if (!pd || !ps) {
+            if (pd) *defs = (JZConstDef *)pd;
+            if (ps) *stripped_exprs = (char **)ps;
+            return;
+        }
+        *defs = (JZConstDef *)pd;
+        *stripped_exprs = (char **)ps;
+        *cap = new_cap;
+    }
+    char *stripped = strip_config_prefix(decl->text);
+    (*stripped_exprs)[*count] = stripped;
+    (*defs)[*count].name = decl->name;
+    (*defs)[*count].expr = stripped ? stripped : decl->text;
+    (*count)++;
+}
+
+/**
+ * Recursively gather CONST_DECL nodes from CONFIG_BLOCK and CONST_BLOCK
+ * parents only (not from MAP, CLOCKS, PIN blocks, etc.).
+ */
+static void gather_const_defs(JZASTNode *node,
+                               JZConstDef **defs, char ***stripped_exprs,
+                               size_t *count, size_t *cap)
 {
     if (!node) return;
 
-    if (node->type == JZ_AST_CONST_DECL && node->name && node->text) {
-        long v = 0;
-        if (parse_int_str(node->text, &v)) {
-            collect_const_value(ctx, node->name, v);
+    if (node->type == JZ_AST_CONFIG_BLOCK || node->type == JZ_AST_CONST_BLOCK) {
+        for (size_t i = 0; i < node->child_count; i++) {
+            JZASTNode *child = node->children[i];
+            if (child && child->type == JZ_AST_CONST_DECL) {
+                add_const_def(child, defs, stripped_exprs, count, cap);
+            }
         }
     }
 
-    /* CONFIG entries are also CONST_DECL children of CONFIG_BLOCK */
     for (size_t i = 0; i < node->child_count; i++) {
-        collect_consts_from_ast(ctx, node->children[i]);
+        gather_const_defs(node->children[i], defs, stripped_exprs, count, cap);
     }
+}
+
+/**
+ * Walk the AST and collect CONST and CONFIG values for count evaluation.
+ * Uses jz_const_eval_all to handle expression-based CONSTs that reference
+ * CONFIG values (e.g. CX = CONFIG.h_active / 2).
+ */
+static void collect_consts_from_ast(ExpandContext *ctx, JZASTNode *node)
+{
+    JZConstDef *defs = NULL;
+    char **stripped_exprs = NULL;
+    size_t count = 0, cap = 0;
+
+    gather_const_defs(node, &defs, &stripped_exprs, &count, &cap);
+
+    if (count == 0) {
+        free(defs);
+        free(stripped_exprs);
+        return;
+    }
+
+    long long *vals = (long long *)calloc(count, sizeof(long long));
+    if (!vals) { goto cleanup; }
+
+    if (jz_const_eval_all(defs, count, NULL, vals) == 0) {
+        for (size_t i = 0; i < count; i++) {
+            collect_const_value(ctx, defs[i].name, (long)vals[i]);
+        }
+    } else {
+        /* Fallback: collect whatever simple integers we can */
+        for (size_t i = 0; i < count; i++) {
+            long v = 0;
+            if (parse_int_str(defs[i].expr, &v)) {
+                collect_const_value(ctx, defs[i].name, v);
+            }
+        }
+    }
+
+    free(vals);
+cleanup:
+    for (size_t i = 0; i < count; i++) {
+        free(stripped_exprs[i]);
+    }
+    free(stripped_exprs);
+    free(defs);
 }
 
 /* ── Evaluate count expression ───────────────────────────────────── */

@@ -57,9 +57,9 @@
     @top ser_top {
         IN  [1]  clk    = pixel_clk;
         OUT [1]  status = led;
-        OUT [10] tclk   = TMDS_CLK;
-        OUT [10] td0    = TMDS_D[0];
-        OUT [10] td1    = TMDS_D[1];
+        OUT [1]  tclk   = TMDS_CLK;
+        OUT [1]  td0    = TMDS_D[0];
+        OUT [1]  td1    = TMDS_D[1];
     }
 
 @endproj
@@ -68,9 +68,9 @@
     PORT {
         IN  [1]  clk;
         OUT [1]  status;
-        OUT [10] tclk;
-        OUT [10] td0;
-        OUT [10] td1;
+        OUT [1]  tclk;
+        OUT [1]  td0;
+        OUT [1]  td1;
     }
 
     REGISTER {
@@ -79,9 +79,9 @@
 
     ASYNCHRONOUS {
         status <= cnt[23];
-        tclk   <= 10'b1111100000;
-        td0    <= 10'b0000000000;
-        td1    <= 10'b0000000000;
+        tclk   <= 1'b1;
+        td0    <= 1'b0;
+        td1    <= 1'b0;
     }
 
     SYNCHRONOUS(CLK=clk) {

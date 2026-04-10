@@ -1,0 +1,35 @@
+// LIT_HAPPY_PATH: CONFIG.<name> used as literal width prefix.
+// Exercises CONFIG-based widths in register init, sync, and async contexts.
+// No diagnostics expected — CONFIG names are valid in literal width position.
+
+@project LIT_CONFIG_WIDTH_valid
+    CONFIG {
+        WIDTH = 8;
+    }
+
+    @top TopMod {
+        IN  [1] clk = _;
+        OUT [8] data = _;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] clk;
+        OUT [8] data;
+    }
+
+    REGISTER {
+        // CONFIG-based width in register init
+        r [CONFIG.WIDTH] = CONFIG.WIDTH'd0;
+        s [CONFIG.WIDTH] = CONFIG.WIDTH'hAB;
+    }
+    ASYNCHRONOUS {
+        data = r ^ s;
+    }
+    SYNCHRONOUS(CLK=clk) {
+        // CONFIG-based width in sync assignment
+        r <= CONFIG.WIDTH'hFF;
+        s <= CONFIG.WIDTH'b0000_1111;
+    }
+@endmod

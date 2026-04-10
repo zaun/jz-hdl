@@ -1,14 +1,12 @@
 {
   "chipid": "LFE5U-45F-6BG381",
   "description": "Primitives available on the Lattice ECP5 LFE5U-45F in BG381 (381-ball caBGA) package, speed grade -6.",
-
   "boards": [
     {
       "name": "Colorlight i9",
       "url": "https://www.colorlight.net/colorlight-i9-led-receiving-card"
     }
   ],
-
   "resources": {
     "LUT4": 44000,
     "DFF": 44000,
@@ -16,7 +14,6 @@
     "LVDS_PAIRS": 64,
     "GSR": 1
   },
-
   "latches": {
     "source": "FPGA-DS-02012-3.1, Section 2.3 (PFU Architecture)",
     "FAB": {
@@ -29,11 +26,12 @@
       "description": "I/O Blocks (Input/Output Pins)",
       "D": true,
       "SR": false,
-      "modes": ["Transparent"],
+      "modes": [
+        "Transparent"
+      ],
       "note": "PIO register can be configured as a transparent latch."
     }
   },
-
   "dsp": {
     "source": "FPGA-DS-02012-3.1, Table 1.1; TN1267 ECP5 SYSDSP Usage Guide",
     "description": "Hardware multipliers and ALUs (two DSP rows, 36 slices)",
@@ -50,7 +48,6 @@
       "description": "54-bit ALU (one per DSP slice)"
     }
   },
-
   "memory": [
     {
       "type": "DISTRIBUTED",
@@ -60,11 +57,26 @@
       "r_ports": 1,
       "w_ports": 1,
       "configurations": [
-        { "width": 1,  "depth": 359424 },
-        { "width": 2,  "depth": 179712 },
-        { "width": 4,  "depth": 89856 },
-        { "width": 8,  "depth": 44928 },
-        { "width": 16, "depth": 22464 }
+        {
+          "width": 1,
+          "depth": 359424
+        },
+        {
+          "width": 2,
+          "depth": 179712
+        },
+        {
+          "width": 4,
+          "depth": 89856
+        },
+        {
+          "width": 8,
+          "depth": 44928
+        },
+        {
+          "width": 16,
+          "depth": 22464
+        }
       ]
     },
     {
@@ -76,70 +88,164 @@
       "total_bits": 1990656,
       "max_freq_mhz": 200,
       "note": "108 blocks x 18,432 bits = 1,990,656 bits. Max freq conservative estimate for -6 speed grade (272 MHz at -8).",
-      "modes": [{
-        "name": "Single Port",
-        "description": "Single port read/write",
-        "ports": [
-            { "id": "A", "read": true, "write": true }
-        ],
-        "configurations": [
-          { "width": 1,  "depth": 16384 },
-          { "width": 2,  "depth": 8192 },
-          { "width": 4,  "depth": 4096 },
-          { "width": 9,  "depth": 2048 },
-          { "width": 18, "depth": 1024 },
-          { "width": 36, "depth": 512 }
-        ]
-      },
-      {
-        "name": "True Dual Port",
-        "description": "Two independent ports with read/write on each",
-        "ports": [
-            { "id": "A", "read": true, "write": true },
-            { "id": "B", "read": true, "write": true }
-        ],
-        "configurations": [
-          { "width": 1,  "depth": 16384 },
-          { "width": 2,  "depth": 8192 },
-          { "width": 4,  "depth": 4096 },
-          { "width": 9,  "depth": 2048 },
-          { "width": 18, "depth": 1024 }
-        ]
-      },
-      {
-        "name": "Pseudo-Dual Port",
-        "description": "Write on Port A, read on Port B simultaneously",
-        "ports": [
-            { "id": "A", "read": false, "write": true },
-            { "id": "B", "read": true,  "write": false }
-        ],
-        "configurations": [
-          { "width": 1,  "depth": 16384 },
-          { "width": 2,  "depth": 8192 },
-          { "width": 4,  "depth": 4096 },
-          { "width": 9,  "depth": 2048 },
-          { "width": 18, "depth": 1024 },
-          { "width": 36, "depth": 512 }
-        ]
-      },
-      {
-        "name": "Read Only Memory",
-        "description": "Read-only with initialization during power-on",
-        "ports": [
-            { "id": "A", "read": true, "write": false }
-        ],
-        "configurations": [
-          { "width": 1,  "depth": 16384 },
-          { "width": 2,  "depth": 8192 },
-          { "width": 4,  "depth": 4096 },
-          { "width": 9,  "depth": 2048 },
-          { "width": 18, "depth": 1024 },
-          { "width": 36, "depth": 512 }
-        ]
-      }]
+      "modes": [
+        {
+          "name": "Single Port",
+          "description": "Single port read/write",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        },
+        {
+          "name": "True Dual Port",
+          "description": "Two independent ports with read/write on each",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            }
+          ]
+        },
+        {
+          "name": "Pseudo-Dual Port",
+          "description": "Write on Port A, read on Port B simultaneously",
+          "ports": [
+            {
+              "id": "A",
+              "read": false,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        },
+        {
+          "name": "Read Only Memory",
+          "description": "Read-only with initialization during power-on",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        }
+      ]
     }
   ],
-
   "clock_gen": [
     {
       "type": "osc",
@@ -167,7 +273,6 @@
           "description": "OSC has no external clock input"
         }
       },
-
       "parameters": {
         "DIV": {
           "description": "Oscillator divider. Output frequency = ~580 MHz / DIV. Common values: DIV=10 -> 62.0 MHz, DIV=15 -> 38.8 MHz, DIV=30 -> 19.4 MHz, DIV=60 -> 9.7 MHz, DIV=120 -> 4.8 MHz, DIV=240 -> 2.4 MHz.",
@@ -182,7 +287,9 @@
           "description": "Internal oscillator output",
           "port": "OSC",
           "is_clock": true,
-          "frequency_mhz": { "expr": "580.0 / DIV" }
+          "frequency_mhz": {
+            "expr": "580.0 / DIV"
+          }
         }
       }
     },
@@ -190,10 +297,8 @@
       "type": "pll",
       "source": "FPGA-DS-02012-3.1, Section 2.8 (sysCLOCK PLLs), Table 3.23 (PLL Timing); FPGA-TN-02200-1.3 ECP5 sysCLOCK PLL/DLL Design and Usage Guide",
       "description": "Phase-Locked Loop (EHXPLLL). Internal feedback mode (FEEDBK_PATH=CLKOP). Four outputs: CLKOP (primary), CLKOS, CLKOS2, CLKOS3.",
-
       "count": 4,
       "chaining": false,
-
       "map": {
         "verilog-2005": [
           "EHXPLLL #(\n",
@@ -297,7 +402,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the PLL (CLKI)",
@@ -308,7 +412,6 @@
           "max_mhz": 400
         }
       },
-
       "parameters": {
         "CLKI_DIV": {
           "description": "Input clock divider (1-128)",
@@ -317,7 +420,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKFB_DIV": {
           "description": "Feedback divider / VCO multiplier (1-128)",
           "type": "int",
@@ -325,7 +427,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOP_DIV": {
           "description": "Primary output divider (1-128)",
           "type": "int",
@@ -333,7 +434,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOS_DIV": {
           "description": "Secondary output divider (1-128)",
           "type": "int",
@@ -341,7 +441,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOS2_DIV": {
           "description": "Tertiary output divider (1-128)",
           "type": "int",
@@ -349,7 +448,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOS3_DIV": {
           "description": "Quaternary output divider (1-128)",
           "type": "int",
@@ -358,7 +456,6 @@
           "max": 128
         }
       },
-
       "derived": {
         "FVCO": {
           "description": "Internal VCO frequency: fIN * CLKFB_DIV / CLKI_DIV",
@@ -367,7 +464,6 @@
           "max": 800
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Primary PLL output (CLKOP)",
@@ -378,7 +474,6 @@
             "expr": "FVCO / CLKOP_DIV"
           }
         },
-
         "CLKOS": {
           "description": "Secondary PLL output",
           "port": "CLKOS",
@@ -388,7 +483,6 @@
             "expr": "FVCO / CLKOS_DIV"
           }
         },
-
         "CLKOS2": {
           "description": "Tertiary PLL output",
           "port": "CLKOS2",
@@ -398,7 +492,6 @@
             "expr": "FVCO / CLKOS2_DIV"
           }
         },
-
         "CLKOS3": {
           "description": "Quaternary PLL output",
           "port": "CLKOS3",
@@ -408,14 +501,12 @@
             "expr": "FVCO / CLKOS3_DIV"
           }
         },
-
         "LOCK": {
           "description": "PLL lock indicator, high when PLL is locked",
           "port": "LOCK",
           "is_clock": false
         }
       },
-
       "constraints": [
         {
           "description": "VCO frequency must be within 400-800 MHz range for -6 speed grade.",
@@ -433,7 +524,6 @@
       "mode": "global",
       "description": "Dynamic Clock Control (DCCA). Glitchless enable/disable gate on the primary clock network. CE is active-high.",
       "count": 56,
-
       "map": {
         "verilog-2005": [
           "DCCA u_dcca_%%instance_idx%% (\n",
@@ -450,7 +540,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the buffer",
@@ -465,7 +554,6 @@
           "width": 1
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Buffered clock output on primary clock network",
@@ -479,7 +567,6 @@
       }
     }
   ],
-
   "differential": {
     "source": "FPGA-DS-02012-3.1, Section 3.14 (Differential I/O); FPGA-TN-02204-1.6",
     "type": "true",
@@ -508,6 +595,10 @@
         {
           "description": "2:1 output DDR serializer",
           "ratio": 2,
+          "required_clocks": [
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "ODDRX1F u_%%instance%% (\n",
@@ -540,6 +631,11 @@
         {
           "description": "4:1 output DDR serializer with 2x gearing",
           "ratio": 4,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "ODDRX2F u_%%instance%% (\n",
@@ -578,6 +674,11 @@
         {
           "description": "7:1 LVDS output DDR serializer",
           "ratio": 7,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "ODDR71B u_%%instance%% (\n",
@@ -645,6 +746,10 @@
         {
           "description": "1:2 input DDR deserializer",
           "ratio": 2,
+          "required_clocks": [
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "IDDRX1F u_%%instance%% (\n",
@@ -669,6 +774,11 @@
         {
           "description": "1:4 input DDR deserializer with 2x gearing",
           "ratio": 4,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "IDDRX2F u_%%instance%% (\n",
@@ -701,6 +811,11 @@
         {
           "description": "1:7 LVDS input DDR deserializer",
           "ratio": 7,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "IDDR71B u_%%instance%% (\n",
@@ -739,18 +854,61 @@
       ]
     }
   },
-
   "fixed_pins": [
-    { "pad": "TDI",      "name": "TDI",      "note": "JTAG test data in" },
-    { "pad": "TDO",      "name": "TDO",      "note": "JTAG test data out" },
-    { "pad": "TCK",      "name": "TCK",      "note": "JTAG test clock" },
-    { "pad": "TMS",      "name": "TMS",      "note": "JTAG test mode select" },
-    { "pad": "PROGRAMN", "name": "PROGRAMN", "note": "Active-low program initiation" },
-    { "pad": "INITN",    "name": "INITN",    "note": "Active-low initialization indicator" },
-    { "pad": "DONE",     "name": "DONE",     "note": "Configuration done indicator" },
-    { "pad": "CCLK",     "name": "CCLK",     "note": "Configuration clock" },
-    { "pad": "CFG0",     "name": "CFG0",     "note": "Configuration mode select 0" },
-    { "pad": "CFG1",     "name": "CFG1",     "note": "Configuration mode select 1" },
-    { "pad": "CFG2",     "name": "CFG2",     "note": "Configuration mode select 2" }
+    {
+      "pad": "TDI",
+      "name": "TDI",
+      "note": "JTAG test data in"
+    },
+    {
+      "pad": "TDO",
+      "name": "TDO",
+      "note": "JTAG test data out"
+    },
+    {
+      "pad": "TCK",
+      "name": "TCK",
+      "note": "JTAG test clock"
+    },
+    {
+      "pad": "TMS",
+      "name": "TMS",
+      "note": "JTAG test mode select"
+    },
+    {
+      "pad": "PROGRAMN",
+      "name": "PROGRAMN",
+      "note": "Active-low program initiation"
+    },
+    {
+      "pad": "INITN",
+      "name": "INITN",
+      "note": "Active-low initialization indicator"
+    },
+    {
+      "pad": "DONE",
+      "name": "DONE",
+      "note": "Configuration done indicator"
+    },
+    {
+      "pad": "CCLK",
+      "name": "CCLK",
+      "note": "Configuration clock"
+    },
+    {
+      "pad": "CFG0",
+      "name": "CFG0",
+      "note": "Configuration mode select 0"
+    },
+    {
+      "pad": "CFG1",
+      "name": "CFG1",
+      "note": "Configuration mode select 1"
+    },
+    {
+      "pad": "CFG2",
+      "name": "CFG2",
+      "note": "Configuration mode select 2"
+    }
   ]
 }

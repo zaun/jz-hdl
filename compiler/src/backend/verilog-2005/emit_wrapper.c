@@ -417,6 +417,8 @@ static void emit_clock_gen_from_template(FILE *out,
                                         fb_wire_base, cg_idx, unit_idx);
                             } else if (strcmp(placeholder, "LOCK") == 0 ||
                                        strcmp(placeholder, "BASE") == 0 ||
+                                       strcmp(placeholder, "PRIMARY") == 0 ||
+                                       strcmp(placeholder, "SECONDARY") == 0 ||
                                        strcmp(placeholder, "PHASE") == 0 ||
                                        strcmp(placeholder, "DIV") == 0 ||
                                        strcmp(placeholder, "DIV3") == 0) {
@@ -1014,11 +1016,15 @@ static int find_signal_width_for_pin(const IR_Design *design,
     return 0;
 }
 
-/* Check if a differential pin has fclk/pclk (needs serializer). */
+/* Check if a differential pin needs a serializer.
+ * A serializer is needed when at least one serialization clock is present.
+ * Which clocks are required is chip-specific (validated by the semantic pass). */
 static int pin_needs_serializer(const IR_Pin *pin)
 {
-    return pin && pin->fclk_name && pin->fclk_name[0] != '\0' &&
-           pin->pclk_name && pin->pclk_name[0] != '\0';
+    if (!pin) return 0;
+    int has_fclk = pin->fclk_name && pin->fclk_name[0] != '\0';
+    int has_pclk = pin->pclk_name && pin->pclk_name[0] != '\0';
+    return has_fclk || has_pclk;
 }
 
 
@@ -1227,17 +1233,58 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
             }
             const char *unit_type_upper = unit_type_upper_buf;
 
-            /* Try to get the template map from chip data */
+            /* Try to get the template map from chip data. Compute facts for
+             * facts-based dispatch (S9.3 variants). Falls back to the flat
+             * map for legacy clock_gen entries. */
             const char *template_text = NULL;
             if (effective_chip) {
-                template_text = jz_chip_clock_gen_map(effective_chip, unit_type_str, "verilog-2005");
+                JZChipClockGenInputFact input_facts[16];
+                size_t input_fact_count = 0;
+                for (int ii = 0; ii < unit->num_inputs && input_fact_count < 16; ++ii) {
+                    const IR_ClockGenInput *in = &unit->inputs[ii];
+                    if (!in->selector || !in->signal_name) continue;
+                    /* A signal is a "pad" if it resolves to a declared pin. */
+                    int is_pad = 0;
+                    for (int pi = 0; pi < proj->num_pins; ++pi) {
+                        if (proj->pins[pi].name &&
+                            strcmp(proj->pins[pi].name, in->signal_name) == 0) {
+                            is_pad = 1;
+                            break;
+                        }
+                    }
+                    input_facts[input_fact_count].input_name = in->selector;
+                    input_facts[input_fact_count].source = is_pad ? "pad" : "fabric";
+                    input_fact_count++;
+                }
+                int clk_out_count = 0;
+                for (int oi = 0; oi < unit->num_outputs; ++oi) {
+                    if (unit->outputs[oi].is_clock) clk_out_count++;
+                }
+                JZChipClockGenFacts facts;
+                facts.inputs = input_facts;
+                facts.input_count = input_fact_count;
+                facts.output_count = clk_out_count;
+
+                int match_count = 0;
+                template_text = jz_chip_clock_gen_map_for_facts(
+                    effective_chip, unit_type_str, "verilog-2005",
+                    &facts, &match_count);
             }
 
             if (template_text) {
                 /* Emit dummy wires for unused PLL/MMCM outputs before the instantiation */
                 if (unit_type_str && strncmp(unit_type_str, "pll", 3) == 0) {
-                    static const char *pll_selectors[] = {"LOCK", "BASE", "PHASE", "DIV", "DIV3", NULL};
+                    static const char *pll_selectors[] = {
+                        "LOCK", "BASE", "PRIMARY", "SECONDARY",
+                        "PHASE", "DIV", "DIV3", NULL};
                     for (int si = 0; pll_selectors[si]; ++si) {
+                        /* Only emit dummy wires for selectors that the chip's
+                         * clock_gen declares as valid outputs. */
+                        if (!jz_chip_clock_gen_output_valid(effective_chip,
+                                                             unit_type_str,
+                                                             pll_selectors[si])) {
+                            continue;
+                        }
                         const char *oname = find_clock_gen_output(unit, pll_selectors[si]);
                         if (!oname || oname[0] == '\0') {
                             fprintf(out, "    wire jz_unused_pll_%s_cg%d_u%d;\n",
@@ -1354,8 +1401,18 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
         "    .Q(%%output%%)\n"
         ");\n";
 
-    if (!obuf_template) obuf_template = fallback_obuf;
-    if (!ibuf_template) ibuf_template = fallback_ibuf;
+    /* Use fallback only when no chip data exists at all.  If chip data
+     * has a differential section but no output buffer, the serializer
+     * template is expected to drive the pins directly (e.g., iCE40 SB_IO
+     * DDR handles both serialization and pin output). */
+    int chip_has_diff_out = have_proj_chip &&
+        (proj_chip_data.differential.has_output_buffer ||
+         proj_chip_data.differential.has_output_serializer);
+    int chip_has_diff_in = have_proj_chip &&
+        (proj_chip_data.differential.has_input_buffer ||
+         proj_chip_data.differential.has_input_deserializer);
+    if (!obuf_template && !chip_has_diff_out) obuf_template = fallback_obuf;
+    if (!ibuf_template && !chip_has_diff_in) ibuf_template = fallback_ibuf;
 
     for (int i = 0; i < num_ports; ++i) {
         const IR_Pin *pin = &proj->pins[i];
@@ -1385,8 +1442,10 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
                 }
 
                 if (needs_ser) {
-                    /* Determine actual data width from the top module signal */
-                    int data_width = find_signal_width_for_pin(design, proj, i, bit);
+                    /* Determine actual data width: prefer pin's width= attribute,
+                     * then top module signal width, then chip default. */
+                    int data_width = pin->ser_width > 0 ? pin->ser_width
+                                   : find_signal_width_for_pin(design, proj, i, bit);
                     if (data_width <= 0) data_width = jz_chip_diff_serializer_ratio(&proj_chip_data);
 
                     /* Find best serializer with ratio >= data_width */
@@ -1450,8 +1509,8 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
                         .instance   = oser_inst,
                         .input      = NULL,
                         .output     = ser_wire,
-                        .pin_p      = NULL,
-                        .pin_n      = NULL,
+                        .pin_p      = pin_p,
+                        .pin_n      = pin_n,
                         .diff_wire  = diff_wire,
                         .ser_ratio  = wire_width,
                         .fclk       = pin->fclk_name,
@@ -1466,45 +1525,50 @@ void emit_project_wrapper(FILE *out, const IR_Design *design,
                     fputs("    ", out);
                     emit_diff_from_template(out, sel_template, &ser_ctx);
 
-                    /* Output buffer instance */
-                    char obuf_inst[128];
-                    snprintf(obuf_inst, sizeof(obuf_inst), "obuf_%s%s", name, suffix);
-                    DiffTemplateCtx buf_ctx = {
-                        .instance  = obuf_inst,
-                        .input     = ser_wire,
-                        .output    = NULL,
-                        .pin_p     = pin_p,
-                        .pin_n     = pin_n,
-                        .diff_wire = NULL,
-                        .ser_ratio = 0,
-                        .fclk      = NULL,
-                        .pclk      = NULL,
-                        .reset     = NULL,
-                    };
-                    fputs("    ", out);
-                    emit_diff_from_template(out, obuf_template, &buf_ctx);
+                    /* Output buffer instance (skip when chip data has no obuf,
+                     * meaning the serializer template drives pins directly). */
+                    if (obuf_template) {
+                        char obuf_inst[128];
+                        snprintf(obuf_inst, sizeof(obuf_inst), "obuf_%s%s", name, suffix);
+                        DiffTemplateCtx buf_ctx = {
+                            .instance  = obuf_inst,
+                            .input     = ser_wire,
+                            .output    = NULL,
+                            .pin_p     = pin_p,
+                            .pin_n     = pin_n,
+                            .diff_wire = NULL,
+                            .ser_ratio = 0,
+                            .fclk      = NULL,
+                            .pclk      = NULL,
+                            .reset     = NULL,
+                        };
+                        fputs("    ", out);
+                        emit_diff_from_template(out, obuf_template, &buf_ctx);
+                    }
                 } else {
                     /* Direct diff buffer (no serializer) */
                     char diff_wire[128];
                     snprintf(diff_wire, sizeof(diff_wire), "jz_diff_%s%s", name, suffix);
                     fprintf(out, "    wire %s;\n", diff_wire);
 
-                    char obuf_inst[128];
-                    snprintf(obuf_inst, sizeof(obuf_inst), "obuf_%s%s", name, suffix);
-                    DiffTemplateCtx buf_ctx = {
-                        .instance  = obuf_inst,
-                        .input     = diff_wire,
-                        .output    = NULL,
-                        .pin_p     = pin_p,
-                        .pin_n     = pin_n,
-                        .diff_wire = NULL,
-                        .ser_ratio = 0,
-                        .fclk      = NULL,
-                        .pclk      = NULL,
-                        .reset     = NULL,
-                    };
-                    fputs("    ", out);
-                    emit_diff_from_template(out, obuf_template, &buf_ctx);
+                    if (obuf_template) {
+                        char obuf_inst[128];
+                        snprintf(obuf_inst, sizeof(obuf_inst), "obuf_%s%s", name, suffix);
+                        DiffTemplateCtx buf_ctx = {
+                            .instance  = obuf_inst,
+                            .input     = diff_wire,
+                            .output    = NULL,
+                            .pin_p     = pin_p,
+                            .pin_n     = pin_n,
+                            .diff_wire = NULL,
+                            .ser_ratio = 0,
+                            .fclk      = NULL,
+                            .pclk      = NULL,
+                            .reset     = NULL,
+                        };
+                        fputs("    ", out);
+                        emit_diff_from_template(out, obuf_template, &buf_ctx);
+                    }
                 }
             }
             fputc('\n', out);

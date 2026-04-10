@@ -49,6 +49,66 @@ typedef struct JZChipClockGenMap {
 } JZChipClockGenMap;
 
 /**
+ * @enum JZChipVariantFactKind
+ * @brief Discriminator for a clock_gen variant fact key.
+ *
+ * Fact keys used in a variant `when` clause come from a small fixed
+ * vocabulary (see chip-info specification S9.3):
+ *   - `input.<NAME>.source` -> "pad" | "fabric" | ""
+ *   - `output.count`        -> integer
+ */
+typedef enum JZChipVariantFactKind {
+    JZ_CG_FACT_INPUT_SOURCE = 0, /**< input.<NAME>.source */
+    JZ_CG_FACT_OUTPUT_COUNT      /**< output.count */
+} JZChipVariantFactKind;
+
+/**
+ * @struct JZChipClockGenVariantFact
+ * @brief A single fact/value pair from a variant's `when` clause.
+ */
+typedef struct JZChipClockGenVariantFact {
+    JZChipVariantFactKind kind;
+    char *input_name;   /**< Input name for INPUT_SOURCE (NULL for OUTPUT_COUNT). */
+    char *source_value; /**< "pad"|"fabric"|"" for INPUT_SOURCE (NULL for OUTPUT_COUNT). */
+    int   int_value;    /**< Integer value for OUTPUT_COUNT. */
+} JZChipClockGenVariantFact;
+
+/**
+ * @struct JZChipClockGenVariant
+ * @brief One backend-template variant of a clock generator.
+ *
+ * Each variant is selected when every fact in `facts` matches the caller's
+ * computed facts. Variants are validated at chip-data load time to be
+ * exhaustive and disjoint over the cartesian product of all referenced
+ * fact values.
+ */
+typedef struct JZChipClockGenVariant {
+    JZBuffer facts; /**< Array of JZChipClockGenVariantFact entries. */
+    JZBuffer maps;  /**< Array of JZChipClockGenMap entries (per backend). */
+} JZChipClockGenVariant;
+
+/**
+ * @struct JZChipClockGenInputFact
+ * @brief A single computed input fact for variant dispatch at elaboration.
+ */
+typedef struct JZChipClockGenInputFact {
+    const char *input_name;   /**< Input selector name (e.g., "REF_CLK"). */
+    const char *source;       /**< "pad", "fabric", or "" when unwired/unknown. */
+} JZChipClockGenInputFact;
+
+/**
+ * @struct JZChipClockGenFacts
+ * @brief Facts computed by the caller for one clock_gen unit instantiation.
+ *
+ * Facts not referenced by any variant's `when` clause are ignored.
+ */
+typedef struct JZChipClockGenFacts {
+    const JZChipClockGenInputFact *inputs; /**< Per-input source facts. */
+    size_t input_count;                    /**< Number of entries in inputs[]. */
+    int output_count;                      /**< Number of declared OUT clocks. */
+} JZChipClockGenFacts;
+
+/**
  * @struct JZChipClockGenDerived
  * @brief A derived parameter for clock generator configuration.
  */
@@ -123,6 +183,7 @@ typedef struct JZChipClockGen {
     int       chaining;         /**< Non-zero if generators can be chained. */
     JZBuffer  constraints;      /**< Array of char* constraint rule strings. */
     char     *feedback_wire;    /**< Optional feedback wire base name (e.g., "clkfb"). NULL if not needed. */
+    JZBuffer  variants;         /**< Array of JZChipClockGenVariant entries. Empty if using legacy top-level `map`. */
 } JZChipClockGen;
 
 /**
@@ -139,8 +200,11 @@ typedef struct JZChipDiffMap {
  * @brief A differential I/O primitive (buffer or serializer).
  */
 typedef struct JZChipDiffPrimitive {
-    int       ratio;     /**< Serializer ratio (e.g., 10 for OSER10); 0 for buffers. */
-    JZBuffer  maps;      /**< Array of JZChipDiffMap entries. */
+    int       ratio;          /**< Serializer ratio (e.g., 10 for OSER10); 0 for buffers. */
+    JZBuffer  maps;           /**< Array of JZChipDiffMap entries. */
+    int       requires_fclk;  /**< Non-zero if fclk is required by this primitive. */
+    int       requires_pclk;  /**< Non-zero if pclk is required by this primitive. */
+    int       requires_reset; /**< Non-zero if reset is required by this primitive. */
 } JZChipDiffPrimitive;
 
 /**
@@ -261,6 +325,10 @@ int jz_chip_print_info(const char *chip_id, FILE *out);
 
 /**
  * @brief Get the clock generator template for a given type and backend.
+ *
+ * Returns NULL when the matching clock_gen entry uses `variants` instead of a
+ * top-level `map`. Use jz_chip_clock_gen_map_for_facts() in that case.
+ *
  * @param data    Loaded chip data.
  * @param type    Generator type (e.g., "pll").
  * @param backend Backend name (e.g., "verilog-2005").
@@ -269,6 +337,40 @@ int jz_chip_print_info(const char *chip_id, FILE *out);
 const char *jz_chip_clock_gen_map(const JZChipData *data,
                                    const char *type,
                                    const char *backend);
+
+/**
+ * @brief Select the clock generator template for a given type, backend, and
+ *        set of computed facts.
+ *
+ * For clock_gen entries declared with `variants`, walks the variants array,
+ * finds the one whose `when` clause matches all provided facts, and returns
+ * its template for the requested backend. For entries declared with a
+ * legacy top-level `map`, facts are ignored and the legacy template is
+ * returned.
+ *
+ * @param data             Loaded chip data.
+ * @param type             Generator type (e.g., "pll").
+ * @param backend          Backend name (e.g., "verilog-2005").
+ * @param facts            Computed facts for this unit (may be NULL for legacy `map`).
+ * @param out_match_count  Optional: receives number of variants matched (0, 1, >1).
+ * @return Template string, or NULL if no unique variant matched or backend missing.
+ */
+const char *jz_chip_clock_gen_map_for_facts(const JZChipData *data,
+                                             const char *type,
+                                             const char *backend,
+                                             const JZChipClockGenFacts *facts,
+                                             int *out_match_count);
+
+/**
+ * @brief Get the most recent chip-data load error message, if any.
+ *
+ * Set by jz_chip_data_load() when load/validation fails (e.g., malformed
+ * variants, non-exhaustive fact coverage). Contents are owned by the loader
+ * and remain valid until the next call into the loader.
+ *
+ * @return Null-terminated message, or NULL if none.
+ */
+const char *jz_chip_data_last_error(void);
 
 /**
  * @brief Get a derived expression for a clock generator type and parameter.
@@ -558,6 +660,36 @@ const char *jz_chip_diff_best_deserializer_map(const JZChipData *data,
  * @return Largest deserializer ratio, or 0 if no deserializer defined.
  */
 int jz_chip_diff_max_deserializer_ratio(const JZChipData *data);
+
+/**
+ * @brief Get the required clock/reset flags for the best-fit output serializer.
+ * @param data         Loaded chip data.
+ * @param needed_width Required parallel data width.
+ * @param out_fclk     Receives 1 if fclk required, 0 otherwise.
+ * @param out_pclk     Receives 1 if pclk required, 0 otherwise.
+ * @param out_reset    Receives 1 if reset required, 0 otherwise.
+ * @return 1 if a matching serializer was found, 0 otherwise.
+ */
+int jz_chip_diff_serializer_required_clocks(const JZChipData *data,
+                                             int needed_width,
+                                             int *out_fclk,
+                                             int *out_pclk,
+                                             int *out_reset);
+
+/**
+ * @brief Get the required clock/reset flags for the best-fit input deserializer.
+ * @param data         Loaded chip data.
+ * @param needed_width Required parallel data width.
+ * @param out_fclk     Receives 1 if fclk required, 0 otherwise.
+ * @param out_pclk     Receives 1 if pclk required, 0 otherwise.
+ * @param out_reset    Receives 1 if reset required, 0 otherwise.
+ * @return 1 if a matching deserializer was found, 0 otherwise.
+ */
+int jz_chip_diff_deserializer_required_clocks(const JZChipData *data,
+                                               int needed_width,
+                                               int *out_fclk,
+                                               int *out_pclk,
+                                               int *out_reset);
 
 /**
  * @brief Get the CST IO_TYPE override for differential pins.

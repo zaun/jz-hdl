@@ -1,14 +1,12 @@
 {
   "chipid": "XC7A35T-2FGG484",
   "description": "Primitives available on the AMD/Xilinx Artix-7 XC7A35T in FGG484 (484-ball BGA) package, speed grade -2.",
-
   "boards": [
     {
       "name": "PA35T-EDU Development Board",
       "url": "https://www.en.puzhi.com/Product/AMD-FPGA-Development-Board/Artix-7/PA35T-EDU.html"
     }
   ],
-
   "resources": {
     "LUT6": 20800,
     "DFF": 41600,
@@ -16,7 +14,6 @@
     "DIFF_PAIRS": 100,
     "GSR": 1
   },
-
   "latches": {
     "source": "DS180 v2.6.1, Section: CLBs, Slices, and LUTs; UG474 v1.8, Section: Storage Elements",
     "FAB": {
@@ -29,11 +26,12 @@
       "description": "I/O Blocks (Input/Output Pins)",
       "D": true,
       "SR": false,
-      "modes": ["Transparent"],
+      "modes": [
+        "Transparent"
+      ],
       "note": "I/O register elements can be configured as transparent latches."
     }
   },
-
   "dsp": {
     "source": "DS180 v2.6.1, Table 4 (Artix-7 Feature Summary); UG479 v1.10, Section: DSP48E1 Slice",
     "description": "Hardware DSP slices with 25x18 multiplier and 48-bit accumulator",
@@ -42,7 +40,6 @@
       "description": "25x18 two's complement multiplier with 48-bit accumulator, pre-adder, and ALU"
     }
   },
-
   "memory": [
     {
       "type": "DISTRIBUTED",
@@ -52,11 +49,26 @@
       "r_ports": 1,
       "w_ports": 1,
       "configurations": [
-        { "width": 1,  "depth": 409600 },
-        { "width": 2,  "depth": 204800 },
-        { "width": 4,  "depth": 102400 },
-        { "width": 8,  "depth": 51200 },
-        { "width": 16, "depth": 25600 }
+        {
+          "width": 1,
+          "depth": 409600
+        },
+        {
+          "width": 2,
+          "depth": 204800
+        },
+        {
+          "width": 4,
+          "depth": 102400
+        },
+        {
+          "width": 8,
+          "depth": 51200
+        },
+        {
+          "width": 16,
+          "depth": 25600
+        }
       ]
     },
     {
@@ -68,82 +80,180 @@
       "total_bits": 1843200,
       "max_freq_mhz": 460,
       "note": "50 blocks x 36,864 bits = 1,843,200 bits (1,800 Kb). Max freq 460.83 MHz for -2 speed grade (DS181 Table 30, F_MAX_BRAM_WF_NC). Each block can split into two 18 Kb blocks (100 total).",
-      "modes": [{
-        "name": "Single Port",
-        "description": "Single port read/write (RAMB36E1 or RAMB18E1)",
-        "ports": [
-            { "id": "A", "read": true, "write": true }
-        ],
-        "configurations": [
-          { "width": 1,  "depth": 32768 },
-          { "width": 2,  "depth": 16384 },
-          { "width": 4,  "depth": 8192 },
-          { "width": 9,  "depth": 4096 },
-          { "width": 18, "depth": 2048 },
-          { "width": 36, "depth": 1024 }
-        ]
-      },
-      {
-        "name": "True Dual Port",
-        "description": "Two independent ports with read/write on each (RAMB36E1 TDP mode)",
-        "ports": [
-            { "id": "A", "read": true, "write": true },
-            { "id": "B", "read": true, "write": true }
-        ],
-        "configurations": [
-          { "width": 1,  "depth": 32768 },
-          { "width": 2,  "depth": 16384 },
-          { "width": 4,  "depth": 8192 },
-          { "width": 9,  "depth": 4096 },
-          { "width": 18, "depth": 2048 },
-          { "width": 36, "depth": 1024 }
-        ]
-      },
-      {
-        "name": "Simple Dual Port",
-        "description": "Write on Port A, read on Port B simultaneously (RAMB36E1 SDP mode)",
-        "ports": [
-            { "id": "A", "read": false, "write": true },
-            { "id": "B", "read": true,  "write": false }
-        ],
-        "configurations": [
-          { "width": 1,  "depth": 32768 },
-          { "width": 2,  "depth": 16384 },
-          { "width": 4,  "depth": 8192 },
-          { "width": 9,  "depth": 4096 },
-          { "width": 18, "depth": 2048 },
-          { "width": 36, "depth": 1024 },
-          { "width": 72, "depth": 512 }
-        ]
-      },
-      {
-        "name": "Read Only Memory",
-        "description": "Read-only with initialization during configuration",
-        "ports": [
-            { "id": "A", "read": true, "write": false }
-        ],
-        "configurations": [
-          { "width": 1,  "depth": 32768 },
-          { "width": 2,  "depth": 16384 },
-          { "width": 4,  "depth": 8192 },
-          { "width": 9,  "depth": 4096 },
-          { "width": 18, "depth": 2048 },
-          { "width": 36, "depth": 1024 }
-        ]
-      }]
+      "modes": [
+        {
+          "name": "Single Port",
+          "description": "Single port read/write (RAMB36E1 or RAMB18E1)",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 32768
+            },
+            {
+              "width": 2,
+              "depth": 16384
+            },
+            {
+              "width": 4,
+              "depth": 8192
+            },
+            {
+              "width": 9,
+              "depth": 4096
+            },
+            {
+              "width": 18,
+              "depth": 2048
+            },
+            {
+              "width": 36,
+              "depth": 1024
+            }
+          ]
+        },
+        {
+          "name": "True Dual Port",
+          "description": "Two independent ports with read/write on each (RAMB36E1 TDP mode)",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 32768
+            },
+            {
+              "width": 2,
+              "depth": 16384
+            },
+            {
+              "width": 4,
+              "depth": 8192
+            },
+            {
+              "width": 9,
+              "depth": 4096
+            },
+            {
+              "width": 18,
+              "depth": 2048
+            },
+            {
+              "width": 36,
+              "depth": 1024
+            }
+          ]
+        },
+        {
+          "name": "Simple Dual Port",
+          "description": "Write on Port A, read on Port B simultaneously (RAMB36E1 SDP mode)",
+          "ports": [
+            {
+              "id": "A",
+              "read": false,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 32768
+            },
+            {
+              "width": 2,
+              "depth": 16384
+            },
+            {
+              "width": 4,
+              "depth": 8192
+            },
+            {
+              "width": 9,
+              "depth": 4096
+            },
+            {
+              "width": 18,
+              "depth": 2048
+            },
+            {
+              "width": 36,
+              "depth": 1024
+            },
+            {
+              "width": 72,
+              "depth": 512
+            }
+          ]
+        },
+        {
+          "name": "Read Only Memory",
+          "description": "Read-only with initialization during configuration",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 32768
+            },
+            {
+              "width": 2,
+              "depth": 16384
+            },
+            {
+              "width": 4,
+              "depth": 8192
+            },
+            {
+              "width": 9,
+              "depth": 4096
+            },
+            {
+              "width": 18,
+              "depth": 2048
+            },
+            {
+              "width": 36,
+              "depth": 1024
+            }
+          ]
+        }
+      ]
     }
   ],
-
   "clock_gen": [
     {
       "type": "pll2",
       "source": "DS180 v2.6.1, Section: Clock Management; DS181 v1.27.1, Table: MMCM Switching Characteristics; UG472 v1.13, Chapter 3: Clock Management Tile",
       "description": "Mixed-Mode Clock Manager (MMCME2_BASE). Primary clock synthesizer with 7 outputs (CLKOUT0-CLKOUT6), feedback output (CLKFBOUT), and fractional divide on CLKOUT0.",
-
       "count": 5,
       "chaining": true,
       "feedback_wire": "clkfb",
-
       "map": {
         "verilog-2005": [
           "MMCME2_BASE #(\n",
@@ -235,7 +345,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the MMCM (CLKIN1)",
@@ -246,7 +355,6 @@
           "max_mhz": 800
         }
       },
-
       "parameters": {
         "DIVCLK_DIVIDE": {
           "description": "Input clock divider D (1-106)",
@@ -255,7 +363,6 @@
           "min": 1,
           "max": 106
         },
-
         "CLKFBOUT_MULT_F": {
           "description": "Feedback multiplier M (2.000-64.000, fractional in 0.125 steps)",
           "type": "double",
@@ -263,7 +370,6 @@
           "min": 2.0,
           "max": 64.0
         },
-
         "CLKOUT0_DIVIDE_F": {
           "description": "Primary output divider O0 (1.000-128.000, fractional in 0.125 steps)",
           "type": "double",
@@ -271,7 +377,6 @@
           "min": 1.0,
           "max": 128.0
         },
-
         "CLKOUT1_DIVIDE": {
           "description": "Secondary output divider O1 (1-128)",
           "type": "int",
@@ -279,7 +384,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT2_DIVIDE": {
           "description": "Tertiary output divider O2 (1-128)",
           "type": "int",
@@ -287,7 +391,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT3_DIVIDE": {
           "description": "Quaternary output divider O3 (1-128)",
           "type": "int",
@@ -295,7 +398,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT4_DIVIDE": {
           "description": "Output divider O4 (1-128)",
           "type": "int",
@@ -303,7 +405,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT5_DIVIDE": {
           "description": "Output divider O5 (1-128)",
           "type": "int",
@@ -311,7 +412,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT6_DIVIDE": {
           "description": "Output divider O6 (1-128)",
           "type": "int",
@@ -320,7 +420,6 @@
           "max": 128
         }
       },
-
       "derived": {
         "FVCO": {
           "description": "Internal VCO frequency: F_CLKIN * CLKFBOUT_MULT_F / DIVCLK_DIVIDE",
@@ -329,7 +428,6 @@
           "max": 1440
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Primary MMCM output (CLKOUT0)",
@@ -340,7 +438,6 @@
             "expr": "FVCO / CLKOUT0_DIVIDE_F"
           }
         },
-
         "CLKOUT1": {
           "description": "Secondary MMCM output",
           "port": "CLKOUT1",
@@ -350,7 +447,6 @@
             "expr": "FVCO / CLKOUT1_DIVIDE"
           }
         },
-
         "CLKOUT2": {
           "description": "Tertiary MMCM output",
           "port": "CLKOUT2",
@@ -360,7 +456,6 @@
             "expr": "FVCO / CLKOUT2_DIVIDE"
           }
         },
-
         "CLKOUT3": {
           "description": "Quaternary MMCM output",
           "port": "CLKOUT3",
@@ -370,7 +465,6 @@
             "expr": "FVCO / CLKOUT3_DIVIDE"
           }
         },
-
         "CLKOUT4": {
           "description": "MMCM output 4",
           "port": "CLKOUT4",
@@ -380,7 +474,6 @@
             "expr": "FVCO / CLKOUT4_DIVIDE"
           }
         },
-
         "CLKOUT5": {
           "description": "MMCM output 5",
           "port": "CLKOUT5",
@@ -390,7 +483,6 @@
             "expr": "FVCO / CLKOUT5_DIVIDE"
           }
         },
-
         "CLKOUT6": {
           "description": "MMCM output 6",
           "port": "CLKOUT6",
@@ -400,14 +492,12 @@
             "expr": "FVCO / CLKOUT6_DIVIDE"
           }
         },
-
         "LOCK": {
           "description": "MMCM lock indicator, high when MMCM is locked",
           "port": "LOCKED",
           "is_clock": false
         }
       },
-
       "constraints": [
         {
           "description": "VCO frequency must be within 600-1440 MHz range for -2 speed grade.",
@@ -425,7 +515,6 @@
       "mode": "global",
       "description": "Global Clock Buffer (BUFG). Drives a signal onto the global clock network with high fanout and low skew.",
       "count": 32,
-
       "map": {
         "verilog-2005": [
           "BUFG u_bufg_%%instance_idx%% (\n",
@@ -440,7 +529,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the buffer",
@@ -449,9 +537,7 @@
           "requires_period": true
         }
       },
-
       "parameters": {},
-
       "outputs": {
         "BASE": {
           "description": "Buffered clock output on global clock network",
@@ -468,11 +554,9 @@
       "type": "pll",
       "source": "DS180 v2.6.1, Section: Clock Management; DS181 v1.27.1, Table 38: PLL Specification; UG472 v1.13, Chapter 3: Clock Management Tile",
       "description": "Phase-Locked Loop (PLLE2_BASE). Secondary clock synthesizer with 6 outputs (CLKOUT0-CLKOUT5), feedback output (CLKFBOUT). Integer-only dividers, no fractional divide.",
-
       "count": 5,
       "chaining": true,
       "feedback_wire": "clkfb",
-
       "map": {
         "verilog-2005": [
           "PLLE2_BASE #(\n",
@@ -556,7 +640,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the PLL (CLKIN1)",
@@ -567,7 +650,6 @@
           "max_mhz": 800
         }
       },
-
       "parameters": {
         "DIVCLK_DIVIDE": {
           "description": "Input clock divider D (1-56)",
@@ -576,7 +658,6 @@
           "min": 1,
           "max": 56
         },
-
         "CLKFBOUT_MULT": {
           "description": "Feedback multiplier M (2-64, integer only)",
           "type": "int",
@@ -584,7 +665,6 @@
           "min": 2,
           "max": 64
         },
-
         "CLKOUT0_DIVIDE": {
           "description": "Primary output divider O0 (1-128)",
           "type": "int",
@@ -592,7 +672,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT1_DIVIDE": {
           "description": "Secondary output divider O1 (1-128)",
           "type": "int",
@@ -600,7 +679,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT2_DIVIDE": {
           "description": "Tertiary output divider O2 (1-128)",
           "type": "int",
@@ -608,7 +686,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT3_DIVIDE": {
           "description": "Quaternary output divider O3 (1-128)",
           "type": "int",
@@ -616,7 +693,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT4_DIVIDE": {
           "description": "Output divider O4 (1-128)",
           "type": "int",
@@ -624,7 +700,6 @@
           "min": 1,
           "max": 128
         },
-
         "CLKOUT5_DIVIDE": {
           "description": "Output divider O5 (1-128)",
           "type": "int",
@@ -633,7 +708,6 @@
           "max": 128
         }
       },
-
       "derived": {
         "FVCO": {
           "description": "Internal VCO frequency: F_CLKIN * CLKFBOUT_MULT / DIVCLK_DIVIDE",
@@ -642,7 +716,6 @@
           "max": 1600
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Primary PLL output (CLKOUT0)",
@@ -653,7 +726,6 @@
             "expr": "FVCO / CLKOUT0_DIVIDE"
           }
         },
-
         "CLKOUT1": {
           "description": "Secondary PLL output",
           "port": "CLKOUT1",
@@ -663,7 +735,6 @@
             "expr": "FVCO / CLKOUT1_DIVIDE"
           }
         },
-
         "CLKOUT2": {
           "description": "Tertiary PLL output",
           "port": "CLKOUT2",
@@ -673,7 +744,6 @@
             "expr": "FVCO / CLKOUT2_DIVIDE"
           }
         },
-
         "CLKOUT3": {
           "description": "Quaternary PLL output",
           "port": "CLKOUT3",
@@ -683,7 +753,6 @@
             "expr": "FVCO / CLKOUT3_DIVIDE"
           }
         },
-
         "CLKOUT4": {
           "description": "PLL output 4",
           "port": "CLKOUT4",
@@ -693,7 +762,6 @@
             "expr": "FVCO / CLKOUT4_DIVIDE"
           }
         },
-
         "CLKOUT5": {
           "description": "PLL output 5",
           "port": "CLKOUT5",
@@ -703,14 +771,12 @@
             "expr": "FVCO / CLKOUT5_DIVIDE"
           }
         },
-
         "LOCK": {
           "description": "PLL lock indicator, high when PLL is locked",
           "port": "LOCKED",
           "is_clock": false
         }
       },
-
       "constraints": [
         {
           "description": "VCO frequency must be within 800-1600 MHz range for -2 speed grade.",
@@ -723,7 +789,6 @@
       ]
     }
   ],
-
   "differential": {
     "source": "DS181 v1.27.1, Table 9 (Differential SelectIO), Table 11 (LVDS_25 DC Specs); UG471 v1.10, Section: Differential I/O Standards",
     "type": "true",
@@ -752,6 +817,11 @@
         {
           "description": "4:1 output serializer (OSERDESE2) for LVDS/TMDS output",
           "ratio": 4,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "OSERDESE2 #(\n",
@@ -826,6 +896,11 @@
         {
           "description": "6:1 output serializer (OSERDESE2) for LVDS/TMDS output",
           "ratio": 6,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "OSERDESE2 #(\n",
@@ -900,6 +975,11 @@
         {
           "description": "8:1 output serializer (OSERDESE2) for LVDS/TMDS output",
           "ratio": 8,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "OSERDESE2 #(\n",
@@ -974,6 +1054,11 @@
         {
           "description": "10:1 output serializer (OSERDESE2 master+slave cascade) for LVDS/TMDS output",
           "ratio": 10,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "wire jz_shift1_%%instance%%;\n",
@@ -1109,6 +1194,11 @@
         {
           "description": "14:1 output serializer (OSERDESE2 master+slave cascade) for LVDS/TMDS output",
           "ratio": 14,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "wire jz_shift1_%%instance%%;\n",
@@ -1267,6 +1357,11 @@
         {
           "description": "1:4 input deserializer (ISERDESE2) for LVDS/TMDS input",
           "ratio": 4,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "ISERDESE2 #(\n",
@@ -1331,6 +1426,11 @@
         {
           "description": "1:6 input deserializer (ISERDESE2) for LVDS/TMDS input",
           "ratio": 6,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "ISERDESE2 #(\n",
@@ -1397,6 +1497,11 @@
         {
           "description": "1:8 input deserializer (ISERDESE2) for LVDS/TMDS input",
           "ratio": 8,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "ISERDESE2 #(\n",
@@ -1465,6 +1570,11 @@
         {
           "description": "1:10 input deserializer (ISERDESE2 master+slave cascade) for LVDS/TMDS input",
           "ratio": 10,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "wire jz_shift1_%%instance%%;\n",
@@ -1591,6 +1701,11 @@
         {
           "description": "1:14 input deserializer (ISERDESE2 master+slave cascade) for LVDS/TMDS input",
           "ratio": 14,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "wire jz_shift1_%%instance%%;\n",
@@ -1722,7 +1837,7 @@
     },
     "clock": {
       "buffer": {
-        "description": "LVDS_25 differential clock input buffer (IBUFDS + BUFG) — routes to global clock network via clock-capable input",
+        "description": "LVDS_25 differential clock input buffer (IBUFDS + BUFG) \u2014 routes to global clock network via clock-capable input",
         "map": {
           "verilog-2005": [
             "wire jz_ibuf_%%instance%%;\n",
@@ -1757,6 +1872,5 @@
       }
     }
   },
-
   "fixed_pins": []
 }

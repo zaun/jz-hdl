@@ -244,6 +244,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "PROJECT_AND_IMPORTS", "PROJECT_MISSING_TOP_MODULE",          0, JZ_RULE_MODE_ERR, "S6.9 Project does not declare a top-level @top module binding" },
     { "PROJECT_AND_IMPORTS", "PROJECT_CHIP_DATA_NOT_FOUND",         0, JZ_RULE_MODE_ERR, "S6.1 Chip data not found for CHIP id (no local JSON and no built-in data)" },
     { "PROJECT_AND_IMPORTS", "PROJECT_CHIP_DATA_INVALID",           0, JZ_RULE_MODE_ERR, "S6.1 Chip JSON data could not be parsed" },
+    { "PROJECT_AND_IMPORTS", "PROJECT_CHIP_DATA_VARIANT_INVALID",   0, JZ_RULE_MODE_ERR, "S9.3 Chip JSON clock_gen variants are invalid (parse error, not exhaustive, or not disjoint)" },
     { "PROJECT_AND_IMPORTS", "IMPORT_OUTSIDE_PROJECT",              0, JZ_RULE_MODE_ERR, "S6.2.1 @import used outside @project block" },
     { "PROJECT_AND_IMPORTS", "IMPORT_NOT_AT_PROJECT_TOP",           0, JZ_RULE_MODE_ERR, "S6.2.1 @import appears after CONFIG/CLOCKS/PIN/blackbox/top-level new blocks" },
     { "PROJECT_AND_IMPORTS", "IMPORT_FILE_HAS_PROJECT",             0, JZ_RULE_MODE_ERR, "S6.2.1 Imported file contains its own @project/@endproj (forbidden)" },
@@ -300,6 +301,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "CLOCKS_PINS_MAP", "PIN_TERM_INVALID",                       0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Invalid termination value (must be ON or OFF)" },
     { "CLOCKS_PINS_MAP", "PIN_TERM_ON_OUTPUT",                     0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Termination specified on output-only pin (OUT_PINS)" },
     { "CLOCKS_PINS_MAP", "PIN_TERM_INVALID_FOR_STANDARD",          0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Termination not supported for this I/O standard" },
+    { "CLOCKS_PINS_MAP", "PIN_WIDTH_REQUIRES_DIFFERENTIAL",        0, JZ_RULE_MODE_ERR, "S6.5.4 width attribute is only valid when mode=DIFFERENTIAL" },
     { "CLOCKS_PINS_MAP", "PIN_DIFF_OUT_MISSING_FCLK",              0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Differential output pin missing required fclk attribute" },
     { "CLOCKS_PINS_MAP", "PIN_DIFF_OUT_MISSING_PCLK",              0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Differential output pin missing required pclk attribute" },
     { "CLOCKS_PINS_MAP", "PIN_DIFF_OUT_MISSING_RESET",             0, JZ_RULE_MODE_ERR, "S6.5/S6.9 Differential output pin missing required reset attribute" },
@@ -331,6 +333,8 @@ const JZRuleInfo jz_rule_table[] = {
     { "CLOCK_GEN_RULES", "CLOCK_GEN_PARAM_TYPE_MISMATCH",        0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN CONFIG parameter type mismatch (integer parameter given decimal value)" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_DERIVED_OUT_OF_RANGE",        0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN derived value (frequency/VCO) outside valid chip-defined range" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_NO_CHIP_DATA",               0, JZ_RULE_MODE_INF, "S6.4.1 No chip specified; CLOCK_GEN parameters and constraints cannot be validated" },
+    { "CLOCK_GEN_RULES", "CLOCK_GEN_VARIANT_NO_MATCH",            0, JZ_RULE_MODE_ERR, "S9.3 No chip clock_gen variant matches the elaborated CLOCK_GEN facts (input source / output count)" },
+    { "CLOCK_GEN_RULES", "CLOCK_GEN_VARIANT_AMBIGUOUS",           0, JZ_RULE_MODE_ERR, "S9.3 Multiple chip clock_gen variants match the elaborated CLOCK_GEN facts (chip JSON is not disjoint)" },
 
     /* [BLACKBOX_RULES] */
     { "BLACKBOX_RULES", "BLACKBOX_BODY_DISALLOWED",                 0, JZ_RULE_MODE_ERR, "S6.7 Blackbox contains forbidden blocks (ASYNCHRONOUS/SYNCHRONOUS/WIRE/REGISTER/MEM)" },
@@ -344,6 +348,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "TOP_LEVEL_INSTANTIATION", "TOP_PORT_PIN_DIRECTION_MISMATCH", 0, JZ_RULE_MODE_ERR, "S6.9/S6.10 Module IN/OUT/INOUT direction incompatible with pin category" },
     { "TOP_LEVEL_INSTANTIATION", "TOP_OUT_LITERAL_BINDING",         0, JZ_RULE_MODE_ERR, "S6.9 OUT ports may not be bound to literal values in project-level @top" },
     { "TOP_LEVEL_INSTANTIATION", "TOP_NO_CONNECT_WITHOUT_WIDTH",    0, JZ_RULE_MODE_ERR, "S6.9 Port bound to `_` but missing explicit width in top-level @top list" },
+    { "TOP_LEVEL_INSTANTIATION", "TOP_PORT_SIGNAL_WIDTH_MISMATCH", 0, JZ_RULE_MODE_ERR, "S6.9/S6.10 Binding width does not match connected pin/signal width" },
 
     /* [MEM_DECLARATION] */
     { "MEM_DECLARATION", "MEM_UNDEFINED_NAME",                      2, JZ_RULE_MODE_ERR, "S7.7.1 Access to MEM name not declared in module" },

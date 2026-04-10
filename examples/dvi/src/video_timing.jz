@@ -1,7 +1,5 @@
-// 1280x720 @ 30Hz Video Timing Generator
-// CEA-861 timings, pixel clock = 37.125 MHz (half of 74.25 MHz)
-// H total: 1650 (1280 active + 110 front + 40 sync + 220 back)
-// V total: 750  (720 active + 5 front + 5 sync + 20 back)
+// Video Timing Generator
+// Resolution and blanking set via CONFIG parameters.
 // Sync polarity: positive (sync HIGH during sync pulse)
 @module video_timing
     PORT {
@@ -15,19 +13,17 @@
     }
 
     CONST {
-        // Horizontal timing
-        H_ACTIVE = 1280;
-        H_FRONT  = 110;
-        H_SYNC   = 40;
-        H_BACK   = 220;
-        H_TOTAL  = 1650;
+        H_ACTIVE = CONFIG.h_active;
+        H_FRONT  = CONFIG.h_front;
+        H_SYNC   = CONFIG.h_sync;
+        H_BACK   = CONFIG.h_back;
+        H_TOTAL  = CONFIG.h_active + CONFIG.h_front + CONFIG.h_sync + CONFIG.h_back;
 
-        // Vertical timing
-        V_ACTIVE = 720;
-        V_FRONT  = 5;
-        V_SYNC   = 5;
-        V_BACK   = 20;
-        V_TOTAL  = 750;
+        V_ACTIVE = CONFIG.v_active;
+        V_FRONT  = CONFIG.v_front;
+        V_SYNC   = CONFIG.v_sync;
+        V_BACK   = CONFIG.v_back;
+        V_TOTAL  = CONFIG.v_active + CONFIG.v_front + CONFIG.v_sync + CONFIG.v_back;
     }
 
     REGISTER {

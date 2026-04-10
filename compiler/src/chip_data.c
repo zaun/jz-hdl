@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,28 @@
 #define JSMN_IMPLEMENTATION
 #include "third_party/jsmn.h"
 
+/* Last chip-data load error, for detailed diagnostics via
+ * jz_chip_data_last_error(). Reset at the start of each load attempt. */
+static char g_chip_last_error[512];
+
+const char *jz_chip_data_last_error(void)
+{
+    return g_chip_last_error[0] ? g_chip_last_error : NULL;
+}
+
+static void jz_chip_clear_error(void)
+{
+    g_chip_last_error[0] = '\0';
+}
+
+static void jz_chip_set_error(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(g_chip_last_error, sizeof(g_chip_last_error), fmt, ap);
+    va_end(ap);
+}
+
 typedef struct JZChipBuiltin {
     const char *chip_id;
     const char *json;
@@ -16,6 +39,7 @@ typedef struct JZChipBuiltin {
 
 /* Built-in chip data generated at build time. */
 #include "data/gw1nr-9-qn88-c6-i5.h"
+#include "data/gw1nz-1-qn48-c6-i5.h"
 #include "data/gw2ar-18-qn88-c7-i6.h"
 #include "data/gw2ar-18-qn88-c8-i7.h"
 #include "data/ice40up-5k-sg.h"
@@ -25,6 +49,7 @@ typedef struct JZChipBuiltin {
 
 static const JZChipBuiltin k_builtin_chips[] = {
     { "GW1NR-9-QN88-C6-I5",  (const char *)gw1nr_9_qn88_c6_i5_json },
+    { "GW1NZ-1-QN48-C6-I5",  (const char *)gw1nz_1_qn48_c6_i5_json },
     { "GW2AR-18-QN88-C7-I6", (const char *)gw2ar_18_qn88_c7_i6_json },
     { "GW2AR-18-QN88-C8-I7", (const char *)gw2ar_18_qn88_c8_i7_json },
     { "ICE40UP-5K-SG48",     (const char *)ice40up_5k_sg_json },
@@ -537,13 +562,15 @@ char *jz_json_token_strdup(const char *json, const jsmntok_t *tok)
 }
 
 /* Parse a clock_gen map object: { "verilog-2005": ["line1", "line2", ...] } */
-static void jz_chip_parse_clock_gen_map(const char *json,
-                                        const jsmntok_t *toks,
-                                        int count,
-                                        int map_obj_idx,
-                                        JZChipClockGen *cg)
+/* Parse a clock_gen `map` object into the given JZBuffer of JZChipClockGenMap.
+ * Used for both the legacy top-level `map` and each per-variant `map`. */
+static void jz_chip_parse_clock_gen_map_into(const char *json,
+                                              const jsmntok_t *toks,
+                                              int count,
+                                              int map_obj_idx,
+                                              JZBuffer *out_maps)
 {
-    if (!json || !toks || map_obj_idx < 0 || map_obj_idx >= count || !cg) return;
+    if (!json || !toks || map_obj_idx < 0 || map_obj_idx >= count || !out_maps) return;
     const jsmntok_t *map_obj = &toks[map_obj_idx];
     if (map_obj->type != JSMN_OBJECT) return;
 
@@ -596,13 +623,24 @@ static void jz_chip_parse_clock_gen_map(const char *json,
             JZChipClockGenMap map_entry;
             map_entry.backend = backend;
             map_entry.template_text = template_text;
-            jz_buf_append(&cg->maps, &map_entry, sizeof(map_entry));
+            jz_buf_append(out_maps, &map_entry, sizeof(map_entry));
         } else {
             free(backend);
         }
 
         cur = jz_json_skip(toks, count, cur);
     }
+}
+
+/* Backward-compat wrapper: parse into cg->maps (legacy top-level `map`). */
+static void jz_chip_parse_clock_gen_map(const char *json,
+                                        const jsmntok_t *toks,
+                                        int count,
+                                        int map_obj_idx,
+                                        JZChipClockGen *cg)
+{
+    if (!cg) return;
+    jz_chip_parse_clock_gen_map_into(json, toks, count, map_obj_idx, &cg->maps);
 }
 
 /* Parse the derived section of a clock_gen object.
@@ -906,12 +944,486 @@ static void jz_chip_parse_clock_gen_outputs(const char *json,
     }
 }
 
+/* Parse one variant fact key of the form "input.<NAME>.source" or
+ * "output.count". Returns 1 on success with *out_fact populated, 0 on
+ * malformed/unknown key. On error sets g_chip_last_error. */
+static int jz_chip_parse_variant_fact(const char *json,
+                                       const jsmntok_t *toks,
+                                       int count,
+                                       int key_idx,
+                                       int val_idx,
+                                       const char *cg_type,
+                                       JZChipClockGenVariantFact *out_fact)
+{
+    (void)count;
+    if (!out_fact) return 0;
+    memset(out_fact, 0, sizeof(*out_fact));
+
+    const jsmntok_t *key = &toks[key_idx];
+    const jsmntok_t *val = &toks[val_idx];
+    if (key->type != JSMN_STRING) return 0;
+
+    size_t klen = (size_t)(key->end - key->start);
+    const char *kstr = json + key->start;
+
+    /* Match "input.<NAME>.source" */
+    if (klen > 7 && strncmp(kstr, "input.", 6) == 0) {
+        /* find ".source" suffix */
+        const char *dot = (const char *)memchr(kstr + 6, '.', klen - 6);
+        if (!dot) {
+            jz_chip_set_error("clock_gen '%s': malformed variant fact key '%.*s'",
+                              cg_type ? cg_type : "?", (int)klen, kstr);
+            return 0;
+        }
+        size_t name_len = (size_t)(dot - (kstr + 6));
+        size_t tail_len = klen - 6 - name_len;
+        if (tail_len != 7 || strncmp(dot, ".source", 7) != 0) {
+            jz_chip_set_error("clock_gen '%s': unknown variant fact key '%.*s' "
+                              "(expected 'input.<NAME>.source')",
+                              cg_type ? cg_type : "?", (int)klen, kstr);
+            return 0;
+        }
+        if (name_len == 0) {
+            jz_chip_set_error("clock_gen '%s': empty input name in variant fact key",
+                              cg_type ? cg_type : "?");
+            return 0;
+        }
+
+        /* Value must be a string "pad" or "fabric" (or "" for unwired). */
+        if (val->type != JSMN_STRING) {
+            jz_chip_set_error("clock_gen '%s': variant fact '%.*s' value must be a string",
+                              cg_type ? cg_type : "?", (int)klen, kstr);
+            return 0;
+        }
+        size_t vlen = (size_t)(val->end - val->start);
+        const char *vstr = json + val->start;
+        if (!(vlen == 3 && strncmp(vstr, "pad", 3) == 0) &&
+            !(vlen == 6 && strncmp(vstr, "fabric", 6) == 0) &&
+            !(vlen == 0)) {
+            jz_chip_set_error("clock_gen '%s': variant fact '%.*s' value must be "
+                              "\"pad\", \"fabric\", or \"\" (got \"%.*s\")",
+                              cg_type ? cg_type : "?", (int)klen, kstr,
+                              (int)vlen, vstr);
+            return 0;
+        }
+
+        out_fact->kind = JZ_CG_FACT_INPUT_SOURCE;
+        out_fact->input_name = (char *)malloc(name_len + 1);
+        if (!out_fact->input_name) return 0;
+        /* canonicalise input name to uppercase to match parsed inputs */
+        for (size_t i = 0; i < name_len; ++i) {
+            out_fact->input_name[i] = (char)toupper((unsigned char)(kstr + 6)[i]);
+        }
+        out_fact->input_name[name_len] = '\0';
+        out_fact->source_value = (char *)malloc(vlen + 1);
+        if (!out_fact->source_value) {
+            free(out_fact->input_name);
+            out_fact->input_name = NULL;
+            return 0;
+        }
+        memcpy(out_fact->source_value, vstr, vlen);
+        out_fact->source_value[vlen] = '\0';
+        return 1;
+    }
+
+    /* Match "output.count" */
+    if (klen == 12 && strncmp(kstr, "output.count", 12) == 0) {
+        if (val->type != JSMN_PRIMITIVE) {
+            jz_chip_set_error("clock_gen '%s': variant fact 'output.count' must be an integer",
+                              cg_type ? cg_type : "?");
+            return 0;
+        }
+        unsigned u = 0;
+        if (!jz_json_token_to_uint(json, val, &u)) {
+            jz_chip_set_error("clock_gen '%s': variant fact 'output.count' is not a valid integer",
+                              cg_type ? cg_type : "?");
+            return 0;
+        }
+        out_fact->kind = JZ_CG_FACT_OUTPUT_COUNT;
+        out_fact->int_value = (int)u;
+        return 1;
+    }
+
+    jz_chip_set_error("clock_gen '%s': unknown variant fact key '%.*s' "
+                      "(expected 'input.<NAME>.source' or 'output.count')",
+                      cg_type ? cg_type : "?", (int)klen, kstr);
+    return 0;
+}
+
+/* Free a single variant's owned resources. */
+static void jz_chip_clock_gen_variant_free(JZChipClockGenVariant *v)
+{
+    if (!v) return;
+    size_t fc = v->facts.len / sizeof(JZChipClockGenVariantFact);
+    JZChipClockGenVariantFact *fs = (JZChipClockGenVariantFact *)v->facts.data;
+    for (size_t i = 0; i < fc; ++i) {
+        free(fs[i].input_name);
+        free(fs[i].source_value);
+    }
+    jz_buf_free(&v->facts);
+    size_t mc = v->maps.len / sizeof(JZChipClockGenMap);
+    JZChipClockGenMap *ms = (JZChipClockGenMap *)v->maps.data;
+    for (size_t i = 0; i < mc; ++i) {
+        free(ms[i].backend);
+        free(ms[i].template_text);
+    }
+    jz_buf_free(&v->maps);
+}
+
+/* Parse a single variant object { "when": {...}, "map": {...} }. */
+static int jz_chip_parse_clock_gen_variant(const char *json,
+                                            const jsmntok_t *toks,
+                                            int count,
+                                            int obj_idx,
+                                            const char *cg_type,
+                                            JZChipClockGenVariant *out_v)
+{
+    memset(out_v, 0, sizeof(*out_v));
+    const jsmntok_t *obj = &toks[obj_idx];
+    if (obj->type != JSMN_OBJECT) {
+        jz_chip_set_error("clock_gen '%s': variants[] entry must be an object",
+                          cg_type ? cg_type : "?");
+        return 0;
+    }
+
+    int when_idx = -1;
+    int map_idx = -1;
+    int cur = obj_idx + 1;
+    while (cur < count && toks[cur].start < obj->end) {
+        const jsmntok_t *key = &toks[cur++];
+        if (jz_json_token_eq(json, key, "when")) {
+            when_idx = cur;
+        } else if (jz_json_token_eq(json, key, "map")) {
+            map_idx = cur;
+        }
+        cur = jz_json_skip(toks, count, cur);
+    }
+
+    if (when_idx < 0 || toks[when_idx].type != JSMN_OBJECT) {
+        jz_chip_set_error("clock_gen '%s': variants[] entry missing or non-object 'when'",
+                          cg_type ? cg_type : "?");
+        return 0;
+    }
+    if (map_idx < 0 || toks[map_idx].type != JSMN_OBJECT) {
+        jz_chip_set_error("clock_gen '%s': variants[] entry missing or non-object 'map'",
+                          cg_type ? cg_type : "?");
+        return 0;
+    }
+
+    /* Parse `when` facts. */
+    const jsmntok_t *when_obj = &toks[when_idx];
+    int wi = when_idx + 1;
+    while (wi < count && toks[wi].start < when_obj->end) {
+        int key_i = wi++;
+        int val_i = wi;
+        JZChipClockGenVariantFact fact;
+        if (!jz_chip_parse_variant_fact(json, toks, count, key_i, val_i,
+                                        cg_type, &fact)) {
+            jz_chip_clock_gen_variant_free(out_v);
+            return 0;
+        }
+        jz_buf_append(&out_v->facts, &fact, sizeof(fact));
+        wi = jz_json_skip(toks, count, wi);
+    }
+
+    /* Parse `map` templates. */
+    jz_chip_parse_clock_gen_map_into(json, toks, count, map_idx, &out_v->maps);
+    if (out_v->maps.len == 0) {
+        jz_chip_set_error("clock_gen '%s': variants[] entry has empty 'map'",
+                          cg_type ? cg_type : "?");
+        jz_chip_clock_gen_variant_free(out_v);
+        return 0;
+    }
+    return 1;
+}
+
+/* Parse the entire `variants` array. Returns 1 on success, 0 on failure. */
+static int jz_chip_parse_clock_gen_variants(const char *json,
+                                              const jsmntok_t *toks,
+                                              int count,
+                                              int arr_idx,
+                                              const char *cg_type,
+                                              JZChipClockGen *cg)
+{
+    if (arr_idx < 0 || arr_idx >= count) return 0;
+    const jsmntok_t *arr = &toks[arr_idx];
+    if (arr->type != JSMN_ARRAY) {
+        jz_chip_set_error("clock_gen '%s': 'variants' must be an array",
+                          cg_type ? cg_type : "?");
+        return 0;
+    }
+
+    int cur = arr_idx + 1;
+    for (int i = 0; i < arr->size && cur < count; ++i) {
+        JZChipClockGenVariant v;
+        if (!jz_chip_parse_clock_gen_variant(json, toks, count, cur, cg_type, &v)) {
+            return 0;
+        }
+        jz_buf_append(&cg->variants, &v, sizeof(v));
+        cur = jz_json_skip(toks, count, cur);
+    }
+
+    if (cg->variants.len == 0) {
+        jz_chip_set_error("clock_gen '%s': 'variants' array is empty",
+                          cg_type ? cg_type : "?");
+        return 0;
+    }
+    return 1;
+}
+
+/* ---- Variant fact matching and exhaustive/disjoint validation ---- */
+
+/* Axis used to enumerate the cartesian product at load time.
+ * kind == JZ_CG_FACT_INPUT_SOURCE: name[] of fact; values are strings.
+ * kind == JZ_CG_FACT_OUTPUT_COUNT: values are ints. */
+typedef struct VariantAxis {
+    JZChipVariantFactKind kind;
+    char *name;          /* input name for INPUT_SOURCE, NULL for OUTPUT_COUNT */
+    char **svals;        /* distinct string values for INPUT_SOURCE */
+    int   *ivals;        /* distinct int values for OUTPUT_COUNT */
+    size_t val_count;
+} VariantAxis;
+
+static void variant_axes_free(VariantAxis *axes, size_t count)
+{
+    if (!axes) return;
+    for (size_t i = 0; i < count; ++i) {
+        free(axes[i].name);
+        if (axes[i].svals) {
+            for (size_t j = 0; j < axes[i].val_count; ++j) free(axes[i].svals[j]);
+            free(axes[i].svals);
+        }
+        free(axes[i].ivals);
+    }
+    free(axes);
+}
+
+static int variant_axes_add_sval(VariantAxis *ax, const char *v)
+{
+    for (size_t i = 0; i < ax->val_count; ++i) {
+        if (strcmp(ax->svals[i], v) == 0) return 1;
+    }
+    char **nv = (char **)realloc(ax->svals, sizeof(char *) * (ax->val_count + 1));
+    if (!nv) return 0;
+    ax->svals = nv;
+    ax->svals[ax->val_count] = strdup(v);
+    if (!ax->svals[ax->val_count]) return 0;
+    ax->val_count++;
+    return 1;
+}
+
+static int variant_axes_add_ival(VariantAxis *ax, int v)
+{
+    for (size_t i = 0; i < ax->val_count; ++i) {
+        if (ax->ivals[i] == v) return 1;
+    }
+    int *nv = (int *)realloc(ax->ivals, sizeof(int) * (ax->val_count + 1));
+    if (!nv) return 0;
+    ax->ivals = nv;
+    ax->ivals[ax->val_count++] = v;
+    return 1;
+}
+
+/* Build the set of axes referenced across all variants in cg.
+ * On success returns allocated array in *out_axes with *out_count entries.
+ * Caller must free via variant_axes_free(). Returns 1 on success. */
+static int variant_build_axes(const JZChipClockGen *cg,
+                               VariantAxis **out_axes,
+                               size_t *out_count)
+{
+    *out_axes = NULL;
+    *out_count = 0;
+    size_t cap = 0;
+    VariantAxis *axes = NULL;
+
+    size_t vc = cg->variants.len / sizeof(JZChipClockGenVariant);
+    const JZChipClockGenVariant *vs =
+        (const JZChipClockGenVariant *)cg->variants.data;
+    for (size_t vi = 0; vi < vc; ++vi) {
+        size_t fc = vs[vi].facts.len / sizeof(JZChipClockGenVariantFact);
+        const JZChipClockGenVariantFact *fs =
+            (const JZChipClockGenVariantFact *)vs[vi].facts.data;
+        for (size_t fi = 0; fi < fc; ++fi) {
+            /* Find or create matching axis */
+            size_t ai;
+            for (ai = 0; ai < *out_count; ++ai) {
+                if (axes[ai].kind != fs[fi].kind) continue;
+                if (fs[fi].kind == JZ_CG_FACT_INPUT_SOURCE) {
+                    if (axes[ai].name && fs[fi].input_name &&
+                        strcmp(axes[ai].name, fs[fi].input_name) == 0) break;
+                } else {
+                    break;
+                }
+            }
+            if (ai == *out_count) {
+                if (*out_count == cap) {
+                    cap = cap ? cap * 2 : 4;
+                    VariantAxis *na = (VariantAxis *)realloc(axes, sizeof(VariantAxis) * cap);
+                    if (!na) { variant_axes_free(axes, *out_count); return 0; }
+                    axes = na;
+                }
+                memset(&axes[*out_count], 0, sizeof(VariantAxis));
+                axes[*out_count].kind = fs[fi].kind;
+                if (fs[fi].kind == JZ_CG_FACT_INPUT_SOURCE && fs[fi].input_name) {
+                    axes[*out_count].name = strdup(fs[fi].input_name);
+                    if (!axes[*out_count].name) {
+                        variant_axes_free(axes, *out_count); return 0;
+                    }
+                }
+                (*out_count)++;
+            }
+            /* Record the value. */
+            if (fs[fi].kind == JZ_CG_FACT_INPUT_SOURCE) {
+                if (!variant_axes_add_sval(&axes[ai],
+                                            fs[fi].source_value ? fs[fi].source_value : "")) {
+                    variant_axes_free(axes, *out_count); return 0;
+                }
+            } else {
+                if (!variant_axes_add_ival(&axes[ai], fs[fi].int_value)) {
+                    variant_axes_free(axes, *out_count); return 0;
+                }
+            }
+        }
+    }
+    *out_axes = axes;
+    return 1;
+}
+
+/* Does the tuple (axis value indices in `idx[]`) satisfy a variant's when clause? */
+static int variant_matches_tuple(const JZChipClockGenVariant *v,
+                                  const VariantAxis *axes,
+                                  const size_t *idx,
+                                  size_t axis_count)
+{
+    size_t fc = v->facts.len / sizeof(JZChipClockGenVariantFact);
+    const JZChipClockGenVariantFact *fs =
+        (const JZChipClockGenVariantFact *)v->facts.data;
+    for (size_t fi = 0; fi < fc; ++fi) {
+        /* Find the axis for this fact. */
+        size_t ai;
+        for (ai = 0; ai < axis_count; ++ai) {
+            if (axes[ai].kind != fs[fi].kind) continue;
+            if (fs[fi].kind == JZ_CG_FACT_INPUT_SOURCE) {
+                if (axes[ai].name && fs[fi].input_name &&
+                    strcmp(axes[ai].name, fs[fi].input_name) == 0) break;
+            } else {
+                break;
+            }
+        }
+        if (ai == axis_count) return 0;  /* axis not built; shouldn't happen */
+
+        if (fs[fi].kind == JZ_CG_FACT_INPUT_SOURCE) {
+            const char *tuple_val = axes[ai].svals[idx[ai]];
+            const char *want = fs[fi].source_value ? fs[fi].source_value : "";
+            if (strcmp(tuple_val, want) != 0) return 0;
+        } else {
+            int tuple_val = axes[ai].ivals[idx[ai]];
+            if (tuple_val != fs[fi].int_value) return 0;
+        }
+    }
+    return 1;
+}
+
+/* Validate that the variants in `cg` are exhaustive and disjoint over the
+ * cartesian product of all referenced fact axes. Returns 1 on success.
+ * On failure, sets g_chip_last_error. */
+static int variant_validate_coverage(const JZChipClockGen *cg)
+{
+    VariantAxis *axes = NULL;
+    size_t axis_count = 0;
+    if (!variant_build_axes(cg, &axes, &axis_count)) {
+        jz_chip_set_error("clock_gen '%s': out of memory validating variants",
+                          cg->type ? cg->type : "?");
+        return 0;
+    }
+    if (axis_count == 0) {
+        /* No axes and there are variants: at most one variant allowed. */
+        size_t vc = cg->variants.len / sizeof(JZChipClockGenVariant);
+        if (vc > 1) {
+            jz_chip_set_error("clock_gen '%s': multiple variants with no 'when' facts",
+                              cg->type ? cg->type : "?");
+            variant_axes_free(axes, axis_count);
+            return 0;
+        }
+        variant_axes_free(axes, axis_count);
+        return 1;
+    }
+
+    size_t *idx = (size_t *)calloc(axis_count, sizeof(size_t));
+    if (!idx) {
+        jz_chip_set_error("clock_gen '%s': out of memory validating variants",
+                          cg->type ? cg->type : "?");
+        variant_axes_free(axes, axis_count);
+        return 0;
+    }
+
+    const JZChipClockGenVariant *vs =
+        (const JZChipClockGenVariant *)cg->variants.data;
+    size_t vc = cg->variants.len / sizeof(JZChipClockGenVariant);
+
+    int ok = 1;
+    while (ok) {
+        /* Count matching variants for this tuple. */
+        int matches = 0;
+        for (size_t vi = 0; vi < vc; ++vi) {
+            if (variant_matches_tuple(&vs[vi], axes, idx, axis_count)) {
+                matches++;
+            }
+        }
+        if (matches != 1) {
+            /* Describe the offending tuple. */
+            char buf[384];
+            size_t off = 0;
+            for (size_t ai = 0; ai < axis_count && off + 1 < sizeof(buf); ++ai) {
+                const char *sep = (ai == 0) ? "" : ", ";
+                if (axes[ai].kind == JZ_CG_FACT_INPUT_SOURCE) {
+                    int n = snprintf(buf + off, sizeof(buf) - off,
+                                     "%sinput.%s.source=\"%s\"", sep,
+                                     axes[ai].name ? axes[ai].name : "?",
+                                     axes[ai].svals[idx[ai]]);
+                    if (n > 0) off += (size_t)n;
+                } else {
+                    int n = snprintf(buf + off, sizeof(buf) - off,
+                                     "%soutput.count=%d", sep, axes[ai].ivals[idx[ai]]);
+                    if (n > 0) off += (size_t)n;
+                }
+            }
+            if (matches == 0) {
+                jz_chip_set_error(
+                    "clock_gen '%s': variants not exhaustive; no variant matches { %s }",
+                    cg->type ? cg->type : "?", buf);
+            } else {
+                jz_chip_set_error(
+                    "clock_gen '%s': variants not disjoint; %d variants match { %s }",
+                    cg->type ? cg->type : "?", matches, buf);
+            }
+            ok = 0;
+            break;
+        }
+
+        /* Advance tuple indices (like an odometer). */
+        size_t k = 0;
+        while (k < axis_count) {
+            idx[k]++;
+            if (idx[k] < axes[k].val_count) break;
+            idx[k] = 0;
+            k++;
+        }
+        if (k == axis_count) break;  /* enumerated all tuples */
+    }
+
+    free(idx);
+    variant_axes_free(axes, axis_count);
+    return ok;
+}
+
 /* Parse a single clock_gen entry from the array. */
 static int jz_chip_parse_clock_gen_object(const char *json,
                                           const jsmntok_t *toks,
                                           int count,
                                           int obj_index,
-                                          JZChipData *out)
+                                          JZChipData *out,
+                                          int *err)
 {
     const jsmntok_t *obj = &toks[obj_index];
     if (obj->type != JSMN_OBJECT) return jz_json_skip(toks, count, obj_index);
@@ -920,6 +1432,7 @@ static int jz_chip_parse_clock_gen_object(const char *json,
     char *mode = NULL;
     char *feedback_wire = NULL;
     int map_idx = -1;
+    int variants_idx = -1;
     int derived_idx = -1;
     int params_idx = -1;
     int outputs_idx = -1;
@@ -939,6 +1452,8 @@ static int jz_chip_parse_clock_gen_object(const char *json,
             mode = jz_json_token_strdup(json, val);
         } else if (jz_json_token_eq(json, key, "map")) {
             map_idx = cur;
+        } else if (jz_json_token_eq(json, key, "variants")) {
+            variants_idx = cur;
         } else if (jz_json_token_eq(json, key, "derived")) {
             derived_idx = cur;
         } else if (jz_json_token_eq(json, key, "parameters")) {
@@ -968,13 +1483,39 @@ static int jz_chip_parse_clock_gen_object(const char *json,
         cur = jz_json_skip(toks, count, cur);
     }
 
-    if (type && map_idx >= 0) {
+    /* Enforce mutual exclusion of `map` and `variants`. Exactly one required. */
+    if (type && map_idx >= 0 && variants_idx >= 0) {
+        jz_chip_set_error("clock_gen '%s': both 'map' and 'variants' are present; "
+                          "use exactly one (S9.3)", type);
+        if (err) *err = 1;
+        free(type); free(mode); free(feedback_wire);
+        return jz_json_skip(toks, count, obj_index);
+    }
+    if (type && map_idx < 0 && variants_idx < 0) {
+        jz_chip_set_error("clock_gen '%s': neither 'map' nor 'variants' is present; "
+                          "one is required (S9.3)", type);
+        if (err) *err = 1;
+        free(type); free(mode); free(feedback_wire);
+        return jz_json_skip(toks, count, obj_index);
+    }
+
+    if (type && (map_idx >= 0 || variants_idx >= 0)) {
         JZChipClockGen cg;
         memset(&cg, 0, sizeof(cg));
         cg.type = type;
         cg.mode = mode;
         cg.feedback_wire = feedback_wire;
-        jz_chip_parse_clock_gen_map(json, toks, count, map_idx, &cg);
+        int variants_parse_failed = 0;
+        if (map_idx >= 0) {
+            jz_chip_parse_clock_gen_map(json, toks, count, map_idx, &cg);
+        } else {
+            if (!jz_chip_parse_clock_gen_variants(json, toks, count,
+                                                   variants_idx, type, &cg)) {
+                if (err) *err = 1;
+                variants_parse_failed = 1;
+                /* Fall through to cleanup path below. */
+            }
+        }
         if (derived_idx >= 0) {
             jz_chip_parse_clock_gen_derived(json, toks, count, derived_idx, &cg);
         }
@@ -1074,9 +1615,38 @@ static int jz_chip_parse_clock_gen_object(const char *json,
                 ci = jz_json_skip(toks, count, ci);
             }
         }
-        if (cg.maps.len > 0) {
+        /* Validate variants coverage if present. */
+        int cg_ok = 1;
+        if (variants_parse_failed) {
+            cg_ok = 0;
+        } else if (cg.variants.len > 0) {
+            if (!variant_validate_coverage(&cg)) {
+                if (err) *err = 1;
+                cg_ok = 0;
+            }
+        } else if (cg.maps.len == 0) {
+            /* Neither path produced data (map parse failed, or empty). */
+            cg_ok = 0;
+        }
+
+        if (cg_ok) {
             jz_buf_append(&out->clock_gens, &cg, sizeof(cg));
         } else {
+            /* Free maps if any */
+            size_t m_count = cg.maps.len / sizeof(JZChipClockGenMap);
+            JZChipClockGenMap *ms2 = (JZChipClockGenMap *)cg.maps.data;
+            for (size_t mi = 0; mi < m_count; ++mi) {
+                free(ms2[mi].backend);
+                free(ms2[mi].template_text);
+            }
+            jz_buf_free(&cg.maps);
+            /* Free variants */
+            size_t v_count = cg.variants.len / sizeof(JZChipClockGenVariant);
+            JZChipClockGenVariant *vs2 = (JZChipClockGenVariant *)cg.variants.data;
+            for (size_t vi = 0; vi < v_count; ++vi) {
+                jz_chip_clock_gen_variant_free(&vs2[vi]);
+            }
+            jz_buf_free(&cg.variants);
             /* Free deriveds if maps failed */
             size_t d_count = cg.deriveds.len / sizeof(JZChipClockGenDerived);
             JZChipClockGenDerived *ds = (JZChipClockGenDerived *)cg.deriveds.data;
@@ -1222,6 +1792,9 @@ static void jz_chip_parse_diff_primitive(const char *json,
 
     prim->ratio = 0;
     memset(&prim->maps, 0, sizeof(prim->maps));
+    prim->requires_fclk = 0;
+    prim->requires_pclk = 0;
+    prim->requires_reset = 0;
 
     int cur = obj_idx + 1;
     while (cur < count && toks[cur].start < obj->end) {
@@ -1231,6 +1804,18 @@ static void jz_chip_parse_diff_primitive(const char *json,
             unsigned r = 0;
             if (jz_json_token_to_uint(json, val, &r)) {
                 prim->ratio = (int)r;
+            }
+        } else if (jz_json_token_eq(json, key, "required_clocks") &&
+                   val->type == JSMN_ARRAY) {
+            int arr_cur = cur + 1;
+            for (int i = 0; i < val->size && arr_cur < count; ++i) {
+                if (jz_json_token_eq(json, &toks[arr_cur], "fclk"))
+                    prim->requires_fclk = 1;
+                else if (jz_json_token_eq(json, &toks[arr_cur], "pclk"))
+                    prim->requires_pclk = 1;
+                else if (jz_json_token_eq(json, &toks[arr_cur], "reset"))
+                    prim->requires_reset = 1;
+                arr_cur = jz_json_skip(toks, count, arr_cur);
             }
         } else if (jz_json_token_eq(json, key, "map")) {
             jz_chip_parse_diff_map(json, toks, count, cur, prim);
@@ -1378,7 +1963,8 @@ static void jz_chip_parse_differential(const char *json,
 static void jz_chip_parse_clock_gens(const char *json,
                                      const jsmntok_t *toks,
                                      int count,
-                                     JZChipData *out)
+                                     JZChipData *out,
+                                     int *err)
 {
     if (!json || !toks || count < 1 || !out) return;
     if (toks[0].type != JSMN_OBJECT) return;
@@ -1399,7 +1985,7 @@ static void jz_chip_parse_clock_gens(const char *json,
     int cur = clock_gen_idx + 1;
     for (int i = 0; i < toks[clock_gen_idx].size; ++i) {
         if (cur >= count) break;
-        cur = jz_chip_parse_clock_gen_object(json, toks, count, cur, out);
+        cur = jz_chip_parse_clock_gen_object(json, toks, count, cur, out, err);
     }
 }
 
@@ -1473,6 +2059,7 @@ JZChipLoadStatus jz_chip_data_load(const char *chip_id,
 {
     if (!out) return JZ_CHIP_LOAD_NOT_FOUND;
     memset(out, 0, sizeof(*out));
+    jz_chip_clear_error();
 
     if (!chip_id || chip_id[0] == '\0' || jz_strcasecmp(chip_id, "GENERIC") == 0) {
         return JZ_CHIP_LOAD_GENERIC;
@@ -1543,7 +2130,8 @@ JZChipLoadStatus jz_chip_data_load(const char *chip_id,
     int rc = jz_chip_parse_memory(json_source, toks, tok_count, out);
 
     /* Parse clock_gen data (optional, don't fail if not present) */
-    jz_chip_parse_clock_gens(json_source, toks, tok_count, out);
+    int cg_err = 0;
+    jz_chip_parse_clock_gens(json_source, toks, tok_count, out, &cg_err);
 
     /* Parse differential I/O data (optional) */
     jz_chip_parse_differential(json_source, toks, tok_count, out);
@@ -1553,7 +2141,7 @@ JZChipLoadStatus jz_chip_data_load(const char *chip_id,
 
     free(toks);
     free(json);
-    if (rc != 0) {
+    if (rc != 0 || cg_err) {
         jz_chip_data_free(out);
         return JZ_CHIP_LOAD_JSON_ERROR;
     }
@@ -1584,6 +2172,16 @@ void jz_chip_data_free(JZChipData *data)
             free(maps[j].template_text);
         }
         jz_buf_free(&cgs[i].maps);
+
+        /* Free variants */
+        {
+            size_t v_count = cgs[i].variants.len / sizeof(JZChipClockGenVariant);
+            JZChipClockGenVariant *vs = (JZChipClockGenVariant *)cgs[i].variants.data;
+            for (size_t vi = 0; vi < v_count; ++vi) {
+                jz_chip_clock_gen_variant_free(&vs[vi]);
+            }
+            jz_buf_free(&cgs[i].variants);
+        }
 
         size_t d_count = cgs[i].deriveds.len / sizeof(JZChipClockGenDerived);
         JZChipClockGenDerived *ds = (JZChipClockGenDerived *)cgs[i].deriveds.data;
@@ -1702,8 +2300,95 @@ const char *jz_chip_clock_gen_map(const JZChipData *data,
     if (!data || !type || !backend) return NULL;
     const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
     if (!cg) return NULL;
+    /* Legacy API: only defined for entries using the legacy `map` form.
+     * For variants entries, callers must use jz_chip_clock_gen_map_for_facts(). */
+    if (cg->variants.len > 0) return NULL;
     size_t map_count = cg->maps.len / sizeof(JZChipClockGenMap);
     const JZChipClockGenMap *maps = (const JZChipClockGenMap *)cg->maps.data;
+    for (size_t j = 0; j < map_count; ++j) {
+        if (maps[j].backend && jz_strcasecmp(maps[j].backend, backend) == 0) {
+            return maps[j].template_text;
+        }
+    }
+    return NULL;
+}
+
+/* Facts-based dispatch: select the variant whose `when` facts match `facts`,
+ * then return that variant's template text for `backend`. Works for both
+ * legacy `map` entries (which are treated as a single always-matching variant)
+ * and for new `variants` entries.
+ *
+ * Sets *out_match_count (if non-NULL) to the number of matching variants —
+ * callers can use this to distinguish 0 (no-match) from >1 (ambiguous). */
+const char *jz_chip_clock_gen_map_for_facts(const JZChipData *data,
+                                             const char *type,
+                                             const char *backend,
+                                             const JZChipClockGenFacts *facts,
+                                             int *out_match_count)
+{
+    if (out_match_count) *out_match_count = 0;
+    if (!data || !type || !backend) return NULL;
+    const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
+    if (!cg) return NULL;
+
+    /* Legacy path: no variants, fall back to flat map lookup. */
+    if (cg->variants.len == 0) {
+        size_t map_count = cg->maps.len / sizeof(JZChipClockGenMap);
+        const JZChipClockGenMap *maps = (const JZChipClockGenMap *)cg->maps.data;
+        for (size_t j = 0; j < map_count; ++j) {
+            if (maps[j].backend && jz_strcasecmp(maps[j].backend, backend) == 0) {
+                if (out_match_count) *out_match_count = 1;
+                return maps[j].template_text;
+            }
+        }
+        return NULL;
+    }
+
+    /* Variants path: enumerate and match. */
+    size_t vc = cg->variants.len / sizeof(JZChipClockGenVariant);
+    const JZChipClockGenVariant *vs =
+        (const JZChipClockGenVariant *)cg->variants.data;
+    const JZChipClockGenVariant *chosen = NULL;
+    int matches = 0;
+    for (size_t vi = 0; vi < vc; ++vi) {
+        int ok = 1;
+        size_t fc = vs[vi].facts.len / sizeof(JZChipClockGenVariantFact);
+        const JZChipClockGenVariantFact *fs =
+            (const JZChipClockGenVariantFact *)vs[vi].facts.data;
+        for (size_t fi = 0; fi < fc && ok; ++fi) {
+            if (fs[fi].kind == JZ_CG_FACT_INPUT_SOURCE) {
+                /* Look up the fact's input in `facts`. */
+                const char *got = "";
+                if (facts && facts->inputs) {
+                    for (size_t ii = 0; ii < facts->input_count; ++ii) {
+                        if (facts->inputs[ii].input_name &&
+                            fs[fi].input_name &&
+                            strcmp(facts->inputs[ii].input_name,
+                                   fs[fi].input_name) == 0) {
+                            got = facts->inputs[ii].source
+                                    ? facts->inputs[ii].source : "";
+                            break;
+                        }
+                    }
+                }
+                const char *want = fs[fi].source_value ? fs[fi].source_value : "";
+                if (strcmp(got, want) != 0) ok = 0;
+            } else { /* JZ_CG_FACT_OUTPUT_COUNT */
+                int got = facts ? facts->output_count : 0;
+                if (got != fs[fi].int_value) ok = 0;
+            }
+        }
+        if (ok) {
+            matches++;
+            if (!chosen) chosen = &vs[vi];
+        }
+    }
+
+    if (out_match_count) *out_match_count = matches;
+    if (matches != 1 || !chosen) return NULL;
+
+    size_t map_count = chosen->maps.len / sizeof(JZChipClockGenMap);
+    const JZChipClockGenMap *maps = (const JZChipClockGenMap *)chosen->maps.data;
     for (size_t j = 0; j < map_count; ++j) {
         if (maps[j].backend && jz_strcasecmp(maps[j].backend, backend) == 0) {
             return maps[j].template_text;
@@ -2166,6 +2851,54 @@ int jz_chip_diff_max_deserializer_ratio(const JZChipData *data)
         if (desers[i].ratio > max_r) max_r = desers[i].ratio;
     }
     return max_r;
+}
+
+int jz_chip_diff_serializer_required_clocks(const JZChipData *data,
+                                             int needed_width,
+                                             int *out_fclk,
+                                             int *out_pclk,
+                                             int *out_reset)
+{
+    if (!data || !data->differential.has_output_serializer || needed_width <= 0)
+        return 0;
+    size_t n = data->differential.output_serializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *sers =
+        (const JZChipDiffPrimitive *)data->differential.output_serializers.data;
+    const JZChipDiffPrimitive *best = NULL;
+    for (size_t i = 0; i < n; ++i) {
+        if (sers[i].ratio >= needed_width) {
+            if (!best || sers[i].ratio < best->ratio) best = &sers[i];
+        }
+    }
+    if (!best) return 0;
+    if (out_fclk)  *out_fclk  = best->requires_fclk;
+    if (out_pclk)  *out_pclk  = best->requires_pclk;
+    if (out_reset) *out_reset = best->requires_reset;
+    return 1;
+}
+
+int jz_chip_diff_deserializer_required_clocks(const JZChipData *data,
+                                               int needed_width,
+                                               int *out_fclk,
+                                               int *out_pclk,
+                                               int *out_reset)
+{
+    if (!data || !data->differential.has_input_deserializer || needed_width <= 0)
+        return 0;
+    size_t n = data->differential.input_deserializers.len / sizeof(JZChipDiffPrimitive);
+    const JZChipDiffPrimitive *desers =
+        (const JZChipDiffPrimitive *)data->differential.input_deserializers.data;
+    const JZChipDiffPrimitive *best = NULL;
+    for (size_t i = 0; i < n; ++i) {
+        if (desers[i].ratio >= needed_width) {
+            if (!best || desers[i].ratio < best->ratio) best = &desers[i];
+        }
+    }
+    if (!best) return 0;
+    if (out_fclk)  *out_fclk  = best->requires_fclk;
+    if (out_pclk)  *out_pclk  = best->requires_pclk;
+    if (out_reset) *out_reset = best->requires_reset;
+    return 1;
 }
 
 const char *jz_chip_diff_io_type(const JZChipData *data)

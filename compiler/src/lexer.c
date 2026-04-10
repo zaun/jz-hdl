@@ -479,7 +479,35 @@ static void lex_one_token(LexerState *st) {
          * (S2.1) allows a CONST/CONFIG name as the literal width, so we lex
          * the whole WIDTH'... sequence as a single JZ_TOK_SIZED_NUMBER token
          * instead of IDENT + stray quote (LIT_UNSIZED).
+         *
+         * Also handles CONFIG.<name>'... where the width is a CONFIG
+         * reference with a dot-separated field name.
          */
+        if (st->pos < st->len && st->src[st->pos] == '.' &&
+            (end_pos - start_pos) == 6 &&
+            memcmp(src + start_pos, "CONFIG", 6) == 0) {
+            /* Speculatively scan CONFIG.name — if followed by '\'' it's a
+             * sized literal width; otherwise we back out and emit CONFIG
+             * as a normal keyword token.
+             */
+            size_t dot_pos = st->pos;
+            int dot_col = st->column;
+            st->pos++;
+            st->column++;
+            size_t name_start = st->pos;
+            while (st->pos < st->len && is_identifier_char((unsigned char)st->src[st->pos])) {
+                st->pos++;
+                st->column++;
+            }
+            if (st->pos > name_start && st->pos < st->len && st->src[st->pos] == '\'') {
+                /* CONFIG.name' — continue into base/value portion */
+                end_pos = st->pos; /* update end_pos to include CONFIG.name */
+            } else {
+                /* Not followed by '\'' — back out to just after CONFIG */
+                st->pos = dot_pos;
+                st->column = dot_col;
+            }
+        }
         if (st->pos < st->len && st->src[st->pos] == '\'') {
             /* Scan through base/value portion similarly to the numeric-literal
              * branch used for digit-starting literals.

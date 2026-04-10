@@ -1593,6 +1593,29 @@ int jz_chip_print_info(const char *chip_id, FILE *out)
         jz_print_clock_gen_info(json, toks, tok_count, clock_gen_idx, out);
     }
 
+    /* Helper: print required_clocks from a ser/deser JSON object */
+    #define PRINT_REQUIRED_CLOCKS(json_, toks_, tok_count_, obj_idx_, out_) \
+    do { \
+        int rc_idx_ = jz_json_object_get(json_, toks_, tok_count_, obj_idx_, \
+                                          "required_clocks"); \
+        if (rc_idx_ >= 0 && toks_[rc_idx_].type == JSMN_ARRAY && \
+            toks_[rc_idx_].size > 0) { \
+            fprintf(out_, "  %14s", ""); \
+            fprintf(out_, "requires: "); \
+            int first_ = 1; \
+            int rc_cur_ = rc_idx_ + 1; \
+            for (int ri_ = 0; ri_ < toks_[rc_idx_].size && rc_cur_ < tok_count_; \
+                 ++ri_) { \
+                int len_ = toks_[rc_cur_].end - toks_[rc_cur_].start; \
+                if (!first_) fprintf(out_, ", "); \
+                fprintf(out_, "%.*s", len_, json_ + toks_[rc_cur_].start); \
+                first_ = 0; \
+                rc_cur_ = jz_json_skip(toks_, tok_count_, rc_cur_); \
+            } \
+            fprintf(out_, "\n"); \
+        } \
+    } while (0)
+
     /* Differential I/O section */
     if (differential_idx >= 0 && toks[differential_idx].type == JSMN_OBJECT) {
         jz_print_section_heading(out, "Differential I/O");
@@ -1648,6 +1671,7 @@ int jz_chip_print_info(const char *chip_id, FILE *out)
                             if (have_ratio) fprintf(out, " %u:1", ratio);
                             if (ser_desc[0]) fprintf(out, " (%s)", ser_desc);
                             fprintf(out, "\n");
+                            PRINT_REQUIRED_CLOCKS(json, toks, tok_count, arr_cur, out);
                         }
                         arr_cur = jz_json_skip(toks, tok_count, arr_cur);
                     }
@@ -1666,6 +1690,7 @@ int jz_chip_print_info(const char *chip_id, FILE *out)
                     if (have_ratio) fprintf(out, " %u:1", ratio);
                     if (ser_desc[0]) fprintf(out, " (%s)", ser_desc);
                     fprintf(out, "\n");
+                    PRINT_REQUIRED_CLOCKS(json, toks, tok_count, ser_idx, out);
                 }
             }
         }
@@ -1705,6 +1730,7 @@ int jz_chip_print_info(const char *chip_id, FILE *out)
                             if (have_ratio) fprintf(out, " 1:%u", ratio);
                             if (deser_desc[0]) fprintf(out, " (%s)", deser_desc);
                             fprintf(out, "\n");
+                            PRINT_REQUIRED_CLOCKS(json, toks, tok_count, arr_cur, out);
                         }
                         arr_cur = jz_json_skip(toks, tok_count, arr_cur);
                     }
@@ -1723,6 +1749,7 @@ int jz_chip_print_info(const char *chip_id, FILE *out)
                     if (have_ratio) fprintf(out, " 1:%u", ratio);
                     if (deser_desc[0]) fprintf(out, " (%s)", deser_desc);
                     fprintf(out, "\n");
+                    PRINT_REQUIRED_CLOCKS(json, toks, tok_count, deser_idx, out);
                 }
             }
         }

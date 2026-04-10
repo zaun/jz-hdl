@@ -736,6 +736,83 @@ void sem_check_project_clock_gen(JZASTNode *project,
                                 "CLOCK_GEN PLL/DLL must have at least one OUT clock");
             }
 
+            /* Variant dispatch check: compute the facts for this unit and
+             * verify exactly one chip variant matches. Only meaningful when
+             * chip data is available. */
+            if (chip && unit->name && has_output) {
+                char type_lower[32];
+                {
+                    size_t tlen = strlen(unit->name);
+                    if (tlen >= sizeof(type_lower)) tlen = sizeof(type_lower) - 1;
+                    for (size_t t = 0; t < tlen; ++t)
+                        type_lower[t] = (char)tolower((unsigned char)unit->name[t]);
+                    type_lower[tlen] = '\0';
+                }
+
+                /* Count OUT (clock) outputs only — WIRE outputs are excluded
+                 * per S9.3 output.count semantics. */
+                int out_count = 0;
+                for (size_t c = 0; c < unit->child_count; ++c) {
+                    JZASTNode *elem = unit->children[c];
+                    if (elem && elem->type == JZ_AST_CLOCK_GEN_OUT) out_count++;
+                }
+
+                /* Build per-input source facts (pad|fabric). */
+                JZChipClockGenInputFact input_facts[16];
+                size_t input_fact_count = 0;
+                for (size_t c = 0; c < unit->child_count &&
+                                   input_fact_count < 16; ++c) {
+                    JZASTNode *elem = unit->children[c];
+                    if (!elem || elem->type != JZ_AST_CLOCK_GEN_IN) continue;
+                    if (!elem->block_kind || !elem->name) continue;
+
+                    const JZSymbol *pin_sym =
+                        project_lookup(project_symbols, elem->name, JZ_SYM_PIN);
+                    const char *src = pin_sym ? "pad" : "fabric";
+                    input_facts[input_fact_count].input_name = elem->block_kind;
+                    input_facts[input_fact_count].source = src;
+                    input_fact_count++;
+                }
+
+                JZChipClockGenFacts facts;
+                facts.inputs = input_facts;
+                facts.input_count = input_fact_count;
+                facts.output_count = out_count;
+
+                /* We don't care about the template text here — just the
+                 * match count. Use a canonical backend name ("verilog-2005");
+                 * a successful lookup only requires the variant to exist,
+                 * and any backend will do for presence checking. */
+                int match_count = 0;
+                (void)jz_chip_clock_gen_map_for_facts(chip, type_lower,
+                                                      "verilog-2005",
+                                                      &facts, &match_count);
+                if (match_count == 0) {
+                    char msg[512];
+                    size_t off = 0;
+                    off += (size_t)snprintf(msg + off, sizeof(msg) - off,
+                                             "no chip clock_gen variant matches facts { ");
+                    for (size_t fi = 0; fi < input_fact_count &&
+                                         off + 1 < sizeof(msg); ++fi) {
+                        off += (size_t)snprintf(msg + off, sizeof(msg) - off,
+                                                 "input.%s.source=\"%s\", ",
+                                                 input_facts[fi].input_name,
+                                                 input_facts[fi].source);
+                    }
+                    snprintf(msg + off, sizeof(msg) - off,
+                             "output.count=%d }", out_count);
+                    sem_report_rule(diagnostics, unit->loc,
+                                    "CLOCK_GEN_VARIANT_NO_MATCH", msg);
+                } else if (match_count > 1) {
+                    char msg[256];
+                    snprintf(msg, sizeof(msg),
+                             "%d chip clock_gen variants match this unit's "
+                             "facts (chip JSON is not disjoint)", match_count);
+                    sem_report_rule(diagnostics, unit->loc,
+                                    "CLOCK_GEN_VARIANT_AMBIGUOUS", msg);
+                }
+            }
+
             /* Move this unit's outputs into prior_unit_outputs for next unit */
             {
                 size_t this_count = this_unit_outputs.len / sizeof(char *);
@@ -1042,6 +1119,7 @@ static int sem_extract_attr(const char *attrs, const char *key,
 
 void sem_check_project_pins(JZASTNode *project,
                             const JZBuffer *project_symbols,
+                            const JZChipData *chip,
                             JZDiagnosticList *diagnostics)
 {
     (void)project_symbols;
@@ -1219,23 +1297,50 @@ void sem_check_project_pins(JZASTNode *project,
                 }
             }
 
-            /* --- fclk / pclk / reset required for differential output pins --- */
+            /* --- width (serialization width, differential only) --- */
+            char width_val[32];
+            int has_width = sem_extract_attr(attrs, "width", width_val, sizeof(width_val));
+            if (has_width && !is_diff) {
+                sem_report_rule(diagnostics,
+                                decl->loc,
+                                "PIN_WIDTH_REQUIRES_DIFFERENTIAL",
+                                "width attribute is only valid when mode=DIFFERENTIAL");
+            }
+
+            /* --- fclk / pclk / reset: required set depends on chip serializer --- */
             if (is_diff && is_out_block) {
                 char fclk_val[64], pclk_val[64], reset_val[64];
                 int has_fclk  = sem_extract_attr(attrs, "fclk",  fclk_val,  sizeof(fclk_val));
                 int has_pclk  = sem_extract_attr(attrs, "pclk",  pclk_val,  sizeof(pclk_val));
                 int has_reset = sem_extract_attr(attrs, "reset", reset_val, sizeof(reset_val));
-                if (!has_fclk) {
+
+                /* Determine which clocks this serializer actually needs */
+                int need_fclk = 1, need_pclk = 1, need_reset = 1;
+                if (chip && has_width) {
+                    char *endp = NULL;
+                    long wn = strtol(width_val, &endp, 10);
+                    if (endp && endp != width_val && *endp == '\0' && wn > 0) {
+                        int rf = 1, rp = 1, rr = 1;
+                        if (jz_chip_diff_serializer_required_clocks(
+                                chip, (int)wn, &rf, &rp, &rr)) {
+                            need_fclk = rf;
+                            need_pclk = rp;
+                            need_reset = rr;
+                        }
+                    }
+                }
+
+                if (need_fclk && !has_fclk) {
                     sem_report_rule(diagnostics, decl->loc,
                                     "PIN_DIFF_OUT_MISSING_FCLK",
                                     "differential output pin requires fclk attribute");
                 }
-                if (!has_pclk) {
+                if (need_pclk && !has_pclk) {
                     sem_report_rule(diagnostics, decl->loc,
                                     "PIN_DIFF_OUT_MISSING_PCLK",
                                     "differential output pin requires pclk attribute");
                 }
-                if (!has_reset) {
+                if (need_reset && !has_reset) {
                     sem_report_rule(diagnostics, decl->loc,
                                     "PIN_DIFF_OUT_MISSING_RESET",
                                     "differential output pin requires reset attribute");
@@ -2012,6 +2117,39 @@ void sem_check_project_top_new(JZASTNode *project,
                                 b->loc,
                                 "TOP_PORT_PIN_DIRECTION_MISMATCH",
                                 "module INOUT port must connect to INOUT_PINS");
+            }
+        }
+
+        /* Check that the binding width matches the connected pin/signal width.
+         * For simple (non-complex) targets bound to a declared pin, compare
+         * the @top binding width against the pin declaration width.
+         * If the pin has a `width=N` attribute (differential serialization),
+         * use N as the effective width instead of the array/scalar width.
+         */
+        if (!complex_target && pin_sym && pin_sym->node && b->width) {
+            unsigned bind_w = 0;
+            int bind_rc = eval_simple_positive_decl_int(b->width, &bind_w);
+            unsigned pin_w = 1; /* default scalar */
+            int pin_rc = 1;
+            if (pin_sym->node->width) {
+                pin_rc = eval_simple_positive_decl_int(pin_sym->node->width, &pin_w);
+            }
+            /* Check for width= attribute on differential pins */
+            unsigned effective_w = pin_w;
+            if (pin_sym->node->text) {
+                char pw_val[32];
+                if (sem_extract_attr(pin_sym->node->text, "width", pw_val, sizeof(pw_val))) {
+                    unsigned dw = 0;
+                    if (eval_simple_positive_decl_int(pw_val, &dw) && dw > 0) {
+                        effective_w = dw;
+                    }
+                }
+            }
+            if (bind_rc == 1 && pin_rc == 1 && bind_w != effective_w) {
+                sem_report_rule(diagnostics,
+                                b->loc,
+                                "TOP_PORT_SIGNAL_WIDTH_MISMATCH",
+                                "binding width does not match connected pin/signal width");
             }
         }
     }

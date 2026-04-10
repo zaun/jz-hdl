@@ -7,7 +7,13 @@
 @module warp
     CONST {
         NUM_STARS = 30;
-        SPEED = 4;      // Update every Nth vsync (1=fastest)
+        SPEED = 4;        // Update every Nth vsync (1=fastest)
+        CX = CONFIG.h_active / 2;
+        CY = CONFIG.v_active / 2;
+        MAX_X = CONFIG.h_active - 10;
+        MAX_Y = CONFIG.v_active - 10;
+        SPAWN_X = CONFIG.h_active / 2 - 32;
+        SPAWN_Y = CONFIG.v_active / 2 - 32;
     }
 
     PORT {
@@ -39,16 +45,16 @@
         star_y    [NUM_STARS * 10] = lit(NUM_STARS * 10, 0);
     }
 
-    // Absolute distance from screen center (640, 360)
+    // Absolute distance from screen center
     @template STAR_DIST(dx, dy, sx, sy)
         dx[IDX*11+10:IDX*11] <=
-            (sx[IDX*11+10:IDX*11] >= 11'd640)
-            ? (sx[IDX*11+10:IDX*11] - 11'd640)
-            : (11'd640 - sx[IDX*11+10:IDX*11]);
+            (sx[IDX*11+10:IDX*11] >= lit(11, CX))
+            ? (sx[IDX*11+10:IDX*11] - lit(11, CX))
+            : (lit(11, CX) - sx[IDX*11+10:IDX*11]);
         dy[IDX*10+9:IDX*10] <=
-            (sy[IDX*10+9:IDX*10] >= 10'd360)
-            ? (sy[IDX*10+9:IDX*10] - 10'd360)
-            : (10'd360 - sy[IDX*10+9:IDX*10]);
+            (sy[IDX*10+9:IDX*10] >= lit(10, CY))
+            ? (sy[IDX*10+9:IDX*10] - lit(10, CY))
+            : (lit(10, CY) - sy[IDX*10+9:IDX*10]);
     @endtemplate
 
     // Pixel hit test — 2x2 dot
@@ -63,18 +69,18 @@
 
     // Compute next position: move radially or respawn if offscreen
     @template STAR_NEXT(nx, ny, sx, sy, dx, dy, rng)
-        IF (sx[IDX*11+10:IDX*11] > 11'd1270 || sy[IDX*10+9:IDX*10] > 10'd710) {
-            nx[IDX*11+10:IDX*11] <= 11'd608 + {5'b00000, rng[IDX*2%26+5:IDX*2%26]};
-            ny[IDX*10+9:IDX*10]  <= 10'd328 + {4'b0000, rng[IDX*3%26+5:IDX*3%26]};
+        IF (sx[IDX*11+10:IDX*11] > lit(11, MAX_X) || sy[IDX*10+9:IDX*10] > lit(10, MAX_Y)) {
+            nx[IDX*11+10:IDX*11] <= lit(11, SPAWN_X) + {5'b00000, rng[IDX*2%26+5:IDX*2%26]};
+            ny[IDX*10+9:IDX*10]  <= lit(10, SPAWN_Y) + {4'b0000, rng[IDX*3%26+5:IDX*3%26]};
         } ELSE {
-            IF (sx[IDX*11+10:IDX*11] >= 11'd640) {
+            IF (sx[IDX*11+10:IDX*11] >= lit(11, CX)) {
                 nx[IDX*11+10:IDX*11] <= sx[IDX*11+10:IDX*11]
                     + (dx[IDX*11+10:IDX*11] >> 11'd5) + 11'd1;
             } ELSE {
                 nx[IDX*11+10:IDX*11] <= sx[IDX*11+10:IDX*11]
                     - (dx[IDX*11+10:IDX*11] >> 11'd5) - 11'd1;
             }
-            IF (sy[IDX*10+9:IDX*10] >= 10'd360) {
+            IF (sy[IDX*10+9:IDX*10] >= lit(10, CY)) {
                 ny[IDX*10+9:IDX*10] <= sy[IDX*10+9:IDX*10]
                     + (dy[IDX*10+9:IDX*10] >> 11'd5) + 10'd1;
             } ELSE {

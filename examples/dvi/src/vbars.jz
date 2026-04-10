@@ -1,5 +1,5 @@
 // Vertical color bars pattern generator
-// 5 bars of 144px each: Red, Green, Blue, White, Black
+// 5 bars: Red, Green, Blue, White, Black (equal height from CONFIG.v_active)
 @module vbars
     PORT {
         IN  [10] y_pos;
@@ -8,14 +8,18 @@
         OUT [8]  blue;
     }
 
+    CONST {
+        BAR = CONFIG.v_active / 5;
+    }
+
     ASYNCHRONOUS {
-        IF (y_pos < 10'd144) {
+        IF (y_pos < lit(10, BAR)) {
             red <= 8'hFF; green <= 8'h00; blue <= 8'h00;
-        } ELSE { IF (y_pos < 10'd288) {
+        } ELSE { IF (y_pos < lit(10, BAR * 2)) {
             red <= 8'h00; green <= 8'hFF; blue <= 8'h00;
-        } ELSE { IF (y_pos < 10'd432) {
+        } ELSE { IF (y_pos < lit(10, BAR * 3)) {
             red <= 8'h00; green <= 8'h00; blue <= 8'hFF;
-        } ELSE { IF (y_pos < 10'd576) {
+        } ELSE { IF (y_pos < lit(10, BAR * 4)) {
             red <= 8'hFF; green <= 8'hFF; blue <= 8'hFF;
         } ELSE {
             red <= 8'h00; green <= 8'h00; blue <= 8'h00;

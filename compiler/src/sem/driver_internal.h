@@ -332,6 +332,7 @@ void sem_check_project_clock_gen(JZASTNode *project,
 
 void sem_check_project_pins(JZASTNode *project,
                             const JZBuffer *project_symbols,
+                            const JZChipData *chip,
                             JZDiagnosticList *diagnostics);
 
 void sem_check_project_map(JZASTNode *project,

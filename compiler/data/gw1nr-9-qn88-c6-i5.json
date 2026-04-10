@@ -1,15 +1,12 @@
-
 {
   "chipid": "GW1NR-9-QN88-C6-I5",
   "description": "Primitives available on the GW1NR-9-QN88-C6/I5 device.",
-
   "boards": [
     {
       "name": "Tang Nano 9k",
       "url": "https://wiki.sipeed.com/hardware/en/tang/Tang-Nano-9K/Nano-9K.html"
     }
   ],
-
   "resources": {
     "LUT4": 8640,
     "DFF": 6480,
@@ -18,7 +15,6 @@
     "LVDS_PAIRS": 19,
     "GSR": 1
   },
-
   "latches": {
     "source": "DS117-3.2.3E, Table 1-1 p.3 (GW1NR-2: FF+Latch=2304, FF=2016); SUG283-3.5E (Placement rule of FF, LATCH)",
     "FAB": {
@@ -31,11 +27,13 @@
       "description": "I/O Blocks (Input/Output Pins)",
       "D": true,
       "SR": false,
-      "modes": ["Transparent", "Gated"],
+      "modes": [
+        "Transparent",
+        "Gated"
+      ],
       "note": "Registers in I/O logic can be programmed as latches."
     }
   },
-
   "dsp": {
     "source": "DS117-3.2.3E, Table 1-1 p.3, Section 2.6 (DSP Block)",
     "description": "Hardware multipliers and ALUs",
@@ -52,7 +50,6 @@
       "description": "54-bit ALU for DSP accumulation"
     }
   },
-
   "memory": [
     {
       "type": "SDRAM",
@@ -69,13 +66,29 @@
       "r_ports": 1,
       "w_ports": 1,
       "configurations": [
-        { "width": 1,  "depth": 16384 },
-        { "width": 2,  "depth": 8192 },
-        { "width": 4,  "depth": 4096 },
-        { "width": 8,  "depth": 2048 },
-        { "width": 16, "depth": 1024 }
+        {
+          "width": 1,
+          "depth": 16384
+        },
+        {
+          "width": 2,
+          "depth": 8192
+        },
+        {
+          "width": 4,
+          "depth": 4096
+        },
+        {
+          "width": 8,
+          "depth": 2048
+        },
+        {
+          "width": 16,
+          "depth": 1024
+        }
       ]
-    }, {
+    },
+    {
       "type": "BLOCK",
       "source": "DS117-3.2.3E, Table 1-1 p.3, Table 2-5 p.27, Section 2.4 (BSRAM), Note [3]: C version does not support 1/2-bit widths",
       "description": "Block Static Random Access Memory (BSRAM). Each block is 18,432 bits (18 Kbits). Total of 26 blocks providing 468 Kbits of BSRAM.",
@@ -84,90 +97,202 @@
       "total_bits": 479232,
       "max_freq_mhz": 190,
       "note": "26 blocks x 18,432 bits = 479,232 bits. DS117 rounds to 468K. Each block is 18,432 bits (16K data + 2K parity).",
-      "modes": [{
-        "name": "Single Port",
-        "description": "Single port read/write at one clock edge",
-        "ports": [
-            { "id": "A", "read": true, "write": true }
-        ],
-        "configurations": [
-          { "width": 4,  "depth": 4096 },
-          { "width": 8,  "depth": 2048 },
-          { "width": 16, "depth": 1024 },
-          { "width": 32, "depth": 512 },
-          { "width": 9,  "depth": 2048 },
-          { "width": 18, "depth": 1024 },
-          { "width": 36, "depth": 512 }
-        ]
-      },
-      {
-        "name": "Dual Port",
-        "description": "Two independent ports - read/write on each port at different clocks",
-        "ports": [
-            { "id": "A", "read": true, "write": true },
-            { "id": "B", "read": true, "write": true }
-        ],
-        "configurations": [
-          { "width": 4,  "depth": 4096 },
-          { "width": 8,  "depth": 2048 },
-          { "width": 16, "depth": 1024 },
-          { "width": 9,  "depth": 2048 },
-          { "width": 18, "depth": 1024 }
-        ]
-      },
-      {
-        "name": "Semi-Dual Port",
-        "description": "Write on Port A, read on Port B simultaneously",
-        "ports": [
-            { "id": "A", "read": false, "write": true },
-            { "id": "B", "read": true,  "write": false }
-        ],
-        "configurations": [
-          { "width": 4,  "depth": 4096 },
-          { "width": 8,  "depth": 2048 },
-          { "width": 16, "depth": 1024 },
-          { "width": 32, "depth": 512 },
-          { "width": 9,  "depth": 2048 },
-          { "width": 18, "depth": 1024 },
-          { "width": 36, "depth": 512 }
-        ]
-      },
-      {
-        "name": "Read Only Memory",
-        "description": "Read-only with initialization during power-on",
-        "ports": [
-            { "id": "A", "read": true, "write": false }
-        ],
-        "configurations": [
-          { "width": 4,  "depth": 4096 },
-          { "width": 8,  "depth": 2048 },
-          { "width": 16, "depth": 1024 },
-          { "width": 32, "depth": 512 },
-          { "width": 9,  "depth": 2048 },
-          { "width": 18, "depth": 1024 },
-          { "width": 36, "depth": 512 }
-        ]
-      }]
+      "modes": [
+        {
+          "name": "Single Port",
+          "description": "Single port read/write at one clock edge",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 32,
+              "depth": 512
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        },
+        {
+          "name": "Dual Port",
+          "description": "Two independent ports - read/write on each port at different clocks",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            }
+          ]
+        },
+        {
+          "name": "Semi-Dual Port",
+          "description": "Write on Port A, read on Port B simultaneously",
+          "ports": [
+            {
+              "id": "A",
+              "read": false,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 32,
+              "depth": 512
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        },
+        {
+          "name": "Read Only Memory",
+          "description": "Read-only with initialization during power-on",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 32,
+              "depth": 512
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "FLASH",
       "source": "DS117-3.2.3E, Table 1-1 p.3 (User Flash 608K), Section 2.5 (User Flash Memory)",
       "description": "User Flash Memory",
       "quantity": 1,
-      "total_bits": 622592, 
+      "total_bits": 622592,
       "note": "608K User Flash",
-      "modes": [{
-        "name": "Read Only",
-        "ports": [
-            { "id": "A", "read": true, "write": false }
-        ],
-        "configurations": [
-          { "width": 32, "depth": 19456 }
-        ]
-      }]
+      "modes": [
+        {
+          "name": "Read Only",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 32,
+              "depth": 19456
+            }
+          ]
+        }
+      ]
     }
   ],
-  
   "clock_gen": [
     {
       "type": "osc",
@@ -195,20 +320,86 @@
           "description": "OSC has no external clock input"
         }
       },
-
       "parameters": {
         "DIV": {
           "description": "Oscillator divider. Base frequency is ~250MHz divided by DIV.",
           "type": "int",
           "default": 2,
-          "valid": [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120, 122, 124, 126, 128]
+          "valid": [
+            2,
+            4,
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18,
+            20,
+            22,
+            24,
+            26,
+            28,
+            30,
+            32,
+            34,
+            36,
+            38,
+            40,
+            42,
+            44,
+            46,
+            48,
+            50,
+            52,
+            54,
+            56,
+            58,
+            60,
+            62,
+            64,
+            66,
+            68,
+            70,
+            72,
+            74,
+            76,
+            78,
+            80,
+            82,
+            84,
+            86,
+            88,
+            90,
+            92,
+            94,
+            96,
+            98,
+            100,
+            102,
+            104,
+            106,
+            108,
+            110,
+            112,
+            114,
+            116,
+            118,
+            120,
+            122,
+            124,
+            126,
+            128
+          ]
         }
       },
       "outputs": {
         "BASE": {
           "port": "OSCOUT",
           "is_clock": true,
-          "frequency_mhz": { "expr": "250.0 / DIV" }
+          "frequency_mhz": {
+            "expr": "250.0 / DIV"
+          }
         }
       }
     },
@@ -216,10 +407,8 @@
       "type": "pll",
       "source": "DS117-3.2.3E, Table 3-21 p.57-58 (PLL Timing Parameters), Section 2.7 (Clocks); UG286 Gowin Clock User Guide",
       "description": "Phase-Locked Loop block with one reference input, a single VCO, and four physically distinct clock outputs.",
-
       "count": 2,
       "chaining": false,
-
       "map": {
         "verilog-2005": [
           "rPLL #(\n",
@@ -293,7 +482,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the PLL",
@@ -304,7 +492,6 @@
           "max_mhz": 400
         }
       },
-
       "parameters": {
         "IDIV": {
           "description": "Input clock divider select (actual divider = IDIV + 1)",
@@ -313,7 +500,6 @@
           "min": 0,
           "max": 63
         },
-
         "FBDIV": {
           "description": "Feedback divider select (actual multiplier = FBDIV + 1)",
           "type": "int",
@@ -321,22 +507,31 @@
           "min": 0,
           "max": 63
         },
-
         "ODIV": {
           "description": "Output divider select (used directly)",
           "type": "int",
           "default": 8,
-          "valid": [2, 4, 8, 16, 32, 48, 64, 80, 96, 112, 128]
+          "valid": [
+            2,
+            4,
+            8,
+            16,
+            32,
+            48,
+            64,
+            80,
+            96,
+            112,
+            128
+          ]
         },
-
         "PHASESEL": {
-          "description": "Phase tap (0-315° in 45° steps)",
+          "description": "Phase tap (0-315\u00b0 in 45\u00b0 steps)",
           "type": "int",
           "default": 0,
           "min": 0,
           "max": 7
         },
-
         "CLKOUTD_DIV": {
           "description": "Post-divider for DIV output",
           "type": "int",
@@ -345,7 +540,6 @@
           "max": 128
         }
       },
-
       "derived": {
         "FVCO": {
           "description": "Internal Voltage-Controlled Oscillator Frequency",
@@ -358,7 +552,6 @@
           "expr": "toString(PHASESEL * 2, BIN, 4)"
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Primary output",
@@ -369,7 +562,6 @@
             "expr": "FVCO / ODIV"
           }
         },
-
         "PHASE": {
           "description": "Primary output, Phase shifted. Requires PHASESEL",
           "port": "CLKOUTP",
@@ -383,7 +575,6 @@
             "expr": "PHASESEL * 45"
           }
         },
-
         "DIV": {
           "description": "Divided PLL output, Requires CLKOUTD_DIV",
           "port": "CLKOUTD",
@@ -393,7 +584,6 @@
             "expr": "(FVCO / ODIV) / CLKOUTD_DIV"
           }
         },
-
         "DIV3": {
           "description": "Fixed divide-by-3 PLL output",
           "port": "CLKOUT3",
@@ -403,14 +593,12 @@
             "expr": "(FVCO / ODIV) / 3"
           }
         },
-
         "LOCK": {
           "description": "PLL lock indicator, high when PLL is locked",
           "port": "LOCK",
           "is_clock": false
         }
       },
-
       "constraints": [
         {
           "description": "The phased output may only be used if a valid PHASESEL value is provided.",
@@ -421,15 +609,13 @@
           "rule": "DIV output requires CLKOUTD_DIV"
         }
       ]
-    }
-  ,
+    },
     {
       "type": "clkdiv",
       "source": "DS117-3.2.3E, Section 2.7 (Clocks); UG286 Gowin Clock User Guide",
       "mode": "local",
       "description": "Local clock divider (CLKDIV) for IO logic. Divides an input clock by a fixed ratio.",
       "count": 8,
-
       "map": {
         "verilog-2005": [
           "CLKDIV #(\n",
@@ -453,7 +639,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the clock divider",
@@ -462,16 +647,20 @@
           "requires_period": true
         }
       },
-
       "parameters": {
         "DIV_MODE": {
           "description": "Clock division ratio",
           "type": "string",
           "default": "2",
-          "valid": ["2", "3.5", "4", "5", "8"]
+          "valid": [
+            "2",
+            "3.5",
+            "4",
+            "5",
+            "8"
+          ]
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Divided clock output",
@@ -483,15 +672,13 @@
           }
         }
       }
-    }
-  ,
+    },
     {
       "type": "buf",
       "source": "DS117-3.2.3E, Section 2.7 (Clocks); UG286 Gowin Clock User Guide, Section 2.4 (DQCE)",
       "mode": "global",
       "description": "Global clock buffer (DQCE). Promotes a clock onto the global GCLK network with dynamic clock enable.",
       "count": 24,
-
       "map": {
         "verilog-2005": [
           "DQCE u_dqce_%%instance_idx%% (\n",
@@ -508,7 +695,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the buffer",
@@ -523,7 +709,6 @@
           "width": 1
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Buffered clock output on global network",
@@ -535,15 +720,13 @@
           }
         }
       }
-    }
-  ,
+    },
     {
       "type": "buf2",
       "source": "DS117-3.2.3E, Section 2.7 (Clocks); UG286 Gowin Clock User Guide, Section 2.5 (DHCEN)",
       "mode": "local",
       "description": "HCLK clock buffer (DHCEN). Promotes a clock onto the regional HCLK network with dynamic clock enable (active-low CE).",
       "count": 8,
-
       "map": {
         "verilog-2005": [
           "DHCEN u_dhcen_%%instance_idx%% (\n",
@@ -560,7 +743,6 @@
           "end\n"
         ]
       },
-
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the buffer",
@@ -575,7 +757,6 @@
           "width": 1
         }
       },
-
       "outputs": {
         "BASE": {
           "description": "Buffered clock output on HCLK network",
@@ -589,7 +770,6 @@
       }
     }
   ],
-
   "differential": {
     "source": "DS117-3.2.3E, Table 1-1 p.3, Table 3-13 p.52 (Differential I/O DC), Section 2.2 (I/O)",
     "type": "emulated",
@@ -618,6 +798,11 @@
         {
           "description": "4:1 output serializer for LVDS",
           "ratio": 4,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "OSER4 #(\n",
@@ -670,6 +855,11 @@
         {
           "description": "8:1 output serializer for LVDS",
           "ratio": 8,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "OSER8 #(\n",
@@ -734,6 +924,11 @@
         {
           "description": "10:1 output serializer for TMDS/LVDS",
           "ratio": 10,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "OSER10 #(\n",
@@ -789,6 +984,11 @@
         {
           "description": "16:1 output serializer for LVDS",
           "ratio": 16,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "OSER16 #(\n",
@@ -879,6 +1079,11 @@
         {
           "description": "1:4 input deserializer for LVDS",
           "ratio": 4,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "IDES4 #(\n",
@@ -916,6 +1121,11 @@
         {
           "description": "1:8 input deserializer for LVDS",
           "ratio": 8,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "IDES8 #(\n",
@@ -961,6 +1171,11 @@
         {
           "description": "1:10 input deserializer for TMDS/LVDS",
           "ratio": 10,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "IDES10 #(\n",
@@ -1010,6 +1225,11 @@
         {
           "description": "1:16 input deserializer for LVDS",
           "ratio": 16,
+          "required_clocks": [
+            "fclk",
+            "pclk",
+            "reset"
+          ],
           "map": {
             "verilog-2005": [
               "IDES16 #(\n",
@@ -1071,46 +1291,202 @@
       ]
     }
   },
-
   "fixed_pins": [
-    { "pad": "IOL14A", "pin": 10, "name": "DONE", "note": "Configuration done indicator" },
-    { "pad": "R1C4_IOB", "name": "O_sdram_clk", "note": "Embedded SDRAM clock" },
-    { "pad": "R1C9_IOA", "name": "O_sdram_cke", "note": "Embedded SDRAM clock enable" },
-    { "pad": "R1C35_IOB", "name": "O_sdram_cs_n", "note": "Embedded SDRAM chip select" },
-    { "pad": "R1C40_IOB", "name": "O_sdram_cas_n", "note": "Embedded SDRAM column address strobe" },
-    { "pad": "R1C40_IOA", "name": "O_sdram_ras_n", "note": "Embedded SDRAM row address strobe" },
-    { "pad": "R1C44_IOA", "name": "O_sdram_wen_n", "note": "Embedded SDRAM write enable" },
-    { "pad": "R1C44_IOB", "name": "O_sdram_dqm[0]", "note": "Embedded SDRAM data mask" },
-    { "pad": "R1C4_IOA", "name": "O_sdram_dqm[1]", "note": "Embedded SDRAM data mask" },
-    { "pad": "R1C31_IOA", "name": "O_sdram_addr[0]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C28_IOA", "name": "O_sdram_addr[1]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C27_IOA", "name": "O_sdram_addr[2]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C26_IOA", "name": "O_sdram_addr[3]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C22_IOB", "name": "O_sdram_addr[4]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C21_IOB", "name": "O_sdram_addr[5]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C18_IOB", "name": "O_sdram_addr[6]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C18_IOA", "name": "O_sdram_addr[7]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C14_IOB", "name": "O_sdram_addr[8]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C14_IOA", "name": "O_sdram_addr[9]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C31_IOB", "name": "O_sdram_addr[10]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C9_IOB", "name": "O_sdram_addr[11]", "note": "Embedded SDRAM address" },
-    { "pad": "R1C35_IOA", "name": "O_sdram_ba[0]", "note": "Embedded SDRAM bank address" },
-    { "pad": "R1C32_IOA", "name": "O_sdram_ba[1]", "note": "Embedded SDRAM bank address" },
-    { "pad": "R29C26_IOA", "name": "IO_sdram_dq[0]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C27_IOA", "name": "IO_sdram_dq[1]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C35_IOA", "name": "IO_sdram_dq[2]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C36_IOA", "name": "IO_sdram_dq[3]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C37_IOA", "name": "IO_sdram_dq[4]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C38_IOA", "name": "IO_sdram_dq[5]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C39_IOA", "name": "IO_sdram_dq[6]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C40_IOA", "name": "IO_sdram_dq[7]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C16_IOB", "name": "IO_sdram_dq[8]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C17_IOB", "name": "IO_sdram_dq[9]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C18_IOA", "name": "IO_sdram_dq[10]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C18_IOB", "name": "IO_sdram_dq[11]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C19_IOB", "name": "IO_sdram_dq[12]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C20_IOB", "name": "IO_sdram_dq[13]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C21_IOB", "name": "IO_sdram_dq[14]", "note": "Embedded SDRAM data" },
-    { "pad": "R29C22_IOB", "name": "IO_sdram_dq[15]", "note": "Embedded SDRAM data" }
+    {
+      "pad": "IOL14A",
+      "pin": 10,
+      "name": "DONE",
+      "note": "Configuration done indicator"
+    },
+    {
+      "pad": "R1C4_IOB",
+      "name": "O_sdram_clk",
+      "note": "Embedded SDRAM clock"
+    },
+    {
+      "pad": "R1C9_IOA",
+      "name": "O_sdram_cke",
+      "note": "Embedded SDRAM clock enable"
+    },
+    {
+      "pad": "R1C35_IOB",
+      "name": "O_sdram_cs_n",
+      "note": "Embedded SDRAM chip select"
+    },
+    {
+      "pad": "R1C40_IOB",
+      "name": "O_sdram_cas_n",
+      "note": "Embedded SDRAM column address strobe"
+    },
+    {
+      "pad": "R1C40_IOA",
+      "name": "O_sdram_ras_n",
+      "note": "Embedded SDRAM row address strobe"
+    },
+    {
+      "pad": "R1C44_IOA",
+      "name": "O_sdram_wen_n",
+      "note": "Embedded SDRAM write enable"
+    },
+    {
+      "pad": "R1C44_IOB",
+      "name": "O_sdram_dqm[0]",
+      "note": "Embedded SDRAM data mask"
+    },
+    {
+      "pad": "R1C4_IOA",
+      "name": "O_sdram_dqm[1]",
+      "note": "Embedded SDRAM data mask"
+    },
+    {
+      "pad": "R1C31_IOA",
+      "name": "O_sdram_addr[0]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C28_IOA",
+      "name": "O_sdram_addr[1]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C27_IOA",
+      "name": "O_sdram_addr[2]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C26_IOA",
+      "name": "O_sdram_addr[3]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C22_IOB",
+      "name": "O_sdram_addr[4]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C21_IOB",
+      "name": "O_sdram_addr[5]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C18_IOB",
+      "name": "O_sdram_addr[6]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C18_IOA",
+      "name": "O_sdram_addr[7]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C14_IOB",
+      "name": "O_sdram_addr[8]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C14_IOA",
+      "name": "O_sdram_addr[9]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C31_IOB",
+      "name": "O_sdram_addr[10]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C9_IOB",
+      "name": "O_sdram_addr[11]",
+      "note": "Embedded SDRAM address"
+    },
+    {
+      "pad": "R1C35_IOA",
+      "name": "O_sdram_ba[0]",
+      "note": "Embedded SDRAM bank address"
+    },
+    {
+      "pad": "R1C32_IOA",
+      "name": "O_sdram_ba[1]",
+      "note": "Embedded SDRAM bank address"
+    },
+    {
+      "pad": "R29C26_IOA",
+      "name": "IO_sdram_dq[0]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C27_IOA",
+      "name": "IO_sdram_dq[1]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C35_IOA",
+      "name": "IO_sdram_dq[2]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C36_IOA",
+      "name": "IO_sdram_dq[3]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C37_IOA",
+      "name": "IO_sdram_dq[4]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C38_IOA",
+      "name": "IO_sdram_dq[5]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C39_IOA",
+      "name": "IO_sdram_dq[6]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C40_IOA",
+      "name": "IO_sdram_dq[7]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C16_IOB",
+      "name": "IO_sdram_dq[8]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C17_IOB",
+      "name": "IO_sdram_dq[9]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C18_IOA",
+      "name": "IO_sdram_dq[10]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C18_IOB",
+      "name": "IO_sdram_dq[11]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C19_IOB",
+      "name": "IO_sdram_dq[12]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C20_IOB",
+      "name": "IO_sdram_dq[13]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C21_IOB",
+      "name": "IO_sdram_dq[14]",
+      "note": "Embedded SDRAM data"
+    },
+    {
+      "pad": "R29C22_IOB",
+      "name": "IO_sdram_dq[15]",
+      "note": "Embedded SDRAM data"
+    }
   ]
 }

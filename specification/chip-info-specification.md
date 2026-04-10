@@ -333,13 +333,16 @@ An array of clock generator objects. Each describes one type of clock generation
 | `count`          | integer | Yes      | Number of instances available on chip           |
 | `mode`           | string  | No       | Operating mode (e.g., `"local"` for clkdiv)    |
 | `chaining`       | boolean | No       | Whether PLLs can be chained (PLL only)         |
-| `feedback_wire`  | string  | No       | Base name for auto-generated feedback wire (see Section 9.8) |
-| `map`            | object  | Yes      | Backend-specific instantiation templates       |
+| `feedback_wire`  | string  | No       | Base name for auto-generated feedback wire (see Section 9.9) |
+| `map`            | object  | Cond.    | Backend-specific instantiation templates. Required unless `variants` is present |
+| `variants`       | array   | Cond.    | Variant-dispatched backend templates (see Section 9.3). Required unless `map` is present |
 | `parameters`     | object  | Yes      | Configurable parameters                        |
 | `outputs`        | object  | Yes      | Clock output definitions                       |
 | `inputs`         | object  | No       | Clock input definitions (PLL only)             |
 | `derived`        | object  | No       | Derived values computed from parameters        |
 | `constraints`    | array   | No       | Validation constraints                         |
+
+Each `clock_gen` entry must have **exactly one** of `map` or `variants`. Entries whose primitive never changes shape use `map` as in previous revisions. Entries whose vendor exposes several distinct primitive cells for the same physical hardware use `variants` (see Section 9.3).
 
 ### 9.2 `map` Object
 
@@ -371,7 +374,121 @@ Template strings use the `%%name%%` placeholder syntax (see Section 12).
 }
 ```
 
-### 9.3 `parameters` Object
+### 9.3 `variants` Array
+
+Some clock generators are exposed by the vendor as multiple distinct primitive cells that all share the same physical hardware, where the choice of cell depends on how the user wires the generator. For example, the iCE40 PLL is a single physical block, but the vendor provides four primitive cells (`SB_PLL40_CORE`, `SB_PLL40_2F_CORE`, `SB_PLL40_PAD`, `SB_PLL40_2F_PAD`) chosen by whether the reference clock is driven from a pad or from fabric, and whether one or two outputs are used.
+
+The `variants` array lets a single `clock_gen` entry describe all such cells as one logical generator. The compiler inspects how the user wired the generator and automatically selects the matching variant at elaboration time. The `count` field applies to the logical generator as a whole, so a chip with one physical PLL has `count: 1` regardless of how many variant cells it exposes.
+
+A `clock_gen` entry must have **exactly one** of `map` or `variants`. When `variants` is present, the top-level `map` field must be omitted.
+
+Each element of the `variants` array is an object:
+
+| Key    | Type   | Required | Description                                            |
+|--------|--------|----------|--------------------------------------------------------|
+| `when` | object | Yes      | Match conditions under which this variant is selected  |
+| `map`  | object | Yes      | Backend templates for this variant (same format as Section 9.2) |
+
+#### 9.3.1 `when` Object
+
+The `when` object is a set of fact/value pairs. A variant is selected when **every** fact in its `when` matches the corresponding fact computed by the compiler for the user's instantiation.
+
+Each key is a **fact name** drawn from a fixed, documented vocabulary. Unknown keys cause a chip-data load error. Each value is the expected value of that fact; value types are per-fact.
+
+**Fact vocabulary:**
+
+| Fact                    | Value type             | Description |
+|-------------------------|------------------------|-------------|
+| `input.<NAME>.source`   | `"pad"` \| `"fabric"`  | Where the signal wired to input `<NAME>` originates. `"pad"` means the signal traces back to a project-level input pin; `"fabric"` means it is driven by internal logic. This fact is binary: every signal in a JZ-HDL design is either a pad signal or a fabric signal. |
+| `output.count`          | integer                | Number of `OUT`/`WIRE` declarations the user provided on this clock generator unit. |
+
+Additional facts may be added in future revisions as new chips require them. An `input.<NAME>.type` fact (values such as `"osc"`, `"clock"`, `"pin"`, ...) is reserved for future use and is not yet implemented.
+
+#### 9.3.2 Variant Selection Rules
+
+When a `clock_gen` entry uses `variants`:
+
+1. For each unit instantiation, the compiler computes the set of facts for that unit from the user's wiring and declarations.
+2. It walks the `variants` array and finds every variant whose `when` matches all computed facts.
+3. **Exactly one** variant must match. Zero matches or more than one match is a compile-time error reported against the user's `clock_gen` unit.
+
+Additionally, at chip-data load time, the compiler verifies that the `variants` array is **exhaustive and disjoint** over the cartesian product of all fact values referenced anywhere in the entry's `when` clauses. A chip-data file whose variants leave a reachable fact tuple unmatched, or whose variants overlap, is rejected. This catches authoring errors in chip data rather than letting them surface as confusing user-facing diagnostics.
+
+#### 9.3.3 Example
+
+```json
+{
+  "type": "pll",
+  "source": "DS-ICE40-UltraPlus, Section: PLL",
+  "description": "Phase-Locked Loop. The actual primitive cell is selected automatically based on reference clock source and output count.",
+  "count": 1,
+  "inputs": {
+    "REF_CLK": {
+      "description": "Reference clock input to the PLL",
+      "required": true,
+      "width": 1,
+      "requires_period": true,
+      "min_mhz": 10,
+      "max_mhz": 133
+    }
+  },
+  "parameters": {
+    "DIVR":            { "type": "int", "default": 0, "min": 0, "max": 15,  "description": "Reference clock divider" },
+    "DIVF":            { "type": "int", "default": 0, "min": 0, "max": 127, "description": "Feedback divider" },
+    "DIVQ":            { "type": "int", "default": 0, "min": 0, "max": 7,   "description": "Output divider" },
+    "FILTER_RANGE":    { "type": "int", "default": 1, "min": 0, "max": 7,   "description": "PLL filter range" },
+    "PLLOUT_SELECT_A": { "type": "string", "default": "GENCLK", "valid": ["GENCLK", "GENCLK_HALF", "SHIFTREG_0deg", "SHIFTREG_90deg"], "description": "Port A output mux" },
+    "PLLOUT_SELECT_B": { "type": "string", "default": "GENCLK", "valid": ["GENCLK", "GENCLK_HALF", "SHIFTREG_0deg", "SHIFTREG_90deg"], "description": "Port B output mux (2-output variants only)" }
+  },
+  "derived": {
+    "FVCO": {
+      "description": "Internal VCO frequency",
+      "expr": "(1000.0 / REF_CLK_period_ns) * (DIVF + 1) / (DIVR + 1)",
+      "min": 533,
+      "max": 1066
+    }
+  },
+  "outputs": {
+    "BASE_A": { "description": "Primary PLL output",   "port": "PLLOUTGLOBALA", "is_clock": true,  "frequency_mhz": { "expr": "FVCO / (1 << DIVQ)" } },
+    "BASE_B": { "description": "Secondary PLL output", "port": "PLLOUTGLOBALB", "is_clock": true,  "frequency_mhz": { "expr": "FVCO / (1 << DIVQ)" } },
+    "LOCK":   { "description": "PLL lock indicator",   "port": "LOCK",          "is_clock": false }
+  },
+  "variants": [
+    {
+      "when": { "input.REF_CLK.source": "pad", "output.count": 1 },
+      "map": {
+        "verilog-2005": [ "SB_PLL40_PAD #(\n  ...\n) u_pll (...);\n" ],
+        "rtlil":        [ "cell \\SB_PLL40_PAD ...\nend\n" ]
+      }
+    },
+    {
+      "when": { "input.REF_CLK.source": "pad", "output.count": 2 },
+      "map": {
+        "verilog-2005": [ "SB_PLL40_2F_PAD #(\n  ...\n) u_pll (...);\n" ],
+        "rtlil":        [ "cell \\SB_PLL40_2F_PAD ...\nend\n" ]
+      }
+    },
+    {
+      "when": { "input.REF_CLK.source": "fabric", "output.count": 1 },
+      "map": {
+        "verilog-2005": [ "SB_PLL40_CORE #(\n  ...\n) u_pll (...);\n" ],
+        "rtlil":        [ "cell \\SB_PLL40_CORE ...\nend\n" ]
+      }
+    },
+    {
+      "when": { "input.REF_CLK.source": "fabric", "output.count": 2 },
+      "map": {
+        "verilog-2005": [ "SB_PLL40_2F_CORE #(\n  ...\n) u_pll (...);\n" ],
+        "rtlil":        [ "cell \\SB_PLL40_2F_CORE ...\nend\n" ]
+      }
+    }
+  ]
+}
+```
+
+In this example the four variants cover the full 2×2 cartesian product of `(pad|fabric) × (1|2)`, so the exhaustive/disjoint check passes. The user writes a single `pll` unit in their JZ-HDL source and the compiler picks the correct primitive cell at elaboration.
+
+### 9.4 `parameters` Object
 
 An object mapping parameter names to their definitions. Each parameter:
 
@@ -403,7 +520,7 @@ A parameter uses either `min`/`max` (inclusive range) or `valid` (enumerated set
 }
 ```
 
-### 9.4 `inputs` Object
+### 9.5 `inputs` Object
 
 An object mapping input names to their definitions. Each key is the input name used in the JZ-HDL `IN <input_name> <signal>` syntax. Used for clock generators that require external signals (reference clocks, enables, etc.).
 
@@ -461,7 +578,7 @@ When `required` is `false` and `default` is provided, the JZ-HDL `IN` line for t
 }
 ```
 
-### 9.5 `derived` Object
+### 9.6 `derived` Object
 
 An object mapping derived value names to their definitions. Derived values are computed from parameters and inputs and used in output frequency expressions and constraint checking.
 
@@ -487,7 +604,7 @@ An object mapping derived value names to their definitions. Derived values are c
 }
 ```
 
-### 9.6 `outputs` Object
+### 9.7 `outputs` Object
 
 An object mapping output names to their definitions. Each output represents either a clock signal or a status signal produced by the generator.
 
@@ -527,7 +644,7 @@ Non-clock outputs (e.g., `LOCK`) set `is_clock` to `false` and omit `frequency_m
 }
 ```
 
-### 9.7 `constraints` Array
+### 9.8 `constraints` Array
 
 An array of constraint objects for validation.
 
@@ -545,7 +662,7 @@ An array of constraint objects for validation.
 ]
 ```
 
-### 9.8 `feedback_wire` Field
+### 9.9 `feedback_wire` Field
 
 Some clock generators (PLLs, MMCMs) require an internal feedback path where the feedback output must be wired back to the feedback input. This is hardware plumbing that the user never configures or connects — the compiler handles it automatically.
 
@@ -627,11 +744,14 @@ An array of serializer (or deserializer) option objects, ordered by ascending ra
 
 Each element:
 
-| Key           | Type    | Required | Description                           |
-|---------------|---------|----------|---------------------------------------|
-| `description` | string  | Yes      | What this primitive does              |
-| `ratio`       | integer | Yes      | Serialization/deserialization ratio   |
-| `map`         | object  | Yes      | Backend templates                     |
+| Key               | Type    | Required | Description                                                        |
+|-------------------|---------|----------|--------------------------------------------------------------------|
+| `description`     | string  | Yes      | What this primitive does                                           |
+| `ratio`           | integer | Yes      | Serialization/deserialization ratio                                |
+| `required_clocks` | array   | Yes      | Clock/reset signals the primitive needs; subset of `["fclk", "pclk", "reset"]` |
+| `map`             | object  | Yes      | Backend templates                                                  |
+
+The `required_clocks` array tells the compiler which pin attributes (`fclk`, `pclk`, `reset`) are mandatory for pins that use this serializer or deserializer. For example, a simple DDR primitive (ratio 2) may only require `["fclk"]`, while a 10:1 serializer typically requires `["fclk", "pclk", "reset"]`. The compiler uses this field to validate differential pin declarations in the project file, rather than hardcoding which attributes are required.
 
 ### 10.3 `clock` Object
 
@@ -754,7 +874,7 @@ Template strings in `map` arrays use `%%name%%` delimiters to mark substitution 
 **Input signal placeholders** reference input names from the `inputs` object:
 - `%%refclk%%` - Reference clock signal
 
-**Feedback wire placeholder** references the `feedback_wire` field (see Section 9.8):
+**Feedback wire placeholder** references the `feedback_wire` field (see Section 9.9):
 - `%%<feedback_wire>%%` - Auto-generated feedback wire name (e.g., `%%clkfb%%` resolves to `clkfb_0_0`)
 
 **Compiler-generated placeholders**:

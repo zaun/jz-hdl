@@ -1,5 +1,5 @@
 // This Verilog was transpiled from JZ-HDL.
-// jz-hdl version: Version 0.1.4 (b8646b5)
+// jz-hdl version: Version 0.1.5 (aa10d91)
 // Intended for use with yosys.
 
 `default_nettype none
@@ -100,9 +100,6 @@ module top (
     wire CLK_C;
     wire CLK_D;
     wire jz_unused_pll_LOCK_cg0_u0;
-    wire jz_unused_pll_PHASE_cg0_u0;
-    wire jz_unused_pll_DIV_cg0_u0;
-    wire jz_unused_pll_DIV3_cg0_u0;
     wire clkfb_0_0;
 
     // CLOCK_GEN PLL instantiation (from chip data)
@@ -146,9 +143,6 @@ module top (
     .PWRDWN(1'b0)
 );
     wire jz_unused_pll_LOCK_cg0_u1;
-    wire jz_unused_pll_PHASE_cg0_u1;
-    wire jz_unused_pll_DIV_cg0_u1;
-    wire jz_unused_pll_DIV3_cg0_u1;
     wire clkfb_0_1;
 
     // CLOCK_GEN PLL instantiation (from chip data)
@@ -192,9 +186,6 @@ module top (
     .PWRDWN(1'b0)
 );
     wire jz_unused_pll_LOCK_cg0_u2;
-    wire jz_unused_pll_PHASE_cg0_u2;
-    wire jz_unused_pll_DIV_cg0_u2;
-    wire jz_unused_pll_DIV3_cg0_u2;
     wire clkfb_0_2;
 
     // CLOCK_GEN PLL2 instantiation (from chip data)

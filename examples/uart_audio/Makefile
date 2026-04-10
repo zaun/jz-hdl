@@ -59,7 +59,7 @@ pa35t-edu:
 help:
 	@echo "Boards:"
 	@echo "  tang_nano_9k"
-	@echo "  tang_nano_20k"
+# 	@echo "  tang_nano_20k"
 	@echo "  pa35t-edu"
 	@echo ""
 	@echo "Commands:"
