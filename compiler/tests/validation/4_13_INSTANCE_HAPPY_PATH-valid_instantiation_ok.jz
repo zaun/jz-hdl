@@ -1,7 +1,7 @@
 // INSTANCE_HAPPY_PATH: Happy path for Section 4.13 module instantiation.
 // Exercises simple instantiation, OVERRIDE constants, no-connect output,
 // instance arrays with IDX and broadcast mapping, BUS port binding,
-// literal tie-off on IN, and port referencing via inst.port syntax.
+// and literal tie-off on IN.
 
 @project INSTANCE_HAPPY_PATH_valid_instantiation_ok
     CONFIG {
@@ -137,7 +137,7 @@
     };
 
     ASYNCHRONOUS {
-        // Feature 7: Port referencing via inst.port
-        dout = inst_simple.data;
+        // Use wired output from inst_simple
+        dout = result;
     }
 @endmod

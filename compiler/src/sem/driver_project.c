@@ -1918,7 +1918,20 @@ static void resolve_qualified_identifier_node(JZASTNode *node,
                                         "instance input port is not readable from parent module");
                         return;
                     }
-                    break;
+                    /* BUS ports: bulk wiring via inst.bus_port is allowed. */
+                    if (strcmp(dir, "BUS") == 0) {
+                        break;
+                    }
+                    /* OUT/INOUT port: access via inst.port is not
+                     * synthesizable. The output must be wired through
+                     * the @new port binding instead.
+                     */
+                    sem_report_rule(diagnostics,
+                                    node->loc,
+                                    "INSTANCE_PORT_NOT_ACCESSIBLE",
+                                    "instance port not accessible in synthesizable code; "
+                                    "wire the output via the @new binding");
+                    return;
                 }
             }
             if (found) break;

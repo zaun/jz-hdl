@@ -26,7 +26,7 @@
     }
 
     @new inst1 ChildMod {
-        IN  [8] din = inst1.data;
+        IN  [8] din = 8'h00;
         OUT [8] data = _;
     };
 
