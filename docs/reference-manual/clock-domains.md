@@ -133,80 +133,57 @@ CDC {
 
 ## Examples
 
-Single‑bit synchronizer (2 stages default):
-```text
-REGISTER {
-  event_flag [1] = 1'b0;
-}
+### Single‑bit synchronizer (BIT, 2 stages default)
 
-CDC {
-  BIT event_flag (clk_io) => event_flag_cpu (clk_cpu);
-}
+A 1‑bit `event_flag` is written in the `clk_a` domain and read via the synchronized alias `event_flag_sync` in the `clk_b` domain. The compiler inserts a 2‑stage flip‑flop chain.
 
-SYNCHRONOUS(CLK=clk_io) {
-  // source domain: write-only here
-  IF (some_condition) {
-    event_flag = 1'b1;
-  } ELSE {
-    event_flag = 1'b0;
-  }
-}
+::: code-group
 
-SYNCHRONOUS(CLK=clk_cpu) {
-  // destination domain: read the alias
-  IF (event_flag_cpu) {
-    // handle event (synchronized)
-  }
-}
-```
+<<< @/reference-manual/cdc-examples/bit/cdc_bit.jz
+<<< @/reference-manual/cdc-examples/bit/project.jz
+<<< @/reference-manual/cdc-examples/bit/project.v[Generated Verilog]
+<<< @/reference-manual/cdc-examples/bit/project.il[Generated RTLIL]
 
-Multi‑bit Gray‑code bus:
-```text
-REGISTER {
-  gray_ptr [8] = 8'h00; // gray-coded pointer in producer domain
-}
+:::
 
-CDC {
-  BUS[3] gray_ptr (clk_prod) => gray_ptr_cons (clk_cons);
-}
+### Multi‑bit Gray‑code bus (BUS, 3 stages)
 
-SYNCHRONOUS(CLK=clk_cons) {
-  // safe if gray_ptr follows Gray-code discipline
-  next_read_ptr = gray_ptr_cons;
-}
-```
+An 8‑bit `gray_ptr` register crosses from `clk_a` to `clk_b` using a 3‑stage BUS synchronizer. This is safe only when the source follows Gray‑code or single‑bit‑change discipline.
 
-Wide arbitrary data via FIFO:
-```text
-REGISTER {
-  packet_word [64] = 64'h0000_0000_0000_0000;
-}
+::: code-group
 
-CDC {
-  FIFO[4] packet_word (clk_src) => packet_view (clk_dst);
-}
+<<< @/reference-manual/cdc-examples/bus/cdc_bus.jz
+<<< @/reference-manual/cdc-examples/bus/project.jz
+<<< @/reference-manual/cdc-examples/bus/project.v[Generated Verilog]
+<<< @/reference-manual/cdc-examples/bus/project.il[Generated RTLIL]
 
-SYNCHRONOUS(CLK=clk_dst) {
-  // consumer reads packet_view; FIFO ensures safe transfer
-  data_out <= packet_view;
-}
-```
+:::
 
-Raw unsynchronized view (quasi‑static config register):
-```text
-REGISTER {
-  config_word [16] = 16'h0000; // written once at startup, stable thereafter
-}
+### Wide arbitrary data via FIFO (FIFO, 4 stages)
 
-CDC {
-  RAW config_word (clk_cpu) => config_view (clk_periph);
-}
+A 64‑bit `packet_word` register crosses from `clk_a` to `clk_b` using a 4‑stage FIFO synchronizer. Unlike BUS, FIFO handles arbitrary multi‑bit changes safely.
 
-SYNCHRONOUS(CLK=clk_periph) {
-  // safe because config_word is quasi-static (written once, then stable)
-  local_config <= config_view;
-}
-```
+::: code-group
+
+<<< @/reference-manual/cdc-examples/fifo/cdc_fifo.jz
+<<< @/reference-manual/cdc-examples/fifo/project.jz
+<<< @/reference-manual/cdc-examples/fifo/project.v[Generated Verilog]
+<<< @/reference-manual/cdc-examples/fifo/project.il[Generated RTLIL]
+
+:::
+
+### Raw unsynchronized view (RAW, quasi‑static config)
+
+A 16‑bit `config_word` register crosses unsynchronized via RAW. No CDC logic is inserted — the designer guarantees the value is stable when read.
+
+::: code-group
+
+<<< @/reference-manual/cdc-examples/raw/cdc_raw.jz
+<<< @/reference-manual/cdc-examples/raw/project.jz
+<<< @/reference-manual/cdc-examples/raw/project.v[Generated Verilog]
+<<< @/reference-manual/cdc-examples/raw/project.il[Generated RTLIL]
+
+:::
 
 ## Common Errors and Diagnostics
 

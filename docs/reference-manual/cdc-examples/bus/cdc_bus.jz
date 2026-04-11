@@ -1,0 +1,35 @@
+// CDC BUS example: multi-bit Gray-code synchronizer (3 stages)
+//
+// Demonstrates crossing an 8-bit Gray-coded pointer from clk_a to clk_b.
+// The BUS synchronizer safely transfers multi-bit values that follow
+// Gray-code discipline (only one bit changes at a time).
+
+@module cdc_bus
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] rst_n;
+        OUT [6] leds;
+    }
+
+    REGISTER {
+        gray_ptr [8] = 8'h00;
+        read_ptr [8] = 8'h00;
+    }
+
+    CDC {
+        BUS[3] gray_ptr (clk_a) => gray_ptr_sync (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        leds <= read_ptr[5:0];
+    }
+
+    SYNCHRONOUS(CLK=clk_a RESET=rst_n RESET_ACTIVE=Low) {
+        gray_ptr <= gray_ptr + 8'h01;
+    }
+
+    SYNCHRONOUS(CLK=clk_b RESET=rst_n RESET_ACTIVE=Low) {
+        read_ptr <= gray_ptr_sync;
+    }
+@endmod

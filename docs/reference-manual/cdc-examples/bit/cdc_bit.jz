@@ -1,0 +1,43 @@
+// CDC BIT example: single-bit synchronizer (2 stages default)
+//
+// Demonstrates crossing a 1-bit flag from clk_a to clk_b.
+// The BIT synchronizer inserts a 2-stage flip-flop chain.
+
+@module cdc_bit
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] rst_n;
+        IN  [1] trigger;
+        OUT [1] led;
+    }
+
+    REGISTER {
+        event_flag [1] = 1'b0;
+        cpu_seen   [1] = 1'b0;
+    }
+
+    CDC {
+        BIT event_flag (clk_a) => event_flag_sync (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        led <= cpu_seen;
+    }
+
+    SYNCHRONOUS(CLK=clk_a RESET=rst_n RESET_ACTIVE=Low) {
+        IF (trigger) {
+            event_flag <= 1'b1;
+        } ELSE {
+            event_flag <= 1'b0;
+        }
+    }
+
+    SYNCHRONOUS(CLK=clk_b RESET=rst_n RESET_ACTIVE=Low) {
+        IF (event_flag_sync) {
+            cpu_seen <= 1'b1;
+        } ELSE {
+            cpu_seen <= 1'b0;
+        }
+    }
+@endmod

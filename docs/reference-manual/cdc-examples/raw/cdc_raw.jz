@@ -1,0 +1,36 @@
+// CDC RAW example: unsynchronized quasi-static register
+//
+// Demonstrates a RAW crossing for a configuration register written
+// once at startup and stable thereafter. No synchronization logic
+// is inserted — the designer guarantees the value is stable when read.
+
+@module cdc_raw
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] rst_n;
+        OUT [6] leds;
+    }
+
+    REGISTER {
+        config_word  [16] = 16'hA5A5;
+        local_config [16] = 16'h0000;
+    }
+
+    CDC {
+        RAW config_word (clk_a) => config_view (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        leds <= local_config[5:0];
+    }
+
+    SYNCHRONOUS(CLK=clk_a RESET=rst_n RESET_ACTIVE=Low) {
+        // config_word is quasi-static: written once, stable thereafter
+        config_word <= config_word;
+    }
+
+    SYNCHRONOUS(CLK=clk_b RESET=rst_n RESET_ACTIVE=Low) {
+        local_config <= config_view;
+    }
+@endmod

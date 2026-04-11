@@ -1,0 +1,35 @@
+// CDC FIFO example: wide arbitrary data transfer (4 stages)
+//
+// Demonstrates crossing a 64-bit data word from clk_a to clk_b.
+// The FIFO synchronizer handles arbitrary multi-bit changes safely,
+// unlike BUS which requires Gray-code discipline.
+
+@module cdc_fifo
+    PORT {
+        IN  [1] clk_a;
+        IN  [1] clk_b;
+        IN  [1] rst_n;
+        OUT [6] leds;
+    }
+
+    REGISTER {
+        packet_word [64] = 64'h0000_0000_0000_0000;
+        data_out    [64] = 64'h0000_0000_0000_0000;
+    }
+
+    CDC {
+        FIFO[4] packet_word (clk_a) => packet_view (clk_b);
+    }
+
+    ASYNCHRONOUS {
+        leds <= data_out[5:0];
+    }
+
+    SYNCHRONOUS(CLK=clk_a RESET=rst_n RESET_ACTIVE=Low) {
+        packet_word <= packet_word + 64'h0000_0000_0000_0001;
+    }
+
+    SYNCHRONOUS(CLK=clk_b RESET=rst_n RESET_ACTIVE=Low) {
+        data_out <= packet_view;
+    }
+@endmod

@@ -1,0 +1,49 @@
+@project(CHIP="GW1NR-9-QN88-C6-I5") CDC_FIFO_EXAMPLE
+    @import "cdc_fifo.jz"
+
+    CLOCKS {
+        SCLK     = { period=37.04 }; // 27MHz
+        CLK_FAST;                     // 108MHz (PLL)
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+        DONE   = { standard=LVCMOS33 };
+        KEY[1] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK   = 52;
+        KEY[0] = 3;
+        LED[0] = 10;
+        LED[1] = 11;
+        LED[2] = 13;
+        LED[3] = 14;
+        LED[4] = 15;
+        LED[5] = 16;
+        DONE   = IOL14A;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN  REF_CLK SCLK;
+            OUT BASE    CLK_FAST;
+            CONFIG {
+                IDIV  = 2;
+                FBDIV = 7;
+                ODIV  = 8;
+            };
+        };
+    }
+
+    @top cdc_fifo {
+        IN  [1] clk_a = SCLK;
+        IN  [1] clk_b = CLK_FAST;
+        IN  [1] rst_n = KEY[0];
+        OUT [6] leds  = ~LED;
+    }
+@endproj
