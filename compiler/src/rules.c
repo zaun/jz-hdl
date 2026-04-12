@@ -324,6 +324,7 @@ const JZRuleInfo jz_rule_table[] = {
     { "CLOCK_GEN_RULES", "CLOCK_GEN_OUTPUT_IS_INPUT_PIN",          0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN output clock must not be declared as IN_PINS" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_MULTIPLE_DRIVERS",             0, JZ_RULE_MODE_ERR, "S6.4.1 Clock is driven by multiple CLOCK_GEN outputs" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_INPUT_IS_SELF_OUTPUT",         0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN input clock is an output of the same CLOCK_GEN block" },
+    { "CLOCK_GEN_RULES", "CLOCK_GEN_PAD_EXCLUSIVE_CONFLICT",      0, JZ_RULE_MODE_ERR, "S6.4.1 PLL reference clock pin cannot also be used as a logic signal in @top on pad_exclusive chips" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_INVALID_TYPE",                 0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN generator must be PLL, DLL, CLKDIV, OSC, or BUF (with optional numeric suffix)" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_MISSING_INPUT",                0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN unit must have an IN clock declaration" },
     { "CLOCK_GEN_RULES", "CLOCK_GEN_REQUIRED_INPUT_MISSING",      0, JZ_RULE_MODE_ERR, "S6.4.1 CLOCK_GEN required input is not provided" },

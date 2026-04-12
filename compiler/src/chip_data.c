@@ -1441,6 +1441,8 @@ static int jz_chip_parse_clock_gen_object(const char *json,
     int gen_count = 0;
     int has_chaining = 0;
     int chaining = 0;
+    int has_pad_exclusive = 0;
+    int pad_exclusive = 0;
 
     int cur = obj_index + 1;
     while (cur < count && toks[cur].start < obj->end) {
@@ -1475,6 +1477,13 @@ static int jz_chip_parse_clock_gen_object(const char *json,
                 if (json[val->start] == 't') bval = 1;
                 has_chaining = 1;
                 chaining = bval;
+            }
+        } else if (jz_json_token_eq(json, key, "pad_exclusive")) {
+            int bval = 0;
+            if (val->type == JSMN_PRIMITIVE) {
+                if (json[val->start] == 't') bval = 1;
+                has_pad_exclusive = 1;
+                pad_exclusive = bval;
             }
         } else if (jz_json_token_eq(json, key, "feedback_wire")) {
             if (feedback_wire) free(feedback_wire);
@@ -1591,6 +1600,8 @@ static int jz_chip_parse_clock_gen_object(const char *json,
         cg.count = gen_count;
         cg.has_chaining = has_chaining;
         cg.chaining = chaining;
+        cg.has_pad_exclusive = has_pad_exclusive;
+        cg.pad_exclusive = pad_exclusive;
         if (constraints_idx >= 0 && toks[constraints_idx].type == JSMN_ARRAY) {
             const jsmntok_t *carr = &toks[constraints_idx];
             int ci = constraints_idx + 1;
@@ -2928,6 +2939,16 @@ int jz_chip_clock_gen_chaining(const JZChipData *data, const char *type,
     const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
     if (!cg || !cg->has_chaining) return 0;
     if (out_chaining) *out_chaining = cg->chaining;
+    return 1;
+}
+
+int jz_chip_clock_gen_pad_exclusive(const JZChipData *data, const char *type,
+                                     int *out_pad_exclusive)
+{
+    if (!data || !type) return 0;
+    const JZChipClockGen *cg = jz_chip_find_clock_gen(data, type);
+    if (!cg || !cg->has_pad_exclusive) return 0;
+    if (out_pad_exclusive) *out_pad_exclusive = cg->pad_exclusive;
     return 1;
 }
 

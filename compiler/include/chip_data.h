@@ -181,6 +181,8 @@ typedef struct JZChipClockGen {
     int       count;            /**< Number of this generator type available on the chip. */
     int       has_chaining;     /**< Non-zero if chaining field was specified. */
     int       chaining;         /**< Non-zero if generators can be chained. */
+    int       has_pad_exclusive; /**< Non-zero if pad_exclusive field was specified. */
+    int       pad_exclusive;     /**< Non-zero if PAD variant consumes the IO cell exclusively. */
     JZBuffer  constraints;      /**< Array of char* constraint rule strings. */
     char     *feedback_wire;    /**< Optional feedback wire base name (e.g., "clkfb"). NULL if not needed. */
     JZBuffer  variants;         /**< Array of JZChipClockGenVariant entries. Empty if using legacy top-level `map`. */
@@ -732,6 +734,17 @@ int jz_chip_clock_gen_count(const JZChipData *data, const char *type);
  */
 int jz_chip_clock_gen_chaining(const JZChipData *data, const char *type,
                                 int *out_chaining);
+
+/**
+ * @brief Query whether a clock generator's PAD variant exclusively consumes
+ *        the IO cell (preventing a separate SB_IO on the same pin).
+ * @param data Loaded chip data.
+ * @param type Generator type (e.g., "pll").
+ * @param[out] out_pad_exclusive Set to non-zero if pad_exclusive is true.
+ * @return Non-zero if the field was specified, 0 if absent.
+ */
+int jz_chip_clock_gen_pad_exclusive(const JZChipData *data, const char *type,
+                                     int *out_pad_exclusive);
 
 /**
  * @brief Get the number of constraint rules for a clock generator type.

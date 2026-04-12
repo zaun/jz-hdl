@@ -1,0 +1,69 @@
+@project(CHIP="GW2AR-18-QN88-C8-I7") CLOCKS_CDC
+    @import "mem.jz"
+    @import "clocks.jz"
+
+    CONFIG {
+        SLOW_CLK_MHZ = 27;
+        FAST_CLK_MHZ = 108;
+    }
+
+    CLOCKS {
+        SCLK  = { period=37.04 }; // 27MHz clock
+        CLK_FAST;
+    }
+
+    IN_PINS {
+        SCLK   = { standard=LVCMOS33 };
+        DONE   = { standard=LVCMOS33 };
+        KEY[2] = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[6] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        // System Clock 27MHz
+        SCLK = 4;
+
+        // Buttons
+        KEY[0] = 87;
+        KEY[1] = 88;
+
+        // LEDs (active low)
+        LED[0] = 15;
+        LED[1] = 16;
+        LED[2] = 17;
+        LED[3] = 18;
+        LED[4] = 19;
+        LED[5] = 20;
+
+        // DONE (POR)
+        DONE = IOR32B;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN  REF_CLK SCLK;     // 27 MHz input
+            OUT BASE    CLK_FAST;  // 108 MHz
+
+            CONFIG {
+                IDIV = 2;
+                FBDIV = 7;
+                ODIV = 8;
+            };
+        };
+    }
+
+    @top clocks {
+        OVERRIDE {
+            FAST_CLK_MHZ = CONFIG.FAST_CLK_MHZ;
+            SLOW_CLK_MHZ = CONFIG.SLOW_CLK_MHZ;
+        }
+        IN  [1] clk_slow = SCLK;
+        IN  [1] clk_fast = CLK_FAST;
+        IN  [1] por      = DONE;
+        IN  [1] rst_n    = ~KEY[0];
+        OUT [6] leds     = ~LED;
+    }
+@endproj

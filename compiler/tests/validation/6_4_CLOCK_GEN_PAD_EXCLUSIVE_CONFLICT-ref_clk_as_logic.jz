@@ -1,0 +1,62 @@
+// CLOCK_GEN_PAD_EXCLUSIVE_CONFLICT: On pad_exclusive chips (iCE40), the PLL
+// ref clock pin cannot also be used as a direct logic signal in @top.
+// Users must use the PLL's BASE output instead.
+
+@project(CHIP="ICE40UP-5K-SG48") PAD_EXCLUSIVE_CONFLICT_test
+    CLOCKS {
+        SCLK = { period=83.33 };
+        CLK_FAST;
+    }
+
+    IN_PINS {
+        SCLK = { standard=LVCMOS33 };
+    }
+
+    OUT_PINS {
+        LED[1] = { standard=LVCMOS33, drive=8 };
+    }
+
+    MAP {
+        SCLK = 35;
+        LED[0] = 40;
+    }
+
+    CLOCK_GEN {
+        PLL {
+            IN REF_CLK SCLK;
+            OUT PRIMARY CLK_FAST;
+            CONFIG {
+                DIVR = 0;
+                DIVF = 63;
+                DIVQ = 4;
+                FILTER_RANGE = 1;
+            };
+        };
+    }
+
+    @top TopMod {
+        IN  [1] slow = SCLK;
+        IN  [1] fast = CLK_FAST;
+        OUT [1] data = LED;
+    }
+@endproj
+
+@module TopMod
+    PORT {
+        IN  [1] slow;
+        IN  [1] fast;
+        OUT [1] data;
+    }
+
+    REGISTER {
+        r [1] = 1'b0;
+    }
+
+    ASYNCHRONOUS {
+        data = r;
+    }
+
+    SYNCHRONOUS(CLK=fast) {
+        r <= ~r;
+    }
+@endmod

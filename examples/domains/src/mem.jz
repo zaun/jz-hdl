@@ -1,0 +1,43 @@
+// Simple BRAM module. 8-bit data, 4-bit address (16 locations).
+
+@module mem
+    PORT {
+        IN  [1] clk;
+        IN  [1] rst_n;
+
+        // Write port
+        IN  [4] wr_addr;
+        IN  [8] wr_data;
+        IN  [1] wr_en;
+
+        // Read port
+        IN  [4] rd_addr;
+        OUT [8] rd_data;
+    }
+
+    MEM(TYPE=BLOCK) {
+        ram [8] [16] = 8'h00 {
+            IN  write;
+            OUT read SYNC;
+        };
+    }
+
+    REGISTER {
+        rd_out [8] = 8'h00;
+    }
+
+    ASYNCHRONOUS {
+        rd_data <= rd_out;
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+        // Read: present address, capture output
+        ram.read.addr <= rd_addr;
+        rd_out <= ram.read.data;
+
+        // Write: store data when enabled
+        IF (wr_en == 1'b1) {
+            ram.write[wr_addr] <= wr_data;
+        }
+    }
+@endmod

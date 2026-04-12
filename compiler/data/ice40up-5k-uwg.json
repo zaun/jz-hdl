@@ -270,6 +270,7 @@
       "description": "Phase-Locked Loop. One physical PLL block; the underlying primitive cell (SB_PLL40_CORE, SB_PLL40_2F_CORE, SB_PLL40_PAD, or SB_PLL40_2F_PAD) is selected automatically from the reference clock source (pad vs fabric) and the number of declared outputs (one vs two).",
       "count": 1,
       "chaining": false,
+      "pad_exclusive": true,
       "inputs": {
         "REF_CLK": {
           "description": "Reference clock input to the PLL. When driven from a project input pin (pad), the compiler selects a PAD variant and connects the signal to PACKAGEPIN. When driven from fabric, the compiler selects a CORE variant and connects the signal to REFERENCECLK.",

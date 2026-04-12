@@ -333,6 +333,7 @@ An array of clock generator objects. Each describes one type of clock generation
 | `count`          | integer | Yes      | Number of instances available on chip           |
 | `mode`           | string  | No       | Operating mode (e.g., `"local"` for clkdiv)    |
 | `chaining`       | boolean | No       | Whether PLLs can be chained (PLL only)         |
+| `pad_exclusive`  | boolean | No       | Whether the PAD variant exclusively owns the IO cell on the reference clock pin (see Section 9.10) |
 | `feedback_wire`  | string  | No       | Base name for auto-generated feedback wire (see Section 9.9) |
 | `map`            | object  | Cond.    | Backend-specific instantiation templates. Required unless `variants` is present |
 | `variants`       | array   | Cond.    | Variant-dispatched backend templates (see Section 9.3). Required unless `map` is present |
@@ -705,6 +706,21 @@ PLLE2_BASE #(...) u_pll_0_0 (
 ```
 
 If `feedback_wire` is omitted, no feedback wire is generated and the placeholder is not available.
+
+### 9.10 `pad_exclusive`
+
+When `true`, indicates that the PAD variant of this clock generator exclusively consumes the IO cell on the reference clock pin. This is relevant for architectures (such as iCE40) where the PLL's PAD primitive and the IO buffer (e.g., `SB_IO`) share the same physical BEL and cannot coexist.
+
+When this flag is set and the compiler selects a PAD variant (i.e., the template contains `PACKAGEPIN`) **and** the reference clock pin is also bound to a top-module port, the compiler:
+
+1. Removes the pin from the wrapper module's port list (preventing the synthesis tool from inserting an IO buffer).
+2. Declares the pin as an internal `wire` instead. The PLL's `PACKAGEPIN` (which is `inout`) connects this wire to the physical pad.
+3. Omits the pin from PCF constraint output.
+4. Uses `get_nets` instead of `get_ports` for SDC clock constraints referencing that pin.
+
+The reference clock signal reaches fabric logic through the GBIN (Global Buffer Input) path, which is a dedicated pad-to-global-network route that does not conflict with the PLL.
+
+If `pad_exclusive` is `false` or omitted, no special handling is applied.
 
 ## 10. `differential`
 

@@ -1,0 +1,163 @@
+// Clock domain crossing example.
+//
+// A slow-domain state machine writes values into a fast-domain BRAM,
+// then reads them back in a loop to blink LEDs.
+//
+// CDC crossings used:
+//   HANDSHAKE  slow→fast  write command (addr + data)
+//   BUS        slow→fast  read address
+//   MCP        fast→slow  read data
+
+@module clocks
+    CONST {
+        FAST_CLK_MHZ = 100;
+        SLOW_CLK_MHZ = 27;
+        // Delay counter: pause between reads so LEDs are visible
+        DELAY_WIDTH = clog2(SLOW_CLK_MHZ) + 19;
+        DELAY_MAX = (1 << DELAY_WIDTH) - 1;
+    }
+
+    PORT {
+        IN  [1] clk_slow;
+        IN  [1] clk_fast;
+        IN  [1] por;
+        IN  [1] rst_n;
+        OUT [6] leds;
+    }
+
+    WIRE {
+        reset       [1];
+        ram_rd_data [8];
+    }
+
+    // -- Slow domain registers --
+    REGISTER {
+        state       [3] = 3'd0;
+        addr        [4] = 4'd0;
+        wr_cmd      [12] = 12'd0;  // {addr[3:0], data[7:0]}
+        rd_addr_reg [4] = 4'd0;
+        led_reg     [6] = 6'b0;
+        delay       [DELAY_WIDTH] = DELAY_WIDTH'b0;
+        wr_wait     [4] = 4'd0;
+    }
+
+    // -- Fast domain registers --
+    REGISTER {
+        wr_pending   [1] = 1'b0;
+        wr_cmd_prev  [12] = 12'd0;
+        rd_data_reg  [8] = 8'h00;
+    }
+
+    // HANDSHAKE — Full req/ack protocol for multi-bit transfers. Source latches
+    // data and asserts req; destination syncs req, captures data, asserts ack;
+    // source syncs ack and deasserts req. Every value is delivered exactly once.
+    // Variable latency depending on clock ratio. Best for infrequent commands
+    // where no transfer may be lost.
+    //
+    // BUS — Gray-code or dual-register synchronizer for multi-bit values.
+    // Source updates freely; destination sees a safely-sampled snapshot after
+    // a fixed n_stages cycle latency. Intermediate values may be skipped.
+    // Best for continuously-updated signals where only the latest value
+    // matters (e.g. an address or status word).
+    //
+    // MCP (Multi-Cycle Path) — Source holds data stable and asserts enable;
+    // destination syncs the enable and samples data when seen. Uses the same
+    // req/ack handshake internally for safe handoff. Similar to HANDSHAKE but
+    // formulated as a multi-cycle path constraint. Good for data that changes
+    // infrequently and must arrive intact.
+    CDC {
+        // -- CDC: write command (slow → fast) via handshake --
+        HANDSHAKE wr_cmd (clk_slow) => wr_cmd_sync (clk_fast);
+        // -- CDC: read address (slow → fast) via bus --
+        BUS rd_addr_reg (clk_slow) => rd_addr_sync (clk_fast);
+        // -- CDC: read data (fast → slow) via MCP --
+        MCP rd_data_reg (clk_fast) => rd_data_sync (clk_slow);
+    }
+
+    // -- Instantiate BRAM in fast domain --
+    @new ram mem {
+        IN  [1] clk     = clk_fast;
+        IN  [1] rst_n   = reset;
+        IN  [4] wr_addr = wr_cmd_sync[11:8];
+        IN  [8] wr_data = wr_cmd_sync[7:0];
+        IN  [1] wr_en   = wr_pending;
+        IN  [4] rd_addr = rd_addr_sync;
+        OUT [8] rd_data = ram_rd_data;
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+        leds <= led_reg;
+    }
+
+    // -- Fast domain: detect new handshake data, pulse write enable --
+    SYNCHRONOUS(CLK=clk_fast RESET=reset RESET_ACTIVE=Low) {
+        // Detect when handshake delivers new data
+        IF (wr_cmd_sync != wr_cmd_prev) {
+            wr_pending <= 1'b1;
+            wr_cmd_prev <= wr_cmd_sync;
+        } ELSE {
+            wr_pending <= 1'b0;
+        }
+
+        // Capture BRAM read output (inst.port resolves to bound parent signal)
+        rd_data_reg <= ram.rd_data;
+    }
+
+    // -- Slow domain: state machine --
+    SYNCHRONOUS(CLK=clk_slow RESET=reset RESET_ACTIVE=Low) {
+        SELECT (state) {
+            CASE (3'd0) {
+                // WRITE: set up write command
+                wr_cmd <= { addr, 4'h0, addr };
+                wr_wait <= 4'd0;
+                state <= 3'd1;
+            }
+
+            CASE (3'd1) {
+                // WRITE_WAIT: give handshake time to complete
+                wr_wait <= wr_wait + 4'd1;
+                IF (wr_wait == 4'd15) {
+                    IF (addr == 4'd15) {
+                        addr <= 4'd0;
+                        state <= 3'd2;
+                    } ELSE {
+                        addr <= addr + 4'd1;
+                        state <= 3'd0;
+                    }
+                }
+            }
+
+            CASE (3'd2) {
+                // READ_SETUP: present address, wait for data to propagate
+                rd_addr_reg <= addr;
+                wr_wait <= 4'd0;
+                state <= 3'd3;
+            }
+
+            CASE (3'd3) {
+                // READ_WAIT: let CDC + BRAM pipeline settle
+                wr_wait <= wr_wait + 4'd1;
+                IF (wr_wait == 4'd15) {
+                    state <= 3'd4;
+                }
+            }
+
+            CASE (3'd4) {
+                // READ_DISPLAY: show data on LEDs, hold for visible delay
+                led_reg <= rd_data_sync[5:0];
+                IF (delay == lit(DELAY_WIDTH, DELAY_MAX)) {
+                    delay <= DELAY_WIDTH'b0;
+                    addr <= addr + 4'd1;
+                    state <= 3'd2;
+                } ELSE {
+                    delay <= delay + DELAY_WIDTH'b1;
+                }
+            }
+
+            DEFAULT {
+                state <= 3'd0;
+            }
+        }
+    }
+@endmod

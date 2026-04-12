@@ -638,6 +638,9 @@ static void jz_print_clock_gen_info(const char *json,
         int have_count = (count_idx >= 0 && jz_json_token_to_uint(json, &toks[count_idx], &gen_count));
         int chaining = 0;
         int have_chaining = (chaining_idx >= 0 && jz_json_token_to_bool(json, &toks[chaining_idx], &chaining));
+        int pad_exclusive_idx = jz_json_object_get(json, toks, count, cur, "pad_exclusive");
+        int pad_exclusive = 0;
+        int have_pad_exclusive = (pad_exclusive_idx >= 0 && jz_json_token_to_bool(json, &toks[pad_exclusive_idx], &pad_exclusive));
         char mode_buf[32] = {0};
         if (mode_idx >= 0) {
             (void)jz_json_token_to_string(json, &toks[mode_idx], mode_buf, sizeof(mode_buf));
@@ -763,6 +766,9 @@ static void jz_print_clock_gen_info(const char *json,
             }
             if (have_chaining) {
                 fprintf(out, " | Chaining: %s", chaining ? "Supported" : "Not supported");
+            }
+            if (have_pad_exclusive && pad_exclusive) {
+                fprintf(out, " | Pad exclusive: Yes");
             }
             fprintf(out, "\n\n");
         }

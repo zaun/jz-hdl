@@ -1,0 +1,3 @@
+File: 6_4_CLOCK_GEN_PAD_EXCLUSIVE_CONFLICT-ref_clk_as_logic.jz
+      26:13   error CLOCK_GEN_PAD_EXCLUSIVE_CONFLICT S6.4.1 PLL reference clock pin cannot also be used as a logic signal in @top on pad_exclusive chips
+      46:17   warn  WARN_UNUSED_PORT S12.3 PORT declared but never used; remove it if unused

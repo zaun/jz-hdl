@@ -562,6 +562,54 @@ void sem_check_project_clock_gen(JZASTNode *project,
                         }
                     }
 
+                    /* pad_exclusive: if the chip data says the PAD variant
+                     * exclusively owns the IO cell, the ref clock pin must
+                     * not also appear as a direct binding target in @top
+                     * (which would require an SB_IO on the same pin).
+                     * Users should bind to the PLL's BASE output instead. */
+                    if (chip && unit->name) {
+                        char tl_pe[32];
+                        {
+                            size_t tlen = strlen(unit->name);
+                            if (tlen >= sizeof(tl_pe)) tlen = sizeof(tl_pe) - 1;
+                            for (size_t t = 0; t < tlen; ++t)
+                                tl_pe[t] = (char)tolower((unsigned char)unit->name[t]);
+                            tl_pe[tlen] = '\0';
+                        }
+                        int pe = 0;
+                        if (jz_chip_clock_gen_pad_exclusive(chip, tl_pe, &pe) && pe) {
+                            const JZSymbol *pin_sym_pe = project_lookup(
+                                project_symbols, in_clk, JZ_SYM_PIN);
+                            if (pin_sym_pe) {
+                                JZASTNode *top_new_pe = sem_find_project_top_new(project);
+                                if (top_new_pe) {
+                                    for (size_t bi = 0; bi < top_new_pe->child_count; ++bi) {
+                                        JZASTNode *bnd = top_new_pe->children[bi];
+                                        if (!bnd || bnd->type != JZ_AST_PORT_DECL) continue;
+                                        const char *tgt = bnd->text;
+                                        if (!tgt || tgt[0] == '\0') tgt = bnd->name;
+                                        if (!tgt) continue;
+                                        /* Strip leading ~ for inverted bindings */
+                                        const char *tgt_clean = tgt;
+                                        while (*tgt_clean == '~' || *tgt_clean == ' ')
+                                            tgt_clean++;
+                                        if (strcmp(tgt_clean, in_clk) == 0) {
+                                            char msg[512];
+                                            snprintf(msg, sizeof(msg),
+                                                "on this chip the PLL pad variant exclusively "
+                                                "owns the IO cell; '%s' cannot also be used "
+                                                "as a logic signal in @top — use a PLL BASE "
+                                                "output instead", in_clk);
+                                            sem_report_rule(diagnostics, elem->loc,
+                                                "CLOCK_GEN_PAD_EXCLUSIVE_CONFLICT", msg);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     /* Check input is not an output of this SAME unit */
                     size_t this_count = this_unit_outputs.len / sizeof(char *);
                     char **this_outs = (char **)this_unit_outputs.data;

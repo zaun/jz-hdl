@@ -1,0 +1,29 @@
+Memory Report
+-------------
+Project: src/ice_sugar_v15.jz
+Chip: ICE40UP-5K-SG48
+
+/Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@ 19 = BLOCK MEMORY 16 Bytes (ram)
+    Mode:
+    Requested | Pseudo-Dual Port
+    Matched   | Pseudo-Dual Port
+
+    Configuration:
+    Requested | 8 bit  | 4 bit (16)
+    Matched   | 16 bit | 8 bit     
+    Matched   | 8 bit  | 9 bit     
+
+
+Memory Summary
+--------------
+Block Memory:
+    Requested: 16 bytes
+    Max Available: 15360 bytes (30 blocks x 4 Kbits)
+    Used: 1 / 30 blocks (one per BLOCK MEMORY)
+
+Distributed Memory:
+    Requested: 0 bytes
+    Max Available: Unknown
+    Used: 0 bytes
+
+Errors: 0

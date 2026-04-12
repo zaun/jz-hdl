@@ -1,0 +1,706 @@
+Input file: src/ice_sugar_v15.jz
+Module: mem
+
+User-visible identifiers:  10
+Internal elaboration nodes:19
+Total identifiers:        29
+Total alias statements:   0
+Resolved physical nets:   8
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@5
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk) at line 33
+
+PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@6
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@33: SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+
+PHYSICAL NET: NET_0002    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@9
+
+PHYSICAL NET: NET_0003    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@10
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@40: ram.write[wr_addr] <= wr_data;
+
+PHYSICAL NET: NET_0004    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@11
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@39: IF (wr_en == 1'b1) {
+
+PHYSICAL NET: NET_0005    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@14
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@35: ram.read.addr <= rd_addr;
+
+PHYSICAL NET: NET_0006    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@15
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@30: rd_data <= rd_out;
+
+PHYSICAL NET: NET_0007    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@26
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@36: rd_out <= ram.read.data;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@30: rd_data <= rd_out;
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk  -> NET_0000
+rst_n  -> NET_0001
+wr_addr  -> NET_0002
+wr_data  -> NET_0003
+wr_en  -> NET_0004
+rd_addr  -> NET_0005
+rd_data  -> NET_0006
+rd_out  -> NET_0007
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 1 clock domain
+- 1 register
+- Alias net merges: none
+- Tri-state logic: none
+------------------------------------------------------------
+
+Input file: src/ice_sugar_v15.jz
+Module: clocks
+
+User-visible identifiers:  25
+Internal elaboration nodes:85
+Total identifiers:        110
+Total alias statements:   1
+Resolved physical nets:   18
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@21
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk_slow) at line 108
+
+PHYSICAL NET: NET_0001    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@22
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk_fast) at line 94
+
+PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@23
+
+Members (Aliased Identifiers):
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@89: reset == por
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@89: reset == rst_n
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@89: reset = por & rst_n;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@94: SYNCHRONOUS(CLK=clk_fast RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@108: SYNCHRONOUS(CLK=clk_slow RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+Top-level binding:
+    PORT binding: IN por -> 1'b1
+
+PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@25
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@90: leds <= led_reg;
+
+Top-level binding:
+    PORT binding: OUT leds -> { ~ LED , _ , _ , _ }
+
+PHYSICAL NET: NET_0006    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@30
+
+Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+PHYSICAL NET: NET_0007    Width: 3    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@35
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@114: state <= 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@123: state <= 3'd2;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@126: state <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@135: state <= 3'd3;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@142: state <= 3'd4;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@152: state <= 3'd2;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@159: state <= 3'd0;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@109: SELECT (state) {
+
+PHYSICAL NET: NET_0008    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@36
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@122: addr <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@125: addr <= addr + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@151: addr <= addr + 4'd1;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@112: wr_cmd <= { addr, 4'h0, addr };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@121: IF (addr == 4'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@125: addr <= addr + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@133: rd_addr_reg <= addr;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@151: addr <= addr + 4'd1;
+
+PHYSICAL NET: NET_0009    Width: 12    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@37
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@112: wr_cmd <= { addr, 4'h0, addr };
+
+PHYSICAL NET: NET_0010    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@38
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@133: rd_addr_reg <= addr;
+
+PHYSICAL NET: NET_0011    Width: 6    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@39
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@148: led_reg <= rd_data_sync[5:0];
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@90: leds <= led_reg;
+
+PHYSICAL NET: NET_0012    Width: 23    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@40
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@150: delay <= DELAY_WIDTH'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@154: delay <= delay + DELAY_WIDTH'b1;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@149: IF (delay == lit(DELAY_WIDTH, DELAY_MAX)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@154: delay <= delay + DELAY_WIDTH'b1;
+
+PHYSICAL NET: NET_0013    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@41
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@113: wr_wait <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@119: wr_wait <= wr_wait + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@134: wr_wait <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@140: wr_wait <= wr_wait + 4'd1;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@119: wr_wait <= wr_wait + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@120: IF (wr_wait == 4'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@140: wr_wait <= wr_wait + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@141: IF (wr_wait == 4'd15) {
+
+PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@46
+
+SYNCHRONOUS(CLK=clk_fast) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@97: wr_pending <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@100: wr_pending <= 1'b0;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+PHYSICAL NET: NET_0015    Width: 12    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@47
+
+SYNCHRONOUS(CLK=clk_fast) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@98: wr_cmd_prev <= wr_cmd_sync;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@96: IF (wr_cmd_sync != wr_cmd_prev) {
+
+PHYSICAL NET: NET_0016    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@48
+
+SYNCHRONOUS(CLK=clk_fast) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@104: rd_data_reg <= ram.rd_data;
+
+PHYSICAL NET: NET_0017    Width: 0    Tri-state: No
+------------------------------------------------------------
+Declared as: UNKNOWN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@70
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@96: IF (wr_cmd_sync != wr_cmd_prev) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@98: wr_cmd_prev <= wr_cmd_sync;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+PHYSICAL NET: NET_0018    Width: 0    Tri-state: No
+------------------------------------------------------------
+Declared as: UNKNOWN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@72
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+PHYSICAL NET: NET_0019    Width: 0    Tri-state: No
+------------------------------------------------------------
+Declared as: UNKNOWN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@74
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@148: led_reg <= rd_data_sync[5:0];
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk_slow  -> NET_0000
+clk_fast  -> NET_0001
+por  -> NET_0002
+reset  -> NET_0002
+rst_n  -> NET_0002
+leds  -> NET_0004
+ram_rd_data  -> NET_0006
+state  -> NET_0007
+addr  -> NET_0008
+wr_cmd  -> NET_0009
+rd_addr_reg  -> NET_0010
+led_reg  -> NET_0011
+delay  -> NET_0012
+wr_wait  -> NET_0013
+wr_pending  -> NET_0014
+wr_cmd_prev  -> NET_0015
+rd_data_reg  -> NET_0016
+wr_cmd_sync  -> NET_0017
+rd_addr_sync  -> NET_0018
+rd_data_sync  -> NET_0019
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 2 clock domains
+- 10 registers
+- Alias net merges: present
+- Tri-state logic: none
+------------------------------------------------------------
+
+============================================================
+CROSS-MODULE SUMMARY
+============================================================
+Total modules analyzed: 2
+
+Module                 Nets Clocks   Regs Tri-St  Alias
+-------------------- ------ ------ ------ ------ ------
+mem                       8      1      1      0      0
+clocks                   18      2     10      0      1
+-------------------- ------ ------ ------ ------ ------
+TOTAL                    26      3     11      0      1
+============================================================
+Input file: src/ice_sugar_v15.jz
+Module: mem
+
+User-visible identifiers:  10
+Internal elaboration nodes:19
+Total identifiers:        29
+Total alias statements:   0
+Resolved physical nets:   8
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@5
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk) at line 33
+
+PHYSICAL NET: NET_0001    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@6
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@33: SYNCHRONOUS(CLK=clk RESET=rst_n RESET_ACTIVE=Low) {
+
+PHYSICAL NET: NET_0002    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@9
+
+PHYSICAL NET: NET_0003    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@10
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@40: ram.write[wr_addr] <= wr_data;
+
+PHYSICAL NET: NET_0004    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@11
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@39: IF (wr_en == 1'b1) {
+
+PHYSICAL NET: NET_0005    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@14
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@35: ram.read.addr <= rd_addr;
+
+PHYSICAL NET: NET_0006    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@15
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@30: rd_data <= rd_out;
+
+PHYSICAL NET: NET_0007    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@26
+
+SYNCHRONOUS(CLK=clk) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@36: rd_out <= ram.read.data;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@30: rd_data <= rd_out;
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk  -> NET_0000
+rst_n  -> NET_0001
+wr_addr  -> NET_0002
+wr_data  -> NET_0003
+wr_en  -> NET_0004
+rd_addr  -> NET_0005
+rd_data  -> NET_0006
+rd_out  -> NET_0007
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 1 clock domain
+- 1 register
+- Alias net merges: none
+- Tri-state logic: none
+------------------------------------------------------------
+
+Input file: src/ice_sugar_v15.jz
+Module: clocks
+
+User-visible identifiers:  25
+Internal elaboration nodes:85
+Total identifiers:        110
+Total alias statements:   1
+Resolved physical nets:   18
+Tri-state nets:           0
+Extended-width aliases:   0
+
+PHYSICAL NET: NET_0000    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@21
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk_slow) at line 108
+
+PHYSICAL NET: NET_0001    Width: 1    Kind: CLOCK
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@22
+
+Consumers:
+    SYNCHRONOUS block (CLK=clk_fast) at line 94
+
+PHYSICAL NET: NET_0002    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT IN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@23
+
+Members (Aliased Identifiers):
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@89: reset == por
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@89: reset == rst_n
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@89: reset = por & rst_n;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@94: SYNCHRONOUS(CLK=clk_fast RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@108: SYNCHRONOUS(CLK=clk_slow RESET=reset RESET_ACTIVE=Low) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+Top-level binding:
+    PORT binding: IN por -> 1'b1
+
+PHYSICAL NET: NET_0004    Width: 6    Tri-state: No
+------------------------------------------------------------
+Declared as: PORT OUT
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@25
+
+ASYNCHRONOUS Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@90: leds <= led_reg;
+
+Top-level binding:
+    PORT binding: OUT leds -> { ~ LED , _ , _ , _ }
+
+PHYSICAL NET: NET_0006    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: WIRE
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@30
+
+Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+PHYSICAL NET: NET_0007    Width: 3    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@35
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@114: state <= 3'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@123: state <= 3'd2;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@126: state <= 3'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@135: state <= 3'd3;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@142: state <= 3'd4;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@152: state <= 3'd2;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@159: state <= 3'd0;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@109: SELECT (state) {
+
+PHYSICAL NET: NET_0008    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@36
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@122: addr <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@125: addr <= addr + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@151: addr <= addr + 4'd1;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@112: wr_cmd <= { addr, 4'h0, addr };
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@121: IF (addr == 4'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@125: addr <= addr + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@133: rd_addr_reg <= addr;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@151: addr <= addr + 4'd1;
+
+PHYSICAL NET: NET_0009    Width: 12    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@37
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@112: wr_cmd <= { addr, 4'h0, addr };
+
+PHYSICAL NET: NET_0010    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@38
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@133: rd_addr_reg <= addr;
+
+PHYSICAL NET: NET_0011    Width: 6    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@39
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@148: led_reg <= rd_data_sync[5:0];
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@90: leds <= led_reg;
+
+PHYSICAL NET: NET_0012    Width: 23    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@40
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@150: delay <= DELAY_WIDTH'b0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@154: delay <= delay + DELAY_WIDTH'b1;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@149: IF (delay == lit(DELAY_WIDTH, DELAY_MAX)) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@154: delay <= delay + DELAY_WIDTH'b1;
+
+PHYSICAL NET: NET_0013    Width: 4    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@41
+
+SYNCHRONOUS(CLK=clk_slow) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@113: wr_wait <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@119: wr_wait <= wr_wait + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@134: wr_wait <= 4'd0;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@140: wr_wait <= wr_wait + 4'd1;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@119: wr_wait <= wr_wait + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@120: IF (wr_wait == 4'd15) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@140: wr_wait <= wr_wait + 4'd1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@141: IF (wr_wait == 4'd15) {
+
+PHYSICAL NET: NET_0014    Width: 1    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@46
+
+SYNCHRONOUS(CLK=clk_fast) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@97: wr_pending <= 1'b1;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@100: wr_pending <= 1'b0;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+PHYSICAL NET: NET_0015    Width: 12    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@47
+
+SYNCHRONOUS(CLK=clk_fast) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@98: wr_cmd_prev <= wr_cmd_sync;
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@96: IF (wr_cmd_sync != wr_cmd_prev) {
+
+PHYSICAL NET: NET_0016    Width: 8    Tri-state: No
+------------------------------------------------------------
+Declared as: REGISTER
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@48
+
+SYNCHRONOUS(CLK=clk_fast) Drivers:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@104: rd_data_reg <= ram.rd_data;
+
+PHYSICAL NET: NET_0017    Width: 0    Tri-state: No
+------------------------------------------------------------
+Declared as: UNKNOWN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@70
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@96: IF (wr_cmd_sync != wr_cmd_prev) {
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@98: wr_cmd_prev <= wr_cmd_sync;
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+PHYSICAL NET: NET_0018    Width: 0    Tri-state: No
+------------------------------------------------------------
+Declared as: UNKNOWN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@72
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@78: @new ram mem {
+
+PHYSICAL NET: NET_0019    Width: 0    Tri-state: No
+------------------------------------------------------------
+Declared as: UNKNOWN
+Declared at: /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@74
+
+Sinks:
+    /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/clocks.jz@148: led_reg <= rd_data_sync[5:0];
+
+------------------------------------------------------------
+IDENTIFIER INDEX
+------------------------------------------------------------
+clk_slow  -> NET_0000
+clk_fast  -> NET_0001
+por  -> NET_0002
+reset  -> NET_0002
+rst_n  -> NET_0002
+leds  -> NET_0004
+ram_rd_data  -> NET_0006
+state  -> NET_0007
+addr  -> NET_0008
+wr_cmd  -> NET_0009
+rd_addr_reg  -> NET_0010
+led_reg  -> NET_0011
+delay  -> NET_0012
+wr_wait  -> NET_0013
+wr_pending  -> NET_0014
+wr_cmd_prev  -> NET_0015
+rd_data_reg  -> NET_0016
+wr_cmd_sync  -> NET_0017
+rd_addr_sync  -> NET_0018
+rd_data_sync  -> NET_0019
+
+------------------------------------------------------------
+HARDWARE SUMMARY
+------------------------------------------------------------
+- 2 clock domains
+- 10 registers
+- Alias net merges: present
+- Tri-state logic: none
+------------------------------------------------------------
+
+============================================================
+CROSS-MODULE SUMMARY
+============================================================
+Total modules analyzed: 2
+
+Module                 Nets Clocks   Regs Tri-St  Alias
+-------------------- ------ ------ ------ ------ ------
+mem                       8      1      1      0      0
+clocks                   18      2     10      0      1
+-------------------- ------ ------ ------ ------ ------
+TOTAL                    26      3     11      0      1
+============================================================
