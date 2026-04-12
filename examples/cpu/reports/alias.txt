@@ -1,4 +1,4 @@
-Input file: src/tang_nano_9k.jz
+Input file: src/tang_nano_20k.jz
 Module: CPU
 
 User-visible identifiers:  22
@@ -262,7 +262,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/tang_nano_9k.jz
+Input file: src/tang_nano_20k.jz
 Module: por
 
 User-visible identifiers:  6
@@ -355,7 +355,7 @@ por                       5      1      2      0      0
 -------------------- ------ ------ ------ ------ ------
 TOTAL                    21      2     11      0      0
 ============================================================
-Input file: src/tang_nano_9k.jz
+Input file: src/tang_nano_20k.jz
 Module: CPU
 
 User-visible identifiers:  22
@@ -619,7 +619,7 @@ HARDWARE SUMMARY
 - Tri-state logic: none
 ------------------------------------------------------------
 
-Input file: src/tang_nano_9k.jz
+Input file: src/tang_nano_20k.jz
 Module: por
 
 User-visible identifiers:  6

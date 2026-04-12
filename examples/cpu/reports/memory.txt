@@ -1,38 +1,51 @@
 Memory Report
 -------------
-Project: src/tang_nano_9k.jz
-Chip: (unknown)
+Project: src/tang_nano_20k.jz
+Chip: GW2AR-18-QN88-C8-I7
 
-/Users/justinzaun/Development/jz-hdl-dev/examples/cpu/src/cpu.jz@ 68 = BLOCK MEMORY 256 Bytes (rom) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/cpu/src/cpu.jz@ 68 = BLOCK MEMORY 256 Bytes (rom)
     Mode:
     Requested | Read Only Memory
-    Matched   | Not supported by chip
+    Matched   | Read Only Memory
 
     Configuration:
-    Requested | 8 bit         | 8 bit (256)
-    Unmatched | Not supported | by chip    
+    Requested | 8 bit  | 8 bit (256)
+    Matched   | 8 bit  | 11 bit     
+    Matched   | 16 bit | 10 bit     
+    Matched   | 32 bit | 9 bit      
+    Matched   | 9 bit  | 11 bit     
+    Matched   | 18 bit | 10 bit     
+    Matched   | 36 bit | 9 bit      
 
 
-/Users/justinzaun/Development/jz-hdl-dev/examples/cpu/src/cpu.jz@ 71 = BLOCK MEMORY 256 Bytes (ram) [ERROR]
+/Users/justinzaun/Development/jz-hdl-dev/examples/cpu/src/cpu.jz@ 71 = BLOCK MEMORY 256 Bytes (ram)
     Mode:
-    Requested | Ports (1R/1W)
-    Matched   | Not supported by chip
+    Requested | Semi-Dual Port
+    Matched   | Semi-Dual Port
 
     Configuration:
-    Requested | 8 bit         | 8 bit (256)
-    Unmatched | Not supported | by chip    
+    Requested | 8 bit  | 8 bit (256)
+    Matched   | 8 bit  | 11 bit     
+    Matched   | 16 bit | 10 bit     
+    Matched   | 32 bit | 9 bit      
+    Matched   | 9 bit  | 11 bit     
+    Matched   | 18 bit | 10 bit     
+    Matched   | 36 bit | 9 bit      
 
 
 Memory Summary
 --------------
 Block Memory:
     Requested: 512 bytes
-    Max Available: Unknown
-    Used: 512 bytes
+    Max Available: 105984 bytes (46 blocks x 18 Kbits)
+    Used: 2 / 46 blocks (one per BLOCK MEMORY)
 
 Distributed Memory:
     Requested: 0 bytes
-    Max Available: Unknown
+    Max Available: 5120 bytes
     Used: 0 bytes
 
-Errors: 2
+SDRAM (on-chip):
+    Capacity: 8388608 bytes
+
+Errors: 0

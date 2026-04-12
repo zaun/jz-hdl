@@ -4,6 +4,7 @@
 // a D latch. When btn is high, the latch is transparent and passes
 // ~counter[26:21] to display_buffer. When btn goes low, the latch
 // holds its last value.
+//
 
 @module latch_test
     PORT {
