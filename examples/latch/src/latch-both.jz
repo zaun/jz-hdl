@@ -1,0 +1,52 @@
+// Latch example — demonstrates D and SR latches.
+//
+// A 27-bit counter free-runs at the clock rate. Six LEDs show the
+// combined output of both latches:
+//
+//   leds[5]   — SR latch (sr_out). Press btn to set; auto-resets
+//               when the counter reaches max (~5 s at 27 MHz).
+//   leds[4:0] — D latch (display_buffer[4:0]). While btn is held,
+//               the LEDs follow ~counter[26:22] (inverted upper
+//               counter bits). Releasing btn freezes the pattern.
+//
+// Button behavior:
+//   Press  — D latch becomes transparent, sr_out latches high.
+//   Release — D latch holds its last value, sr_out stays high.
+//   Counter max — sr_out resets to 0; D latch is unaffected.
+
+@module latch_test
+    PORT {
+        IN  [1] clk;
+        IN  [1] por;
+        IN  [1] rst_n;
+        IN  [1] btn;
+        OUT [6] leds;
+    }
+
+    WIRE {
+        reset [1];
+    }
+
+    REGISTER {
+        counter [27] = 27'b1;
+    }
+    
+    LATCH {
+        // Explicit storage for the 6-bit LED pattern
+        display_buffer [6] D;
+        // SR latch: btn sets, counter max resets
+        sr_out [1] SR;
+    }
+
+    ASYNCHRONOUS {
+        reset = por & rst_n;
+
+        display_buffer <= btn : ~counter[26:21];
+        sr_out <= btn : reduce_and(counter);
+        leds <= { sr_out, display_buffer[4:0] };
+    }
+
+    SYNCHRONOUS(CLK=clk RESET=reset RESET_ACTIVE=Low) {
+        counter <= counter + 27'b1;
+    }
+@endmod

@@ -1,0 +1,748 @@
+{
+  "chipid": "GW5A-LV25-MG121-C1-I0",
+  "description": "Primitives available on the GW5A-LV25-MG121-C1/I0 device (Arora V family, 25K LUT4s).",
+  "boards": [
+    {
+      "name": "Tang Primer 25K",
+      "url": "https://wiki.sipeed.com/hardware/en/tang/tang-primer-25k/tang-primer-25k.html"
+    }
+  ],
+  "resources": {
+    "LUT4": 23040,
+    "DFF": 23040,
+    "IOB": 82,
+    "LVDS_PAIRS": 36,
+    "GSR": 1
+  },
+  "latches": {
+    "source": "DS1103-1.0.8E Table 1-1 (Product Resources), UG303-1.0E Section 3.5 (LATCH primitives: DLCE, DLPE only)",
+    "FAB": {
+      "description": "Configurable Function Unit (General Logic)",
+      "D": true,
+      "SR": false,
+      "note": "CFU REG elements can be configured as D latches. Arora V supports only DLCE and DLPE latch primitives (2 variants). See UG303 Arora V CFU User Guide Section 3.5."
+    },
+    "IOB": {
+      "description": "I/O Blocks (Input/Output Pins)",
+      "D": true,
+      "SR": false,
+      "modes": [
+        "Transparent",
+        "Gated"
+      ],
+      "note": "I/O register elements can be configured as latches."
+    }
+  },
+  "dsp": {
+    "source": "DS1103-1.0.8E, Table 1-1 p.2 (DSP 28), Section 2.5 (DSP Block: PADD, MULT, ALU)",
+    "description": "Hardware DSP blocks with 27x18 multiplier (M0), 12x12 multiplier (M1), pre-adder, and 48-bit ALU. Two DSP blocks can cascade for 27x36 multiplication.",
+    "MULT27X18": {
+      "quantity": 28,
+      "description": "27x18 bit multiplier (M0 multiplier in each DSP block)"
+    },
+    "MULT12X12": {
+      "quantity": 56,
+      "description": "12x12 bit multiplier (M0 can be configured as 12x12, plus M1 is fixed 12x12; 2 per DSP block)"
+    },
+    "ALU48D": {
+      "quantity": 28,
+      "description": "48-bit four-input ALU for DSP accumulation"
+    }
+  },
+  "memory": [
+    {
+      "type": "DISTRIBUTED",
+      "source": "DS1103-1.0.8E, Table 1-1 p.2 (SSRAM 180Kb)",
+      "description": "Distributed memory from CFU slices (Shadow SRAM)",
+      "total_bits": 184320,
+      "r_ports": 1,
+      "w_ports": 1,
+      "configurations": [
+        {
+          "width": 1,
+          "depth": 184320
+        },
+        {
+          "width": 2,
+          "depth": 92160
+        },
+        {
+          "width": 4,
+          "depth": 46080
+        },
+        {
+          "width": 8,
+          "depth": 23040
+        },
+        {
+          "width": 16,
+          "depth": 11520
+        }
+      ]
+    },
+    {
+      "type": "BLOCK",
+      "source": "DS1103-1.0.8E, Table 1-1 p.2 (BSRAM 1008Kb, 56 blocks), Table 2-9 p.29 (Memory Size Configuration), Section 2.4 (BSRAM), Table 3-29 p.67 (BSRAM Timing)",
+      "description": "Block Static Random Access Memory (BSRAM). Each block is 18,432 bits (18 Kbits). Total of 56 blocks providing 1,008 Kbits of BSRAM. Supports ECC mode using paired blocks.",
+      "quantity": 56,
+      "bits_per_block": 18432,
+      "total_bits": 1032192,
+      "note": "56 blocks x 18,432 bits = 1,032,192 bits. DS1103 rounds to 1,008K. Each block is 18,432 bits (16K data + 2K parity). ECC mode (512x72) uses paired blocks for 36Kbit access with 64-bit data + 8-bit parity.",
+      "modes": [
+        {
+          "name": "Single Port",
+          "description": "Single port read/write at one clock edge",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            }
+          ]
+        },
+        {
+          "name": "Dual Port",
+          "description": "Two independent ports with independent clocks and data widths",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": true
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            }
+          ]
+        },
+        {
+          "name": "Semi-Dual Port",
+          "description": "Write on Port A, read on Port B simultaneously with independent clocks and data widths",
+          "ports": [
+            {
+              "id": "A",
+              "read": false,
+              "write": true
+            },
+            {
+              "id": "B",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 32,
+              "depth": 512
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        },
+        {
+          "name": "Read Only Memory",
+          "description": "Read-only with initialization during power-on",
+          "ports": [
+            {
+              "id": "A",
+              "read": true,
+              "write": false
+            }
+          ],
+          "configurations": [
+            {
+              "width": 1,
+              "depth": 16384
+            },
+            {
+              "width": 2,
+              "depth": 8192
+            },
+            {
+              "width": 4,
+              "depth": 4096
+            },
+            {
+              "width": 8,
+              "depth": 2048
+            },
+            {
+              "width": 16,
+              "depth": 1024
+            },
+            {
+              "width": 32,
+              "depth": 512
+            },
+            {
+              "width": 9,
+              "depth": 2048
+            },
+            {
+              "width": 18,
+              "depth": 1024
+            },
+            {
+              "width": 36,
+              "depth": 512
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "clock_gen": [
+    {
+      "type": "osc",
+      "source": "DS1103-1.0.8E, Section 2.14 (On Chip Oscillator), Table 3-34 p.69 (Oscillator Switching Characteristics); UG306-1.0.8E Section 6.1 (OSC Primitive)",
+      "description": "Internal On-Chip Oscillator (OSC). Base frequency ~210 MHz, divided by FREQ_DIV parameter.",
+      "count": 1,
+      "map": {
+        "verilog-2005": [
+          "OSC #(\n",
+          "    .FREQ_DIV(%%FREQ_DIV%%)\n",
+          ") u_osc (\n",
+          "    .OSCOUT(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\OSC $auto$osc\n",
+          "  parameter \\FREQ_DIV %%FREQ_DIV%%\n",
+          "  connect \\OSCOUT \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "required": false,
+          "description": "OSC has no external clock input"
+        }
+      },
+      "parameters": {
+        "FREQ_DIV": {
+          "description": "Oscillator divider. Base frequency is ~210MHz divided by FREQ_DIV. fout = 210MHz / FREQ_DIV.",
+          "type": "int",
+          "default": 100,
+          "valid": [
+            2, 3, 4, 6, 8, 10, 12, 14, 16, 18,
+            20, 22, 24, 26, 28, 30, 32, 34, 36, 38,
+            40, 42, 44, 46, 48, 50, 52, 54, 56, 58,
+            60, 62, 64, 66, 68, 70, 72, 74, 76, 78,
+            80, 82, 84, 86, 88, 90, 92, 94, 96, 98,
+            100, 102, 104, 106, 108, 110, 112, 114, 116, 118,
+            120, 122, 124, 126
+          ]
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "port": "OSCOUT",
+          "is_clock": true,
+          "frequency_mhz": {
+            "expr": "210.0 / FREQ_DIV"
+          }
+        }
+      }
+    },
+    {
+      "type": "pll",
+      "source": "DS1103-1.0.8E, Section 2.11.3 (PLL), Table 3-37 p.72 (PLL Switching Characteristics GW5A-25); UG306-1.0.8E Section 5.1 (rPLL Primitive, Table 5-2, Table 5-3)",
+      "description": "Phase-Locked Loop (rPLL) with one reference input, a single VCO, and seven independently divisible clock outputs (CLKOUT0–CLKOUT6). FVCO = FCLKIN * MDIV / IDIV, FOUT[n] = FVCO / ODIV[n].",
+      "count": 6,
+      "chaining": false,
+      "map": {
+        "verilog-2005": [
+          "rPLL #(\n",
+          "    .DEVICE(\"GW5A-25\"),\n",
+          "    .FCLKIN(%%REF_CLK_mhz%%),\n",
+          "    .IDIV_SEL(%%IDIV%%),\n",
+          "    .FBDIV_SEL(%%FBDIV%%),\n",
+          "    .MDIV_SEL(%%MDIV%%),\n",
+          "    .ODIV0_SEL(%%ODIV0%%),\n",
+          "    .ODIV0_FRAC_SEL(0),\n",
+          "    .ODIV1_SEL(%%ODIV1%%),\n",
+          "    .ODIV2_SEL(%%ODIV2%%),\n",
+          "    .ODIV3_SEL(%%ODIV3%%),\n",
+          "    .ODIV4_SEL(%%ODIV4%%),\n",
+          "    .ODIV5_SEL(%%ODIV5%%),\n",
+          "    .ODIV6_SEL(%%ODIV6%%),\n",
+          "    .DYN_IDIV_SE(\"FALSE\"),\n",
+          "    .DYN_FBDIV_SEL(\"FALSE\"),\n",
+          "    .DYN_MDIV_SEL(\"FALSE\"),\n",
+          "    .DYN_ODIV0_SEL(\"FALSE\"),\n",
+          "    .DYN_ODIV1_SEL(\"FALSE\"),\n",
+          "    .DYN_ODIV2_SEL(\"FALSE\"),\n",
+          "    .DYN_ODIV3_SEL(\"FALSE\"),\n",
+          "    .DYN_ODIV4_SEL(\"FALSE\"),\n",
+          "    .DYN_ODIV5_SEL(\"FALSE\"),\n",
+          "    .DYN_ODIV6_SEL(\"FALSE\"),\n",
+          "    .CLKOUT0_EN(\"TRUE\"),\n",
+          "    .CLKOUT1_EN(\"FALSE\"),\n",
+          "    .CLKOUT2_EN(\"FALSE\"),\n",
+          "    .CLKOUT3_EN(\"FALSE\"),\n",
+          "    .CLKOUT4_EN(\"FALSE\"),\n",
+          "    .CLKOUT5_EN(\"FALSE\"),\n",
+          "    .CLKOUT6_EN(\"FALSE\"),\n",
+          "    .CLKFB_SEL(\"INTERNAL\"),\n",
+          "    .DYN_DPA_EN(\"FALSE\"),\n",
+          "    .CLKOUT0_PE_COARSE(0),\n",
+          "    .CLKOUT0_PE_FINE(0),\n",
+          "    .CLK0_IN_SEL(1'b0),\n",
+          "    .CLK0_OUT_SEL(1'b0)\n",
+          ") u_pll_%%instance_idx%% (\n",
+          "    .CLKOUT0(%%BASE%%),\n",
+          "    .LOCK(%%LOCK%%),\n",
+          "    .CLKOUT1(),\n",
+          "    .CLKOUT2(),\n",
+          "    .CLKOUT3(),\n",
+          "    .CLKOUT4(),\n",
+          "    .CLKOUT5(),\n",
+          "    .CLKOUT6(),\n",
+          "    .CLKFBOUT(),\n",
+          "    .CLKIN(%%REF_CLK%%),\n",
+          "    .CLKFB(1'b0),\n",
+          "    .RESET(1'b0),\n",
+          "    .PLLPWD(1'b0),\n",
+          "    .RESET_I(1'b0),\n",
+          "    .RESET_O(1'b0),\n",
+          "    .FBDSEL(6'b0),\n",
+          "    .IDSEL(6'b0),\n",
+          "    .MDSEL(7'b0),\n",
+          "    .MDSEL_FRAC(3'b0),\n",
+          "    .ODSEL0(7'b0),\n",
+          "    .ODSEL0_FRAC(3'b0),\n",
+          "    .ODSEL1(7'b0),\n",
+          "    .ODSEL2(7'b0),\n",
+          "    .ODSEL3(7'b0),\n",
+          "    .ODSEL4(7'b0),\n",
+          "    .ODSEL5(7'b0),\n",
+          "    .ODSEL6(7'b0),\n",
+          "    .DT0(4'b0),\n",
+          "    .DT1(4'b0),\n",
+          "    .DT2(4'b0),\n",
+          "    .DT3(4'b0),\n",
+          "    .ICPSEL(6'b0),\n",
+          "    .LPFRES(3'b0),\n",
+          "    .LPFCAP(2'b0),\n",
+          "    .ENCLK0(1'b1),\n",
+          "    .ENCLK1(1'b0),\n",
+          "    .ENCLK2(1'b0),\n",
+          "    .ENCLK3(1'b0),\n",
+          "    .ENCLK4(1'b0),\n",
+          "    .ENCLK5(1'b0),\n",
+          "    .ENCLK6(1'b0),\n",
+          "    .PSDIR(1'b0),\n",
+          "    .PSSEL(3'b0),\n",
+          "    .PSPULSE(1'b0),\n",
+          "    .SSCPOL(1'b0),\n",
+          "    .SSCON(1'b0),\n",
+          "    .SSCMDSEL(7'b0),\n",
+          "    .SSCMDSEL_FRAC(3'b0)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\rPLL $auto$%%instance_idx%%\n",
+          "  parameter \\DEVICE \"GW5A-25\"\n",
+          "  parameter \\FCLKIN %%REF_CLK_mhz%%\n",
+          "  parameter \\IDIV_SEL %%IDIV%%\n",
+          "  parameter \\FBDIV_SEL %%FBDIV%%\n",
+          "  parameter \\MDIV_SEL %%MDIV%%\n",
+          "  parameter \\ODIV0_SEL %%ODIV0%%\n",
+          "  parameter \\ODIV0_FRAC_SEL 0\n",
+          "  parameter \\ODIV1_SEL %%ODIV1%%\n",
+          "  parameter \\ODIV2_SEL %%ODIV2%%\n",
+          "  parameter \\ODIV3_SEL %%ODIV3%%\n",
+          "  parameter \\ODIV4_SEL %%ODIV4%%\n",
+          "  parameter \\ODIV5_SEL %%ODIV5%%\n",
+          "  parameter \\ODIV6_SEL %%ODIV6%%\n",
+          "  parameter \\DYN_IDIV_SE \"FALSE\"\n",
+          "  parameter \\DYN_FBDIV_SEL \"FALSE\"\n",
+          "  parameter \\DYN_MDIV_SEL \"FALSE\"\n",
+          "  parameter \\DYN_ODIV0_SEL \"FALSE\"\n",
+          "  parameter \\DYN_ODIV1_SEL \"FALSE\"\n",
+          "  parameter \\DYN_ODIV2_SEL \"FALSE\"\n",
+          "  parameter \\DYN_ODIV3_SEL \"FALSE\"\n",
+          "  parameter \\DYN_ODIV4_SEL \"FALSE\"\n",
+          "  parameter \\DYN_ODIV5_SEL \"FALSE\"\n",
+          "  parameter \\DYN_ODIV6_SEL \"FALSE\"\n",
+          "  parameter \\CLKOUT0_EN \"TRUE\"\n",
+          "  parameter \\CLKOUT1_EN \"FALSE\"\n",
+          "  parameter \\CLKOUT2_EN \"FALSE\"\n",
+          "  parameter \\CLKOUT3_EN \"FALSE\"\n",
+          "  parameter \\CLKOUT4_EN \"FALSE\"\n",
+          "  parameter \\CLKOUT5_EN \"FALSE\"\n",
+          "  parameter \\CLKOUT6_EN \"FALSE\"\n",
+          "  parameter \\CLKFB_SEL \"INTERNAL\"\n",
+          "  parameter \\DYN_DPA_EN \"FALSE\"\n",
+          "  parameter \\CLKOUT0_PE_COARSE 0\n",
+          "  parameter \\CLKOUT0_PE_FINE 0\n",
+          "  parameter \\CLK0_IN_SEL 1'0\n",
+          "  parameter \\CLK0_OUT_SEL 1'0\n",
+          "  connect \\CLKIN \\%%REF_CLK%%\n",
+          "  connect \\CLKOUT0 \\%%BASE%%\n",
+          "  connect \\LOCK \\%%LOCK%%\n",
+          "  connect \\CLKOUT1 $undef\n",
+          "  connect \\CLKOUT2 $undef\n",
+          "  connect \\CLKOUT3 $undef\n",
+          "  connect \\CLKOUT4 $undef\n",
+          "  connect \\CLKOUT5 $undef\n",
+          "  connect \\CLKOUT6 $undef\n",
+          "  connect \\CLKFBOUT $undef\n",
+          "  connect \\CLKFB 1'0\n",
+          "  connect \\RESET 1'0\n",
+          "  connect \\PLLPWD 1'0\n",
+          "  connect \\RESET_I 1'0\n",
+          "  connect \\RESET_O 1'0\n",
+          "  connect \\FBDSEL 6'000000\n",
+          "  connect \\IDSEL 6'000000\n",
+          "  connect \\MDSEL 7'0000000\n",
+          "  connect \\MDSEL_FRAC 3'000\n",
+          "  connect \\ODSEL0 7'0000000\n",
+          "  connect \\ODSEL0_FRAC 3'000\n",
+          "  connect \\ODSEL1 7'0000000\n",
+          "  connect \\ODSEL2 7'0000000\n",
+          "  connect \\ODSEL3 7'0000000\n",
+          "  connect \\ODSEL4 7'0000000\n",
+          "  connect \\ODSEL5 7'0000000\n",
+          "  connect \\ODSEL6 7'0000000\n",
+          "  connect \\DT0 4'0000\n",
+          "  connect \\DT1 4'0000\n",
+          "  connect \\DT2 4'0000\n",
+          "  connect \\DT3 4'0000\n",
+          "  connect \\ICPSEL 6'000000\n",
+          "  connect \\LPFRES 3'000\n",
+          "  connect \\LPFCAP 2'00\n",
+          "  connect \\ENCLK0 1'1\n",
+          "  connect \\ENCLK1 1'0\n",
+          "  connect \\ENCLK2 1'0\n",
+          "  connect \\ENCLK3 1'0\n",
+          "  connect \\ENCLK4 1'0\n",
+          "  connect \\ENCLK5 1'0\n",
+          "  connect \\ENCLK6 1'0\n",
+          "  connect \\PSDIR 1'0\n",
+          "  connect \\PSSEL 3'000\n",
+          "  connect \\PSPULSE 1'0\n",
+          "  connect \\SSCPOL 1'0\n",
+          "  connect \\SSCON 1'0\n",
+          "  connect \\SSCMDSEL 7'0000000\n",
+          "  connect \\SSCMDSEL_FRAC 3'000\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "Reference clock input to the PLL",
+          "required": true,
+          "width": 1,
+          "requires_period": true,
+          "min_mhz": 19,
+          "max_mhz": 800
+        }
+      },
+      "parameters": {
+        "IDIV": {
+          "description": "Input clock divider (IDIV_SEL). Divides CLKIN before phase detector. Actual division = IDIV_SEL.",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 64
+        },
+        "FBDIV": {
+          "description": "Feedback divider (FBDIV_SEL). Controls feedback path division. Actual division = FBDIV_SEL.",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 64
+        },
+        "MDIV": {
+          "description": "VCO multiplier (MDIV_SEL). FVCO = FCLKIN * MDIV / IDIV. Actual value = MDIV_SEL.",
+          "type": "int",
+          "default": 8,
+          "min": 2,
+          "max": 128
+        },
+        "ODIV0": {
+          "description": "Channel 0 output divider (ODIV0_SEL). FOUT0 = FVCO / ODIV0.",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+        "ODIV1": {
+          "description": "Channel 1 output divider (ODIV1_SEL). FOUT1 = FVCO / ODIV1.",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+        "ODIV2": {
+          "description": "Channel 2 output divider (ODIV2_SEL).",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+        "ODIV3": {
+          "description": "Channel 3 output divider (ODIV3_SEL).",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+        "ODIV4": {
+          "description": "Channel 4 output divider (ODIV4_SEL).",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+        "ODIV5": {
+          "description": "Channel 5 output divider (ODIV5_SEL).",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        },
+        "ODIV6": {
+          "description": "Channel 6 output divider (ODIV6_SEL).",
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 128
+        }
+      },
+      "derived": {
+        "FVCO": {
+          "description": "Internal VCO frequency",
+          "expr": "(1000.0 / REF_CLK_period_ns) * MDIV / IDIV",
+          "min": 700,
+          "max": 1400
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "Primary PLL output (CLKOUT0)",
+          "port": "CLKOUT0",
+          "is_clock": true,
+          "frequency_mhz": {
+            "expr": "FVCO / ODIV0"
+          }
+        },
+        "LOCK": {
+          "description": "PLL lock indicator (1 = locked)",
+          "port": "LOCK",
+          "is_clock": false
+        }
+      },
+      "constraints": [
+        {
+          "description": "VCO frequency must be within range (DS1103 Table 3-37)",
+          "check": "FVCO >= 700 && FVCO <= 1400"
+        },
+        {
+          "description": "Output frequency must be within range (DS1103 Table 3-37)",
+          "check": "FVCO / ODIV0 >= 6.25 && FVCO / ODIV0 <= 800"
+        }
+      ]
+    },
+    {
+      "type": "clkdiv",
+      "source": "UG306-1.0.8E, Section 4.3 (CLKDIV Primitive), Table 4-3, Table 4-4",
+      "mode": "local",
+      "description": "Local clock divider (CLKDIV) for IO logic. Divides an input clock by a configurable ratio.",
+      "count": 8,
+      "map": {
+        "verilog-2005": [
+          "CLKDIV #(\n",
+          "    .DIV_MODE(\"%%DIV_MODE%%\")\n",
+          ") u_clkdiv_%%instance_idx%% (\n",
+          "    .HCLKIN(%%REF_CLK%%),\n",
+          "    .RESETN(1'b1),\n",
+          "    .CALIB(1'b0),\n",
+          "    .CLKOUT(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\CLKDIV $auto$%%instance_idx%%\n",
+          "  parameter \\DIV_MODE \"%%DIV_MODE%%\"\n",
+          "  connect \\HCLKIN \\%%REF_CLK%%\n",
+          "  connect \\RESETN 1'1\n",
+          "  connect \\CALIB 1'0\n",
+          "  connect \\CLKOUT \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "High-speed clock input to the divider",
+          "required": true,
+          "width": 1,
+          "requires_period": true
+        }
+      },
+      "parameters": {
+        "DIV_MODE": {
+          "description": "Clock division ratio",
+          "type": "string",
+          "default": "2",
+          "valid": [
+            "1",
+            "2",
+            "3",
+            "3.5",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"
+          ]
+        }
+      },
+      "outputs": {
+        "BASE": {
+          "description": "Divided clock output",
+          "port": "CLKOUT",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Input frequency divided by DIV_MODE",
+            "expr": "(1000.0 / REF_CLK_period_ns) / DIV_MODE"
+          }
+        }
+      }
+    },
+    {
+      "type": "clkdiv2",
+      "source": "UG306-1.0.8E, Section 4.2 (CLKDIV2 Primitive), Table 4-2",
+      "description": "Fixed divide-by-2 clock divider (CLKDIV2). No configurable parameters.",
+      "count": 16,
+      "map": {
+        "verilog-2005": [
+          "CLKDIV2 u_clkdiv2_%%instance_idx%% (\n",
+          "    .HCLKIN(%%REF_CLK%%),\n",
+          "    .RESETN(1'b1),\n",
+          "    .CLKOUT(%%BASE%%)\n",
+          ");\n"
+        ],
+        "rtlil": [
+          "cell \\CLKDIV2 $auto$%%instance_idx%%\n",
+          "  connect \\HCLKIN \\%%REF_CLK%%\n",
+          "  connect \\RESETN 1'1\n",
+          "  connect \\CLKOUT \\%%BASE%%\n",
+          "end\n"
+        ]
+      },
+      "inputs": {
+        "REF_CLK": {
+          "description": "High-speed clock input to the divider",
+          "required": true,
+          "width": 1,
+          "requires_period": true
+        }
+      },
+      "parameters": {},
+      "outputs": {
+        "BASE": {
+          "description": "Divided-by-2 clock output",
+          "port": "CLKOUT",
+          "is_clock": true,
+          "frequency_mhz": {
+            "description": "Input frequency divided by 2",
+            "expr": "(1000.0 / REF_CLK_period_ns) / 2"
+          }
+        }
+      }
+    }
+  ],
+  "fixed_pins": []
+}

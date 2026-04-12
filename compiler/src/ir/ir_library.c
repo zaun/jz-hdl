@@ -1742,10 +1742,259 @@ static int lower_cdc_bus(const IR_CDC *cdc, const IR_Module *parent,
     return 0;
 }
 
+/* -------------------------------------------------------------------------
+ * FIFO CDC helpers: derive write_en / read_en from statement trees
+ * -------------------------------------------------------------------------
+ */
+
+/** Check whether an expression tree references a given signal ID. */
+static bool fifo_expr_refs(const IR_Expr *expr, int sig_id)
+{
+    if (!expr) return false;
+    switch (expr->kind) {
+    case EXPR_SIGNAL_REF:
+        return expr->u.signal_ref.signal_id == sig_id;
+    case EXPR_SLICE:
+        return expr->u.slice.signal_id == sig_id;
+    case EXPR_UNARY_NOT:
+    case EXPR_UNARY_NEG:
+    case EXPR_LOGICAL_NOT:
+        return fifo_expr_refs(expr->u.unary.operand, sig_id);
+    case EXPR_CONCAT:
+        for (int i = 0; i < expr->u.concat.num_operands; ++i)
+            if (fifo_expr_refs(expr->u.concat.operands[i], sig_id)) return true;
+        return false;
+    case EXPR_TERNARY:
+        return fifo_expr_refs(expr->u.ternary.condition, sig_id) ||
+               fifo_expr_refs(expr->u.ternary.true_val, sig_id) ||
+               fifo_expr_refs(expr->u.ternary.false_val, sig_id);
+    case EXPR_MEM_READ:
+        return fifo_expr_refs(expr->u.mem_read.address, sig_id);
+    case EXPR_LITERAL:
+        return false;
+    default:
+        /* Binary ops and others with left/right */
+        if (expr->u.binary.left && fifo_expr_refs(expr->u.binary.left, sig_id)) return true;
+        if (expr->u.binary.right && fifo_expr_refs(expr->u.binary.right, sig_id)) return true;
+        return false;
+    }
+}
+
+/**
+ * Check whether a statement subtree writes to (is_write=true) or
+ * reads from (is_write=false) the given signal ID.
+ */
+static bool fifo_stmt_touches(const IR_Stmt *stmt, int sig_id, bool is_write)
+{
+    if (!stmt) return false;
+    switch (stmt->kind) {
+    case STMT_ASSIGNMENT:
+        if (is_write)
+            return stmt->u.assign.lhs_signal_id == sig_id;
+        else
+            return fifo_expr_refs(stmt->u.assign.rhs, sig_id);
+    case STMT_IF: {
+        const IR_IfStmt *ifs = &stmt->u.if_stmt;
+        if (!is_write && fifo_expr_refs(ifs->condition, sig_id)) return true;
+        if (fifo_stmt_touches(ifs->then_block, sig_id, is_write)) return true;
+        const IR_Stmt *elif = ifs->elif_chain;
+        while (elif && elif->kind == STMT_IF) {
+            if (!is_write && fifo_expr_refs(elif->u.if_stmt.condition, sig_id)) return true;
+            if (fifo_stmt_touches(elif->u.if_stmt.then_block, sig_id, is_write)) return true;
+            elif = elif->u.if_stmt.elif_chain;
+        }
+        if (fifo_stmt_touches(ifs->else_block, sig_id, is_write)) return true;
+        return false;
+    }
+    case STMT_SELECT: {
+        const IR_SelectStmt *sel = &stmt->u.select_stmt;
+        if (!is_write && fifo_expr_refs(sel->selector, sig_id)) return true;
+        for (int i = 0; i < sel->num_cases; ++i)
+            if (fifo_stmt_touches(sel->cases[i].body, sig_id, is_write)) return true;
+        return false;
+    }
+    case STMT_BLOCK: {
+        const IR_BlockStmt *blk = &stmt->u.block;
+        for (int i = 0; i < blk->count; ++i)
+            if (fifo_stmt_touches(&blk->stmts[i], sig_id, is_write)) return true;
+        return false;
+    }
+    case STMT_MEM_WRITE:
+        if (!is_write) {
+            return fifo_expr_refs(stmt->u.mem_write.address, sig_id) ||
+                   fifo_expr_refs(stmt->u.mem_write.data, sig_id);
+        }
+        return false;
+    default:
+        return false;
+    }
+}
+
+/**
+ * Derive an enable expression from a statement tree.
+ * Returns an IR_Expr that is 1 when the target signal is written/read,
+ * or NULL if the target is not found in the tree.
+ *
+ * For unconditional access, returns literal 1'b1.
+ * For conditional access (inside IF/SELECT), returns the gating condition.
+ */
+static IR_Expr *fifo_derive_enable(const IR_Stmt *stmt, int sig_id,
+                                    bool is_write, JZArena *arena)
+{
+    if (!stmt) return NULL;
+
+    switch (stmt->kind) {
+    case STMT_ASSIGNMENT:
+        if (is_write && stmt->u.assign.lhs_signal_id == sig_id)
+            return make_literal(arena, 1, 1);
+        if (!is_write && fifo_expr_refs(stmt->u.assign.rhs, sig_id))
+            return make_literal(arena, 1, 1);
+        return NULL;
+
+    case STMT_IF: {
+        const IR_IfStmt *ifs = &stmt->u.if_stmt;
+        IR_Expr *result = NULL;
+
+        /* then branch */
+        if (fifo_stmt_touches(ifs->then_block, sig_id, is_write)) {
+            IR_Expr *inner = fifo_derive_enable(ifs->then_block, sig_id, is_write, arena);
+            IR_Expr *contrib = ifs->condition;
+            if (inner && inner->kind != EXPR_LITERAL)
+                contrib = make_binary(arena, EXPR_LOGICAL_AND, ifs->condition, inner, 1);
+            result = contrib;
+        }
+
+        /* elif chain */
+        const IR_Stmt *elif = ifs->elif_chain;
+        while (elif && elif->kind == STMT_IF) {
+            const IR_IfStmt *eifs = &elif->u.if_stmt;
+            if (fifo_stmt_touches(eifs->then_block, sig_id, is_write)) {
+                IR_Expr *inner = fifo_derive_enable(eifs->then_block, sig_id, is_write, arena);
+                IR_Expr *contrib = eifs->condition;
+                if (inner && inner->kind != EXPR_LITERAL)
+                    contrib = make_binary(arena, EXPR_LOGICAL_AND, eifs->condition, inner, 1);
+                result = result ? make_binary(arena, EXPR_LOGICAL_OR, result, contrib, 1)
+                                : contrib;
+            }
+            elif = eifs->elif_chain;
+        }
+
+        /* else branch — recurse to get inner condition (not just 1'b1) */
+        if (fifo_stmt_touches(ifs->else_block, sig_id, is_write)) {
+            IR_Expr *inner = fifo_derive_enable(ifs->else_block, sig_id, is_write, arena);
+            if (inner) {
+                /* else is reached when all prior conditions are false;
+                 * for now, contribute the inner condition directly since
+                 * the else context is implicit */
+                result = result ? make_binary(arena, EXPR_LOGICAL_OR, result, inner, 1)
+                                : inner;
+            }
+        }
+
+        return result;
+    }
+
+    case STMT_SELECT: {
+        const IR_SelectStmt *sel = &stmt->u.select_stmt;
+        IR_Expr *result = NULL;
+
+        for (int i = 0; i < sel->num_cases; ++i) {
+            if (!fifo_stmt_touches(sel->cases[i].body, sig_id, is_write))
+                continue;
+            if (!sel->cases[i].case_value) {
+                /* DEFAULT case — conservative: always enabled */
+                return make_literal(arena, 1, 1);
+            }
+            IR_Expr *match = make_binary(arena, EXPR_BINARY_EQ,
+                                          sel->selector, sel->cases[i].case_value, 1);
+            result = result ? make_binary(arena, EXPR_LOGICAL_OR, result, match, 1) : match;
+        }
+        return result;
+    }
+
+    case STMT_BLOCK: {
+        const IR_BlockStmt *blk = &stmt->u.block;
+        IR_Expr *result = NULL;
+        for (int i = 0; i < blk->count; ++i) {
+            IR_Expr *en = fifo_derive_enable(&blk->stmts[i], sig_id, is_write, arena);
+            if (en) {
+                result = result ? make_binary(arena, EXPR_LOGICAL_OR, result, en, 1)
+                                : en;
+            }
+        }
+        return result;
+    }
+
+    default:
+        return NULL;
+    }
+}
+
+/**
+ * Add a wire signal to a module, growing the signals array.
+ * Returns the new signal's ID, or -1 on failure.
+ */
+static int fifo_add_wire(IR_Module *mod, JZArena *arena, const char *name, int width)
+{
+    int new_id = mod->num_signals;
+    IR_Signal *new_arr = (IR_Signal *)jz_arena_alloc(
+        arena, (size_t)(mod->num_signals + 1) * sizeof(IR_Signal));
+    if (!new_arr) return -1;
+    if (mod->num_signals > 0)
+        memcpy(new_arr, mod->signals, (size_t)mod->num_signals * sizeof(IR_Signal));
+    mod->signals = new_arr;
+
+    IR_Signal *sig = &mod->signals[mod->num_signals++];
+    memset(sig, 0, sizeof(*sig));
+    sig->id = new_id;
+    sig->name = ir_strdup_arena(arena, name);
+    sig->kind = SIG_NET;
+    sig->width = width;
+    sig->owner_module_id = mod->id;
+    return new_id;
+}
+
+/** Append an assignment statement to the module's async block. */
+static int fifo_add_async_assign(IR_Module *mod, JZArena *arena,
+                                  int lhs_id, IR_Expr *rhs, IR_AssignmentKind kind)
+{
+    IR_Stmt new_stmt;
+    memset(&new_stmt, 0, sizeof(new_stmt));
+    new_stmt.kind = STMT_ASSIGNMENT;
+    new_stmt.u.assign.lhs_signal_id = lhs_id;
+    new_stmt.u.assign.rhs = rhs;
+    new_stmt.u.assign.kind = kind;
+
+    if (mod->async_block && mod->async_block->kind == STMT_BLOCK) {
+        int old_count = mod->async_block->u.block.count;
+        IR_Stmt *new_stmts = (IR_Stmt *)jz_arena_alloc(
+            arena, sizeof(IR_Stmt) * (size_t)(old_count + 1));
+        if (!new_stmts) return -1;
+        if (old_count > 0)
+            memcpy(new_stmts, mod->async_block->u.block.stmts,
+                   sizeof(IR_Stmt) * (size_t)old_count);
+        new_stmts[old_count] = new_stmt;
+        mod->async_block->u.block.stmts = new_stmts;
+        mod->async_block->u.block.count = old_count + 1;
+    } else {
+        IR_Stmt *stmts = alloc_stmts(arena, 1);
+        if (!stmts) return -1;
+        stmts[0] = new_stmt;
+        mod->async_block = make_block(arena, stmts, 1);
+        if (!mod->async_block) return -1;
+    }
+    return 0;
+}
+
 /**
  * @brief Lower a CDC_FIFO entry into an IR_Instance.
+ *
+ * Handles:
+ * - Reset polarity: inverts active-low parent resets for FIFO's active-high ports
+ * - write_en: derived from conditions gating assignments to the source register
+ * - read_en: derived from conditions gating reads of the dest alias
  */
-static int lower_cdc_fifo(const IR_CDC *cdc, const IR_Module *parent,
+static int lower_cdc_fifo(const IR_CDC *cdc, IR_Module *parent,
                           const IR_Module *lib_mod, IR_Instance *inst,
                           int inst_id, JZArena *arena)
 {
@@ -1782,7 +2031,99 @@ static int lower_cdc_fifo(const IR_CDC *cdc, const IR_Module *parent,
     const IR_Signal *c_data_out = lib_find_signal_by_name(lib_mod, "data_out");
     if (!c_clk_wr || !c_clk_rd || !c_data_in || !c_data_out) return -1;
 
-    /* Connect 8 ports (full/empty outputs are left unconnected) */
+    /* --- Derive write_en from source clock domain --- */
+    int wr_en_sig = -1;
+
+    if (src_cd && src_cd->statements) {
+
+        IR_Expr *wr_en_expr = fifo_derive_enable(
+            src_cd->statements, cdc->source_reg_id, true, arena);
+
+        if (wr_en_expr && wr_en_expr->kind == EXPR_LITERAL &&
+            wr_en_expr->u.literal.literal.words[0] == 1) {
+            /* Unconditional write — keep 1'b1 (no wire needed) */
+            wr_en_sig = -1;
+        } else if (wr_en_expr) {
+            snprintf(name_buf, sizeof(name_buf), "_fifo_%s_wr_en",
+                     cdc->dest_alias_name ? cdc->dest_alias_name : "anon");
+
+            wr_en_sig = fifo_add_wire(parent, arena, name_buf, 1);
+
+            if (wr_en_sig >= 0) {
+                fifo_add_async_assign(parent, arena, wr_en_sig, wr_en_expr, ASSIGN_ALIAS);
+
+            }
+        }
+    }
+
+    /* --- Derive read_en from dest clock domain --- */
+
+    /* Note: must look up alias AFTER any fifo_add_wire calls since they realloc signals */
+    int alias_id = -1;
+    {
+        const IR_Signal *alias_sig = lib_find_signal_by_name(parent, cdc->dest_alias_name);
+        alias_id = alias_sig ? alias_sig->id : -1;
+    }
+    int rd_en_sig = -1;
+    if (dst_cd && dst_cd->statements && alias_id >= 0) {
+
+        IR_Expr *rd_en_expr = fifo_derive_enable(
+            dst_cd->statements, alias_id, false, arena);
+
+        if (rd_en_expr && rd_en_expr->kind == EXPR_LITERAL &&
+            rd_en_expr->u.literal.literal.words[0] == 1) {
+            /* Unconditional read — keep 1'b1 */
+            rd_en_sig = -1;
+        } else if (rd_en_expr) {
+            snprintf(name_buf, sizeof(name_buf), "_fifo_%s_rd_en",
+                     cdc->dest_alias_name ? cdc->dest_alias_name : "anon");
+            rd_en_sig = fifo_add_wire(parent, arena, name_buf, 1);
+            if (rd_en_sig >= 0)
+                fifo_add_async_assign(parent, arena, rd_en_sig, rd_en_expr, ASSIGN_ALIAS);
+        }
+    }
+
+
+    /* --- Reset polarity: FIFO uses active-high, invert if parent is active-low --- */
+    int rst_wr_sig = -1;
+    if (src_rst_sig >= 0 && src_cd && src_cd->reset_active == RESET_ACTIVE_LOW) {
+        snprintf(name_buf, sizeof(name_buf), "_fifo_%s_rst_wr",
+                 cdc->dest_alias_name ? cdc->dest_alias_name : "anon");
+        rst_wr_sig = fifo_add_wire(parent, arena, name_buf, 1);
+        if (rst_wr_sig >= 0) {
+            IR_Expr *not_rst = (IR_Expr *)jz_arena_alloc(arena, sizeof(IR_Expr));
+            if (not_rst) {
+                memset(not_rst, 0, sizeof(*not_rst));
+                not_rst->kind = EXPR_UNARY_NOT;
+                not_rst->width = 1;
+                not_rst->u.unary.operand = make_sig_ref(arena, src_rst_sig, 1);
+                fifo_add_async_assign(parent, arena, rst_wr_sig, not_rst, ASSIGN_ALIAS);
+            }
+        }
+    } else {
+        rst_wr_sig = src_rst_sig; /* active-high or no reset */
+    }
+
+    int rst_rd_sig = -1;
+    if (dst_rst_sig >= 0 && dst_cd && dst_cd->reset_active == RESET_ACTIVE_LOW) {
+        snprintf(name_buf, sizeof(name_buf), "_fifo_%s_rst_rd",
+                 cdc->dest_alias_name ? cdc->dest_alias_name : "anon");
+        rst_rd_sig = fifo_add_wire(parent, arena, name_buf, 1);
+        if (rst_rd_sig >= 0) {
+            IR_Expr *not_rst = (IR_Expr *)jz_arena_alloc(arena, sizeof(IR_Expr));
+            if (not_rst) {
+                memset(not_rst, 0, sizeof(*not_rst));
+                not_rst->kind = EXPR_UNARY_NOT;
+                not_rst->width = 1;
+                not_rst->u.unary.operand = make_sig_ref(arena, dst_rst_sig, 1);
+                fifo_add_async_assign(parent, arena, rst_rd_sig, not_rst, ASSIGN_ALIAS);
+            }
+        }
+    } else {
+        rst_rd_sig = dst_rst_sig;
+    }
+
+    /* --- Connect 8 ports --- */
     int num_conns = 8;
     IR_InstanceConnection *conns = (IR_InstanceConnection *)jz_arena_alloc(
         arena, sizeof(IR_InstanceConnection) * num_conns);
@@ -1792,15 +2133,15 @@ static int lower_cdc_fifo(const IR_CDC *cdc, const IR_Module *parent,
     conns[0] = make_conn(src_clk_sig, c_clk_wr->id, -1, -1);
     conns[1] = make_conn(dst_clk_sig, c_clk_rd->id, -1, -1);
 
-    /* Reset connections: use parent clock domain resets, or tie to 1'b0 */
-    conns[2] = make_conn(src_rst_sig, c_rst_wr ? c_rst_wr->id : -1, -1, -1);
-    if (src_rst_sig < 0 && c_rst_wr) {
+    /* Reset connections (polarity-corrected) */
+    conns[2] = make_conn(rst_wr_sig, c_rst_wr ? c_rst_wr->id : -1, -1, -1);
+    if (rst_wr_sig < 0 && c_rst_wr) {
         conns[2].parent_signal_id = -1;
         conns[2].child_port_id = c_rst_wr->id;
         conns[2].const_expr = ir_strdup_arena(arena, "1'b0");
     }
-    conns[3] = make_conn(dst_rst_sig, c_rst_rd ? c_rst_rd->id : -1, -1, -1);
-    if (dst_rst_sig < 0 && c_rst_rd) {
+    conns[3] = make_conn(rst_rd_sig, c_rst_rd ? c_rst_rd->id : -1, -1, -1);
+    if (rst_rd_sig < 0 && c_rst_rd) {
         conns[3].parent_signal_id = -1;
         conns[3].child_port_id = c_rst_rd->id;
         conns[3].const_expr = ir_strdup_arena(arena, "1'b0");
@@ -1809,21 +2150,33 @@ static int lower_cdc_fifo(const IR_CDC *cdc, const IR_Module *parent,
     conns[4] = make_conn(cdc->source_reg_id, c_data_in->id,
                          cdc->source_msb, cdc->source_lsb);
 
-    /* write_en and read_en tied to 1'b1 (always write/read in CDC mode) */
-    conns[5].parent_signal_id = -1;
-    conns[5].child_port_id = c_write_en ? c_write_en->id : -1;
-    conns[5].parent_msb = -1;
-    conns[5].parent_lsb = -1;
-    conns[5].const_expr = ir_strdup_arena(arena, "1'b1");
+    /* write_en: use derived signal or 1'b1 */
+    if (wr_en_sig >= 0) {
+        conns[5] = make_conn(wr_en_sig, c_write_en ? c_write_en->id : -1, -1, -1);
+    } else {
+        conns[5].parent_signal_id = -1;
+        conns[5].child_port_id = c_write_en ? c_write_en->id : -1;
+        conns[5].parent_msb = -1;
+        conns[5].parent_lsb = -1;
+        conns[5].const_expr = ir_strdup_arena(arena, "1'b1");
+    }
 
-    conns[6].parent_signal_id = -1;
-    conns[6].child_port_id = c_read_en ? c_read_en->id : -1;
-    conns[6].parent_msb = -1;
-    conns[6].parent_lsb = -1;
-    conns[6].const_expr = ir_strdup_arena(arena, "1'b1");
+    /* read_en: use derived signal or 1'b1 */
+    if (rd_en_sig >= 0) {
+        conns[6] = make_conn(rd_en_sig, c_read_en ? c_read_en->id : -1, -1, -1);
+    } else {
+        conns[6].parent_signal_id = -1;
+        conns[6].child_port_id = c_read_en ? c_read_en->id : -1;
+        conns[6].parent_msb = -1;
+        conns[6].parent_lsb = -1;
+        conns[6].const_expr = ir_strdup_arena(arena, "1'b1");
+    }
 
-    const IR_Signal *alias_sig = lib_find_signal_by_name(parent, cdc->dest_alias_name);
-    int alias_id = alias_sig ? alias_sig->id : -1;
+    /* Re-lookup alias_id since fifo_add_wire may have reallocated signals */
+    {
+        const IR_Signal *alias_relookup = lib_find_signal_by_name(parent, cdc->dest_alias_name);
+        alias_id = alias_relookup ? alias_relookup->id : -1;
+    }
     conns[7] = make_conn(alias_id, c_data_out->id, -1, -1);
 
     inst->connections = conns;
