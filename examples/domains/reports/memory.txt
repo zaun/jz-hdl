@@ -1,29 +1,39 @@
 Memory Report
 -------------
-Project: src/ice_sugar_v15.jz
-Chip: ICE40UP-5K-SG48
+Project: src/tang_nano_9k.jz
+Chip: GW1NR-9-QN88-C6-I5
 
 /Users/justinzaun/Development/jz-hdl-dev/examples/domains/src/mem.jz@ 19 = BLOCK MEMORY 16 Bytes (ram)
     Mode:
-    Requested | Pseudo-Dual Port
-    Matched   | Pseudo-Dual Port
+    Requested | Semi-Dual Port
+    Matched   | Semi-Dual Port
 
     Configuration:
     Requested | 8 bit  | 4 bit (16)
-    Matched   | 16 bit | 8 bit     
-    Matched   | 8 bit  | 9 bit     
+    Matched   | 8 bit  | 11 bit    
+    Matched   | 16 bit | 10 bit    
+    Matched   | 32 bit | 9 bit     
+    Matched   | 9 bit  | 11 bit    
+    Matched   | 18 bit | 10 bit    
+    Matched   | 36 bit | 9 bit     
 
 
 Memory Summary
 --------------
 Block Memory:
     Requested: 16 bytes
-    Max Available: 15360 bytes (30 blocks x 4 Kbits)
-    Used: 1 / 30 blocks (one per BLOCK MEMORY)
+    Max Available: 59904 bytes (26 blocks x 18 Kbits)
+    Used: 1 / 26 blocks (one per BLOCK MEMORY)
 
 Distributed Memory:
     Requested: 0 bytes
-    Max Available: Unknown
+    Max Available: 2048 bytes
     Used: 0 bytes
+
+SDRAM (on-chip):
+    Capacity: 8388608 bytes
+
+Flash (on-chip):
+    Capacity: 77824 bytes
 
 Errors: 0

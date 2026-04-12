@@ -1,7 +1,13 @@
 // Simulation for the clocks CDC example.
 //
-// Slow domain state machine writes 16 values into fast-domain BRAM,
-// then reads them back in a loop. Uses HANDSHAKE and BUS CDC crossings.
+// Exercises all 7 CDC crossing types:
+//   HANDSHAKE  slow→fast  write command
+//   BUS        slow→fast  read address
+//   MCP        fast→slow  read data
+//   RAW        slow→fast  quasi-static config
+//   BIT        fast→slow  ready flag (startup gate)
+//   PULSE      fast→slow  write-done event
+//   FIFO       fast→slow  write-verification stream
 
 @module mem
     PORT {
@@ -51,24 +57,39 @@
         reset [1];
     }
 
+    // -- Slow domain registers --
     REGISTER {
-        state       [2] = 2'd0;
-        addr        [4] = 4'd0;
+        state       [3]  = 3'd0;
+        addr        [4]  = 4'd0;
         wr_cmd      [12] = 12'd0;
-        rd_addr_reg [4] = 4'd0;
-        led_reg     [6] = 6'b0;
-        delay       [4] = 4'b0;
+        rd_addr_reg [4]  = 4'd0;
+        led_reg     [6]  = 6'b0;
+        delay       [4]  = 4'b0;
+        wr_wait     [4]  = 4'd0;
+        wr_done_cnt [5]  = 5'd0;
+        led_invert  [1]  = 1'b1;    // RAW: quasi-static config
     }
 
+    // -- Fast domain registers --
     REGISTER {
-        wr_pending  [1] = 1'b0;
-        rd_data_reg [8] = 8'h00;
+        wr_pending    [1]  = 1'b0;
+        wr_cmd_prev   [12] = 12'hFFF; // non-zero so first write is detected
+        rd_data_reg   [8]  = 8'h00;
+        fast_ready    [1]  = 1'b1;    // BIT: ready flag
+        wr_done       [1]  = 1'b0;    // PULSE: write-done event
+        verify_data   [8]  = 8'h00;   // FIFO: verification data
     }
 
+    // All 7 CDC types
     CDC {
-        HANDSHAKE wr_cmd (clk_slow) => wr_cmd_sync (clk_fast);
-        BUS rd_addr_reg (clk_slow) => rd_addr_sync (clk_fast);
-        BUS rd_data_reg (clk_fast) => rd_data_sync (clk_slow);
+        HANDSHAKE wr_cmd      (clk_slow) => wr_cmd_sync      (clk_fast);
+        BUS       rd_addr_reg (clk_slow) => rd_addr_sync      (clk_fast);
+        RAW       led_invert  (clk_slow) => led_invert_raw    (clk_fast);
+
+        MCP       rd_data_reg (clk_fast) => rd_data_sync      (clk_slow);
+        BIT       fast_ready  (clk_fast) => fast_ready_sync   (clk_slow);
+        PULSE     wr_done     (clk_fast) => wr_done_sync      (clk_slow);
+        FIFO      verify_data (clk_fast) => verify_sync       (clk_slow);
     }
 
     @new ram mem {
@@ -86,37 +107,96 @@
         leds <= led_reg;
     }
 
+    // -- Fast domain --
     SYNCHRONOUS(CLK=clk_fast RESET=reset RESET_ACTIVE=Low) {
-        wr_pending <= 1'b1;
-        rd_data_reg <= ram.rd_data;
+        fast_ready <= 1'b1;
+
+        IF (wr_cmd_sync != wr_cmd_prev) {
+            wr_pending  <= 1'b1;
+            wr_cmd_prev <= wr_cmd_sync;
+            wr_done     <= 1'b1;
+            verify_data <= wr_cmd_sync[7:0];
+        } ELSE {
+            wr_pending <= 1'b0;
+            wr_done    <= 1'b0;
+        }
+
+        rd_data_reg <= ram.rd_data ^ { 7'b0, led_invert_raw };
     }
 
+    // -- Slow domain --
     SYNCHRONOUS(CLK=clk_slow RESET=reset RESET_ACTIVE=Low) {
+        led_invert <= 1'b1;
+
+        // Always count PULSE write-done events
+        IF (wr_done_sync == 1'b1) {
+            wr_done_cnt <= wr_done_cnt + 5'd1;
+        }
+
         SELECT (state) {
-            CASE (2'd0) {
-                // WRITE: load values into memory
-                wr_cmd <= { addr, 4'h0, addr };
-                addr <= addr + 4'd1;
-                IF (addr == 4'd15) {
-                    state <= 2'd1;
+            CASE (3'd0) {
+                // INIT: wait for BIT(fast_ready) startup gate
+                IF (fast_ready_sync == 1'b1) {
+                    state <= 3'd1;
                 }
             }
 
-            CASE (2'd1) {
-                // READ_SETUP: present address, wait for data
+            CASE (3'd1) {
+                // WRITE: send command via HANDSHAKE
+                wr_cmd  <= { addr, 4'h0, addr };
+                wr_wait <= 4'd0;
+                state   <= 3'd2;
+            }
+
+            CASE (3'd2) {
+                // WRITE_WAIT: fixed wait for handshake round-trip
+                wr_wait <= wr_wait + 4'd1;
+                IF (wr_wait == 4'd15) {
+                    IF (addr == 4'd15) {
+                        addr  <= 4'd0;
+                        state <= 3'd3;
+                    } ELSE {
+                        addr  <= addr + 4'd1;
+                        state <= 3'd1;
+                    }
+                }
+            }
+
+            CASE (3'd3) {
+                // VERIFY: drain FIFO, wait for all PULSE write-done events
+                led_reg <= verify_sync[5:0];
+                IF (wr_done_cnt >= 5'd16) {
+                    state <= 3'd4;
+                }
+            }
+
+            CASE (3'd4) {
+                // READ_SETUP: present address on BUS
                 rd_addr_reg <= addr;
-                delay <= 4'b0;
-                state <= 2'd2;
+                wr_wait     <= 4'd0;
+                state       <= 3'd5;
             }
 
-            CASE (2'd2) {
-                // READ_DISPLAY: show data on LEDs, wait
-                led_reg <= rd_data_sync[5:0];
-                delay <= delay + 4'b1;
-                IF (delay == 4'b0) {
-                    addr <= addr + 4'd1;
-                    state <= 2'd1;
+            CASE (3'd5) {
+                // READ_WAIT: fixed wait for BUS + BRAM + MCP pipeline
+                wr_wait <= wr_wait + 4'd1;
+                IF (wr_wait == 4'd15) {
+                    state <= 3'd6;
                 }
+            }
+
+            CASE (3'd6) {
+                // READ_DISPLAY: show data on LEDs
+                led_reg <= rd_data_sync[5:0];
+                delay   <= delay + 4'b1;
+                IF (delay == 4'b0) {
+                    addr  <= addr + 4'd1;
+                    state <= 3'd4;
+                }
+            }
+
+            DEFAULT {
+                state <= 3'd0;
             }
         }
     }
@@ -135,17 +215,45 @@
     }
 
     TAP {
+        // State machine
         dut.state;
         dut.addr;
+        dut.wr_wait;
+
+        // HANDSHAKE (slow→fast): write command
         dut.wr_cmd;
         dut.wr_cmd_sync;
+        dut.wr_cmd_prev;
+        dut.wr_pending;
+
+        // BUS (slow→fast): read address
         dut.rd_addr_reg;
         dut.rd_addr_sync;
+
+        // MCP (fast→slow): read data
         dut.rd_data_reg;
         dut.rd_data_sync;
+
+        // RAW (slow→fast): config
+        dut.led_invert;
+        dut.led_invert_raw;
+
+        // BIT (fast→slow): ready flag
+        dut.fast_ready;
+        dut.fast_ready_sync;
+
+        // PULSE (fast→slow): write-done events
+        dut.wr_done;
+        dut.wr_done_sync;
+        dut.wr_done_cnt;
+
+        // FIFO (fast→slow): verification
+        dut.verify_data;
+        dut.verify_sync;
+
+        // Outputs
         dut.led_reg;
         dut.delay;
-        dut.wr_pending;
     }
 
     @new dut clocks {
@@ -173,6 +281,6 @@
         rst_n <= 1'b1;
     }
 
-    // Run long enough to write all 16 values and read a few back
-    @run(ns=50000)
+    // Run long enough to write all 16 values, verify, and read several back
+    @run(ns=80000)
 @endsim
